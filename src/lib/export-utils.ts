@@ -22,7 +22,7 @@ const formatReportData = (
     
     return {
       Date: formatDateDisplay(new Date(entry.entry_date)),
-      Employee: employee?.full_name || employee?.email || 'Unknown Employee',
+      Employee: employee?.full_name || 'Unknown Employee',
       Project: project?.name || 'Unknown Project',
       Hours: entry.hours_logged,
       Notes: entry.notes || ''

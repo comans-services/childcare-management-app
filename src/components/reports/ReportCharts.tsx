@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer } from "@/components/ui/chart";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
-import { User } from "@/lib/user-service"; // Import User type
+import { User } from "@/lib/user-service"; 
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateDisplay } from "@/lib/date-utils";
@@ -11,7 +11,7 @@ import { formatDateDisplay } from "@/lib/date-utils";
 interface ReportChartsProps {
   reportData: TimesheetEntry[];
   projects: Project[];
-  users: User[]; // Added users prop
+  users: User[];
   isLoading: boolean;
 }
 
@@ -59,7 +59,7 @@ const ReportCharts = ({ reportData, projects, users, isLoading }: ReportChartsPr
     return Object.keys(employeeHours).map((userId) => {
       const employee = userMap.get(userId);
       return {
-        name: employee?.full_name || employee?.email || "Unknown Employee",
+        name: employee?.full_name || "Unknown Employee",
         value: employeeHours[userId],
       };
     }).sort((a, b) => b.value - a.value); // Sort by hours descending

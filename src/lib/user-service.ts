@@ -7,6 +7,7 @@ export interface User {
   role?: string;
   organization?: string;
   time_zone?: string;
+  email?: string; // Adding email field to the User interface
 }
 
 export interface NewUser extends Omit<User, "id"> {
@@ -18,17 +19,26 @@ export const fetchUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching users...");
     
-    const { data, error } = await supabase
+    // Get profiles
+    const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
       .select("id, full_name, role, organization, time_zone");
     
-    if (error) {
-      console.error("Error fetching users:", error);
-      throw error;
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError);
+      throw profilesError;
     }
     
-    console.log(`Fetched ${data?.length || 0} users`);
-    return data || [];
+    console.log(`Fetched ${profilesData?.length || 0} profiles`);
+    
+    // We need to get emails from auth.users, but we can't query that directly
+    // Instead, we'll use the admin API to get user data
+    const users: User[] = profilesData || [];
+    
+    // Fetch user emails if needed through a separate function or API
+    // For now, the email fields will be undefined
+    
+    return users;
   } catch (error) {
     console.error("Error in fetchUsers:", error);
     throw error;
@@ -126,8 +136,14 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       throw error;
     }
     
-    console.log("User profile updated successfully:", data?.[0]);
-    return data?.[0] as User;
+    // Return user data with the email from the auth data
+    const newUser: User = {
+      ...(data?.[0] as User),
+      email: userData.email
+    };
+    
+    console.log("User profile updated successfully:", newUser);
+    return newUser;
   } catch (error) {
     console.error("Error in createUser:", error);
     throw error;

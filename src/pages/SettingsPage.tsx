@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchUserById, updateUser, User } from "@/lib/user-service";
@@ -11,7 +10,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const SettingsPage = () => {
-  const { user, userRole } = useAuth();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [formState, setFormState] = useState({
@@ -122,7 +121,7 @@ const SettingsPage = () => {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
-                  value={profile?.email || ""}
+                  value={user?.email || ""}
                   disabled
                 />
                 <p className="text-sm text-muted-foreground">
@@ -141,19 +140,17 @@ const SettingsPage = () => {
                 />
               </div>
               
-              {userRole && (
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Input
-                    id="role"
-                    value={userRole.charAt(0).toUpperCase() + userRole.slice(1)}
-                    disabled
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Roles are managed by administrators.
-                  </p>
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Input
+                  id="role"
+                  value={userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                  disabled
+                />
+                <p className="text-sm text-muted-foreground">
+                  Roles are managed by administrators.
+                </p>
+              </div>
               
               <div className="space-y-2">
                 <Label htmlFor="organization">Organization</Label>

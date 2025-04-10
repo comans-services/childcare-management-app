@@ -90,7 +90,7 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
               return (
                 <TableRow key={entry.id}>
                   <TableCell>{formatDateDisplay(new Date(entry.entry_date))}</TableCell>
-                  <TableCell>{employee?.full_name || employee?.email || 'Unknown Employee'}</TableCell>
+                  <TableCell>{employee?.full_name || 'Unknown Employee'}</TableCell>
                   <TableCell>{project?.name || 'Unknown Project'}</TableCell>
                   <TableCell>{entry.hours_logged}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.notes || '-'}</TableCell>

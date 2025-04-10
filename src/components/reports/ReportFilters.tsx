@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchCustomers } from "@/lib/customer-service";
 import { fetchContracts } from "@/lib/contract-service";
 import { fetchUserProjects, fetchTimesheetEntries } from "@/lib/timesheet-service";
-import { fetchUsers } from "@/lib/user-service"; // New import for fetching users
+import { fetchUsers } from "@/lib/user-service";
 import { cn } from "@/lib/utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
@@ -23,7 +22,7 @@ interface ReportFiltersProps {
   setProjects: React.Dispatch<React.SetStateAction<any[]>>;
   setContracts: React.Dispatch<React.SetStateAction<any[]>>;
   setCustomers: React.Dispatch<React.SetStateAction<any[]>>;
-  setUsers: React.Dispatch<React.SetStateAction<any[]>>; // New state setter for users
+  setUsers: React.Dispatch<React.SetStateAction<any[]>>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -34,37 +33,32 @@ const ReportFilters = ({
   setProjects, 
   setContracts, 
   setCustomers,
-  setUsers, // New state setter for users
+  setUsers,
   setIsLoading 
 }: ReportFiltersProps) => {
   const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // Fetch customers
   const { data: customersData } = useQuery({
     queryKey: ['customers'],
     queryFn: fetchCustomers
   });
 
-  // Fetch contracts
   const { data: contractsData } = useQuery({
     queryKey: ['contracts'],
     queryFn: () => fetchContracts()
   });
 
-  // Fetch projects
   const { data: projectsData } = useQuery({
     queryKey: ['projects'],
     queryFn: fetchUserProjects
   });
 
-  // Fetch users (employees)
   const { data: usersData } = useQuery({
     queryKey: ['users'],
     queryFn: fetchUsers
   });
 
-  // Update state when data is fetched
   useEffect(() => {
     if (customersData) {
       setCustomers(customersData);
@@ -85,24 +79,20 @@ const ReportFilters = ({
     
     setIsLoading(true);
     try {
-      // Fetch timesheet data based on filters
-      const userId = filters.userId || user.id; // Use filtered user ID if available, otherwise default to current user
-      
+      const userId = filters.userId || user.id;
       const entries = await fetchTimesheetEntries(
         userId,
         filters.startDate,
         filters.endDate,
-        true // Include user data
+        true
       );
       
-      // Apply additional filters
       let filteredData = entries;
       
       if (filters.projectId) {
         filteredData = filteredData.filter(entry => entry.project_id === filters.projectId);
       }
       
-      // Set the filtered data for the reports
       setReportData(filteredData);
     } catch (error) {
       console.error("Error generating report:", error);
@@ -242,7 +232,7 @@ const ReportFilters = ({
                   <SelectItem value="">All Employees</SelectItem>
                   {usersData?.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
-                      {user.full_name || user.email || "Unknown User"}
+                      {user.full_name || "Unknown User"}
                     </SelectItem>
                   ))}
                 </SelectContent>
