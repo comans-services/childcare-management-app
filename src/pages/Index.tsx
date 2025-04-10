@@ -513,7 +513,7 @@ const Dashboard = () => {
                     barSize={15}
                   >
                     <RadialBar
-                      background
+                      background={{fill: "#f5f5f5"}}
                       dataKey="value"
                       cornerRadius={15}
                       label={{
@@ -521,7 +521,6 @@ const Dashboard = () => {
                         fill: '#fff',
                         formatter: (value) => `${value}%`,
                       }}
-                      background={{fill: "#f5f5f5"}}
                     />
                     <Legend 
                       iconSize={10}
