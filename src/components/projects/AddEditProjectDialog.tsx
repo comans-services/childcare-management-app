@@ -51,6 +51,14 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
   const queryClient = useQueryClient();
   const isEditing = !!existingProject;
 
+  // Log the existing project info for debugging
+  useEffect(() => {
+    if (existingProject) {
+      console.log('Editing project with data:', existingProject);
+      console.log('Customer ID from existing project:', existingProject.customer_id);
+    }
+  }, [existingProject]);
+
   const form = useForm<FormValues>({
     defaultValues: {
       name: existingProject?.name || "",
@@ -65,6 +73,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
   // Reset form when dialog opens/closes or project changes
   useEffect(() => {
     if (isOpen) {
+      console.log('Resetting form with customer_id:', existingProject?.customer_id || "");
       form.reset({
         name: existingProject?.name || "",
         description: existingProject?.description || "",
@@ -91,6 +100,8 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
         updated_at: new Date().toISOString(),
       };
 
+      console.log('Saving project with customer_id:', formData.customer_id);
+      
       // If editing, update existing project
       if (isEditing && existingProject) {
         const { error } = await supabase
@@ -148,6 +159,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
   });
 
   const onSubmit = (data: FormValues) => {
+    console.log('Form submitted with data:', data);
     mutation.mutate(data);
   };
 
@@ -206,7 +218,10 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
                   <FormControl>
                     <CustomerSelector
                       selectedCustomerId={field.value}
-                      onSelectCustomer={(customerId) => field.onChange(customerId)}
+                      onSelectCustomer={(customerId) => {
+                        console.log('Customer selected:', customerId);
+                        field.onChange(customerId);
+                      }}
                       disabled={mutation.isPending}
                     />
                   </FormControl>

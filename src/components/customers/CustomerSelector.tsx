@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Select, 
@@ -26,6 +26,11 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
 }) => {
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
+  // Log the selected customer ID whenever it changes
+  useEffect(() => {
+    console.log('CustomerSelector - selectedCustomerId:', selectedCustomerId);
+  }, [selectedCustomerId]);
+
   // Fetch customers
   const {
     data: customers = [],
@@ -41,7 +46,11 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
         <div className="flex-1">
           <Select
             value={selectedCustomerId || "none"}
-            onValueChange={(value) => onSelectCustomer(value === "none" ? null : value)}
+            onValueChange={(value) => {
+              const customerId = value === "none" ? null : value;
+              console.log('CustomerSelector - onValueChange:', customerId);
+              onSelectCustomer(customerId);
+            }}
             disabled={disabled || isLoading}
           >
             <SelectTrigger className="w-full">

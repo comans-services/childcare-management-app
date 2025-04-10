@@ -30,7 +30,7 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
     console.log("Fetching projects...");
     const { data, error } = await supabase
       .from("projects")
-      .select("id, name, description, budget_hours, start_date, end_date, is_active")
+      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id")
       .order("is_active", { ascending: false })
       .order("name", { ascending: true });
 
@@ -40,6 +40,7 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
     }
 
     console.log(`Fetched ${data?.length || 0} projects`);
+    console.log("Projects data:", data);
     
     // Fetch hours used for each project
     const projectsWithHours = await Promise.all(
