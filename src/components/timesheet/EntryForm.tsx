@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,10 @@ const EntryForm: React.FC<EntryFormProps> = ({
   onCancel,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Track hours separately to allow empty value in input
+  const [hoursInputValue, setHoursInputValue] = useState(
+    existingEntry?.hours_logged?.toString() || ""
+  );
 
   // Use defaultProject if available (for editing) or the first active project
   const getDefaultProjectId = () => {
@@ -71,6 +76,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
         notes: existingEntry.notes || "",
         jira_task_id: existingEntry.jira_task_id || "",
       });
+      setHoursInputValue(existingEntry.hours_logged?.toString() || "");
     } else {
       // For new entries, set the default project
       form.reset({
@@ -79,6 +85,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
         notes: "",
         jira_task_id: "",
       });
+      setHoursInputValue("");
     }
   }, [existingEntry, projects, form]);
 
@@ -97,6 +104,17 @@ const EntryForm: React.FC<EntryFormProps> = ({
       return;
     }
 
+    // Validate hours input
+    const hours = hoursInputValue === "" ? 0 : parseFloat(hoursInputValue);
+    if (isNaN(hours) || hours < 0 || hours > 24) {
+      toast({
+        title: "Invalid Hours",
+        description: "Please enter a valid number of hours between 0 and 24.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       
@@ -105,7 +123,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
         user_id: userId,
         project_id: values.project_id,
         entry_date: date.toISOString().split("T")[0],
-        hours_logged: Number(values.hours_logged),
+        hours_logged: hours,
         notes: values.notes,
         jira_task_id: values.jira_task_id,
       };
@@ -186,14 +204,27 @@ const EntryForm: React.FC<EntryFormProps> = ({
               <FormLabel>Hours</FormLabel>
               <FormControl>
                 <Input
-                  type="number"
-                  step="0.25"
-                  min="0"
-                  max="24"
+                  type="text"
                   placeholder="0.00"
                   disabled={isSubmitting || projects.length === 0}
-                  {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                  value={hoursInputValue}
+                  onChange={(e) => {
+                    // Allow empty string or valid numbers (including decimals)
+                    const value = e.target.value;
+                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      setHoursInputValue(value);
+                      
+                      // Update form value only with valid numbers
+                      if (value === "") {
+                        field.onChange(0);
+                      } else {
+                        const numValue = parseFloat(value);
+                        if (!isNaN(numValue)) {
+                          field.onChange(numValue);
+                        }
+                      }
+                    }
+                  }}
                 />
               </FormControl>
               <FormMessage />
