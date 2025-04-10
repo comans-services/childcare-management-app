@@ -204,6 +204,19 @@ const Dashboard = () => {
       ? Math.min(100, (hoursLoggedToDate / expectedHoursToDate) * 100) 
       : 0);
 
+  const calculateHoursRemaining = () => {
+    const today = new Date();
+    const dayOfWeek = getDay(today);
+    
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return 40 - hoursLoggedToDate;
+    }
+    
+    return Math.max(0, expectedHoursToDate - hoursLoggedToDate);
+  };
+  
+  const hoursRemaining = calculateHoursRemaining();
+
   const hasEntries = timesheetEntries.length > 0;
   const completeWeek = weekProgress >= 100;
   const isFridayToday = isFriday(today);
@@ -318,7 +331,11 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Clock className={`h-4 w-4 ${cardStyle.text}`} />
-            <span className={cardStyle.text}>{deadlineMessage}</span>
+            <span className={cardStyle.text}>
+              {hasEntries && !completeWeek 
+                ? `${hoursRemaining.toFixed(1)} hours remaining to be logged to catch up for the week` 
+                : deadlineMessage}
+            </span>
           </div>
           <div className="mt-2">
             <div className="flex justify-between text-sm mb-1">
