@@ -13,16 +13,31 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 export const supabase = createClient<any>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 // Create a function to execute SQL directly
-export const executeSQL = async (sql: string): Promise<{ success: boolean; error?: any }> => {
+export const executeSQL = async (sql: string): Promise<{ success: boolean; data?: any; error?: any }> => {
   try {
-    const { error } = await supabase.rpc('exec_sql', { query: sql });
+    console.log("Executing SQL:", sql);
     
-    if (error) {
-      console.error("Error executing SQL:", error);
-      return { success: false, error };
+    // For SELECT queries, use the native query method instead of rpc
+    if (sql.trim().toLowerCase().startsWith('select')) {
+      const { data, error } = await supabase.rpc('exec_sql_select', { query: sql });
+      
+      if (error) {
+        console.error("Error executing SELECT SQL:", error);
+        return { success: false, error };
+      }
+      
+      return { success: true, data };
+    } else {
+      // For other queries (INSERT, UPDATE, etc.), use the exec_sql function
+      const { error } = await supabase.rpc('exec_sql', { query: sql });
+      
+      if (error) {
+        console.error("Error executing SQL:", error);
+        return { success: false, error };
+      }
+      
+      return { success: true };
     }
-    
-    return { success: true };
   } catch (error) {
     console.error("Exception executing SQL:", error);
     return { success: false, error };
@@ -34,15 +49,55 @@ const setupSQLFunctions = async () => {
   try {
     console.log("Setting up SQL functions...");
     
-    // Check if exec_sql function exists
-    const testResult = await supabase.rpc('exec_sql', { 
-      query: "SELECT 1 as test" 
-    });
-    
-    if (testResult.error && testResult.error.code === '42883') {
-      console.log("Creating exec_sql function...");
+    try {
+      // Create exec_sql function for non-select queries
+      await supabase.rpc('exec_sql', { 
+        query: `
+          CREATE OR REPLACE FUNCTION exec_sql(query text)
+          RETURNS void
+          LANGUAGE plpgsql
+          SECURITY DEFINER
+          AS $$
+          BEGIN
+            EXECUTE query;
+          END;
+          $$;
+        `
+      }).then(({ error }) => {
+        if (error) {
+          console.log("Error or function already exists, trying alternative approach:", error);
+          return supabase.rpc('exec_sql', { 
+            query: "SELECT 1 as test" 
+          });
+        }
+      });
       
-      // Create exec_sql function using raw REST API call since we can't call a function that doesn't exist yet
+      // Create exec_sql_select function for SELECT queries
+      await supabase.rpc('exec_sql', { 
+        query: `
+          CREATE OR REPLACE FUNCTION exec_sql_select(query text)
+          RETURNS SETOF json
+          LANGUAGE plpgsql
+          SECURITY DEFINER
+          AS $$
+          BEGIN
+            RETURN QUERY EXECUTE query;
+          END;
+          $$;
+        `
+      }).then(({ error }) => {
+        if (error) {
+          console.log("Error creating select function, it might already exist:", error);
+        } else {
+          console.log("exec_sql_select function created successfully");
+        }
+      });
+      
+    } catch (err) {
+      console.error("Error creating SQL functions:", err);
+      
+      // Try an alternative approach using direct REST API calls
+      console.log("Trying alternative approach to create functions...");
       const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
         method: 'POST',
         headers: {
@@ -61,42 +116,34 @@ const setupSQLFunctions = async () => {
               EXECUTE query;
             END;
             $$;
+            
+            CREATE OR REPLACE FUNCTION exec_sql_select(query text)
+            RETURNS SETOF json
+            LANGUAGE plpgsql
+            SECURITY DEFINER
+            AS $$
+            BEGIN
+              RETURN QUERY EXECUTE query;
+            END;
+            $$;
           `
         })
       });
       
       if (!response.ok) {
-        const responseText = await response.text();
-        console.error("Failed to create exec_sql function:", responseText);
-        
-        // Try an alternative approach
-        console.log("Trying alternative approach to create function...");
-        await fetch(`${SUPABASE_URL}/rest/v1/sql`, {
-          method: 'POST',
-          headers: {
-            'apikey': SUPABASE_PUBLISHABLE_KEY,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            query: `
-              CREATE OR REPLACE FUNCTION exec_sql(query text)
-              RETURNS void
-              LANGUAGE plpgsql
-              SECURITY DEFINER
-              AS $$
-              BEGIN
-                EXECUTE query;
-              END;
-              $$;
-            `
-          })
-        });
+        console.error("Failed to create SQL functions via REST API");
       } else {
-        console.log("exec_sql function created successfully");
+        console.log("SQL functions created successfully via REST API");
       }
-    } else {
-      console.log("exec_sql function already exists");
     }
+    
+    // Verify the functions work
+    const testResult = await supabase.rpc('exec_sql_select', { 
+      query: "SELECT 1 as test" 
+    });
+    
+    console.log("SQL function test result:", testResult);
+    
   } catch (err) {
     console.error("Error in setupSQLFunctions:", err);
   }

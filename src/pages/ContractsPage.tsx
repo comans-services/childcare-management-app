@@ -1,9 +1,9 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Clock, AlertTriangle, CheckCircle, Search, FileText, Filter } from "lucide-react";
+import { PlusCircle, Clock, AlertTriangle, CheckCircle, Search, FileText, Filter, RefreshCw } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Contract, fetchContracts } from "@/lib/contract-service";
@@ -13,6 +13,7 @@ import DeleteContractDialog from "@/components/contracts/DeleteContractDialog";
 import ContractFilters from "@/components/contracts/ContractFilters";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import TestAddContract from "@/components/TestAddContract";
 
 const ContractsPage = () => {
   const { user } = useAuth();
@@ -32,15 +33,32 @@ const ContractsPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Fetch all contracts with filters
-  const { data: contracts = [], isLoading, refetch } = useQuery({
+  const { 
+    data: contracts = [], 
+    isLoading, 
+    refetch,
+    error
+  } = useQuery({
     queryKey: ["contracts", filters],
     queryFn: () => fetchContracts({
-      ...filters,
       status: filters.status === 'all' ? '' : filters.status,
-      customerId: filters.customerId === 'all' ? '' : filters.customerId
+      customerId: filters.customerId === 'all' ? '' : filters.customerId,
+      searchTerm: filters.searchTerm,
+      isActive: filters.isActive
     }),
     enabled: !!user
   });
+
+  useEffect(() => {
+    if (error) {
+      console.error("Error fetching contracts:", error);
+      toast({
+        title: "Error fetching contracts",
+        description: "There was an issue loading your contracts. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [error]);
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,13 +137,25 @@ const ContractsPage = () => {
           <p className="text-gray-600">Manage and monitor service contracts</p>
         </div>
         
-        <Button 
-          onClick={() => setIsAddContractOpen(true)} 
-          className="flex items-center gap-2"
-        >
-          <PlusCircle className="h-4 w-4" />
-          Add Contract
-        </Button>
+        <div className="flex gap-2">
+          <TestAddContract />
+          
+          <Button 
+            onClick={() => refetch()}
+            variant="outline"
+            title="Refresh contracts"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            onClick={() => setIsAddContractOpen(true)} 
+            className="flex items-center gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Add Contract
+          </Button>
+        </div>
       </div>
 
       {/* Search and filters */}
@@ -250,12 +280,17 @@ const ContractsPage = () => {
             <div className="p-8 text-center">
               <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <p className="text-gray-500 mb-4">No contracts found</p>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsAddContractOpen(true)}
-              >
-                Add Your First Contract
-              </Button>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsAddContractOpen(true)}
+                >
+                  Add Your First Contract
+                </Button>
+                <div className="pt-2">
+                  <TestAddContract />
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
