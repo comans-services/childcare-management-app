@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
   id: string;
-  email?: string;
   full_name?: string;
   role?: string;
   organization?: string;
@@ -11,6 +10,7 @@ export interface User {
 }
 
 export interface NewUser extends Omit<User, "id"> {
+  email: string;
   password: string;
 }
 
@@ -20,7 +20,7 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, email, role, organization, time_zone");
+      .select("id, full_name, role, organization, time_zone");
     
     if (error) {
       console.error("Error fetching users:", error);
@@ -41,7 +41,7 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
     
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, email, role, organization, time_zone")
+      .select("id, full_name, role, organization, time_zone")
       .eq("id", userId)
       .single();
     
@@ -86,13 +86,13 @@ export const updateUser = async (user: User): Promise<User> => {
   }
 };
 
-export const createUser = async (userData: Partial<User> & { password: string }): Promise<User> => {
+export const createUser = async (userData: NewUser): Promise<User> => {
   try {
     console.log("Creating new user...");
     
     // First create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: userData.email!,
+      email: userData.email,
       password: userData.password,
       options: {
         data: {

@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchUsers, User, updateUser, createUser } from "@/lib/user-service";
+import { fetchUsers, User, updateUser } from "@/lib/user-service";
 import { useAuth } from "@/context/AuthContext";
 import {
   Table,
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import AddEditUserDialog from "./AddEditUserDialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserCog, Edit, UserPlus } from "lucide-react";
+import { Edit } from "lucide-react";
 
 const TeamList = () => {
   const { userRole } = useAuth();
@@ -77,7 +77,6 @@ const TeamList = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Organization</TableHead>
                 <TableHead>Time Zone</TableHead>
@@ -88,7 +87,6 @@ const TeamList = () => {
               {Array(5).fill(null).map((_, index) => (
                 <TableRow key={index}>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
@@ -108,7 +106,6 @@ const TeamList = () => {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Organization</TableHead>
             <TableHead>Time Zone</TableHead>
@@ -120,7 +117,6 @@ const TeamList = () => {
             users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.full_name || "N/A"}</TableCell>
-                <TableCell>{user.email || "N/A"}</TableCell>
                 <TableCell>
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-blue-100 text-blue-800">
                     {user.role || "employee"}
@@ -144,7 +140,7 @@ const TeamList = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={isAdminOrManager ? 6 : 5} className="text-center py-8">
+              <TableCell colSpan={isAdminOrManager ? 5 : 4} className="text-center py-8">
                 No team members found.
               </TableCell>
             </TableRow>
@@ -157,6 +153,7 @@ const TeamList = () => {
         isOpen={!!editingUser}
         onClose={() => setEditingUser(null)}
         onSave={handleUserUpdate}
+        isNewUser={false}
       />
     </div>
   );

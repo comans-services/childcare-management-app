@@ -34,17 +34,23 @@ interface AddEditUserDialogProps {
   isNewUser?: boolean;
 }
 
+// Define schema for existing users (no email/password required)
 const userSchema = z.object({
   id: z.string().optional(),
-  email: z.string().email("Invalid email format"),
   full_name: z.string().min(1, "Full name is required"),
   role: z.enum(["employee", "manager", "admin"]),
   organization: z.string().optional().nullable(),
   time_zone: z.string().optional().nullable(),
 });
 
-const newUserSchema = userSchema.extend({
+// Extended schema for new users (with email/password)
+const newUserSchema = z.object({
+  full_name: z.string().min(1, "Full name is required"),
+  email: z.string().email("Invalid email format"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["employee", "manager", "admin"]),
+  organization: z.string().optional().nullable(),
+  time_zone: z.string().optional().nullable(),
 });
 
 const AddEditUserDialog = ({
@@ -54,44 +60,49 @@ const AddEditUserDialog = ({
   onSave,
   isNewUser = false,
 }: AddEditUserDialogProps) => {
+  // Use the appropriate schema based on whether it's a new user
   const schema = isNewUser ? newUserSchema : userSchema;
   
   const form = useForm({
     resolver: zodResolver(schema),
-    defaultValues: {
+    defaultValues: isNewUser ? {
+      full_name: "",
+      email: "",
+      password: "",
+      role: "employee" as const,
+      organization: "",
+      time_zone: "",
+    } : {
       id: user?.id || "",
-      email: user?.email || "",
       full_name: user?.full_name || "",
       role: (user?.role as "employee" | "manager" | "admin") || "employee",
       organization: user?.organization || "",
       time_zone: user?.time_zone || "",
-      ...(isNewUser && { password: "" }),
-    },
+    }
   });
 
   React.useEffect(() => {
-    if (user) {
+    if (isNewUser) {
+      form.reset({
+        full_name: "",
+        email: "",
+        password: "",
+        role: "employee",
+        organization: "",
+        time_zone: "",
+      });
+    } else if (user) {
       form.reset({
         id: user.id,
-        email: user.email || "",
         full_name: user.full_name || "",
         role: (user.role as "employee" | "manager" | "admin") || "employee",
         organization: user.organization || "",
         time_zone: user.time_zone || "",
       });
-    } else if (isNewUser) {
-      form.reset({
-        email: "",
-        full_name: "",
-        role: "employee",
-        organization: "",
-        time_zone: "",
-        password: "",
-      });
     }
   }, [user, isNewUser, form]);
 
-  const onSubmit = (values: z.infer<typeof schema>) => {
+  const onSubmit = (values: any) => {
     onSave(values);
   };
 
@@ -125,23 +136,21 @@ const AddEditUserDialog = ({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        placeholder="email@example.com"
-                        disabled={!isNewUser && !!user?.email}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {isNewUser && (
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="email@example.com" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             {isNewUser && (
