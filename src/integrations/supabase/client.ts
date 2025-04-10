@@ -9,5 +9,68 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Create function to setup the contracts table if needed
+const setupContractsTable = async () => {
+  const { data, error } = await supabase
+    .from('pg_tables')
+    .select('tablename')
+    .eq('schemaname', 'public')
+    .eq('tablename', 'contracts');
+  
+  if (error) {
+    console.error("Error checking if contracts table exists:", error);
+    return;
+  }
+  
+  if (!data || data.length === 0) {
+    console.log("Creating contracts table...");
+    // Create contracts table if it doesn't exist
+    const { error: createError } = await supabase.rpc('create_contracts_table');
+    if (createError) {
+      console.error("Failed to create contracts table:", createError);
+    }
+  }
+};
+
 // Using any type temporarily until Database types can be properly updated
 export const supabase = createClient<any>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Add stored procedure to create contracts table if it doesn't exist
+supabase.rpc('create_contracts_table').catch(error => {
+  if (error.code === '42883') { // undefined function error
+    console.log("Creating stored procedure for contracts table creation...");
+    supabase.sql(`
+      CREATE OR REPLACE FUNCTION create_contracts_table()
+      RETURNS void AS $$
+      BEGIN
+        CREATE TABLE IF NOT EXISTS public.contracts (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          customer_id UUID,
+          start_date DATE NOT NULL,
+          end_date DATE NOT NULL,
+          status TEXT NOT NULL,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+        );
+        
+        -- If needed, create foreign key constraint
+        -- ALTER TABLE public.contracts 
+        --   ADD CONSTRAINT fk_contracts_customer 
+        --   FOREIGN KEY (customer_id) 
+        --   REFERENCES public.customers(id);
+      END;
+      $$ LANGUAGE plpgsql;
+    `).then(() => {
+      console.log("Stored procedure created successfully.");
+      setupContractsTable();
+    }).catch(err => {
+      console.error("Error creating stored procedure:", err);
+    });
+  }
+});
+
+// Setup tables when app loads
+setupContractsTable();

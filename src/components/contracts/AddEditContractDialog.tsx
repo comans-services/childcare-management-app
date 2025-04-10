@@ -441,12 +441,15 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                disabled={isSaving}
+                disabled={saveContractMutation.isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button 
+                type="submit" 
+                disabled={saveContractMutation.isPending}
+              >
+                {saveContractMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {existingContract ? "Update Contract" : "Create Contract"}
               </Button>
             </DialogFooter>
