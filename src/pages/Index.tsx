@@ -219,6 +219,7 @@ const Dashboard = () => {
   };
   
   const hoursRemaining = calculateHoursRemaining();
+  const caughtUp = hoursLoggedToDate >= expectedHoursToDate;
 
   const hasEntries = timesheetEntries.length > 0;
   const completeWeek = weekProgress >= 100;
@@ -391,7 +392,9 @@ const Dashboard = () => {
             <Clock className={`h-4 w-4 ${cardStyle.text}`} />
             <span className={cardStyle.text}>
               {hasEntries && !completeWeek 
-                ? `${hoursRemaining.toFixed(1)} hours remaining to be logged to catch up for the week` 
+                ? caughtUp
+                  ? "Congratulations! You have caught up to your expected hours."
+                  : `${hoursRemaining.toFixed(1)} hours remaining to be caught up for the week`
                 : deadlineMessage}
             </span>
           </div>
