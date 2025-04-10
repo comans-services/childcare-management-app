@@ -486,9 +486,8 @@ const Dashboard = () => {
                     endAngle={-270}
                   >
                     <RadialBar
-                      minAngle={15}
                       background
-                      clockWise
+                      clockWise={true}
                       dataKey="value"
                       label={{
                         position: 'insideStart',
