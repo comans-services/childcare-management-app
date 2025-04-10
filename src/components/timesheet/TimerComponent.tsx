@@ -66,12 +66,13 @@ const TimerComponent = () => {
     
     pauseTimer();
     const hoursLogged = parseFloat((elapsedTime / 3600).toFixed(2));
+    const today = new Date();
     
     try {
       await saveTimesheetEntry({
         user_id: user.id,
         project_id: selectedProject,
-        entry_date: formatDate(new Date()),
+        entry_date: formatDate(today),
         hours_logged: hoursLogged,
         notes: `Timer Entry - please change. Duration: ${formattedTime()}`
       });

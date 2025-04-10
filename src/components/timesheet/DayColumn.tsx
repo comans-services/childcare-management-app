@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { formatDateShort, isToday } from "@/lib/date-utils";
+import { formatDateShort, isToday, formatDate } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -27,10 +27,13 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
   const [localEntries, setLocalEntries] = useState<TimesheetEntry[]>([]);
-
+  
+  // Format date consistently for comparison
+  const formattedColumnDate = formatDate(date);
+  
   // Filter entries for this day, including both fetched and local entries
   const dayEntries = [...entries, ...localEntries].filter(
-    (entry) => entry.entry_date === date.toISOString().split("T")[0]
+    (entry) => entry.entry_date === formattedColumnDate
   );
 
   const totalHours = dayEntries.reduce(
@@ -77,6 +80,12 @@ const DayColumn: React.FC<DayColumnProps> = ({
     
     // Add the newly saved entry to local entries for immediate display
     if (savedEntry) {
+      // Ensure we have consistent date format for the entry
+      if (savedEntry.entry_date !== formattedColumnDate && 
+          new Date(savedEntry.entry_date).toDateString() === date.toDateString()) {
+        savedEntry.entry_date = formattedColumnDate;
+      }
+      
       setLocalEntries(prev => {
         // Replace if exists, otherwise add
         const exists = prev.some(e => e.id === savedEntry.id);
