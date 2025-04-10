@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import {
   Table,
@@ -45,27 +44,22 @@ const ProjectList: React.FC<ProjectListProps> = ({
   onEdit, 
   onDelete 
 }) => {
-  // Filtering state
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [showOverBudget, setShowOverBudget] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  // Sorting state
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
-  // Popover open state
   const [openStatusPopover, setOpenStatusPopover] = useState<string | null>(null);
 
-  // Status toggle mutation
   const statusMutation = useMutation({
     mutationFn: ({ projectId, isActive }: { projectId: string; isActive: boolean }) => 
       updateProjectStatus(projectId, isActive),
     onMutate: ({ projectId }) => {
       setUpdatingStatusId(projectId);
-      // Close popover when status update starts
       setOpenStatusPopover(null);
     },
     onSuccess: (_, { projectId, isActive }) => {
@@ -88,9 +82,8 @@ const ProjectList: React.FC<ProjectListProps> = ({
     }
   });
 
-  // Toggle project status
   const toggleProjectStatus = (project: Project, newStatus: boolean) => {
-    if (updatingStatusId === project.id) return; // Prevent multiple clicks
+    if (updatingStatusId === project.id) return;
     
     statusMutation.mutate({
       projectId: project.id,
@@ -98,33 +91,27 @@ const ProjectList: React.FC<ProjectListProps> = ({
     });
   };
 
-  // Helper function to calculate percentage of budget used
   const calculateBudgetPercentage = (used: number = 0, budget: number): number => {
     if (budget === 0) return 0;
     return Math.min((used / budget) * 100, 100);
   };
 
-  // Helper function to determine if project is over budget
   const isOverBudget = (used: number = 0, budget: number): boolean => {
     return used > budget;
   };
 
-  // Sort and filter projects
   const filteredProjects = useMemo(() => {
     return projects
       .filter(project => {
-        // Apply search filter
         if (searchTerm && !project.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
             !project.description?.toLowerCase().includes(searchTerm.toLowerCase())) {
           return false;
         }
         
-        // Apply active/inactive filter
         if (!showInactive && !project.is_active) {
           return false;
         }
         
-        // Apply budget filter
         if (showOverBudget && !isOverBudget(project.hours_used, project.budget_hours)) {
           return false;
         }
@@ -132,7 +119,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
         return true;
       })
       .sort((a, b) => {
-        // Apply sorting
         if (sortField === 'name') {
           return sortDirection === 'asc' 
             ? a.name.localeCompare(b.name)
@@ -158,7 +144,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
       });
   }, [projects, searchTerm, showInactive, showOverBudget, sortField, sortDirection]);
 
-  // Toggle sorting when header is clicked
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -168,7 +153,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
     }
   };
 
-  // Render sort indicator for table header
   const getSortIndicator = (field: SortField) => {
     if (sortField !== field) return null;
     return sortDirection === 'asc' ? <SortAsc className="inline h-4 w-4 ml-1" /> : <SortDesc className="inline h-4 w-4 ml-1" />;
@@ -176,7 +160,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Filters and search */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -244,12 +227,10 @@ const ProjectList: React.FC<ProjectListProps> = ({
         </div>
       </div>
 
-      {/* Projects count */}
       <div className="text-sm text-muted-foreground mb-2">
         Showing {filteredProjects.length} of {projects.length} projects
       </div>
       
-      {/* Table */}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -318,25 +299,30 @@ const ProjectList: React.FC<ProjectListProps> = ({
                           <Loader2 className="h-3 w-3 animate-spin" /> Updating...
                         </Badge>
                       ) : (
-                        <Popover open={isStatusPopoverOpen} onOpenChange={(open) => {
-                          setOpenStatusPopover(open ? project.id : null);
-                        }}>
+                        <Popover 
+                          open={isStatusPopoverOpen} 
+                          onOpenChange={(open) => {
+                            setOpenStatusPopover(open ? project.id : null);
+                          }}
+                        >
                           <PopoverTrigger asChild>
-                            {project.is_active ? (
-                              <Badge 
-                                variant="outline" 
-                                className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1 cursor-pointer hover:bg-green-100"
-                              >
-                                <Check className="h-3 w-3" /> Active
-                              </Badge>
-                            ) : (
-                              <Badge 
-                                variant="outline" 
-                                className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1 cursor-pointer hover:bg-gray-100"
-                              >
-                                <X className="h-3 w-3" /> Inactive
-                              </Badge>
-                            )}
+                            <Button variant="ghost" className="h-auto p-0 hover:bg-transparent">
+                              {project.is_active ? (
+                                <Badge 
+                                  variant="outline" 
+                                  className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1 cursor-pointer hover:bg-green-100"
+                                >
+                                  <Check className="h-3 w-3" /> Active
+                                </Badge>
+                              ) : (
+                                <Badge 
+                                  variant="outline" 
+                                  className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1 cursor-pointer hover:bg-gray-100"
+                                >
+                                  <X className="h-3 w-3" /> Inactive
+                                </Badge>
+                              )}
+                            </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-56 p-3">
                             <div className="space-y-2">
@@ -389,7 +375,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      {/* Desktop Actions */}
                       <div className="hidden md:flex md:justify-end md:space-x-2">
                         <Button 
                           variant="outline" 
@@ -408,7 +393,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
                         </Button>
                       </div>
                       
-                      {/* Mobile dropdown menu */}
                       <div className="md:hidden">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
