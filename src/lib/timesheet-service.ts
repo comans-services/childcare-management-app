@@ -7,6 +7,9 @@ export interface Project {
   name: string;
   description?: string;
   budget_hours: number;
+  start_date?: string;
+  end_date?: string;
+  is_active?: boolean;
 }
 
 export interface TimesheetEntry {
@@ -23,8 +26,9 @@ export interface TimesheetEntry {
 export const fetchUserProjects = async (): Promise<Project[]> => {
   const { data, error } = await supabase
     .from("projects")
-    .select("id, name, description, budget_hours")
-    .eq("is_active", true);
+    .select("id, name, description, budget_hours, start_date, end_date, is_active")
+    .order("is_active", { ascending: false })
+    .order("name", { ascending: true });
 
   if (error) {
     console.error("Error fetching projects:", error);
@@ -49,7 +53,7 @@ export const fetchTimesheetEntries = async (
       hours_logged, 
       notes, 
       jira_task_id,
-      projects:project_id (id, name, description, budget_hours)
+      projects:project_id (id, name, description, budget_hours, is_active)
     `)
     .eq("user_id", userId)
     .gte("entry_date", formatDate(startDate))
