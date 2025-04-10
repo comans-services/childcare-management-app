@@ -10,6 +10,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import AuthPage from "@/pages/AuthPage";
 import TimesheetPage from "@/pages/TimesheetPage";
 import ProjectsPage from "@/pages/ProjectsPage";
+import CustomersPage from "@/pages/CustomersPage";
 import ReportsPage from "@/pages/ReportsPage";
 import TeamPage from "@/pages/TeamPage";
 import SettingsPage from "@/pages/SettingsPage";
@@ -31,6 +32,7 @@ const App = () => (
               <Route index element={<TimesheetPage />} />
               <Route path="timesheet" element={<TimesheetPage />} />
               <Route path="projects" element={<ProjectsPage />} />
+              <Route path="customers" element={<CustomersPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="team" element={<TeamPage />} />
               <Route path="settings" element={<SettingsPage />} />

@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      customers: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -44,6 +74,7 @@ export type Database = {
           budget_hours: number
           created_at: string
           created_by: string | null
+          customer_id: string | null
           description: string | null
           end_date: string | null
           id: string
@@ -56,6 +87,7 @@ export type Database = {
           budget_hours: number
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
@@ -68,6 +100,7 @@ export type Database = {
           budget_hours?: number
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
@@ -76,7 +109,15 @@ export type Database = {
           start_date?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       timesheet_entries: {
         Row: {

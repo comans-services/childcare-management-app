@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2, Building2 } from "lucide-react";
 import { Project, updateProjectStatus } from "@/lib/timesheet-service";
 import {
   DropdownMenu,
@@ -23,12 +23,13 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent
 } from "@/components/ui/popover";
+import { Customer, fetchCustomers } from "@/lib/customer-service";
 
 interface ProjectListProps {
   projects: Project[];
@@ -54,6 +55,20 @@ const ProjectList: React.FC<ProjectListProps> = ({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const [openStatusPopover, setOpenStatusPopover] = useState<string | null>(null);
+
+  // Fetch customers for displaying customer information
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers"],
+    queryFn: fetchCustomers
+  });
+
+  // Create a customer lookup map
+  const customerMap = useMemo(() => {
+    return customers.reduce((acc, customer) => {
+      acc[customer.id] = customer;
+      return acc;
+    }, {} as Record<string, Customer>);
+  }, [customers]);
 
   const statusMutation = useMutation({
     mutationFn: ({ projectId, isActive }: { projectId: string; isActive: boolean }) => 
@@ -242,6 +257,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 Name {getSortIndicator('name')}
               </TableHead>
               <TableHead>Description</TableHead>
+              <TableHead className="hidden md:table-cell">Customer</TableHead>
               <TableHead className="hidden md:table-cell">Timeline</TableHead>
               <TableHead className="hidden sm:table-cell">Status</TableHead>
               <TableHead 
@@ -256,7 +272,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
           <TableBody>
             {filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   No projects found.
                 </TableCell>
               </TableRow>
@@ -267,6 +283,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 const budgetPercentage = calculateBudgetPercentage(hoursUsed, project.budget_hours);
                 const isUpdating = updatingStatusId === project.id;
                 const isStatusPopoverOpen = openStatusPopover === project.id;
+                const customer = project.customer_id ? customerMap[project.customer_id] : undefined;
                 
                 return (
                   <TableRow 
@@ -279,6 +296,21 @@ const ProjectList: React.FC<ProjectListProps> = ({
                     </TableCell>
                     <TableCell className="max-w-[200px] truncate">
                       {project.description || "-"}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {customer ? (
+                        <div className="flex items-center gap-1">
+                          <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>{customer.name}</span>
+                          {customer.company && (
+                            <span className="text-xs text-muted-foreground">
+                              ({customer.company})
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        "-"
+                      )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {project.start_date && project.end_date ? (

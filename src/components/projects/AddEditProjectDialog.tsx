@@ -25,6 +25,7 @@ import { toast } from "@/hooks/use-toast";
 import { Project } from "@/lib/timesheet-service";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import CustomerSelector from "@/components/customers/CustomerSelector";
 
 interface AddEditProjectDialogProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ type FormValues = {
   budget_hours: number;
   start_date: string;
   end_date: string;
+  customer_id: string;
 };
 
 const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({ 
@@ -56,6 +58,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
       budget_hours: existingProject?.budget_hours || 0,
       start_date: existingProject?.start_date || "",
       end_date: existingProject?.end_date || "",
+      customer_id: existingProject?.customer_id || "",
     }
   });
 
@@ -68,6 +71,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
         budget_hours: existingProject?.budget_hours || 0,
         start_date: existingProject?.start_date || "",
         end_date: existingProject?.end_date || "",
+        customer_id: existingProject?.customer_id || "",
       });
     }
   }, [form, isOpen, existingProject]);
@@ -83,6 +87,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
         budget_hours: formData.budget_hours,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
+        customer_id: formData.customer_id || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -187,6 +192,27 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
                       {...field} 
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="customer_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Customer</FormLabel>
+                  <FormControl>
+                    <CustomerSelector
+                      selectedCustomerId={field.value}
+                      onSelectCustomer={(customerId) => field.onChange(customerId)}
+                      disabled={mutation.isPending}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Assign this project to a customer or create a new one
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

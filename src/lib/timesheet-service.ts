@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
@@ -10,6 +11,7 @@ export interface Project {
   end_date?: string;
   is_active?: boolean;
   hours_used?: number;  // New field to track hours used
+  customer_id?: string; // New field to reference customer
 }
 
 export interface TimesheetEntry {
