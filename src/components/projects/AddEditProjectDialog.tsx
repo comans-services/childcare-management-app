@@ -77,18 +77,20 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
     mutationFn: async (formData: FormValues) => {
       if (!user) throw new Error("User not authenticated");
       
+      const projectData = {
+        name: formData.name,
+        description: formData.description,
+        budget_hours: formData.budget_hours,
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
+        updated_at: new Date().toISOString(),
+      };
+
       // If editing, update existing project
       if (isEditing && existingProject) {
         const { error } = await supabase
           .from("projects")
-          .update({
-            name: formData.name,
-            description: formData.description,
-            budget_hours: formData.budget_hours,
-            start_date: formData.start_date || null,
-            end_date: formData.end_date || null,
-            updated_at: new Date().toISOString(),
-          })
+          .update(projectData)
           .eq("id", existingProject.id);
         
         if (error) throw error;
@@ -96,22 +98,27 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
       } 
       // Otherwise create a new project
       else {
-        // Create project without references to profiles
+        const newProject = {
+          ...projectData,
+          created_by: user.id,
+          is_active: true,
+        };
+
+        console.log("Creating new project:", newProject);
+        
         const { data, error } = await supabase
           .from("projects")
-          .insert({
-            name: formData.name,
-            description: formData.description,
-            budget_hours: formData.budget_hours,
-            start_date: formData.start_date || null,
-            end_date: formData.end_date || null,
-            created_by: user.id,
-            is_active: true,
-          })
+          .insert(newProject)
           .select();
         
-        if (error) throw error;
-        return data?.[0]?.id;
+        if (error) {
+          console.error("Project creation error:", error);
+          throw error;
+        }
+        
+        if (!data || data.length === 0) throw new Error("No data returned after project creation");
+        
+        return data[0].id;
       }
     },
     onSuccess: () => {

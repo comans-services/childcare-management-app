@@ -111,6 +111,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
         jira_task_id: entry.jira_task_id
       })
       .eq("id", entry.id)
+      .eq("user_id", entry.user_id)
       .select();
 
     if (error) {
@@ -142,11 +143,12 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
   }
 };
 
-export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
+export const deleteTimesheetEntry = async (entryId: string, userId: string): Promise<void> => {
   const { error } = await supabase
     .from("timesheet_entries")
     .delete()
-    .eq("id", entryId);
+    .eq("id", entryId)
+    .eq("user_id", userId);
 
   if (error) {
     console.error("Error deleting timesheet entry:", error);

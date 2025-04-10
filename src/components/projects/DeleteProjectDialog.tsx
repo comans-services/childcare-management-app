@@ -14,6 +14,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { Project } from "@/lib/timesheet-service";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 interface DeleteProjectDialogProps {
   isOpen: boolean;
@@ -27,10 +28,13 @@ const DeleteProjectDialog: React.FC<DeleteProjectDialogProps> = ({
   project 
 }) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   // Delete project mutation
   const mutation = useMutation({
     mutationFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      
       // Check if the project has timesheet entries
       const { count, error: countError } = await supabase
         .from("timesheet_entries")
