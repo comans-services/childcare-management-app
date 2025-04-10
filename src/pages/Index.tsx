@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -343,9 +344,11 @@ const Dashboard = () => {
     }
   ];
 
+  // Create the radial chart data with proper value representation
   const radialData = statsData.map((item) => ({
     name: item.name,
-    value: item.value > 0 ? Math.max(item.value, 5) : 0,
+    // Ensure the value is between 5-100% for visibility purposes
+    value: item.value,
     fill: item.color
   }));
 
@@ -500,10 +503,13 @@ const Dashboard = () => {
                     data={radialData} 
                     startAngle={90} 
                     endAngle={-270}
+                    barSize={15}
                   >
                     <RadialBar
                       background
+                      clockWise
                       dataKey="value"
+                      cornerRadius={15}
                       label={{
                         position: 'insideStart',
                         fill: '#fff',
@@ -515,8 +521,13 @@ const Dashboard = () => {
                       layout="vertical" 
                       verticalAlign="middle"
                       align="right"
+                      wrapperStyle={{
+                        paddingLeft: '10px'
+                      }}
                     />
-                    <Tooltip />
+                    <Tooltip 
+                      formatter={(value) => [`${value}%`, 'Completion']}
+                    />
                   </RadialBarChart>
                 </ResponsiveContainer>
               </div>
