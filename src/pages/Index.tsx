@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfWeek, endOfWeek } from "date-fns";
+import { format, startOfWeek, endOfWeek, isToday, isFriday } from "date-fns";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -28,6 +27,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const COLORS = [
   "#0088FE", "#00C49F", "#FFBB28", "#FF8042", 
@@ -148,6 +148,43 @@ const Dashboard = () => {
   const expectedWeeklyHours = 40; // Assuming 40-hour work week
   const weekProgress = Math.min(100, (totalHours / expectedWeeklyHours) * 100);
 
+  // Determine the timesheet status and card styling
+  const hasEntries = timesheetEntries.length > 0;
+  const completeWeek = weekProgress >= 100;
+  const isFridayToday = isFriday(today);
+  const isLate = isFridayToday && !hasEntries;
+  
+  // Card color styling based on status
+  const getTimesheetCardStyle = () => {
+    if (completeWeek) {
+      return {
+        background: "bg-green-50",
+        border: "border-green-200",
+        title: "text-green-800",
+        text: "text-green-700",
+        button: "text-green-600 border-green-300 hover:bg-green-100"
+      };
+    } else if (isLate) {
+      return {
+        background: "bg-red-50",
+        border: "border-red-200",
+        title: "text-red-800",
+        text: "text-red-700",
+        button: "text-red-600 border-red-300 hover:bg-red-100"
+      };
+    } else {
+      return {
+        background: "bg-amber-50",
+        border: "border-amber-200",
+        title: "text-amber-800",
+        text: "text-amber-700",
+        button: "text-amber-600 border-amber-300 hover:bg-amber-100"
+      };
+    }
+  };
+  
+  const cardStyle = getTimesheetCardStyle();
+
   // Handle HR issue submission
   const handleHRIssueSubmit = async () => {
     if (!issueDescription.trim()) {
@@ -201,37 +238,58 @@ const Dashboard = () => {
       </div>
       
       {/* Weekly Timesheet Reminder */}
-      <Card className="bg-amber-50 border-amber-200">
+      <Card className={`${cardStyle.background} ${cardStyle.border}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-amber-800">
+          <CardTitle className={`flex items-center gap-2 ${cardStyle.title}`}>
             <AlertCircle className="h-5 w-5" />
             Weekly Timesheet Reminder
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-amber-700 mb-2">
-            All timesheet entries for this week must be completed by Friday 5:00 PM.
-            Data will be processed over the weekend.
+          <div className={`mb-2 ${cardStyle.text}`}>
+            {completeWeek 
+              ? "Great job! You've completed your timesheet entries for this week."
+              : "All timesheet entries for this week must be completed by Friday 5:00 PM. Data will be processed over the weekend."
+            }
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4" />
-            <span>{deadlineMessage}</span>
+            <Clock className={`h-4 w-4 ${cardStyle.text}`} />
+            <span className={cardStyle.text}>{deadlineMessage}</span>
           </div>
           <div className="mt-2">
             <div className="flex justify-between text-sm mb-1">
-              <span>This Week's Progress</span>
-              <span>{Math.round(weekProgress)}% Complete</span>
+              <span className={cardStyle.text}>This Week's Progress</span>
+              <span className={cardStyle.text}>{Math.round(weekProgress)}% Complete</span>
             </div>
-            <Progress value={weekProgress} className="h-2" />
+            <Progress 
+              value={weekProgress} 
+              className="h-2"
+              indicatorClassName={completeWeek ? "bg-green-500" : isLate ? "bg-red-500" : "bg-amber-500"}
+            />
           </div>
         </CardContent>
         <CardFooter className="pt-0">
-          <Button onClick={() => navigate("/timesheet")} variant="outline" className="text-amber-600 border-amber-300 hover:bg-amber-100">
+          <Button 
+            onClick={() => navigate("/timesheet")} 
+            variant="outline" 
+            className={cardStyle.button}
+          >
             <CalendarClock className="mr-2 h-4 w-4" />
-            Enter Timesheet
+            {completeWeek ? "View Timesheet" : "Enter Timesheet"}
           </Button>
         </CardFooter>
       </Card>
+      
+      {/* Alert for Friday with no entries */}
+      {isLate && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Action Required</AlertTitle>
+          <AlertDescription>
+            It's Friday and you haven't entered any timesheet data yet. Please submit your hours before 5:00 PM today.
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Project Hours */}
