@@ -28,13 +28,13 @@ const Sidebar = () => {
           <span>My Timesheet</span>
         </NavLink>
         
+        <NavLink to="/projects" className={navLinkClass}>
+          <Briefcase className="h-5 w-5" />
+          <span>Projects</span>
+        </NavLink>
+        
         {(userRole === "admin" || userRole === "manager") && (
           <>
-            <NavLink to="/projects" className={navLinkClass}>
-              <Briefcase className="h-5 w-5" />
-              <span>Projects</span>
-            </NavLink>
-            
             <NavLink to="/reports" className={navLinkClass}>
               <BarChart2 className="h-5 w-5" />
               <span>Reports</span>

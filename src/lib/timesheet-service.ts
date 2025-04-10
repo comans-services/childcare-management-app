@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
@@ -43,31 +42,59 @@ export const fetchTimesheetEntries = async (
   startDate: Date,
   endDate: Date
 ): Promise<TimesheetEntry[]> => {
-  const { data, error } = await supabase
-    .from("timesheet_entries")
-    .select(`
-      id, 
-      project_id, 
-      user_id, 
-      entry_date, 
-      hours_logged, 
-      notes, 
-      jira_task_id,
-      projects:project_id (id, name, description, budget_hours, is_active)
-    `)
-    .eq("user_id", userId)
-    .gte("entry_date", formatDate(startDate))
-    .lte("entry_date", formatDate(endDate));
+  try {
+    // First, fetch the entries
+    const { data: entriesData, error: entriesError } = await supabase
+      .from("timesheet_entries")
+      .select(`
+        id, 
+        project_id, 
+        user_id, 
+        entry_date, 
+        hours_logged, 
+        notes, 
+        jira_task_id
+      `)
+      .eq("user_id", userId)
+      .gte("entry_date", formatDate(startDate))
+      .lte("entry_date", formatDate(endDate));
 
-  if (error) {
-    console.error("Error fetching timesheet entries:", error);
+    if (entriesError) {
+      console.error("Error fetching timesheet entries:", entriesError);
+      throw entriesError;
+    }
+
+    if (!entriesData || entriesData.length === 0) {
+      return [];
+    }
+
+    // Then fetch the projects separately to avoid recursion
+    const projectIds = [...new Set(entriesData.map(entry => entry.project_id))];
+    const { data: projectsData, error: projectsError } = await supabase
+      .from("projects")
+      .select("id, name, description, budget_hours, is_active")
+      .in("id", projectIds);
+
+    if (projectsError) {
+      console.error("Error fetching projects for entries:", projectsError);
+      throw projectsError;
+    }
+
+    // Create a map of projects by ID for quick lookup
+    const projectsMap = (projectsData || []).reduce((acc, project) => {
+      acc[project.id] = project;
+      return acc;
+    }, {} as Record<string, Project>);
+
+    // Combine the entries with their respective projects
+    return entriesData.map(entry => ({
+      ...entry,
+      project: projectsMap[entry.project_id]
+    }));
+  } catch (error) {
+    console.error("Error in fetchTimesheetEntries:", error);
     throw error;
   }
-
-  return data.map(entry => ({
-    ...entry,
-    project: entry.projects as Project
-  })) || [];
 };
 
 export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
