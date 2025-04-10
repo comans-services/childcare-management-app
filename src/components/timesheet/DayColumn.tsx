@@ -26,8 +26,10 @@ const DayColumn: React.FC<DayColumnProps> = ({
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
+  const [localEntries, setLocalEntries] = useState<TimesheetEntry[]>([]);
 
-  const dayEntries = entries.filter(
+  // Filter entries for this day, including both fetched and local entries
+  const dayEntries = [...entries, ...localEntries].filter(
     (entry) => entry.entry_date === date.toISOString().split("T")[0]
   );
 
@@ -50,6 +52,9 @@ const DayColumn: React.FC<DayColumnProps> = ({
         title: "Entry deleted",
         description: "Time entry deleted successfully.",
       });
+      
+      // Remove from local entries if it exists there
+      setLocalEntries(prev => prev.filter(e => e.id !== entry.id));
       onEntryChange();
     } catch (error) {
       console.error("Error deleting entry:", error);
@@ -66,9 +71,22 @@ const DayColumn: React.FC<DayColumnProps> = ({
     setShowForm(true);
   };
 
-  const handleSaveComplete = () => {
+  const handleSaveComplete = (savedEntry?: TimesheetEntry) => {
     setShowForm(false);
     setEditingEntry(undefined);
+    
+    // Add the newly saved entry to local entries for immediate display
+    if (savedEntry) {
+      setLocalEntries(prev => {
+        // Replace if exists, otherwise add
+        const exists = prev.some(e => e.id === savedEntry.id);
+        if (exists) {
+          return prev.map(e => e.id === savedEntry.id ? savedEntry : e);
+        }
+        return [...prev, savedEntry];
+      });
+    }
+    
     onEntryChange();
   };
 
@@ -98,8 +116,20 @@ const DayColumn: React.FC<DayColumnProps> = ({
           </Card>
         ) : (
           <>
+            <div className="text-center py-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={handleAddEntry}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Add Time
+              </Button>
+            </div>
+
             {dayEntries.map((entry) => (
-              <Card key={entry.id} className="overflow-hidden">
+              <Card key={entry.id || `temp-${Date.now()}-${Math.random()}`} className="overflow-hidden">
                 <CardContent className="p-3">
                   <div className="flex justify-between items-center">
                     <div className="font-medium">
@@ -141,18 +171,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
                 </CardContent>
               </Card>
             ))}
-
-            <div className="text-center py-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full"
-                onClick={handleAddEntry}
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Add Time
-              </Button>
-            </div>
 
             {dayEntries.length > 0 && (
               <div className="text-xs font-medium text-right pr-2">

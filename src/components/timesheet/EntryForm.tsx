@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,7 @@ interface EntryFormProps {
   date: Date;
   projects: Project[];
   existingEntry?: TimesheetEntry;
-  onSave: () => void;
+  onSave: (savedEntry?: TimesheetEntry) => void;
   onCancel: () => void;
 }
 
@@ -112,14 +111,20 @@ const EntryForm: React.FC<EntryFormProps> = ({
       };
 
       console.log("Saving entry:", entry);
-      await saveTimesheetEntry(entry);
+      const savedEntry = await saveTimesheetEntry(entry);
       
       toast({
         title: existingEntry ? "Entry updated" : "Entry created",
         description: `Time entry ${existingEntry ? "updated" : "created"} successfully.`,
       });
       
-      onSave();
+      // Find project details to include with saved entry
+      const matchingProject = projects.find(p => p.id === values.project_id);
+      if (matchingProject) {
+        savedEntry.project = matchingProject;
+      }
+      
+      onSave(savedEntry);
     } catch (error) {
       console.error("Error saving entry:", error);
       toast({
@@ -127,6 +132,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
         description: `Failed to ${existingEntry ? "update" : "create"} time entry. Please try again.`,
         variant: "destructive",
       });
+      onSave();
     } finally {
       setIsSubmitting(false);
     }

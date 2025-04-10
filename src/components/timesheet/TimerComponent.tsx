@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
@@ -8,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { saveTimesheetEntry, Project, fetchUserProjects } from "@/lib/timesheet-service";
 import { formatDate } from "@/lib/date-utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 
 const TimerComponent = () => {
@@ -20,14 +19,12 @@ const TimerComponent = () => {
   const [timerStartTime, setTimerStartTime] = useState<Date | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Fetch projects
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
     queryFn: fetchUserProjects,
     enabled: !!user
   });
 
-  // Format the elapsed time as HH:MM:SS
   const formattedTime = () => {
     const hours = Math.floor(elapsedTime / 3600);
     const minutes = Math.floor((elapsedTime % 3600) / 60);
@@ -36,7 +33,6 @@ const TimerComponent = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Start the timer
   const startTimer = () => {
     if (!selectedProject) {
       toast({
@@ -56,7 +52,6 @@ const TimerComponent = () => {
     }, 1000);
   };
 
-  // Pause the timer
   const pauseTimer = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -65,7 +60,6 @@ const TimerComponent = () => {
     setIsRunning(false);
   };
 
-  // Stop and save the timer
   const stopTimer = async () => {
     if (!user || !selectedProject || !timerStartTime) return;
     
@@ -78,7 +72,7 @@ const TimerComponent = () => {
         project_id: selectedProject,
         entry_date: formatDate(new Date()),
         hours_logged: hoursLogged,
-        notes: `Tracked with timer: ${formattedTime()}`
+        notes: `Timer Entry - please change. Duration: ${formattedTime()}`
       });
       
       toast({
@@ -86,7 +80,6 @@ const TimerComponent = () => {
         description: `${formattedTime()} logged to the selected project.`
       });
       
-      // Reset timer
       setElapsedTime(0);
       setTimerStartTime(null);
     } catch (error) {
@@ -99,7 +92,6 @@ const TimerComponent = () => {
     }
   };
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) {
