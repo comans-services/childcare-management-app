@@ -8,7 +8,8 @@ import {
   Briefcase, 
   Users, 
   Settings,
-  Building2 
+  Building2,
+  FileContract 
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -32,6 +33,11 @@ const Sidebar = () => {
         <NavLink to="/projects" className={navLinkClass}>
           <Briefcase className="h-5 w-5" />
           <span>Projects</span>
+        </NavLink>
+
+        <NavLink to="/contracts" className={navLinkClass}>
+          <FileContract className="h-5 w-5" />
+          <span>Contracts</span>
         </NavLink>
 
         <NavLink to="/customers" className={navLinkClass}>
