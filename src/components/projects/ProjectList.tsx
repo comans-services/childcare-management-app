@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Table,
@@ -14,6 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger, // Re-adding the missing import
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
