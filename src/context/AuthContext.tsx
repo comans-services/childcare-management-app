@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { Database } from "@/integrations/supabase/types";
 
 interface AuthContextProps {
   session: Session | null;
@@ -73,7 +74,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      setUserRole(data.role || "employee");
+      if (data) {
+        setUserRole(data.role as "employee" | "manager" | "admin" || "employee");
+      }
     } catch (error) {
       console.error("Error fetching user role:", error);
     }
@@ -127,13 +130,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Create profile after signup
       if (data.user) {
-        const { error: profileError } = await supabase.from("profiles").insert([
-          {
-            id: data.user.id,
-            full_name: fullName,
-            role: "employee", // Default role
-          },
-        ]);
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .insert([
+            {
+              id: data.user.id,
+              full_name: fullName,
+              role: "employee", // Default role
+            },
+          ]);
 
         if (profileError) {
           console.error("Error creating profile:", profileError);
