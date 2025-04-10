@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchUserById, updateUser, User } from "@/lib/user-service";
@@ -10,7 +11,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const SettingsPage = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [formState, setFormState] = useState({
@@ -144,7 +145,7 @@ const SettingsPage = () => {
                 <Label htmlFor="role">Role</Label>
                 <Input
                   id="role"
-                  value={userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                  value={userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Employee"}
                   disabled
                 />
                 <p className="text-sm text-muted-foreground">
