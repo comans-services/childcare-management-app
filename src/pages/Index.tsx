@@ -487,7 +487,6 @@ const Dashboard = () => {
                   >
                     <RadialBar
                       background
-                      clockWise={true}
                       dataKey="value"
                       label={{
                         position: 'insideStart',
