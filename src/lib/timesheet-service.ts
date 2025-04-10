@@ -185,17 +185,18 @@ export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
   try {
     console.log(`Deleting entry ${entryId}`);
     
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from("timesheet_entries")
       .delete()
-      .eq("id", entryId);
+      .eq("id", entryId)
+      .select("count");
 
     if (error) {
       console.error("Error deleting timesheet entry:", error);
       throw error;
     }
     
-    console.log(`Entry ${entryId} deleted successfully`);
+    console.log(`Entry ${entryId} deleted successfully. Rows affected: ${count}`);
   } catch (error) {
     console.error("Error in deleteTimesheetEntry:", error);
     throw error;

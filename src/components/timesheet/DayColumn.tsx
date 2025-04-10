@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import EntryForm from "./EntryForm";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface DayColumnProps {
   date: Date;
@@ -28,6 +29,8 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
   const [localEntries, setLocalEntries] = useState<TimesheetEntry[]>([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<TimesheetEntry | null>(null);
   
   // Format date consistently for comparison
   const formattedColumnDate = formatDate(date);
@@ -55,18 +58,23 @@ const DayColumn: React.FC<DayColumnProps> = ({
     setShowForm(true);
   };
 
-  const handleDeleteEntry = async (entry: TimesheetEntry) => {
-    if (!entry.id) return;
+  const handleDeleteClick = (entry: TimesheetEntry) => {
+    setEntryToDelete(entry);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!entryToDelete || !entryToDelete.id) return;
     
     try {
-      await deleteTimesheetEntry(entry.id);
+      await deleteTimesheetEntry(entryToDelete.id);
       toast({
         title: "Entry deleted",
         description: "Time entry deleted successfully.",
       });
       
       // Remove from local entries if it exists there
-      setLocalEntries(prev => prev.filter(e => e.id !== entry.id));
+      setLocalEntries(prev => prev.filter(e => e.id !== entryToDelete.id));
       onEntryChange();
     } catch (error) {
       console.error("Error deleting entry:", error);
@@ -75,6 +83,9 @@ const DayColumn: React.FC<DayColumnProps> = ({
         description: "Failed to delete time entry.",
         variant: "destructive",
       });
+    } finally {
+      setDeleteConfirmOpen(false);
+      setEntryToDelete(null);
     }
   };
 
@@ -207,7 +218,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6"
-                        onClick={() => handleDeleteEntry(entry)}
+                        onClick={() => handleDeleteClick(entry)}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -225,6 +236,23 @@ const DayColumn: React.FC<DayColumnProps> = ({
           </ScrollArea>
         )}
       </div>
+      
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this time entry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
