@@ -31,6 +31,32 @@ export const fetchCustomers = async (): Promise<Customer[]> => {
   }
 };
 
+export const fetchCustomerById = async (customerId: string): Promise<Customer | null> => {
+  try {
+    console.log(`Fetching customer with id: ${customerId}`);
+    const { data, error } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("id", customerId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        console.log(`No customer found with id: ${customerId}`);
+        return null;
+      }
+      console.error(`Error fetching customer with id ${customerId}:`, error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in fetchCustomerById:", error);
+    throw error;
+  }
+};
+
 export const saveCustomer = async (customer: Partial<Customer>): Promise<Customer> => {
   try {
     console.log("Saving customer:", customer);

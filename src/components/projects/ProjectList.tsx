@@ -67,7 +67,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
   const [editingStartDate, setEditingStartDate] = useState<string>("");
   const [editingEndDate, setEditingEndDate] = useState<string>("");
   
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: ["customers"],
     queryFn: fetchCustomers
   });
@@ -259,6 +259,12 @@ const ProjectList: React.FC<ProjectListProps> = ({
     if (sortField !== field) return null;
     return sortDirection === 'asc' ? <SortAsc className="inline h-4 w-4 ml-1" /> : <SortDesc className="inline h-4 w-4 ml-1" />;
   };
+
+  useEffect(() => {
+    if (editingField?.field === 'customer_id' && !editingField) {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+    }
+  }, [editingField, queryClient]);
 
   return (
     <div className="space-y-4">
