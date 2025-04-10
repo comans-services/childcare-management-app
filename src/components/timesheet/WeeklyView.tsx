@@ -17,6 +17,14 @@ import {
 } from "@/lib/timesheet-service";
 import DayColumn from "./DayColumn";
 import { toast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui/carousel";
 
 const WeeklyView: React.FC = () => {
   const { user } = useAuth();
@@ -26,6 +34,7 @@ const WeeklyView: React.FC = () => {
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const dates = getCurrentWeekDates(currentDate);
@@ -89,9 +98,48 @@ const WeeklyView: React.FC = () => {
     setCurrentDate(new Date());
   };
 
+  // Render the desktop version with all days visible
+  const renderDesktopView = () => (
+    <div className="grid grid-cols-7 gap-2">
+      {weekDates.map((date) => (
+        <DayColumn
+          key={date.toISOString()}
+          date={date}
+          userId={user?.id || ""}
+          entries={entries}
+          projects={projects}
+          onEntryChange={fetchData}
+        />
+      ))}
+    </div>
+  );
+
+  // Render a carousel for mobile view
+  const renderMobileView = () => (
+    <Carousel className="w-full">
+      <CarouselContent>
+        {weekDates.map((date) => (
+          <CarouselItem key={date.toISOString()} className="basis-full">
+            <DayColumn
+              date={date}
+              userId={user?.id || ""}
+              entries={entries}
+              projects={projects}
+              onEntryChange={fetchData}
+            />
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      <div className="flex justify-center mt-2">
+        <CarouselPrevious className="relative static mr-2 translate-y-0 translate-x-0" />
+        <CarouselNext className="relative static ml-2 translate-y-0 translate-x-0" />
+      </div>
+    </Carousel>
+  );
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex space-x-2">
           <Button
             variant="outline"
@@ -115,7 +163,7 @@ const WeeklyView: React.FC = () => {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="font-medium">
+        <div className="font-medium text-sm md:text-base truncate">
           {weekDates.length > 0 && (
             <>
               {formatDateDisplay(weekDates[0])} - {formatDateDisplay(weekDates[weekDates.length - 1])}
@@ -144,30 +192,21 @@ const WeeklyView: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div>
           {projects.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500">No projects found. Please create a project first.</p>
             </div>
           ) : (
-            <div className="flex gap-2 min-w-max">
-              {weekDates.map((date) => (
-                <DayColumn
-                  key={date.toISOString()}
-                  date={date}
-                  userId={user?.id || ""}
-                  entries={entries}
-                  projects={projects}
-                  onEntryChange={fetchData}
-                />
-              ))}
-            </div>
+            <>
+              {isMobile ? renderMobileView() : renderDesktopView()}
+            </>
           )}
         </div>
       )}
 
       {!loading && !error && entries.length > 0 && (
-        <div className="text-right text-sm text-muted-foreground">
+        <div className="text-right text-sm text-muted-foreground mt-2">
           Total Week Hours:{" "}
           {entries.reduce((sum, entry) => sum + entry.hours_logged, 0).toFixed(2)}
         </div>

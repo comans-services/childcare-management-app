@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { formatDateShort, isToday, formatDate } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
@@ -7,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import EntryForm from "./EntryForm";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DayColumnProps {
   date: Date;
@@ -131,19 +133,19 @@ const DayColumn: React.FC<DayColumnProps> = ({
   };
 
   return (
-    <div className="flex-1 min-w-[180px] max-w-[250px]">
+    <div className="flex flex-col h-full min-w-0 max-w-full">
       <div className={cn(
-        "text-sm font-medium p-2 rounded-t-md mb-1",
+        "text-xs md:text-sm font-medium p-1 md:p-2 rounded-t-md",
         isToday(date) ? "bg-primary text-primary-foreground" : "bg-muted"
       )}>
         {formatDateShort(date)}
         {isToday(date) && <span className="ml-1">(Today)</span>}
       </div>
 
-      <div className="space-y-2">
+      <div className="h-full overflow-hidden">
         {showForm ? (
-          <Card>
-            <CardContent className="pt-4">
+          <Card className="h-full">
+            <CardContent className="pt-4 p-2 md:p-4">
               <EntryForm
                 userId={userId}
                 date={date}
@@ -155,69 +157,72 @@ const DayColumn: React.FC<DayColumnProps> = ({
             </CardContent>
           </Card>
         ) : (
-          <>
-            <div className="text-center py-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full"
-                onClick={handleAddEntry}
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Add Time
-              </Button>
-            </div>
-
-            {dayEntries.map((entry) => (
-              <Card key={entry.id || `temp-${Date.now()}-${Math.random()}`} className="overflow-hidden">
-                <CardContent className="p-3">
-                  <div className="flex justify-between items-center">
-                    <div className="font-medium">
-                      {entry.project?.name || "Unknown Project"}
-                    </div>
-                    <div className="text-sm font-medium">
-                      {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
-                    </div>
-                  </div>
-                  
-                  {entry.jira_task_id && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      JIRA: {entry.jira_task_id}
-                    </div>
-                  )}
-                  
-                  {entry.notes && (
-                    <div className="text-sm mt-1 text-muted-foreground line-clamp-2">
-                      {entry.notes}
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-end mt-2 space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEditEntry(entry)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteEntry(entry)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {dayEntries.length > 0 && (
-              <div className="text-xs font-medium text-right pr-2">
-                Total: {totalHours} hr{totalHours !== 1 ? "s" : ""}
+          <ScrollArea className="h-[50vh] md:h-[60vh]">
+            <div className="flex flex-col p-1 space-y-2">
+              <div className="text-center py-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => setShowForm(true)}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> Add
+                </Button>
               </div>
-            )}
-          </>
+
+              {dayEntries.map((entry) => (
+                <Card key={entry.id || `temp-${Date.now()}-${Math.random()}`} className="overflow-hidden">
+                  <CardContent className="p-2 md:p-3">
+                    <div className="flex justify-between items-center">
+                      <div className="font-medium text-xs md:text-sm truncate max-w-[70%]">
+                        {entry.project?.name || "Unknown Project"}
+                      </div>
+                      <div className="text-xs md:text-sm font-medium">
+                        {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
+                      </div>
+                    </div>
+                    
+                    {entry.jira_task_id && (
+                      <div className="text-[10px] md:text-xs text-muted-foreground mt-1 truncate">
+                        JIRA: {entry.jira_task_id}
+                      </div>
+                    )}
+                    
+                    {entry.notes && (
+                      <div className="text-[10px] md:text-xs mt-1 text-muted-foreground line-clamp-2 break-words">
+                        {entry.notes}
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-end mt-1 space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleEditEntry(entry)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleDeleteEntry(entry)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {dayEntries.length > 0 && (
+                <div className="text-xs font-medium text-right pr-2">
+                  Total: {totalHours} hr{totalHours !== 1 ? "s" : ""}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         )}
       </div>
     </div>
