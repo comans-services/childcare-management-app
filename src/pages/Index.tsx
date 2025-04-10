@@ -223,9 +223,25 @@ const Dashboard = () => {
   const hasEntries = timesheetEntries.length > 0;
   const completeWeek = weekProgress >= 100;
   const isFridayToday = isFriday(today);
+
+  const checkDailyEntries = () => {
+    const workdays = [1, 2, 3, 4, 5];
+    const today = new Date();
+    const dayOfWeek = getDay(today);
+    
+    const daysToCheck = workdays.filter(day => day <= Math.min(dayOfWeek, 5));
+    
+    return daysToCheck.every(day => {
+      const entriesForDay = dailyEntries.find(entry => getDay(entry.date) === day);
+      return entriesForDay && entriesForDay.hours > 0;
+    });
+  };
+  
+  const allDaysHaveEntries = checkDailyEntries();
   const isTodayComplete = dailyEntries
     .filter(day => isSameDay(day.date, today))
     .some(day => day.hours > 0);
+    
   const isLate = isFridayToday && !isTodayComplete && hasEntries;
   
   const getTimesheetCardStyle = () => {
@@ -237,7 +253,7 @@ const Dashboard = () => {
         text: "text-yellow-700",
         button: "text-yellow-600 border-yellow-300 hover:bg-yellow-100"
       };
-    } else if (completeWeek) {
+    } else if (completeWeek && allDaysHaveEntries) {
       return {
         background: "bg-green-50",
         border: "border-green-200",
@@ -335,8 +351,8 @@ const Dashboard = () => {
       name: "Status",
       value: completeWeek ? 100 : Math.round(weekProgress),
       icon: <Calendar className="h-5 w-5 text-amber-500" />,
-      description: completeWeek ? "Complete" : isTodayComplete ? "In Progress" : "Pending",
-      color: completeWeek ? "#10b981" : isTodayComplete ? "#f59e0b" : "#ef4444"
+      description: completeWeek && allDaysHaveEntries ? "Complete" : isTodayComplete ? "In Progress" : "Pending",
+      color: completeWeek && allDaysHaveEntries ? "#10b981" : isTodayComplete ? "#f59e0b" : "#ef4444"
     }
   ];
 
@@ -364,9 +380,11 @@ const Dashboard = () => {
           <div className={`mb-2 ${cardStyle.text}`}>
             {!hasEntries 
               ? "You haven't entered any timesheet data for this week yet."
-              : completeWeek 
+              : completeWeek && allDaysHaveEntries
                 ? "Great job! You've completed your timesheet entries for this week."
-                : "All timesheet entries for this week must be completed by Friday 5:00 PM. Data will be processed over the weekend."
+                : !allDaysHaveEntries
+                  ? "Please ensure you have at least one entry for each workday (Monday to Friday)."
+                  : "All timesheet entries for this week must be completed by Friday 5:00 PM. Data will be processed over the weekend."
             }
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -389,7 +407,7 @@ const Dashboard = () => {
               className="h-2"
               indicatorClassName={
                 !hasEntries ? "bg-yellow-500" : 
-                completeWeek ? "bg-green-500" : 
+                completeWeek && allDaysHaveEntries ? "bg-green-500" : 
                 isLate ? "bg-red-500" : 
                 "bg-amber-500"
               }
@@ -403,7 +421,7 @@ const Dashboard = () => {
             className={cardStyle.button}
           >
             <CalendarClock className="mr-2 h-4 w-4" />
-            {hasEntries && completeWeek ? "View Timesheet" : "Enter Timesheet"}
+            {hasEntries && completeWeek && allDaysHaveEntries ? "View Timesheet" : "Enter Timesheet"}
           </Button>
         </CardFooter>
       </Card>
@@ -466,8 +484,17 @@ const Dashboard = () => {
                         <Calendar className="h-4 w-4 text-amber-500" />
                         Week completion
                       </TableCell>
-                      <TableCell className={completeWeek ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>
+                      <TableCell className={completeWeek && allDaysHaveEntries ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>
                         {weekProgress.toFixed(2)}%
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        All days have entries
+                      </TableCell>
+                      <TableCell className={allDaysHaveEntries ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>
+                        {allDaysHaveEntries ? "Yes" : "No"}
                       </TableCell>
                     </TableRow>
                   </TableBody>
