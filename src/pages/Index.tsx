@@ -38,6 +38,16 @@ const COLORS = [
   "#6A7FDB", "#9ACEEB"
 ];
 
+const getColorByPercentage = (percentage: number): string => {
+  if (percentage <= 25) {
+    return "#ea384c"; // Red for 25% or lower
+  } else if (percentage < 100) {
+    return "#FFBB28"; // Yellow for between 25% and 100%
+  } else {
+    return "#00C49F"; // Green for 100%
+  }
+};
+
 const Dashboard = () => {
   const { session } = useAuth();
   const navigate = useNavigate();
@@ -332,22 +342,21 @@ const Dashboard = () => {
       value: Math.round(weekProgress),
       icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
       description: `${Math.round(weekProgress)}% Complete`,
-      color: "#10b981"
+      color: getColorByPercentage(Math.round(weekProgress))
     },
     {
       name: "Status",
-      value: completeWeek ? 100 : Math.round(weekProgress),
+      value: Math.round(completeWeek ? 100 : weekProgress),
       icon: <Calendar className="h-5 w-5 text-amber-500" />,
       description: completeWeek && allDaysHaveEntries ? "Complete" : isTodayComplete ? "In Progress" : "Pending",
-      color: completeWeek && allDaysHaveEntries ? "#10b981" : isTodayComplete ? "#f59e0b" : "#ef4444"
+      color: getColorByPercentage(completeWeek ? 100 : Math.round(weekProgress))
     }
   ];
 
   const radialData = statsData.map((item) => ({
     name: item.name,
     value: item.value,
-    fill: item.color,
-    fullValue: 100
+    fill: item.color
   }));
 
   return (
@@ -512,6 +521,9 @@ const Dashboard = () => {
                         fill: '#fff',
                         formatter: (value) => `${value}%`,
                       }}
+                      backgroundColors="#f5f5f5"
+                      minAngle={15}
+                      maxAngle={360}
                     />
                     <Legend 
                       iconSize={10}
