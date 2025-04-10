@@ -3,6 +3,7 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer } from "@/components/ui/chart";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { User } from "@/lib/user-service"; // Import User type
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateDisplay } from "@/lib/date-utils";
@@ -10,10 +11,24 @@ import { formatDateDisplay } from "@/lib/date-utils";
 interface ReportChartsProps {
   reportData: TimesheetEntry[];
   projects: Project[];
+  users: User[]; // Added users prop
   isLoading: boolean;
 }
 
-const ReportCharts = ({ reportData, projects, isLoading }: ReportChartsProps) => {
+const ReportCharts = ({ reportData, projects, users, isLoading }: ReportChartsProps) => {
+  // Create maps for quick lookups
+  const projectMap = React.useMemo(() => {
+    const map = new Map<string, Project>();
+    projects.forEach(project => map.set(project.id, project));
+    return map;
+  }, [projects]);
+  
+  const userMap = React.useMemo(() => {
+    const map = new Map<string, User>();
+    users.forEach(user => map.set(user.id, user));
+    return map;
+  }, [users]);
+
   // Process data for project distribution chart
   const projectDistribution = React.useMemo(() => {
     const projectHours: Record<string, number> = {};
@@ -24,13 +39,31 @@ const ReportCharts = ({ reportData, projects, isLoading }: ReportChartsProps) =>
     });
     
     return Object.keys(projectHours).map((projectId) => {
-      const project = projects.find((p) => p.id === projectId);
+      const project = projectMap.get(projectId);
       return {
         name: project?.name || "Unknown Project",
         value: projectHours[projectId],
       };
     }).sort((a, b) => b.value - a.value); // Sort by hours descending
-  }, [reportData, projects]);
+  }, [reportData, projectMap]);
+
+  // Process data for employee distribution chart
+  const employeeDistribution = React.useMemo(() => {
+    const employeeHours: Record<string, number> = {};
+    
+    reportData.forEach((entry) => {
+      const userId = entry.user_id;
+      employeeHours[userId] = (employeeHours[userId] || 0) + entry.hours_logged;
+    });
+    
+    return Object.keys(employeeHours).map((userId) => {
+      const employee = userMap.get(userId);
+      return {
+        name: employee?.full_name || employee?.email || "Unknown Employee",
+        value: employeeHours[userId],
+      };
+    }).sort((a, b) => b.value - a.value); // Sort by hours descending
+  }, [reportData, userMap]);
 
   // Process data for daily distribution chart
   const dailyDistribution = React.useMemo(() => {
@@ -53,24 +86,17 @@ const ReportCharts = ({ reportData, projects, isLoading }: ReportChartsProps) =>
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-4 w-1/2" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-4 w-1/2" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
+        {Array(3).fill(0).map((_, index) => (
+          <Card key={index}>
+            <CardHeader>
+              <Skeleton className="h-6 w-1/3" />
+              <Skeleton className="h-4 w-1/2" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-64 w-full" />
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }
@@ -118,6 +144,38 @@ const ReportCharts = ({ reportData, projects, isLoading }: ReportChartsProps) =>
       </Card>
 
       <Card>
+        <CardHeader>
+          <CardTitle>Employee Distribution</CardTitle>
+          <CardDescription>Hours logged by employee</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer config={{ employeeDistribution: {} }}>
+            <PieChart width={400} height={300}>
+              <Pie
+                data={employeeDistribution}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              >
+                {employeeDistribution.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={COLORS[(index + 3) % COLORS.length]} 
+                  />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value) => [`${value} hours`, 'Hours']} />
+              <Legend />
+            </PieChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+
+      <Card className="md:col-span-2">
         <CardHeader>
           <CardTitle>Daily Distribution</CardTitle>
           <CardDescription>Hours logged per day</CardDescription>

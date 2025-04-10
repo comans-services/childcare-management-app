@@ -1,21 +1,28 @@
 
 import { TimesheetEntry, Project } from "./timesheet-service";
+import { User } from "./user-service";
 import { formatDateDisplay } from "./date-utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
 // Helper functions for data formatting
 const formatReportData = (
   reportData: TimesheetEntry[], 
-  projects: Project[]
+  projects: Project[],
+  users: User[]
 ) => {
   const projectMap = new Map<string, Project>();
   projects.forEach(project => projectMap.set(project.id, project));
+  
+  const userMap = new Map<string, User>();
+  users.forEach(user => userMap.set(user.id, user));
 
   return reportData.map(entry => {
     const project = projectMap.get(entry.project_id);
+    const employee = userMap.get(entry.user_id);
     
     return {
       Date: formatDateDisplay(new Date(entry.entry_date)),
+      Employee: employee?.full_name || employee?.email || 'Unknown Employee',
       Project: project?.name || 'Unknown Project',
       Hours: entry.hours_logged,
       Notes: entry.notes || ''
@@ -31,6 +38,7 @@ export const exportToCSV = (
   const formattedData = reportData.map(entry => {
     return {
       date: formatDateDisplay(new Date(entry.entry_date)),
+      employee_id: entry.user_id,
       project_id: entry.project_id,
       hours: entry.hours_logged,
       notes: entry.notes || ''
@@ -62,11 +70,12 @@ export const exportToCSV = (
 export const exportToExcel = (
   reportData: TimesheetEntry[], 
   projects: Project[],
+  users: User[],
   filename: string
 ) => {
   // For Excel export, we'll use a simple CSV that Excel can open
   // In a real application, you might want to use a library like ExcelJS or XLSX
-  const formattedData = formatReportData(reportData, projects);
+  const formattedData = formatReportData(reportData, projects, users);
   
   // Calculate total hours
   const totalHours = reportData.reduce((sum, entry) => sum + entry.hours_logged, 0);
@@ -74,6 +83,7 @@ export const exportToExcel = (
   // Add total row
   formattedData.push({
     Date: 'TOTAL',
+    Employee: '',
     Project: '',
     Hours: totalHours,
     Notes: ''
@@ -104,12 +114,13 @@ export const exportToExcel = (
 export const exportToPDF = (
   reportData: TimesheetEntry[], 
   projects: Project[],
+  users: User[],
   filters: ReportFiltersType,
   filename: string
 ) => {
   // For PDF exports in a browser environment, we would typically use libraries like jsPDF
   // This is a simplified version that opens a printable page
-  const formattedData = formatReportData(reportData, projects);
+  const formattedData = formatReportData(reportData, projects, users);
   
   // Calculate total hours
   const totalHours = reportData.reduce((sum, entry) => sum + entry.hours_logged, 0);
@@ -145,6 +156,7 @@ export const exportToPDF = (
           <p>
             Date Range: ${formatDateDisplay(filters.startDate)} to ${formatDateDisplay(filters.endDate)} 
             ${filters.projectId ? `| Project: ${projects.find(p => p.id === filters.projectId)?.name || 'Unknown'}` : ''}
+            ${filters.userId ? `| Employee: ${users.find(u => u.id === filters.userId)?.full_name || 'Unknown'}` : ''}
           </p>
         </div>
       </div>
@@ -153,6 +165,7 @@ export const exportToPDF = (
         <thead>
           <tr>
             <th>Date</th>
+            <th>Employee</th>
             <th>Project</th>
             <th>Hours</th>
             <th>Notes</th>
@@ -162,6 +175,7 @@ export const exportToPDF = (
           ${formattedData.map(row => `
             <tr>
               <td>${row.Date}</td>
+              <td>${row.Employee}</td>
               <td>${row.Project}</td>
               <td>${row.Hours}</td>
               <td>${row.Notes}</td>
@@ -169,6 +183,7 @@ export const exportToPDF = (
           `).join('')}
           <tr class="total-row">
             <td>Total</td>
+            <td></td>
             <td></td>
             <td>${totalHours.toFixed(1)}</td>
             <td></td>

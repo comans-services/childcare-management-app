@@ -1,6 +1,7 @@
 
 import React from "react";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { User } from "@/lib/user-service";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,16 +9,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface ReportDataTableProps {
   reportData: TimesheetEntry[];
   projects: Project[];
+  users: User[];
   isLoading: boolean;
 }
 
-const ReportDataTable = ({ reportData, projects, isLoading }: ReportDataTableProps) => {
-  // Create a map for quick project lookups
+const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataTableProps) => {
+  // Create maps for quick lookups
   const projectMap = React.useMemo(() => {
     const map = new Map<string, Project>();
     projects.forEach(project => map.set(project.id, project));
     return map;
   }, [projects]);
+  
+  const userMap = React.useMemo(() => {
+    const map = new Map<string, User>();
+    users.forEach(user => map.set(user.id, user));
+    return map;
+  }, [users]);
 
   // Calculate totals
   const totalHours = React.useMemo(() => {
@@ -31,6 +39,7 @@ const ReportDataTable = ({ reportData, projects, isLoading }: ReportDataTablePro
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
+              <TableHead>Employee</TableHead>
               <TableHead>Project</TableHead>
               <TableHead>Hours</TableHead>
               <TableHead>Notes</TableHead>
@@ -40,6 +49,7 @@ const ReportDataTable = ({ reportData, projects, isLoading }: ReportDataTablePro
             {Array(5).fill(0).map((_, index) => (
               <TableRow key={index}>
                 <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-full" /></TableCell>
@@ -66,6 +76,7 @@ const ReportDataTable = ({ reportData, projects, isLoading }: ReportDataTablePro
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
+              <TableHead>Employee</TableHead>
               <TableHead>Project</TableHead>
               <TableHead>Hours</TableHead>
               <TableHead>Notes</TableHead>
@@ -74,10 +85,12 @@ const ReportDataTable = ({ reportData, projects, isLoading }: ReportDataTablePro
           <TableBody>
             {reportData.map((entry) => {
               const project = projectMap.get(entry.project_id);
+              const employee = userMap.get(entry.user_id);
               
               return (
                 <TableRow key={entry.id}>
                   <TableCell>{formatDateDisplay(new Date(entry.entry_date))}</TableCell>
+                  <TableCell>{employee?.full_name || employee?.email || 'Unknown Employee'}</TableCell>
                   <TableCell>{project?.name || 'Unknown Project'}</TableCell>
                   <TableCell>{entry.hours_logged}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.notes || '-'}</TableCell>
@@ -86,6 +99,7 @@ const ReportDataTable = ({ reportData, projects, isLoading }: ReportDataTablePro
             })}
             <TableRow className="font-medium bg-muted/50">
               <TableCell>Total</TableCell>
+              <TableCell></TableCell>
               <TableCell></TableCell>
               <TableCell>{totalHours.toFixed(1)}</TableCell>
               <TableCell></TableCell>

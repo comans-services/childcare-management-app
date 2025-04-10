@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchCustomers } from "@/lib/customer-service";
 import { fetchContracts } from "@/lib/contract-service";
 import { fetchUserProjects, fetchTimesheetEntries } from "@/lib/timesheet-service";
+import { fetchUsers } from "@/lib/user-service"; // New import for fetching users
 import { cn } from "@/lib/utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
@@ -22,6 +23,7 @@ interface ReportFiltersProps {
   setProjects: React.Dispatch<React.SetStateAction<any[]>>;
   setContracts: React.Dispatch<React.SetStateAction<any[]>>;
   setCustomers: React.Dispatch<React.SetStateAction<any[]>>;
+  setUsers: React.Dispatch<React.SetStateAction<any[]>>; // New state setter for users
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -32,6 +34,7 @@ const ReportFilters = ({
   setProjects, 
   setContracts, 
   setCustomers,
+  setUsers, // New state setter for users
   setIsLoading 
 }: ReportFiltersProps) => {
   const { user } = useAuth();
@@ -55,6 +58,12 @@ const ReportFilters = ({
     queryFn: fetchUserProjects
   });
 
+  // Fetch users (employees)
+  const { data: usersData } = useQuery({
+    queryKey: ['users'],
+    queryFn: fetchUsers
+  });
+
   // Update state when data is fetched
   useEffect(() => {
     if (customersData) {
@@ -66,7 +75,10 @@ const ReportFilters = ({
     if (projectsData) {
       setProjects(projectsData);
     }
-  }, [customersData, contractsData, projectsData, setCustomers, setContracts, setProjects]);
+    if (usersData) {
+      setUsers(usersData);
+    }
+  }, [customersData, contractsData, projectsData, usersData, setCustomers, setContracts, setProjects, setUsers]);
 
   const handleGenerateReport = async () => {
     if (!user) return;
@@ -74,10 +86,13 @@ const ReportFilters = ({
     setIsLoading(true);
     try {
       // Fetch timesheet data based on filters
+      const userId = filters.userId || user.id; // Use filtered user ID if available, otherwise default to current user
+      
       const entries = await fetchTimesheetEntries(
-        user.id,
+        userId,
         filters.startDate,
-        filters.endDate
+        filters.endDate,
+        true // Include user data
       );
       
       // Apply additional filters
@@ -208,6 +223,26 @@ const ReportFilters = ({
                   {contractsData?.map((contract) => (
                     <SelectItem key={contract.id} value={contract.id}>
                       {contract.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full md:w-auto">
+              <label className="text-sm font-medium">Employee</label>
+              <Select
+                value={filters.userId || ""}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, userId: value || null }))}
+              >
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue placeholder="All Employees" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Employees</SelectItem>
+                  {usersData?.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.full_name || user.email || "Unknown User"}
                     </SelectItem>
                   ))}
                 </SelectContent>

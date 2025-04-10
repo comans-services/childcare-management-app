@@ -22,6 +22,13 @@ export interface TimesheetEntry {
   notes?: string;
   jira_task_id?: string;
   project?: Project;
+  user?: {
+    id: string;
+    full_name?: string;
+    email?: string;
+    organization?: string;
+    time_zone?: string;
+  };
 }
 
 export const fetchUserProjects = async (): Promise<Project[]> => {
@@ -62,7 +69,8 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
 export const fetchTimesheetEntries = async (
   userId: string,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  includeUserData: boolean = false
 ): Promise<TimesheetEntry[]> => {
   try {
     console.log(`Fetching entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
@@ -71,7 +79,6 @@ export const fetchTimesheetEntries = async (
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
-      .eq("user_id", userId)
       .gte("entry_date", formatDate(startDate))
       .lte("entry_date", formatDate(endDate));
 
@@ -114,11 +121,40 @@ export const fetchTimesheetEntries = async (
       return acc;
     }, {} as Record<string, Project>);
 
-    // Combine the entries with their respective projects
-    const entriesWithProjects = entriesData.map(entry => ({
+    let entriesWithProjects = entriesData.map(entry => ({
       ...entry,
       project: projectsMap[entry.project_id]
     }));
+
+    // If user data is requested, fetch and add it to entries
+    if (includeUserData) {
+      const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
+      
+      if (userIds.length > 0) {
+        const { data: usersData, error: usersError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, organization, time_zone")
+          .in("id", userIds);
+          
+        if (!usersError && usersData) {
+          console.log(`Fetched ${usersData.length} users for entries`);
+          
+          // Create a map of users by ID for quick lookup
+          const usersMap = usersData.reduce((acc, user) => {
+            acc[user.id] = user;
+            return acc;
+          }, {} as Record<string, any>);
+          
+          // Add user data to entries
+          entriesWithProjects = entriesWithProjects.map(entry => ({
+            ...entry,
+            user: usersMap[entry.user_id]
+          }));
+        } else {
+          console.error("Error fetching users for entries:", usersError);
+        }
+      }
+    }
 
     return entriesWithProjects;
   } catch (error) {
