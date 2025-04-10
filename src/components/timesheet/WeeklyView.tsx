@@ -25,6 +25,7 @@ const WeeklyView: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const dates = getCurrentWeekDates(currentDate);
@@ -35,26 +36,36 @@ const WeeklyView: React.FC = () => {
     if (!user) return;
 
     setLoading(true);
+    setError(null);
+    
     try {
-      // Fetch projects and entries in parallel
-      const [projectsData, entriesData] = await Promise.all([
-        fetchUserProjects(),
-        fetchTimesheetEntries(
+      // Fetch projects first
+      const projectsData = await fetchUserProjects()
+        .catch(err => {
+          console.error("Projects error:", err);
+          setError("Failed to load projects. Please try again.");
+          return [] as Project[];
+        });
+      
+      setProjects(projectsData);
+      
+      // Then fetch entries if we have valid dates
+      if (weekDates.length > 0) {
+        const entriesData = await fetchTimesheetEntries(
           user.id,
           weekDates[0],
           weekDates[weekDates.length - 1]
-        ),
-      ]);
-
-      setProjects(projectsData);
-      setEntries(entriesData);
+        ).catch(err => {
+          console.error("Entries error:", err);
+          setError("Failed to load timesheet entries. Please try again.");
+          return [] as TimesheetEntry[];
+        });
+        
+        setEntries(entriesData);
+      }
     } catch (error) {
       console.error("Error fetching timesheet data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load timesheet data. Please try again.",
-        variant: "destructive",
-      });
+      setError("Failed to load timesheet data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -119,27 +130,48 @@ const WeeklyView: React.FC = () => {
             <div className="text-lg">Loading timesheet data...</div>
           </div>
         </div>
+      ) : error ? (
+        <div className="flex justify-center py-10">
+          <div className="text-center">
+            <div className="text-red-500">{error}</div>
+            <Button 
+              onClick={fetchData} 
+              variant="outline"
+              className="mt-4"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="overflow-x-auto">
-          <div className="flex gap-2 min-w-max">
-            {weekDates.map((date) => (
-              <DayColumn
-                key={date.toISOString()}
-                date={date}
-                userId={user?.id || ""}
-                entries={entries}
-                projects={projects}
-                onEntryChange={fetchData}
-              />
-            ))}
-          </div>
+          {projects.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No projects found. Please create a project first.</p>
+            </div>
+          ) : (
+            <div className="flex gap-2 min-w-max">
+              {weekDates.map((date) => (
+                <DayColumn
+                  key={date.toISOString()}
+                  date={date}
+                  userId={user?.id || ""}
+                  entries={entries}
+                  projects={projects}
+                  onEntryChange={fetchData}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      <div className="text-right text-sm text-muted-foreground">
-        Total Week Hours:{" "}
-        {entries.reduce((sum, entry) => sum + entry.hours_logged, 0).toFixed(2)}
-      </div>
+      {!loading && !error && entries.length > 0 && (
+        <div className="text-right text-sm text-muted-foreground">
+          Total Week Hours:{" "}
+          {entries.reduce((sum, entry) => sum + entry.hours_logged, 0).toFixed(2)}
+        </div>
+      )}
     </div>
   );
 };

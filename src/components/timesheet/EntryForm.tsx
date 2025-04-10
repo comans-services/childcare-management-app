@@ -42,6 +42,14 @@ const EntryForm: React.FC<EntryFormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Use defaultProject if available (for editing) or the first active project
+  const getDefaultProjectId = () => {
+    if (existingEntry?.project_id) return existingEntry.project_id;
+    
+    const activeProjects = projects.filter(p => p.is_active !== false);
+    return activeProjects.length > 0 ? activeProjects[0].id : "";
+  };
+
   const form = useForm<{
     project_id: string;
     hours_logged: number;
@@ -49,7 +57,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
     jira_task_id: string;
   }>({
     defaultValues: {
-      project_id: existingEntry?.project_id || "",
+      project_id: getDefaultProjectId(),
       hours_logged: existingEntry?.hours_logged || 0,
       notes: existingEntry?.notes || "",
       jira_task_id: existingEntry?.jira_task_id || "",
@@ -64,8 +72,16 @@ const EntryForm: React.FC<EntryFormProps> = ({
         notes: existingEntry.notes || "",
         jira_task_id: existingEntry.jira_task_id || "",
       });
+    } else {
+      // For new entries, set the default project
+      form.reset({
+        project_id: getDefaultProjectId(),
+        hours_logged: 0,
+        notes: "",
+        jira_task_id: "",
+      });
     }
-  }, [existingEntry, form]);
+  }, [existingEntry, projects, form]);
 
   const onSubmit = async (values: {
     project_id: string;
@@ -73,6 +89,15 @@ const EntryForm: React.FC<EntryFormProps> = ({
     notes: string;
     jira_task_id: string;
   }) => {
+    if (!values.project_id) {
+      toast({
+        title: "Error",
+        description: "Please select a project.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       
@@ -86,6 +111,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
         jira_task_id: values.jira_task_id,
       };
 
+      console.log("Saving entry:", entry);
       await saveTimesheetEntry(entry);
       
       toast({
@@ -98,7 +124,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
       console.error("Error saving entry:", error);
       toast({
         title: "Error",
-        description: `Failed to ${existingEntry ? "update" : "create"} time entry.`,
+        description: `Failed to ${existingEntry ? "update" : "create"} time entry. Please try again.`,
         variant: "destructive",
       });
     } finally {
@@ -111,34 +137,40 @@ const EntryForm: React.FC<EntryFormProps> = ({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="font-medium text-lg">{formatDateDisplay(date)}</div>
         
-        <FormField
-          control={form.control}
-          name="project_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Project</FormLabel>
-              <Select
-                defaultValue={field.value}
-                onValueChange={field.onChange}
-                disabled={isSubmitting}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a project" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {projects.length === 0 ? (
+          <div className="text-amber-600 p-2 border rounded bg-amber-50">
+            No projects available. Please create a project first.
+          </div>
+        ) : (
+          <FormField
+            control={form.control}
+            name="project_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Project</FormLabel>
+                <Select
+                  defaultValue={field.value}
+                  onValueChange={field.onChange}
+                  disabled={isSubmitting}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a project" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}
@@ -153,7 +185,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                   min="0"
                   max="24"
                   placeholder="0.00"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || projects.length === 0}
                   {...field}
                   onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                 />
@@ -170,7 +202,11 @@ const EntryForm: React.FC<EntryFormProps> = ({
             <FormItem>
               <FormLabel>JIRA Task ID</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. PROJ-123" disabled={isSubmitting} {...field} />
+                <Input 
+                  placeholder="e.g. PROJ-123" 
+                  disabled={isSubmitting || projects.length === 0} 
+                  {...field} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -187,7 +223,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                 <Textarea
                   placeholder="Add details about your work..."
                   className="min-h-[100px]"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || projects.length === 0}
                   {...field}
                 />
               </FormControl>
@@ -205,7 +241,10 @@ const EntryForm: React.FC<EntryFormProps> = ({
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || projects.length === 0}
+          >
             {isSubmitting
               ? "Saving..."
               : existingEntry
