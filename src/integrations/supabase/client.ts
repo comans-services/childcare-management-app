@@ -36,41 +36,56 @@ const setupContractsTable = async () => {
 export const supabase = createClient<any>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 // Add stored procedure to create contracts table if it doesn't exist
-supabase.rpc('create_contracts_table').catch(error => {
-  if (error.code === '42883') { // undefined function error
-    console.log("Creating stored procedure for contracts table creation...");
-    supabase.sql(`
-      CREATE OR REPLACE FUNCTION create_contracts_table()
-      RETURNS void AS $$
-      BEGIN
-        CREATE TABLE IF NOT EXISTS public.contracts (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          name TEXT NOT NULL,
-          description TEXT,
-          customer_id UUID,
-          start_date DATE NOT NULL,
-          end_date DATE NOT NULL,
-          status TEXT NOT NULL,
-          is_active BOOLEAN DEFAULT true,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
-        );
-        
-        -- If needed, create foreign key constraint
-        -- ALTER TABLE public.contracts 
-        --   ADD CONSTRAINT fk_contracts_customer 
-        --   FOREIGN KEY (customer_id) 
-        --   REFERENCES public.customers(id);
-      END;
-      $$ LANGUAGE plpgsql;
-    `).then(() => {
-      console.log("Stored procedure created successfully.");
-      setupContractsTable();
-    }).catch(err => {
-      console.error("Error creating stored procedure:", err);
-    });
+const setupStoredProcedure = async () => {
+  try {
+    const { error } = await supabase.rpc('create_contracts_table');
+    
+    if (error && error.code === '42883') { // undefined function error
+      console.log("Creating stored procedure for contracts table creation...");
+      
+      // Use raw query method instead of sql
+      const { error: createProcedureError } = await supabase.from('_supabase_functions').select('*').execute(`
+        CREATE OR REPLACE FUNCTION create_contracts_table()
+        RETURNS void AS $$
+        BEGIN
+          CREATE TABLE IF NOT EXISTS public.contracts (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            name TEXT NOT NULL,
+            description TEXT,
+            customer_id UUID,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            status TEXT NOT NULL,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+          );
+          
+          -- If needed, create foreign key constraint
+          -- ALTER TABLE public.contracts 
+          --   ADD CONSTRAINT fk_contracts_customer 
+          --   FOREIGN KEY (customer_id) 
+          --   REFERENCES public.customers(id);
+        END;
+        $$ LANGUAGE plpgsql;
+      `);
+      
+      if (createProcedureError) {
+        console.error("Error creating stored procedure:", createProcedureError);
+      } else {
+        console.log("Stored procedure created successfully.");
+        setupContractsTable();
+      }
+    }
+  } catch (err) {
+    console.error("Error handling stored procedure:", err);
   }
-});
+};
 
 // Setup tables when app loads
-setupContractsTable();
+setupContractsTable().catch(err => {
+  console.error("Error in setup contracts table:", err);
+  setupStoredProcedure().catch(err => {
+    console.error("Error in setup stored procedure:", err);
+  });
+});
