@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfWeek, endOfWeek, isToday, isFriday } from "date-fns";
+import { format, startOfWeek, endOfWeek, isToday, isFriday, getDay } from "date-fns";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -43,19 +43,16 @@ const Dashboard = () => {
   const [issueDescription, setIssueDescription] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
-  // Get the current week's date range
   const today = new Date();
   const startDate = startOfWeek(today);
   const endDate = endOfWeek(today);
 
-  // Check if user is authenticated
   useEffect(() => {
     if (!session) {
       navigate("/auth");
     }
   }, [session, navigate]);
 
-  // Fetch user's timesheet entries
   const { data: timesheetEntries = [] } = useQuery({
     queryKey: ["timesheet", session?.user?.id, startDate, endDate],
     queryFn: () => session?.user?.id 
@@ -64,22 +61,18 @@ const Dashboard = () => {
     enabled: !!session?.user?.id
   });
 
-  // Fetch projects
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
     queryFn: () => fetchUserProjects(),
   });
 
-  // Fetch customers
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
     queryFn: () => fetchCustomers(),
   });
 
-  // Calculate total hours logged
   const totalHours = timesheetEntries.reduce((sum, entry) => sum + entry.hours_logged, 0);
 
-  // Prepare data for projects chart
   const projectHours = timesheetEntries.reduce((acc, entry) => {
     const projectId = entry.project_id;
     const projectName = entry.project?.name || "Unknown Project";
@@ -97,19 +90,15 @@ const Dashboard = () => {
   
   const projectsChartData = Object.values(projectHours);
 
-  // Prepare data for customers chart
   const customerHours = {};
   
   timesheetEntries.forEach(entry => {
-    // Find the project of this entry
     const project = projects.find(p => p.id === entry.project_id);
     if (!project) return;
     
-    // Find customer of the project
     const customerId = project.customer_id;
     if (!customerId) return;
     
-    // Find customer name
     const customer = customers.find(c => c.id === customerId);
     const customerName = customer ? customer.name : "Unknown Customer";
     
@@ -125,11 +114,10 @@ const Dashboard = () => {
   
   const customersChartData = Object.values(customerHours);
 
-  // Calculate remaining time until Friday COB
   const fridayCOB = new Date();
-  fridayCOB.setDate(fridayCOB.getDate() + (5 - fridayCOB.getDay())); // Next Friday
-  fridayCOB.setHours(17, 0, 0, 0); // 5 PM
-  
+  fridayCOB.setDate(fridayCOB.getDate() + (5 - fridayCOB.getDay()));
+  fridayCOB.setHours(17, 0, 0, 0);
+
   const currentTime = new Date();
   const timeUntilDeadline = fridayCOB.getTime() - currentTime.getTime();
   const daysUntil = Math.floor(timeUntilDeadline / (1000 * 60 * 60 * 24));
@@ -144,17 +132,31 @@ const Dashboard = () => {
     deadlineMessage = "Deadline passed";
   }
   
-  // Calculate progress for the week (work hours completed vs. total expected work hours)
-  const expectedWeeklyHours = 40; // Assuming 40-hour work week
-  const weekProgress = Math.min(100, (totalHours / expectedWeeklyHours) * 100);
+  const expectedWeeklyHours = 40;
+  
+  const calculateExpectedHours = () => {
+    const today = new Date();
+    const dayOfWeek = getDay(today);
+    
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return expectedWeeklyHours;
+    }
+    
+    const workDaysElapsed = Math.min(dayOfWeek, 5);
+    return workDaysElapsed * 8;
+  };
+  
+  const expectedHoursToDate = calculateExpectedHours();
+  
+  const weekProgress = expectedHoursToDate > 0 
+    ? Math.min(100, (totalHours / expectedHoursToDate) * 100) 
+    : 0;
 
-  // Determine the timesheet status and card styling
   const hasEntries = timesheetEntries.length > 0;
   const completeWeek = weekProgress >= 100;
   const isFridayToday = isFriday(today);
   const isLate = isFridayToday && !hasEntries;
   
-  // Card color styling based on status
   const getTimesheetCardStyle = () => {
     if (completeWeek) {
       return {
@@ -185,7 +187,6 @@ const Dashboard = () => {
   
   const cardStyle = getTimesheetCardStyle();
 
-  // Handle HR issue submission
   const handleHRIssueSubmit = async () => {
     if (!issueDescription.trim()) {
       toast({
@@ -199,7 +200,6 @@ const Dashboard = () => {
     setIsSendingEmail(true);
     
     try {
-      // Send email to HR using Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('send-hr-email', {
         body: {
           userEmail: session?.user?.email,
@@ -237,7 +237,6 @@ const Dashboard = () => {
         <p className="text-gray-600">Welcome to your timesheet dashboard</p>
       </div>
       
-      {/* Weekly Timesheet Reminder */}
       <Card className={`${cardStyle.background} ${cardStyle.border}`}>
         <CardHeader className="pb-2">
           <CardTitle className={`flex items-center gap-2 ${cardStyle.title}`}>
@@ -280,7 +279,6 @@ const Dashboard = () => {
         </CardFooter>
       </Card>
       
-      {/* Alert for Friday with no entries */}
       {isLate && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
@@ -292,7 +290,6 @@ const Dashboard = () => {
       )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Project Hours */}
         <Card>
           <CardHeader>
             <CardTitle>Hours by Project</CardTitle>
@@ -317,7 +314,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        {/* Customer Hours */}
         <Card>
           <CardHeader>
             <CardTitle>Hours by Customer</CardTitle>
@@ -353,7 +349,6 @@ const Dashboard = () => {
         </Card>
       </div>
       
-      {/* Company News Section */}
       <Card>
         <CardHeader>
           <CardTitle>Company News & Announcements</CardTitle>
@@ -366,7 +361,6 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      {/* Help & Support */}
       <Card>
         <CardHeader>
           <CardTitle>Need Help?</CardTitle>
@@ -380,7 +374,6 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       
-      {/* HR Contact Dialog */}
       <Dialog open={isHRDialogOpen} onOpenChange={setIsHRDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
