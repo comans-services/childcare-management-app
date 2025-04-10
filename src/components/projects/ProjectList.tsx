@@ -15,7 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger, // Re-adding the missing import
+  DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
@@ -468,7 +468,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
                             selectedCustomerId={editingCustomerId}
                             onSelectCustomer={setEditingCustomerId}
                             containerClassName="m-0"
-                            preventClose={true}  // Add this prop to prevent closing
+                            preventClose={true}
                           />
                           <div className="flex gap-2 justify-end mt-1">
                             <Button 
@@ -642,7 +642,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
                         </div>
                         <Progress 
                           value={budgetPercentage}
-                          className={`h-2 ${overBudget ? 'bg-red-100' : 'bg-green-50'}`}
+                          className={overBudget ? 'bg-red-100' : 'bg-green-50'}
                           indicatorClassName={overBudget ? 'bg-red-500' : 'bg-green-500'}
                         />
                       </div>

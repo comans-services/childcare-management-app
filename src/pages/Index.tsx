@@ -131,7 +131,7 @@ const Dashboard = () => {
   fridayCOB.setHours(17, 0, 0, 0); // 5 PM
   
   const currentTime = new Date();
-  const timeUntilDeadline = fridayCOB - currentTime;
+  const timeUntilDeadline = fridayCOB.getTime() - currentTime.getTime();
   const daysUntil = Math.floor(timeUntilDeadline / (1000 * 60 * 60 * 24));
   const hoursUntil = Math.floor((timeUntilDeadline % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   
