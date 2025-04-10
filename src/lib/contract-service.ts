@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
@@ -71,6 +70,61 @@ export const fetchServices = async (): Promise<Service[]> => {
   }
 };
 
+const ensureContractsTableExists = async (): Promise<boolean> => {
+  try {
+    console.log("Checking if contracts table exists...");
+    
+    // First check if contracts table already exists
+    const { data: contractsCheck, error: checkError } = await supabase
+      .from('pg_tables')
+      .select('tablename')
+      .eq('schemaname', 'public')
+      .eq('tablename', 'contracts');
+    
+    if (checkError) {
+      console.error("Error checking if contracts table exists:", checkError);
+      return false;
+    }
+    
+    if (contractsCheck && contractsCheck.length > 0) {
+      console.log("Contracts table already exists");
+      return true;
+    }
+    
+    // Table doesn't exist, create it
+    console.log("Creating contracts table...");
+    
+    // Create table directly with SQL
+    const { error: createError } = await supabase.rpc('exec_sql', {
+      query: `
+        CREATE TABLE IF NOT EXISTS public.contracts (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          customer_id UUID,
+          start_date DATE NOT NULL,
+          end_date DATE NOT NULL,
+          status TEXT NOT NULL,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+        );
+      `
+    });
+    
+    if (createError) {
+      console.error("Error creating contracts table:", createError);
+      return false;
+    }
+    
+    console.log("Contracts table created successfully");
+    return true;
+  } catch (error) {
+    console.error("Error in ensureContractsTableExists:", error);
+    return false;
+  }
+};
+
 export const fetchContracts = async (filters?: {
   status?: string;
   customerId?: string;
@@ -80,15 +134,10 @@ export const fetchContracts = async (filters?: {
   try {
     console.log("Fetching contracts with filters:", filters);
     
-    // First check if contracts table exists
-    const { data: contractsCheck } = await supabase
-      .from('pg_tables')
-      .select('tablename')
-      .eq('schemaname', 'public')
-      .eq('tablename', 'contracts');
-    
-    if (!contractsCheck || contractsCheck.length === 0) {
-      console.log("Contracts table doesn't exist yet, returning empty array");
+    // Ensure contracts table exists
+    const tableExists = await ensureContractsTableExists();
+    if (!tableExists) {
+      console.log("Could not confirm contracts table exists, returning empty array");
       return [];
     }
     
@@ -203,6 +252,9 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
     console.log("Saving contract:", contract);
     console.log("Selected services:", selectedServiceIds);
 
+    // Ensure contracts table exists
+    await ensureContractsTableExists();
+
     let contractId = contract.id;
     let savedContract: Contract;
 
@@ -231,33 +283,6 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
       savedContract = data?.[0] as Contract;
       console.log("Contract updated successfully:", savedContract);
     } else {
-      // First, check if contracts table exists
-      const { data: tablesData, error: tablesError } = await supabase
-        .from('pg_tables')
-        .select('tablename')
-        .eq('schemaname', 'public')
-        .eq('tablename', 'contracts');
-      
-      if (tablesError || !tablesData || tablesData.length === 0) {
-        // Create contracts table if it doesn't exist
-        const { error: createTableError } = await supabase.rpc('create_contracts_table');
-        if (createTableError) {
-          console.error("Failed to create contracts table:", createTableError);
-          // Create a mock success response since we can't create the table
-          return {
-            id: 'temp-' + Date.now(),
-            name: contract.name,
-            description: contract.description,
-            customer_id: contract.customer_id,
-            start_date: contract.start_date,
-            end_date: contract.end_date,
-            status: contract.status,
-            is_active: contract.is_active ?? true,
-            created_at: new Date().toISOString(),
-          } as Contract;
-        }
-      }
-
       // Create new contract
       const { data, error } = await supabase
         .from("contracts")

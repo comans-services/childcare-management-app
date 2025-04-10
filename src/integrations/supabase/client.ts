@@ -12,103 +12,102 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Using any type temporarily until Database types can be properly updated
 export const supabase = createClient<any>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Create function to setup the contracts table if needed
-const setupContractsTable = async () => {
+// Create a function to execute SQL directly
+export const executeSQL = async (sql: string): Promise<{ success: boolean; error?: any }> => {
   try {
-    console.log("Checking if contracts table exists...");
-    const { data, error } = await supabase
-      .from('pg_tables')
-      .select('tablename')
-      .eq('schemaname', 'public')
-      .eq('tablename', 'contracts');
+    const { error } = await supabase.rpc('exec_sql', { query: sql });
     
     if (error) {
-      console.error("Error checking if contracts table exists:", error);
-      return;
+      console.error("Error executing SQL:", error);
+      return { success: false, error };
     }
     
-    if (!data || data.length === 0) {
-      console.log("Creating contracts table...");
-      // Create contracts table if it doesn't exist
-      const { error: createError } = await supabase.rpc('create_contracts_table');
-      if (createError) {
-        console.error("Failed to create contracts table:", createError);
-        // Try to create the stored procedure first
-        await setupStoredProcedure();
-      } else {
-        console.log("Contracts table created successfully");
-      }
-    } else {
-      console.log("Contracts table already exists");
-    }
-  } catch (err) {
-    console.error("Error in setupContractsTable:", err);
+    return { success: true };
+  } catch (error) {
+    console.error("Exception executing SQL:", error);
+    return { success: false, error };
   }
 };
 
-// Add stored procedure to create contracts table if it doesn't exist
-const setupStoredProcedure = async () => {
+// Create the required SQL functions if they don't exist
+const setupSQLFunctions = async () => {
   try {
-    console.log("Checking if create_contracts_table procedure exists...");
+    console.log("Setting up SQL functions...");
     
-    const { error } = await supabase.rpc('create_contracts_table');
+    // Check if exec_sql function exists
+    const testResult = await supabase.rpc('exec_sql', { 
+      query: "SELECT 1 as test" 
+    });
     
-    if (error && error.code === '42883') { // undefined function error
-      console.log("Creating stored procedure for contracts table creation...");
+    if (testResult.error && testResult.error.code === '42883') {
+      console.log("Creating exec_sql function...");
       
-      // Fix: Use rpc method instead of trying to execute a raw SQL query
-      const { error: createProcedureError } = await supabase.rpc('exec_sql', {
-        query: `
-          CREATE OR REPLACE FUNCTION create_contracts_table()
-          RETURNS void AS $$
-          BEGIN
-            CREATE TABLE IF NOT EXISTS public.contracts (
-              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-              name TEXT NOT NULL,
-              description TEXT,
-              customer_id UUID,
-              start_date DATE NOT NULL,
-              end_date DATE NOT NULL,
-              status TEXT NOT NULL,
-              is_active BOOLEAN DEFAULT true,
-              created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
-              updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
-            );
-            
-            -- If needed, create foreign key constraint
-            -- ALTER TABLE public.contracts 
-            --   ADD CONSTRAINT fk_contracts_customer 
-            --   FOREIGN KEY (customer_id) 
-            --   REFERENCES public.customers(id);
-          END;
-          $$ LANGUAGE plpgsql;
-        `
+      // Create exec_sql function using raw REST API call since we can't call a function that doesn't exist yet
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          query: `
+            CREATE OR REPLACE FUNCTION exec_sql(query text)
+            RETURNS void
+            LANGUAGE plpgsql
+            SECURITY DEFINER
+            AS $$
+            BEGIN
+              EXECUTE query;
+            END;
+            $$;
+          `
+        })
       });
       
-      if (createProcedureError) {
-        console.error("Error creating stored procedure:", createProcedureError);
+      if (!response.ok) {
+        const responseText = await response.text();
+        console.error("Failed to create exec_sql function:", responseText);
+        
+        // Try an alternative approach
+        console.log("Trying alternative approach to create function...");
+        await fetch(`${SUPABASE_URL}/rest/v1/sql`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_PUBLISHABLE_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            query: `
+              CREATE OR REPLACE FUNCTION exec_sql(query text)
+              RETURNS void
+              LANGUAGE plpgsql
+              SECURITY DEFINER
+              AS $$
+              BEGIN
+                EXECUTE query;
+              END;
+              $$;
+            `
+          })
+        });
       } else {
-        console.log("Stored procedure created successfully.");
-        // Try to create the table again
-        await setupContractsTable();
+        console.log("exec_sql function created successfully");
       }
-    } else if (error) {
-      console.error("Error checking create_contracts_table procedure:", error);
     } else {
-      console.log("create_contracts_table procedure exists");
+      console.log("exec_sql function already exists");
     }
   } catch (err) {
-    console.error("Error handling stored procedure:", err);
+    console.error("Error in setupSQLFunctions:", err);
   }
 };
 
-// Setup tables when app loads
+// Setup required functions when app loads
 (async () => {
   try {
-    console.log("Setting up database tables...");
-    await setupContractsTable();
-    console.log("Database setup complete");
+    await setupSQLFunctions();
+    console.log("SQL functions setup complete");
   } catch (err) {
-    console.error("Error in database setup:", err);
+    console.error("Error in SQL functions setup:", err);
   }
 })();
