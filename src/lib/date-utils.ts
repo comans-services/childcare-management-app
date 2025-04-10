@@ -2,6 +2,7 @@
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay } from "date-fns";
 
 export const formatDate = (date: Date): string => {
+  // Ensure consistent date format YYYY-MM-DD without timezone effects
   return format(date, "yyyy-MM-dd");
 };
 

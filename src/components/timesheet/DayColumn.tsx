@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { formatDateShort, isToday, formatDate } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
 import { Button } from "@/components/ui/button";
@@ -30,11 +29,19 @@ const DayColumn: React.FC<DayColumnProps> = ({
   
   // Format date consistently for comparison
   const formattedColumnDate = formatDate(date);
+  console.log(`DayColumn for date ${formattedColumnDate}, original: ${date.toISOString()}`);
   
-  // Filter entries for this day, including both fetched and local entries
-  const dayEntries = [...entries, ...localEntries].filter(
-    (entry) => entry.entry_date === formattedColumnDate
-  );
+  // Filter entries for this day, using consistent date comparison
+  const dayEntries = [...entries, ...localEntries].filter(entry => {
+    // Debug the date comparison
+    if (typeof entry.entry_date === 'string') {
+      const entryDate = entry.entry_date.substring(0, 10); // Get just the YYYY-MM-DD part
+      const matches = entryDate === formattedColumnDate;
+      console.log(`Comparing entry date ${entryDate} with column date ${formattedColumnDate}: ${matches}`);
+      return matches;
+    }
+    return false;
+  });
 
   const totalHours = dayEntries.reduce(
     (sum, entry) => sum + entry.hours_logged,
@@ -80,10 +87,34 @@ const DayColumn: React.FC<DayColumnProps> = ({
     
     // Add the newly saved entry to local entries for immediate display
     if (savedEntry) {
+      console.log(`Saved entry date: ${savedEntry.entry_date}, column date: ${formattedColumnDate}`);
+      
       // Ensure we have consistent date format for the entry
-      if (savedEntry.entry_date !== formattedColumnDate && 
-          new Date(savedEntry.entry_date).toDateString() === date.toDateString()) {
-        savedEntry.entry_date = formattedColumnDate;
+      // This specifically handles the case where the entry date might be in a different format
+      if (savedEntry.entry_date !== formattedColumnDate) {
+        // Try to normalize dates for comparison
+        const savedEntryDate = typeof savedEntry.entry_date === 'string' 
+          ? savedEntry.entry_date.substring(0, 10) 
+          : savedEntry.entry_date;
+          
+        if (savedEntryDate === formattedColumnDate) {
+          console.log("Date formats match after normalization, updating entry");
+          savedEntry.entry_date = formattedColumnDate;
+        } else {
+          console.log("Date formats don't match even after normalization");
+          // Check if the dates represent the same day
+          const entryDateObj = new Date(savedEntry.entry_date);
+          const columnDateObj = new Date(formattedColumnDate);
+          
+          if (
+            entryDateObj.getFullYear() === columnDateObj.getFullYear() &&
+            entryDateObj.getMonth() === columnDateObj.getMonth() &&
+            entryDateObj.getDate() === columnDateObj.getDate()
+          ) {
+            console.log("Same calendar day detected, updating entry date format");
+            savedEntry.entry_date = formattedColumnDate;
+          }
+        }
       }
       
       setLocalEntries(prev => {

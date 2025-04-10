@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
-import { formatDateDisplay } from "@/lib/date-utils";
+import { formatDateDisplay, formatDate } from "@/lib/date-utils";
 
 interface EntryFormProps {
   userId: string;
@@ -118,11 +117,15 @@ const EntryForm: React.FC<EntryFormProps> = ({
     try {
       setIsSubmitting(true);
       
+      // Use consistent date formatting with formatDate utility
+      const formattedDate = formatDate(date);
+      console.log(`Saving entry for date: ${formattedDate} (Original date: ${date.toISOString()})`);
+      
       const entry: TimesheetEntry = {
         id: existingEntry?.id,
         user_id: userId,
         project_id: values.project_id,
-        entry_date: date.toISOString().split("T")[0],
+        entry_date: formattedDate,
         hours_logged: hours,
         notes: values.notes,
         jira_task_id: values.jira_task_id,
