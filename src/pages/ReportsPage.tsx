@@ -1,13 +1,120 @@
 
-import React from "react";
+import React, { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import ReportFilters from "@/components/reports/ReportFilters";
+import ReportCharts from "@/components/reports/ReportCharts";
+import ReportDataTable from "@/components/reports/ReportDataTable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Download, FileSpreadsheet } from "lucide-react";
+import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { Contract } from "@/lib/contract-service";
+import { Customer } from "@/lib/customer-service";
+import { toast } from "@/hooks/use-toast";
+import { formatDate } from "@/lib/date-utils";
+import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export-utils";
+
+export type ReportFiltersType = {
+  startDate: Date;
+  endDate: Date;
+  customerId: string | null;
+  contractId: string | null;
+  projectId: string | null;
+  userId: string | null;
+};
 
 const ReportsPage = () => {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [reportData, setReportData] = useState<TimesheetEntry[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  
+  const [filters, setFilters] = useState<ReportFiltersType>({
+    startDate: new Date(new Date().setDate(1)), // First day of current month
+    endDate: new Date(),
+    customerId: null,
+    contractId: null,
+    projectId: null,
+    userId: null,
+  });
+
+  const handleExportCSV = () => {
+    try {
+      exportToCSV(reportData, `timesheet-report-${formatDate(new Date())}`);
+      toast({
+        title: "Export successful",
+        description: "The report has been exported to CSV"
+      });
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting the report",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      exportToExcel(reportData, projects, `timesheet-report-${formatDate(new Date())}`);
+      toast({
+        title: "Export successful",
+        description: "The report has been exported to Excel"
+      });
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting the report",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      exportToPDF(reportData, projects, filters, `timesheet-report-${formatDate(new Date())}`);
+      toast({
+        title: "Export successful",
+        description: "The report has been exported to PDF"
+      });
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting the report",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
-    <div className="container mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Reports</h1>
-        <p className="text-gray-600">Generate and download time reports</p>
+    <div className="container mx-auto px-2 md:px-4">
+      <div className="mb-4 md:mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold">Reports</h1>
+          <p className="text-gray-600 text-sm md:text-base">Generate and download time reports</p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            CSV
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleExportExcel}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Excel
+          </Button>
+          <Button size="sm" variant="default" onClick={handleExportPDF}>
+            <Download className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -16,10 +123,38 @@ const ReportsPage = () => {
           <CardDescription>Create custom reports for your team</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* This will be implemented next */}
-          <div className="p-8 text-center">
-            <p className="text-gray-500">Reports dashboard will be implemented in the next step</p>
-          </div>
+          <ReportFilters 
+            filters={filters}
+            setFilters={setFilters}
+            setReportData={setReportData}
+            setProjects={setProjects}
+            setContracts={setContracts}
+            setCustomers={setCustomers}
+            setIsLoading={setIsLoading}
+          />
+          
+          <Separator className="my-6" />
+          
+          <Tabs defaultValue="visual" className="w-full">
+            <TabsList>
+              <TabsTrigger value="visual">Visual Reports</TabsTrigger>
+              <TabsTrigger value="tabular">Tabular Data</TabsTrigger>
+            </TabsList>
+            <TabsContent value="visual" className="mt-4">
+              <ReportCharts 
+                reportData={reportData} 
+                projects={projects}
+                isLoading={isLoading}
+              />
+            </TabsContent>
+            <TabsContent value="tabular" className="mt-4">
+              <ReportDataTable 
+                reportData={reportData}
+                projects={projects}
+                isLoading={isLoading}
+              />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
