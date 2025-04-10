@@ -43,32 +43,34 @@ const setupStoredProcedure = async () => {
     if (error && error.code === '42883') { // undefined function error
       console.log("Creating stored procedure for contracts table creation...");
       
-      // Use raw query method instead of sql
-      const { error: createProcedureError } = await supabase.from('_supabase_functions').select('*').execute(`
-        CREATE OR REPLACE FUNCTION create_contracts_table()
-        RETURNS void AS $$
-        BEGIN
-          CREATE TABLE IF NOT EXISTS public.contracts (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            name TEXT NOT NULL,
-            description TEXT,
-            customer_id UUID,
-            start_date DATE NOT NULL,
-            end_date DATE NOT NULL,
-            status TEXT NOT NULL,
-            is_active BOOLEAN DEFAULT true,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
-          );
-          
-          -- If needed, create foreign key constraint
-          -- ALTER TABLE public.contracts 
-          --   ADD CONSTRAINT fk_contracts_customer 
-          --   FOREIGN KEY (customer_id) 
-          --   REFERENCES public.customers(id);
-        END;
-        $$ LANGUAGE plpgsql;
-      `);
+      // Fix: Use rpc method instead of trying to execute a raw SQL query
+      const { error: createProcedureError } = await supabase.rpc('exec_sql', {
+        query: `
+          CREATE OR REPLACE FUNCTION create_contracts_table()
+          RETURNS void AS $$
+          BEGIN
+            CREATE TABLE IF NOT EXISTS public.contracts (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              name TEXT NOT NULL,
+              description TEXT,
+              customer_id UUID,
+              start_date DATE NOT NULL,
+              end_date DATE NOT NULL,
+              status TEXT NOT NULL,
+              is_active BOOLEAN DEFAULT true,
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+              updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+            );
+            
+            -- If needed, create foreign key constraint
+            -- ALTER TABLE public.contracts 
+            --   ADD CONSTRAINT fk_contracts_customer 
+            --   FOREIGN KEY (customer_id) 
+            --   REFERENCES public.customers(id);
+          END;
+          $$ LANGUAGE plpgsql;
+        `
+      });
       
       if (createProcedureError) {
         console.error("Error creating stored procedure:", createProcedureError);
