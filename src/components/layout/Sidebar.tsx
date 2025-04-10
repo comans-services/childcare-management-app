@@ -1,70 +1,75 @@
-
+// src/components/layout/Sidebar.tsx
 import React from "react";
-import { NavLink } from "react-router-dom";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
+import { Home, Calendar, Users, Settings, FileText } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { 
-  ClipboardList, 
-  BarChart2, 
-  Briefcase, 
-  Users, 
-  Settings,
-  Building2,
-  FileText 
-} from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const Sidebar = () => {
-  const { userRole } = useAuth();
-  
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
-      isActive
-        ? "bg-blue-100 text-blue-600"
-        : "text-gray-600 hover:bg-gray-100"
-    }`;
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
 
   return (
-    <aside className="w-64 bg-white shadow-sm h-[calc(100vh-64px)] p-4">
-      <nav className="space-y-1">
-        <NavLink to="/timesheet" className={navLinkClass}>
-          <ClipboardList className="h-5 w-5" />
-          <span>My Timesheet</span>
-        </NavLink>
-        
-        <NavLink to="/projects" className={navLinkClass}>
-          <Briefcase className="h-5 w-5" />
-          <span>Projects</span>
-        </NavLink>
-
-        <NavLink to="/contracts" className={navLinkClass}>
-          <FileText className="h-5 w-5" />
-          <span>Contracts</span>
-        </NavLink>
-
-        <NavLink to="/customers" className={navLinkClass}>
-          <Building2 className="h-5 w-5" />
-          <span>Customers</span>
-        </NavLink>
-        
-        {(userRole === "admin" || userRole === "manager") && (
-          <>
-            <NavLink to="/reports" className={navLinkClass}>
-              <BarChart2 className="h-5 w-5" />
-              <span>Reports</span>
-            </NavLink>
-            
-            <NavLink to="/team" className={navLinkClass}>
-              <Users className="h-5 w-5" />
-              <span>Team</span>
-            </NavLink>
-          </>
-        )}
-        
-        <NavLink to="/settings" className={navLinkClass}>
-          <Settings className="h-5 w-5" />
-          <span>Settings</span>
-        </NavLink>
-      </nav>
-    </aside>
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <Menu />
+        </Button>
+      </SheetTrigger>
+      <SheetContent className="w-full sm:w-64">
+        <SheetHeader className="text-left">
+          <SheetTitle>Menu</SheetTitle>
+          <SheetDescription>
+            Navigate through your dashboard.
+          </SheetDescription>
+        </SheetHeader>
+        <Separator className="my-4" />
+        <div className="flex flex-col space-y-2">
+          <Link href="/" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md">
+            <Home className="h-5 w-5" />
+            <span>Home</span>
+          </Link>
+          <Link href="/calendar" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md">
+            <Calendar className="h-5 w-5" />
+            <span>Calendar</span>
+          </Link>
+          <Link href="/customers" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md">
+            <Users className="h-5 w-5" />
+            <span>Customers</span>
+          </Link>
+          <Link href="/contracts" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md">
+            <FileText className="h-5 w-5" />
+            <span>Contracts</span>
+          </Link>
+        </div>
+        <Separator className="my-4" />
+        <div className="flex flex-col space-y-2">
+          <Link href="/settings" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md">
+            <Settings className="h-5 w-5" />
+            <span>Settings</span>
+          </Link>
+          <Button variant="ghost" className="justify-start" onClick={handleLogout}>
+            Log Out
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 };
 
