@@ -120,25 +120,27 @@ const Dashboard = () => {
 
   const customerHours = {};
   
-  timesheetEntries.forEach(entry => {
-    const project = projects.find(p => p.id === entry.project_id);
-    if (!project) return;
-    
-    const customerId = project.customer_id;
-    if (!customerId) return;
-    
-    const customer = customers.find(c => c.id === customerId);
-    const customerName = customer ? customer.name : "Unknown Customer";
-    
-    if (!customerHours[customerId]) {
-      customerHours[customerId] = {
-        name: customerName,
-        hours: 0
-      };
-    }
-    
-    customerHours[customerId].hours += entry.hours_logged;
-  });
+  if (timesheetEntries.length > 0) {
+    timesheetEntries.forEach(entry => {
+      const project = projects.find(p => p.id === entry.project_id);
+      if (!project) return;
+      
+      const customerId = project.customer_id;
+      if (!customerId) return;
+      
+      const customer = customers.find(c => c.id === customerId);
+      const customerName = customer ? customer.name : "Unknown Customer";
+      
+      if (!customerHours[customerId]) {
+        customerHours[customerId] = {
+          name: customerName,
+          hours: 0
+        };
+      }
+      
+      customerHours[customerId].hours += entry.hours_logged;
+    });
+  }
   
   const customersChartData = Object.values(customerHours);
 
@@ -161,6 +163,10 @@ const Dashboard = () => {
   }
   
   const calculateExpectedHours = () => {
+    if (timesheetEntries.length === 0) {
+      return 0;
+    }
+    
     const today = new Date();
     const dayOfWeek = getDay(today);
     
@@ -175,6 +181,10 @@ const Dashboard = () => {
   const expectedHoursToDate = calculateExpectedHours();
   
   const calculateHoursLoggedToDate = () => {
+    if (timesheetEntries.length === 0) {
+      return 0;
+    }
+    
     const today = new Date();
     const todayFormatted = format(today, "yyyy-MM-dd");
     
@@ -188,9 +198,11 @@ const Dashboard = () => {
   
   const hoursLoggedToDate = calculateHoursLoggedToDate();
   
-  const weekProgress = expectedHoursToDate > 0 
-    ? Math.min(100, (hoursLoggedToDate / expectedHoursToDate) * 100) 
-    : 0;
+  const weekProgress = (timesheetEntries.length === 0) 
+    ? 0
+    : (expectedHoursToDate > 0 
+      ? Math.min(100, (hoursLoggedToDate / expectedHoursToDate) * 100) 
+      : 0);
 
   const hasEntries = timesheetEntries.length > 0;
   const completeWeek = weekProgress >= 100;
@@ -198,10 +210,18 @@ const Dashboard = () => {
   const isTodayComplete = dailyEntries
     .filter(day => isSameDay(day.date, today))
     .some(day => day.hours > 0);
-  const isLate = isFridayToday && !isTodayComplete;
+  const isLate = isFridayToday && !isTodayComplete && hasEntries;
   
   const getTimesheetCardStyle = () => {
-    if (completeWeek) {
+    if (!hasEntries) {
+      return {
+        background: "bg-yellow-50",
+        border: "border-yellow-200",
+        title: "text-yellow-800",
+        text: "text-yellow-700",
+        button: "text-yellow-600 border-yellow-300 hover:bg-yellow-100"
+      };
+    } else if (completeWeek) {
       return {
         background: "bg-green-50",
         border: "border-green-200",
@@ -289,9 +309,11 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className={`mb-2 ${cardStyle.text}`}>
-            {completeWeek 
-              ? "Great job! You've completed your timesheet entries for this week."
-              : "All timesheet entries for this week must be completed by Friday 5:00 PM. Data will be processed over the weekend."
+            {!hasEntries 
+              ? "You haven't entered any timesheet data for this week yet."
+              : completeWeek 
+                ? "Great job! You've completed your timesheet entries for this week."
+                : "All timesheet entries for this week must be completed by Friday 5:00 PM. Data will be processed over the weekend."
             }
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -301,12 +323,19 @@ const Dashboard = () => {
           <div className="mt-2">
             <div className="flex justify-between text-sm mb-1">
               <span className={cardStyle.text}>This Week's Progress</span>
-              <span className={cardStyle.text}>{Math.round(weekProgress)}% Complete</span>
+              <span className={cardStyle.text}>
+                {hasEntries ? `${Math.round(weekProgress)}% Complete` : "No entries yet"}
+              </span>
             </div>
             <Progress 
               value={weekProgress} 
               className="h-2"
-              indicatorClassName={completeWeek ? "bg-green-500" : isLate ? "bg-red-500" : "bg-amber-500"}
+              indicatorClassName={
+                !hasEntries ? "bg-yellow-500" : 
+                completeWeek ? "bg-green-500" : 
+                isLate ? "bg-red-500" : 
+                "bg-amber-500"
+              }
             />
           </div>
         </CardContent>
@@ -317,7 +346,7 @@ const Dashboard = () => {
             className={cardStyle.button}
           >
             <CalendarClock className="mr-2 h-4 w-4" />
-            {completeWeek ? "View Timesheet" : "Enter Timesheet"}
+            {hasEntries && completeWeek ? "View Timesheet" : "Enter Timesheet"}
           </Button>
         </CardFooter>
       </Card>
@@ -334,12 +363,14 @@ const Dashboard = () => {
       
       {process.env.NODE_ENV === 'development' && (
         <div className="text-xs text-gray-500 p-2 bg-gray-100 rounded-md mb-4">
+          <div>Has entries: {hasEntries ? 'Yes' : 'No'}</div>
           <div>Expected hours to date: {expectedHoursToDate}</div>
           <div>Hours logged to date: {hoursLoggedToDate}</div>
           <div>Week progress: {weekProgress.toFixed(2)}%</div>
           <div>Is complete: {completeWeek ? 'Yes' : 'No'}</div>
           <div>Today is Friday: {isFridayToday ? 'Yes' : 'No'}</div>
           <div>Today has entries: {isTodayComplete ? 'Yes' : 'No'}</div>
+          <div>Total entries: {timesheetEntries.length}</div>
         </div>
       )}
       
