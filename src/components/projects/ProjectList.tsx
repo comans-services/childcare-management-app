@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import {
   Table,
@@ -24,6 +25,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent
+} from "@/components/ui/popover";
 
 interface ProjectListProps {
   projects: Project[];
@@ -50,12 +56,17 @@ const ProjectList: React.FC<ProjectListProps> = ({
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
+  // Popover open state
+  const [openStatusPopover, setOpenStatusPopover] = useState<string | null>(null);
+
   // Status toggle mutation
   const statusMutation = useMutation({
     mutationFn: ({ projectId, isActive }: { projectId: string; isActive: boolean }) => 
       updateProjectStatus(projectId, isActive),
     onMutate: ({ projectId }) => {
       setUpdatingStatusId(projectId);
+      // Close popover when status update starts
+      setOpenStatusPopover(null);
     },
     onSuccess: (_, { projectId, isActive }) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -78,10 +89,9 @@ const ProjectList: React.FC<ProjectListProps> = ({
   });
 
   // Toggle project status
-  const toggleProjectStatus = (project: Project) => {
+  const toggleProjectStatus = (project: Project, newStatus: boolean) => {
     if (updatingStatusId === project.id) return; // Prevent multiple clicks
     
-    const newStatus = !(project.is_active ?? true);
     statusMutation.mutate({
       projectId: project.id,
       isActive: newStatus
@@ -275,6 +285,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 const overBudget = isOverBudget(hoursUsed, project.budget_hours);
                 const budgetPercentage = calculateBudgetPercentage(hoursUsed, project.budget_hours);
                 const isUpdating = updatingStatusId === project.id;
+                const isStatusPopoverOpen = openStatusPopover === project.id;
                 
                 return (
                   <TableRow 
@@ -306,22 +317,56 @@ const ProjectList: React.FC<ProjectListProps> = ({
                         <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1">
                           <Loader2 className="h-3 w-3 animate-spin" /> Updating...
                         </Badge>
-                      ) : project.is_active ? (
-                        <Badge 
-                          variant="outline" 
-                          className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1 cursor-pointer hover:bg-green-100"
-                          onClick={() => toggleProjectStatus(project)}
-                        >
-                          <Check className="h-3 w-3" /> Active
-                        </Badge>
                       ) : (
-                        <Badge 
-                          variant="outline" 
-                          className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1 cursor-pointer hover:bg-gray-100"
-                          onClick={() => toggleProjectStatus(project)}
-                        >
-                          <X className="h-3 w-3" /> Inactive
-                        </Badge>
+                        <Popover open={isStatusPopoverOpen} onOpenChange={(open) => {
+                          setOpenStatusPopover(open ? project.id : null);
+                        }}>
+                          <PopoverTrigger asChild>
+                            {project.is_active ? (
+                              <Badge 
+                                variant="outline" 
+                                className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1 cursor-pointer hover:bg-green-100"
+                              >
+                                <Check className="h-3 w-3" /> Active
+                              </Badge>
+                            ) : (
+                              <Badge 
+                                variant="outline" 
+                                className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1 cursor-pointer hover:bg-gray-100"
+                              >
+                                <X className="h-3 w-3" /> Inactive
+                              </Badge>
+                            )}
+                          </PopoverTrigger>
+                          <PopoverContent className="w-56 p-3">
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-sm">Change project status</h4>
+                              <p className="text-xs text-muted-foreground">
+                                Set the status of "{project.name}"
+                              </p>
+                              <div className="flex gap-2 pt-2">
+                                <Button
+                                  size="sm"
+                                  variant={project.is_active ? "outline" : "default"}
+                                  className="flex-1"
+                                  onClick={() => toggleProjectStatus(project, false)}
+                                  disabled={!project.is_active || isUpdating}
+                                >
+                                  <X className="h-3 w-3 mr-1" /> Inactive
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={project.is_active ? "default" : "outline"}
+                                  className="flex-1"
+                                  onClick={() => toggleProjectStatus(project, true)}
+                                  disabled={project.is_active || isUpdating}
+                                >
+                                  <Check className="h-3 w-3 mr-1" /> Active
+                                </Button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       )}
                     </TableCell>
                     <TableCell>
@@ -381,23 +426,18 @@ const ProjectList: React.FC<ProjectListProps> = ({
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
-                              onClick={() => toggleProjectStatus(project)}
+                              onClick={() => setOpenStatusPopover(project.id)}
                               disabled={isUpdating}
                             >
-                              {isUpdating ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> 
-                                  Updating...
-                                </>
-                              ) : project.is_active ? (
+                              {project.is_active ? (
                                 <>
                                   <X className="h-4 w-4 mr-2" /> 
-                                  Mark as Inactive
+                                  Change Status
                                 </>
                               ) : (
                                 <>
                                   <Check className="h-4 w-4 mr-2" /> 
-                                  Mark as Active
+                                  Change Status
                                 </>
                               )}
                             </DropdownMenuItem>
