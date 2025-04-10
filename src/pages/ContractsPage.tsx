@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +12,6 @@ import DeleteContractDialog from "@/components/contracts/DeleteContractDialog";
 import ContractFilters from "@/components/contracts/ContractFilters";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import TestAddContract from "@/components/TestAddContract";
 
 const ContractsPage = () => {
   const { user } = useAuth();
@@ -22,7 +20,6 @@ const ContractsPage = () => {
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [contractToDelete, setContractToDelete] = useState<Contract | null>(null);
   
-  // Filter states
   const [filters, setFilters] = useState({
     status: 'all',
     customerId: 'all',
@@ -32,7 +29,6 @@ const ContractsPage = () => {
   
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Fetch all contracts with filters
   const { 
     data: contracts = [], 
     isLoading, 
@@ -60,7 +56,6 @@ const ContractsPage = () => {
     }
   }, [error]);
 
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilters(prev => ({ 
       ...prev, 
@@ -68,7 +63,6 @@ const ContractsPage = () => {
     }));
   };
 
-  // Handle filter changes
   const handleFilterChange = (newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({
       ...prev,
@@ -76,7 +70,6 @@ const ContractsPage = () => {
     }));
   };
 
-  // Reset filters
   const resetFilters = () => {
     setFilters({
       status: 'all',
@@ -86,33 +79,28 @@ const ContractsPage = () => {
     });
   };
 
-  // Handle contract edit
   const handleEditContract = (contract: Contract) => {
     setEditingContract(contract);
     setIsAddContractOpen(true);
   };
   
-  // Handle contract deletion click
   const handleDeleteClick = (contract: Contract) => {
     setContractToDelete(contract);
     setIsDeleteContractOpen(true);
   };
 
-  // Close the add/edit contract dialog and reset state
   const closeAddEditDialog = () => {
     setIsAddContractOpen(false);
     setEditingContract(null);
-    refetch(); // Refresh the contracts list
+    refetch();
   };
 
-  // Close the delete contract dialog and reset state
   const closeDeleteDialog = () => {
     setIsDeleteContractOpen(false);
     setContractToDelete(null);
-    refetch(); // Refresh the contracts list
+    refetch();
   };
 
-  // Calculate contract statistics
   const calculateContractStats = () => {
     const totalContracts = contracts.length;
     const activeContracts = contracts.filter(c => c.is_active).length;
@@ -138,8 +126,6 @@ const ContractsPage = () => {
         </div>
         
         <div className="flex gap-2">
-          <TestAddContract />
-          
           <Button 
             onClick={() => refetch()}
             variant="outline"
@@ -158,7 +144,6 @@ const ContractsPage = () => {
         </div>
       </div>
 
-      {/* Search and filters */}
       <div className="mb-6 flex flex-col sm:flex-row gap-2 items-center">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -190,7 +175,6 @@ const ContractsPage = () => {
         )}
       </div>
 
-      {/* Filter panel */}
       {isFilterOpen && (
         <Card className="mb-6">
           <CardContent className="pt-6">
@@ -287,23 +271,18 @@ const ContractsPage = () => {
                 >
                   Add Your First Contract
                 </Button>
-                <div className="pt-2">
-                  <TestAddContract />
-                </div>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
       
-      {/* Contract add/edit dialog */}
       <AddEditContractDialog 
         isOpen={isAddContractOpen} 
         onClose={closeAddEditDialog} 
         existingContract={editingContract}
       />
       
-      {/* Contract delete confirmation dialog */}
       {contractToDelete && (
         <DeleteContractDialog 
           isOpen={isDeleteContractOpen}
