@@ -116,6 +116,7 @@ export const createUser = async (userData: Partial<User> & { password: string })
         role: userData.role || "employee",
         organization: userData.organization,
         time_zone: userData.time_zone,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", authData.user.id)
       .select();

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import AddEditUserDialog from "./AddEditUserDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UserCog, Edit, UserPlus } from "lucide-react";
 
 const TeamList = () => {
   const { userRole } = useAuth();
@@ -121,14 +122,7 @@ const TeamList = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Team Members</h2>
-        {isAdminOrManager && (
-          <Button onClick={() => setIsAddUserOpen(true)}>Add User</Button>
-        )}
-      </div>
-
-      <div className="border rounded-md">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -143,9 +137,13 @@ const TeamList = () => {
           <TableBody>
             {users?.map((user) => (
               <TableRow key={user.id}>
-                <TableCell>{user.full_name || "N/A"}</TableCell>
+                <TableCell className="font-medium">{user.full_name || "N/A"}</TableCell>
                 <TableCell>{user.email || "N/A"}</TableCell>
-                <TableCell className="capitalize">{user.role || "employee"}</TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-blue-100 text-blue-800">
+                    {user.role || "employee"}
+                  </span>
+                </TableCell>
                 <TableCell>{user.organization || "N/A"}</TableCell>
                 <TableCell>{user.time_zone || "N/A"}</TableCell>
                 {isAdminOrManager && (
@@ -155,6 +153,7 @@ const TeamList = () => {
                       size="sm"
                       onClick={() => handleEditUser(user)}
                     >
+                      <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
                   </TableCell>
@@ -165,6 +164,16 @@ const TeamList = () => {
               <TableRow>
                 <TableCell colSpan={isAdminOrManager ? 6 : 5} className="text-center py-8">
                   No team members found.
+                  {isAdminOrManager && (
+                    <Button 
+                      variant="outline" 
+                      className="ml-2"
+                      onClick={() => setIsAddUserOpen(true)}
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" /> 
+                      Add Team Member
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             )}
