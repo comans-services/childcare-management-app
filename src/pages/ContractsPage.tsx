@@ -23,8 +23,8 @@ const ContractsPage = () => {
   
   // Filter states
   const [filters, setFilters] = useState({
-    status: '',
-    customerId: '',
+    status: 'all',
+    customerId: 'all',
     searchTerm: '',
     isActive: undefined as boolean | undefined
   });
@@ -34,7 +34,11 @@ const ContractsPage = () => {
   // Fetch all contracts with filters
   const { data: contracts = [], isLoading, refetch } = useQuery({
     queryKey: ["contracts", filters],
-    queryFn: () => fetchContracts(filters),
+    queryFn: () => fetchContracts({
+      ...filters,
+      status: filters.status === 'all' ? '' : filters.status,
+      customerId: filters.customerId === 'all' ? '' : filters.customerId
+    }),
     enabled: !!user
   });
 
@@ -57,8 +61,8 @@ const ContractsPage = () => {
   // Reset filters
   const resetFilters = () => {
     setFilters({
-      status: '',
-      customerId: '',
+      status: 'all',
+      customerId: 'all',
       searchTerm: '',
       isActive: undefined
     });
@@ -145,7 +149,7 @@ const ContractsPage = () => {
           {isFilterOpen ? "Hide Filters" : "Show Filters"}
         </Button>
 
-        {(filters.status || filters.customerId || filters.isActive !== undefined) && (
+        {(filters.status !== 'all' || filters.customerId !== 'all' || filters.isActive !== undefined) && (
           <Button 
             variant="ghost" 
             onClick={resetFilters}

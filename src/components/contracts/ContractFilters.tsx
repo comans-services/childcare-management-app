@@ -35,7 +35,7 @@ const ContractFilters: React.FC<FiltersProps> = ({ filters, onFilterChange }) =>
           className="flex flex-col gap-2"
         >
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="" id="status-all" />
+            <RadioGroupItem value="all" id="status-all" />
             <Label htmlFor="status-all" className="cursor-pointer">All Statuses</Label>
           </div>
           <div className="flex items-center space-x-2">
@@ -68,7 +68,7 @@ const ContractFilters: React.FC<FiltersProps> = ({ filters, onFilterChange }) =>
             <SelectValue placeholder="All Customers" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Customers</SelectItem>
+            <SelectItem value="all">All Customers</SelectItem>
             {customers.map(customer => (
               <SelectItem key={customer.id} value={customer.id}>
                 {customer.name}
