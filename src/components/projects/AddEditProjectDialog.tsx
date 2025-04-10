@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -95,6 +96,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
       } 
       // Otherwise create a new project
       else {
+        // Create project without references to profiles
         const { data, error } = await supabase
           .from("projects")
           .insert({
@@ -106,11 +108,10 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
             created_by: user.id,
             is_active: true,
           })
-          .select()
-          .single();
+          .select();
         
         if (error) throw error;
-        return data.id;
+        return data?.[0]?.id;
       }
     },
     onSuccess: () => {
