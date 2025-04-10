@@ -335,20 +335,6 @@ const Dashboard = () => {
       color: "#10b981"
     },
     {
-      name: "Hours Logged",
-      value: hoursLoggedToDate,
-      icon: <Clock className="h-5 w-5 text-blue-500" />,
-      description: `${hoursLoggedToDate} of ${expectedHoursToDate}`,
-      color: "#3b82f6"
-    },
-    {
-      name: "Entries",
-      value: timesheetEntries.length,
-      icon: <ClipboardCheck className="h-5 w-5 text-purple-500" />,
-      description: `${timesheetEntries.length} Total`,
-      color: "#8b5cf6"
-    },
-    {
       name: "Status",
       value: completeWeek ? 100 : Math.round(weekProgress),
       icon: <Calendar className="h-5 w-5 text-amber-500" />,
@@ -509,7 +495,7 @@ const Dashboard = () => {
                   <RadialBarChart 
                     cx="50%" 
                     cy="50%" 
-                    innerRadius="20%" 
+                    innerRadius="30%" 
                     outerRadius="90%" 
                     data={radialData} 
                     startAngle={90} 
