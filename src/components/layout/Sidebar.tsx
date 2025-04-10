@@ -7,7 +7,8 @@ import {
   BarChart2, 
   Briefcase, 
   Users, 
-  Settings 
+  Settings,
+  Building2 
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -31,6 +32,11 @@ const Sidebar = () => {
         <NavLink to="/projects" className={navLinkClass}>
           <Briefcase className="h-5 w-5" />
           <span>Projects</span>
+        </NavLink>
+
+        <NavLink to="/customers" className={navLinkClass}>
+          <Building2 className="h-5 w-5" />
+          <span>Customers</span>
         </NavLink>
         
         {(userRole === "admin" || userRole === "manager") && (
