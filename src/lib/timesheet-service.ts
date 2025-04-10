@@ -203,6 +203,29 @@ export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
   }
 };
 
+export const deleteAllTimesheetEntries = async (userId: string): Promise<number> => {
+  try {
+    console.log(`Deleting all timesheet entries for user ${userId}`);
+    
+    const { error, count } = await supabase
+      .from("timesheet_entries")
+      .delete()
+      .eq("user_id", userId)
+      .select("count");
+
+    if (error) {
+      console.error("Error deleting all timesheet entries:", error);
+      throw error;
+    }
+    
+    console.log(`All timesheet entries deleted successfully. Rows affected: ${count}`);
+    return count || 0;
+  } catch (error) {
+    console.error("Error in deleteAllTimesheetEntries:", error);
+    throw error;
+  }
+};
+
 export const getProjectHoursUsed = async (projectId: string): Promise<number> => {
   try {
     const { data, error } = await supabase
