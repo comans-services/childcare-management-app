@@ -49,15 +49,51 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
   try {
     console.log(`Fetching user with ID: ${userId}`);
     
+    // First check if the profile exists
     const { data, error } = await supabase
       .from("profiles")
       .select("id, full_name, role, organization, time_zone")
       .eq("id", userId)
-      .single();
+      .maybeSingle(); // Using maybeSingle instead of single to avoid error when no profile found
     
     if (error) {
       console.error("Error fetching user:", error);
       return null;
+    }
+    
+    // If no profile exists, we need to create one
+    if (!data) {
+      console.log("No profile found, creating default profile");
+      
+      // Get current user's email to include in profile
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) {
+        console.error("No authenticated user found");
+        return null;
+      }
+      
+      // Create default profile
+      const newProfile = {
+        id: userId,
+        full_name: "",
+        role: "employee",
+        organization: "",
+        time_zone: "UTC",
+        email: authData.user.email
+      };
+      
+      const { data: createdProfile, error: createError } = await supabase
+        .from("profiles")
+        .insert([newProfile])
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error("Error creating profile:", createError);
+        return null;
+      }
+      
+      return createdProfile;
     }
     
     return data;

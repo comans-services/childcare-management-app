@@ -14,6 +14,7 @@ const SettingsPage = () => {
   const { user, userRole } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [formState, setFormState] = useState({
     full_name: "",
     organization: "",
@@ -62,11 +63,24 @@ const SettingsPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!profile) return;
+    if (!user?.id) {
+      toast({
+        title: "User not authenticated",
+        description: "You must be logged in to update your profile",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSaving(true);
     
     try {
+      // If no profile exists yet, create minimal data with user id
+      const profileData: User = profile || { id: user.id };
+      
+      // Merge form data with profile data
       const updatedUser = await updateUser({
-        ...profile,
+        ...profileData,
         full_name: formState.full_name,
         organization: formState.organization,
         time_zone: formState.time_zone,
@@ -84,6 +98,8 @@ const SettingsPage = () => {
         description: "There was an error updating your profile",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
   
@@ -187,7 +203,9 @@ const SettingsPage = () => {
                 </Select>
               </div>
               
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
             </form>
           )}
         </CardContent>
