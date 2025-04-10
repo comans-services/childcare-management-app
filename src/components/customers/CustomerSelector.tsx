@@ -40,15 +40,15 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
       <div className="flex items-center gap-2">
         <div className="flex-1">
           <Select
-            value={selectedCustomerId || ""}
-            onValueChange={(value) => onSelectCustomer(value || null)}
+            value={selectedCustomerId || "none"}
+            onValueChange={(value) => onSelectCustomer(value === "none" ? null : value)}
             disabled={disabled || isLoading}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a customer" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
               {customers.map((customer) => (
                 <SelectItem key={customer.id} value={customer.id}>
                   {customer.name}
