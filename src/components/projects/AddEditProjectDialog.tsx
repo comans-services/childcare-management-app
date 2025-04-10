@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -223,6 +222,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
                         field.onChange(customerId);
                       }}
                       disabled={mutation.isPending}
+                      preventClose={true}
                     />
                   </FormControl>
                   <FormDescription>

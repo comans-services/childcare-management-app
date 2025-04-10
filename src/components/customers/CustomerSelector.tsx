@@ -17,14 +17,16 @@ interface CustomerSelectorProps {
   selectedCustomerId: string | null | undefined;
   onSelectCustomer: (customerId: string | null) => void;
   disabled?: boolean;
-  containerClassName?: string; // Add prop for container class
+  containerClassName?: string; 
+  preventClose?: boolean; // New prop to prevent parent container from closing
 }
 
 const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   selectedCustomerId,
   onSelectCustomer,
   disabled = false,
-  containerClassName = "space-y-2" // Default class
+  containerClassName = "space-y-2",
+  preventClose = false
 }) => {
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
@@ -42,8 +44,19 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     queryFn: fetchCustomers
   });
 
+  // Handler to stop propagation if needed
+  const handleInteraction = (e: React.MouseEvent | React.KeyboardEvent) => {
+    if (preventClose) {
+      e.stopPropagation();
+    }
+  };
+
   return (
-    <div className={containerClassName}>
+    <div 
+      className={containerClassName}
+      onClick={handleInteraction}
+      onKeyDown={handleInteraction}
+    >
       <div className="flex items-center gap-2">
         <div className="flex-1">
           <Select
@@ -52,13 +65,25 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
               const customerId = value === "none" ? null : value;
               console.log('CustomerSelector - onValueChange:', customerId);
               onSelectCustomer(customerId);
+              if (preventClose) {
+                // Prevent the event from bubbling up
+                setTimeout(() => {
+                  const activeElement = document.activeElement as HTMLElement;
+                  if (activeElement && activeElement.blur) {
+                    activeElement.blur();
+                  }
+                }, 100);
+              }
             }}
             disabled={disabled || isLoading}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger 
+              className="w-full"
+              onClick={handleInteraction}
+            >
               <SelectValue placeholder="Select a customer" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent onClick={handleInteraction}>
               <SelectItem value="none">None</SelectItem>
               {customers.map((customer) => (
                 <SelectItem key={customer.id} value={customer.id}>
@@ -73,7 +98,10 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
           type="button"
           size="icon"
           variant="outline"
-          onClick={() => setIsAddCustomerOpen(true)}
+          onClick={(e) => {
+            if (preventClose) e.stopPropagation();
+            setIsAddCustomerOpen(true);
+          }}
           disabled={disabled}
         >
           {isLoading ? (

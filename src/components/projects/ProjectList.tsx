@@ -14,7 +14,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
@@ -266,9 +265,10 @@ const ProjectList: React.FC<ProjectListProps> = ({
     }
   }, [editingField, queryClient]);
 
-  const handleCustomerSelectorClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
+  // This function is no longer needed as we're using preventClose prop
+  // const handleCustomerSelectorClick = (e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  // };
 
   return (
     <div className="space-y-4">
@@ -461,11 +461,12 @@ const ProjectList: React.FC<ProjectListProps> = ({
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {isEditingThisProjectCustomer ? (
-                        <div className="flex flex-col gap-2" data-editing="true" onClick={handleCustomerSelectorClick}>
+                        <div className="flex flex-col gap-2" data-editing="true">
                           <CustomerSelector
                             selectedCustomerId={editingCustomerId}
                             onSelectCustomer={setEditingCustomerId}
                             containerClassName="m-0"
+                            preventClose={true}  // Add this prop to prevent closing
                           />
                           <div className="flex gap-2 justify-end mt-1">
                             <Button 
