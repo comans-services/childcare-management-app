@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
@@ -207,19 +206,30 @@ export const deleteAllTimesheetEntries = async (userId: string): Promise<number>
   try {
     console.log(`Deleting all timesheet entries for user ${userId}`);
     
-    const { error, count } = await supabase
+    // First, get the count of entries that will be deleted
+    const { count: entriesCount, error: countError } = await supabase
       .from("timesheet_entries")
-      .delete()
-      .eq("user_id", userId)
-      .select("count");
-
-    if (error) {
-      console.error("Error deleting all timesheet entries:", error);
-      throw error;
+      .select("id", { count: 'exact' })
+      .eq("user_id", userId);
+    
+    if (countError) {
+      console.error("Error counting timesheet entries:", countError);
+      throw countError;
     }
     
-    console.log(`All timesheet entries deleted successfully. Rows affected: ${count}`);
-    return count || 0;
+    // Then perform the deletion without using RETURNING
+    const { error: deleteError } = await supabase
+      .from("timesheet_entries")
+      .delete()
+      .eq("user_id", userId);
+
+    if (deleteError) {
+      console.error("Error deleting all timesheet entries:", deleteError);
+      throw deleteError;
+    }
+    
+    console.log(`All timesheet entries deleted successfully. Rows affected: ${entriesCount}`);
+    return entriesCount || 0;
   } catch (error) {
     console.error("Error in deleteAllTimesheetEntries:", error);
     throw error;
