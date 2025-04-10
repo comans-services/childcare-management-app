@@ -1,0 +1,123 @@
+
+import { supabase } from "@/integrations/supabase/client";
+import { formatDate } from "./date-utils";
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  budget_hours: number;
+}
+
+export interface TimesheetEntry {
+  id?: string;
+  project_id: string;
+  user_id: string;
+  entry_date: string;
+  hours_logged: number;
+  notes?: string;
+  jira_task_id?: string;
+  project?: Project;
+}
+
+export const fetchUserProjects = async (): Promise<Project[]> => {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("id, name, description, budget_hours")
+    .eq("is_active", true);
+
+  if (error) {
+    console.error("Error fetching projects:", error);
+    throw error;
+  }
+
+  return data || [];
+};
+
+export const fetchTimesheetEntries = async (
+  userId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<TimesheetEntry[]> => {
+  const { data, error } = await supabase
+    .from("timesheet_entries")
+    .select(`
+      id, 
+      project_id, 
+      user_id, 
+      entry_date, 
+      hours_logged, 
+      notes, 
+      jira_task_id,
+      projects:project_id (id, name, description, budget_hours)
+    `)
+    .eq("user_id", userId)
+    .gte("entry_date", formatDate(startDate))
+    .lte("entry_date", formatDate(endDate));
+
+  if (error) {
+    console.error("Error fetching timesheet entries:", error);
+    throw error;
+  }
+
+  return data.map(entry => ({
+    ...entry,
+    project: entry.projects as Project
+  })) || [];
+};
+
+export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
+  if (entry.id) {
+    // Update existing entry
+    const { data, error } = await supabase
+      .from("timesheet_entries")
+      .update({
+        project_id: entry.project_id,
+        entry_date: entry.entry_date,
+        hours_logged: entry.hours_logged,
+        notes: entry.notes,
+        jira_task_id: entry.jira_task_id
+      })
+      .eq("id", entry.id)
+      .select();
+
+    if (error) {
+      console.error("Error updating timesheet entry:", error);
+      throw error;
+    }
+    
+    return data?.[0] as TimesheetEntry;
+  } else {
+    // Create new entry
+    const { data, error } = await supabase
+      .from("timesheet_entries")
+      .insert({
+        project_id: entry.project_id,
+        user_id: entry.user_id,
+        entry_date: entry.entry_date,
+        hours_logged: entry.hours_logged,
+        notes: entry.notes,
+        jira_task_id: entry.jira_task_id
+      })
+      .select();
+
+    if (error) {
+      console.error("Error creating timesheet entry:", error);
+      throw error;
+    }
+    
+    return data?.[0] as TimesheetEntry;
+  }
+};
+
+export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
+  const { error } = await supabase
+    .from("timesheet_entries")
+    .delete()
+    .eq("id", entryId);
+
+  if (error) {
+    console.error("Error deleting timesheet entry:", error);
+    throw error;
+  }
+};

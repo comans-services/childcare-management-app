@@ -2,6 +2,7 @@
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import WeeklyView from "@/components/timesheet/WeeklyView";
 
 const TimesheetPage = () => {
   const { user } = useAuth();
@@ -19,10 +20,13 @@ const TimesheetPage = () => {
           <CardDescription>Your time entries for the current week</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* This will be implemented next */}
-          <div className="p-8 text-center">
-            <p className="text-gray-500">Timesheet content will be implemented in the next step</p>
-          </div>
+          {user ? (
+            <WeeklyView />
+          ) : (
+            <div className="p-8 text-center">
+              <p className="text-gray-500">Please sign in to view your timesheet</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
