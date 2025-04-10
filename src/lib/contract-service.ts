@@ -110,6 +110,28 @@ const ensureContractsTableExists = async (): Promise<boolean> => {
   }
 };
 
+/**
+ * Determines the contract status based on start and end dates
+ */
+export const determineContractStatus = (startDate: string, endDate: string): 'active' | 'expired' | 'pending_renewal' => {
+  const today = new Date();
+  const endDateObj = new Date(endDate);
+  const daysUntilExpiry = Math.ceil((endDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Contract has expired
+  if (daysUntilExpiry < 0) {
+    return 'expired';
+  }
+  
+  // Contract is pending renewal (less than 30 days until expiry)
+  if (daysUntilExpiry <= 30) {
+    return 'pending_renewal';
+  }
+  
+  // Contract is active
+  return 'active';
+};
+
 export const fetchContracts = async (filters?: {
   status?: string;
   customerId?: string;
@@ -170,6 +192,28 @@ export const fetchContracts = async (filters?: {
       const today = new Date();
       const endDate = new Date(contract.end_date);
       const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Determine if we need to update the contract status based on dates
+      const calculatedStatus = determineContractStatus(contract.start_date, contract.end_date);
+      
+      // If the status has changed, update it in the database
+      if (calculatedStatus !== contract.status) {
+        console.log(`Updating contract ${contract.id} status from ${contract.status} to ${calculatedStatus}`);
+        try {
+          await supabase
+            .from("contracts")
+            .update({ 
+              status: calculatedStatus,
+              updated_at: new Date().toISOString() 
+            })
+            .eq("id", contract.id);
+            
+          // Update the local object with the new status
+          contract.status = calculatedStatus;
+        } catch (err) {
+          console.error("Error updating contract status:", err);
+        }
+      }
 
       let customerName = null;
       // If there's a customer_id, try to fetch the customer name
@@ -236,6 +280,12 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
     // Ensure contracts table exists
     await ensureContractsTableExists();
 
+    // Calculate the contract status based on dates
+    const calculatedStatus = determineContractStatus(contract.start_date, contract.end_date);
+
+    // Use the calculated status unless it's a renewed contract (which should stay as 'renewed')
+    const finalStatus = contract.status === 'renewed' ? 'renewed' : calculatedStatus;
+
     let contractId = contract.id;
     let savedContract: Contract;
 
@@ -249,7 +299,7 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
           customer_id: contract.customer_id,
           start_date: contract.start_date,
           end_date: contract.end_date,
-          status: contract.status,
+          status: finalStatus, // Use the calculated or preserved status
           is_active: contract.is_active ?? true,
           updated_at: new Date().toISOString()
         })
@@ -271,7 +321,7 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
         customer_id: contract.customer_id,
         start_date: contract.start_date,
         end_date: contract.end_date,
-        status: contract.status,
+        status: finalStatus, // Use the calculated status
         is_active: contract.is_active ?? true
       });
       
@@ -283,7 +333,7 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
           customer_id: contract.customer_id,
           start_date: contract.start_date,
           end_date: contract.end_date,
-          status: contract.status,
+          status: finalStatus, // Use the calculated status
           is_active: contract.is_active ?? true
         })
         .select();
