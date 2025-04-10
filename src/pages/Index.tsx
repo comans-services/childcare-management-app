@@ -521,7 +521,7 @@ const Dashboard = () => {
                         fill: '#fff',
                         formatter: (value) => `${value}%`,
                       }}
-                      backgroundColors="#f5f5f5"
+                      background={{fill: "#f5f5f5"}}
                       minAngle={15}
                       maxAngle={360}
                     />
