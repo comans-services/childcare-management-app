@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2, Building2 } from "lucide-react";
+import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2, Building2, Calendar } from "lucide-react";
 import { Project, updateProjectStatus } from "@/lib/timesheet-service";
 import {
   DropdownMenu,
@@ -30,6 +30,9 @@ import {
   PopoverContent
 } from "@/components/ui/popover";
 import { Customer, fetchCustomers } from "@/lib/customer-service";
+import CustomerSelector from "@/components/customers/CustomerSelector";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProjectListProps {
   projects: Project[];
@@ -39,6 +42,8 @@ interface ProjectListProps {
 
 type SortField = 'name' | 'budget_hours' | 'hours_used' | 'start_date';
 type SortDirection = 'asc' | 'desc';
+
+type EditableField = 'name' | 'description' | 'customer_id' | 'dates';
 
 const ProjectList: React.FC<ProjectListProps> = ({ 
   projects, 
@@ -55,14 +60,18 @@ const ProjectList: React.FC<ProjectListProps> = ({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const [openStatusPopover, setOpenStatusPopover] = useState<string | null>(null);
-
-  // Fetch customers for displaying customer information
+  const [editingField, setEditingField] = useState<{projectId: string, field: EditableField} | null>(null);
+  const [editingName, setEditingName] = useState<string>("");
+  const [editingDescription, setEditingDescription] = useState<string>("");
+  const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
+  const [editingStartDate, setEditingStartDate] = useState<string>("");
+  const [editingEndDate, setEditingEndDate] = useState<string>("");
+  
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
     queryFn: fetchCustomers
   });
 
-  // Create a customer lookup map
   const customerMap = useMemo(() => {
     return customers.reduce((acc, customer) => {
       acc[customer.id] = customer;
@@ -97,6 +106,34 @@ const ProjectList: React.FC<ProjectListProps> = ({
     }
   });
 
+  const fieldUpdateMutation = useMutation({
+    mutationFn: async ({ projectId, field, value }: { projectId: string; field: string | Record<string, any>; value?: any }) => {
+      const updateData = typeof field === 'string' ? { [field]: value } : field;
+      const { error } = await supabase
+        .from("projects")
+        .update({ ...updateData, updated_at: new Date().toISOString() })
+        .eq("id", projectId);
+      if (error) throw error;
+      return projectId;
+    },
+    onSuccess: (projectId) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast({
+        title: "Project updated",
+        description: "Project details updated successfully",
+      });
+      setEditingField(null);
+    },
+    onError: (error) => {
+      console.error("Failed to update project field:", error);
+      toast({
+        title: "Update failed",
+        description: "Could not update project details",
+        variant: "destructive",
+      });
+    }
+  });
+
   const toggleProjectStatus = (project: Project, newStatus: boolean) => {
     if (updatingStatusId === project.id) return;
     
@@ -105,6 +142,56 @@ const ProjectList: React.FC<ProjectListProps> = ({
       isActive: newStatus
     });
   };
+
+  const startEditing = (projectId: string, field: EditableField, project: Project) => {
+    setEditingField({ projectId, field });
+    
+    if (field === 'name') {
+      setEditingName(project.name);
+    } else if (field === 'description') {
+      setEditingDescription(project.description || '');
+    } else if (field === 'customer_id') {
+      setEditingCustomerId(project.customer_id || null);
+    } else if (field === 'dates') {
+      setEditingStartDate(project.start_date || '');
+      setEditingEndDate(project.end_date || '');
+    }
+  };
+
+  const saveFieldEdit = (projectId: string, field: EditableField) => {
+    if (field === 'name') {
+      fieldUpdateMutation.mutate({ projectId, field: 'name', value: editingName });
+    } else if (field === 'description') {
+      fieldUpdateMutation.mutate({ projectId, field: 'description', value: editingDescription });
+    } else if (field === 'customer_id') {
+      fieldUpdateMutation.mutate({ projectId, field: 'customer_id', value: editingCustomerId });
+    } else if (field === 'dates') {
+      fieldUpdateMutation.mutate({ 
+        projectId, 
+        field: {
+          start_date: editingStartDate || null,
+          end_date: editingEndDate || null
+        }
+      });
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditingField(null);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (editingField && !((event.target as HTMLElement).closest('[data-editing="true"]'))) {
+        cancelEditing();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editingField]);
 
   const calculateBudgetPercentage = (used: number = 0, budget: number): number => {
     if (budget === 0) return 0;
@@ -284,6 +371,10 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 const isUpdating = updatingStatusId === project.id;
                 const isStatusPopoverOpen = openStatusPopover === project.id;
                 const customer = project.customer_id ? customerMap[project.customer_id] : undefined;
+                const isEditingThisProjectName = editingField?.projectId === project.id && editingField?.field === 'name';
+                const isEditingThisProjectDescription = editingField?.projectId === project.id && editingField?.field === 'description';
+                const isEditingThisProjectCustomer = editingField?.projectId === project.id && editingField?.field === 'customer_id';
+                const isEditingThisProjectDates = editingField?.projectId === project.id && editingField?.field === 'dates';
                 
                 return (
                   <TableRow 
@@ -291,38 +382,174 @@ const ProjectList: React.FC<ProjectListProps> = ({
                     className={!project.is_active ? "opacity-60" : ""}
                   >
                     <TableCell className="font-medium">
-                      {project.name}
-                      {!project.is_active && <span className="ml-2 text-xs text-muted-foreground">(inactive)</span>}
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {project.description || "-"}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {customer ? (
-                        <div className="flex items-center gap-1">
-                          <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{customer.name}</span>
-                          {customer.company && (
-                            <span className="text-xs text-muted-foreground">
-                              ({customer.company})
-                            </span>
-                          )}
+                      {isEditingThisProjectName ? (
+                        <div className="flex gap-2" data-editing="true">
+                          <Input 
+                            value={editingName} 
+                            onChange={(e) => setEditingName(e.target.value)}
+                            className="min-w-[200px]"
+                            autoFocus
+                          />
+                          <Button 
+                            size="sm" 
+                            onClick={() => saveFieldEdit(project.id, 'name')}
+                            disabled={!editingName.trim()}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={cancelEditing}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
                       ) : (
-                        "-"
+                        <div 
+                          className="hover:bg-gray-50 p-1 rounded cursor-pointer"
+                          onClick={() => startEditing(project.id, 'name', project)}
+                        >
+                          {project.name}
+                          {!project.is_active && <span className="ml-2 text-xs text-muted-foreground">(inactive)</span>}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-[200px]">
+                      {isEditingThisProjectDescription ? (
+                        <div className="flex flex-col gap-2" data-editing="true">
+                          <Textarea 
+                            value={editingDescription} 
+                            onChange={(e) => setEditingDescription(e.target.value)}
+                            className="min-w-[200px] min-h-[80px]"
+                            autoFocus
+                          />
+                          <div className="flex gap-2 justify-end mt-1">
+                            <Button 
+                              size="sm" 
+                              onClick={() => saveFieldEdit(project.id, 'description')}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={cancelEditing}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div 
+                          className="hover:bg-gray-50 p-1 rounded cursor-pointer truncate"
+                          onClick={() => startEditing(project.id, 'description', project)}
+                        >
+                          {project.description || <span className="text-muted-foreground text-sm italic">Click to add description</span>}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {project.start_date && project.end_date ? (
-                        <>
-                          {formatDateDisplay(new Date(project.start_date))} - {formatDateDisplay(new Date(project.end_date))}
-                        </>
-                      ) : project.start_date ? (
-                        <>From {formatDateDisplay(new Date(project.start_date))}</>
-                      ) : project.end_date ? (
-                        <>Until {formatDateDisplay(new Date(project.end_date))}</>
+                      {isEditingThisProjectCustomer ? (
+                        <div className="flex flex-col gap-2" data-editing="true">
+                          <CustomerSelector
+                            selectedCustomerId={editingCustomerId}
+                            onSelectCustomer={setEditingCustomerId}
+                          />
+                          <div className="flex gap-2 justify-end mt-1">
+                            <Button 
+                              size="sm" 
+                              onClick={() => saveFieldEdit(project.id, 'customer_id')}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={cancelEditing}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
                       ) : (
-                        "-"
+                        <div 
+                          className="hover:bg-gray-50 p-1 rounded cursor-pointer"
+                          onClick={() => startEditing(project.id, 'customer_id', project)}
+                        >
+                          {customer ? (
+                            <div className="flex items-center gap-1">
+                              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span>{customer.name}</span>
+                              {customer.company && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({customer.company})
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm italic">Click to assign customer</span>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {isEditingThisProjectDates ? (
+                        <div className="flex flex-col gap-2" data-editing="true">
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">Start date:</label>
+                              <Input 
+                                type="date" 
+                                value={editingStartDate} 
+                                onChange={(e) => setEditingStartDate(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">End date:</label>
+                              <Input 
+                                type="date" 
+                                value={editingEndDate} 
+                                onChange={(e) => setEditingEndDate(e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2 justify-end mt-1">
+                            <Button 
+                              size="sm" 
+                              onClick={() => saveFieldEdit(project.id, 'dates')}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={cancelEditing}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div 
+                          className="hover:bg-gray-50 p-1 rounded cursor-pointer"
+                          onClick={() => startEditing(project.id, 'dates', project)}
+                        >
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                            {project.start_date && project.end_date ? (
+                              <>
+                                {formatDateDisplay(new Date(project.start_date))} - {formatDateDisplay(new Date(project.end_date))}
+                              </>
+                            ) : project.start_date ? (
+                              <>From {formatDateDisplay(new Date(project.start_date))}</>
+                            ) : project.end_date ? (
+                              <>Until {formatDateDisplay(new Date(project.end_date))}</>
+                            ) : (
+                              <span className="text-muted-foreground text-sm italic">Click to set dates</span>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
