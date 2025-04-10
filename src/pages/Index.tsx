@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfWeek, endOfWeek, isToday, isFriday, getDay } from "date-fns";
+import { format, startOfWeek, endOfWeek, isToday, isFriday, getDay, parseISO, isSameDay } from "date-fns";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -53,7 +53,7 @@ const Dashboard = () => {
     }
   }, [session, navigate]);
 
-  const { data: timesheetEntries = [] } = useQuery({
+  const { data: timesheetEntries = [], isLoading: entriesLoading } = useQuery({
     queryKey: ["timesheet", session?.user?.id, startDate, endDate],
     queryFn: () => session?.user?.id 
       ? fetchTimesheetEntries(session.user.id, startDate, endDate) 
@@ -72,7 +72,35 @@ const Dashboard = () => {
   });
 
   const totalHours = timesheetEntries.reduce((sum, entry) => sum + entry.hours_logged, 0);
-
+  
+  const getDailyEntries = () => {
+    const dailyEntries = [];
+    
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startDate);
+      day.setDate(startDate.getDate() + i);
+      const formattedDay = format(day, "yyyy-MM-dd");
+      
+      const entriesForDay = timesheetEntries.filter(entry => {
+        const entryDate = typeof entry.entry_date === 'string' 
+          ? entry.entry_date 
+          : format(entry.entry_date, "yyyy-MM-dd");
+          
+        return entryDate === formattedDay;
+      });
+      
+      dailyEntries.push({
+        date: day,
+        entries: entriesForDay,
+        hours: entriesForDay.reduce((sum, entry) => sum + entry.hours_logged, 0)
+      });
+    }
+    
+    return dailyEntries;
+  };
+  
+  const dailyEntries = getDailyEntries();
+  
   const projectHours = timesheetEntries.reduce((acc, entry) => {
     const projectId = entry.project_id;
     const projectName = entry.project?.name || "Unknown Project";
@@ -132,14 +160,12 @@ const Dashboard = () => {
     deadlineMessage = "Deadline passed";
   }
   
-  const expectedWeeklyHours = 40;
-  
   const calculateExpectedHours = () => {
     const today = new Date();
     const dayOfWeek = getDay(today);
     
     if (dayOfWeek === 0 || dayOfWeek === 6) {
-      return expectedWeeklyHours;
+      return 40;
     }
     
     const workDaysElapsed = Math.min(dayOfWeek, 5);
@@ -148,14 +174,31 @@ const Dashboard = () => {
   
   const expectedHoursToDate = calculateExpectedHours();
   
+  const calculateHoursLoggedToDate = () => {
+    const today = new Date();
+    const todayFormatted = format(today, "yyyy-MM-dd");
+    
+    return dailyEntries
+      .filter(day => {
+        const dayFormatted = format(day.date, "yyyy-MM-dd");
+        return dayFormatted <= todayFormatted;
+      })
+      .reduce((sum, day) => sum + day.hours, 0);
+  };
+  
+  const hoursLoggedToDate = calculateHoursLoggedToDate();
+  
   const weekProgress = expectedHoursToDate > 0 
-    ? Math.min(100, (totalHours / expectedHoursToDate) * 100) 
+    ? Math.min(100, (hoursLoggedToDate / expectedHoursToDate) * 100) 
     : 0;
 
   const hasEntries = timesheetEntries.length > 0;
   const completeWeek = weekProgress >= 100;
   const isFridayToday = isFriday(today);
-  const isLate = isFridayToday && !hasEntries;
+  const isTodayComplete = dailyEntries
+    .filter(day => isSameDay(day.date, today))
+    .some(day => day.hours > 0);
+  const isLate = isFridayToday && !isTodayComplete;
   
   const getTimesheetCardStyle = () => {
     if (completeWeek) {
@@ -287,6 +330,17 @@ const Dashboard = () => {
             It's Friday and you haven't entered any timesheet data yet. Please submit your hours before 5:00 PM today.
           </AlertDescription>
         </Alert>
+      )}
+      
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-gray-500 p-2 bg-gray-100 rounded-md mb-4">
+          <div>Expected hours to date: {expectedHoursToDate}</div>
+          <div>Hours logged to date: {hoursLoggedToDate}</div>
+          <div>Week progress: {weekProgress.toFixed(2)}%</div>
+          <div>Is complete: {completeWeek ? 'Yes' : 'No'}</div>
+          <div>Today is Friday: {isFridayToday ? 'Yes' : 'No'}</div>
+          <div>Today has entries: {isTodayComplete ? 'Yes' : 'No'}</div>
+        </div>
       )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
