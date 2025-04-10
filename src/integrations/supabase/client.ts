@@ -9,35 +9,48 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-// Create function to setup the contracts table if needed
-const setupContractsTable = async () => {
-  const { data, error } = await supabase
-    .from('pg_tables')
-    .select('tablename')
-    .eq('schemaname', 'public')
-    .eq('tablename', 'contracts');
-  
-  if (error) {
-    console.error("Error checking if contracts table exists:", error);
-    return;
-  }
-  
-  if (!data || data.length === 0) {
-    console.log("Creating contracts table...");
-    // Create contracts table if it doesn't exist
-    const { error: createError } = await supabase.rpc('create_contracts_table');
-    if (createError) {
-      console.error("Failed to create contracts table:", createError);
-    }
-  }
-};
-
 // Using any type temporarily until Database types can be properly updated
 export const supabase = createClient<any>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Create function to setup the contracts table if needed
+const setupContractsTable = async () => {
+  try {
+    console.log("Checking if contracts table exists...");
+    const { data, error } = await supabase
+      .from('pg_tables')
+      .select('tablename')
+      .eq('schemaname', 'public')
+      .eq('tablename', 'contracts');
+    
+    if (error) {
+      console.error("Error checking if contracts table exists:", error);
+      return;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log("Creating contracts table...");
+      // Create contracts table if it doesn't exist
+      const { error: createError } = await supabase.rpc('create_contracts_table');
+      if (createError) {
+        console.error("Failed to create contracts table:", createError);
+        // Try to create the stored procedure first
+        await setupStoredProcedure();
+      } else {
+        console.log("Contracts table created successfully");
+      }
+    } else {
+      console.log("Contracts table already exists");
+    }
+  } catch (err) {
+    console.error("Error in setupContractsTable:", err);
+  }
+};
 
 // Add stored procedure to create contracts table if it doesn't exist
 const setupStoredProcedure = async () => {
   try {
+    console.log("Checking if create_contracts_table procedure exists...");
+    
     const { error } = await supabase.rpc('create_contracts_table');
     
     if (error && error.code === '42883') { // undefined function error
@@ -76,8 +89,13 @@ const setupStoredProcedure = async () => {
         console.error("Error creating stored procedure:", createProcedureError);
       } else {
         console.log("Stored procedure created successfully.");
-        setupContractsTable();
+        // Try to create the table again
+        await setupContractsTable();
       }
+    } else if (error) {
+      console.error("Error checking create_contracts_table procedure:", error);
+    } else {
+      console.log("create_contracts_table procedure exists");
     }
   } catch (err) {
     console.error("Error handling stored procedure:", err);
@@ -85,9 +103,12 @@ const setupStoredProcedure = async () => {
 };
 
 // Setup tables when app loads
-setupContractsTable().catch(err => {
-  console.error("Error in setup contracts table:", err);
-  setupStoredProcedure().catch(err => {
-    console.error("Error in setup stored procedure:", err);
-  });
-});
+(async () => {
+  try {
+    console.log("Setting up database tables...");
+    await setupContractsTable();
+    console.log("Database setup complete");
+  } catch (err) {
+    console.error("Error in database setup:", err);
+  }
+})();

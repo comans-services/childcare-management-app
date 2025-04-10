@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
@@ -70,9 +71,14 @@ export const fetchServices = async (): Promise<Service[]> => {
   }
 };
 
-export const fetchContracts = async (): Promise<Contract[]> => {
+export const fetchContracts = async (filters?: {
+  status?: string;
+  customerId?: string;
+  searchTerm?: string;
+  isActive?: boolean;
+}): Promise<Contract[]> => {
   try {
-    console.log("Fetching contracts...");
+    console.log("Fetching contracts with filters:", filters);
     
     // First check if contracts table exists
     const { data: contractsCheck } = await supabase
@@ -86,10 +92,33 @@ export const fetchContracts = async (): Promise<Contract[]> => {
       return [];
     }
     
-    // Fetch contracts without trying to join with customers
-    const { data, error } = await supabase
+    // Start building the query
+    let query = supabase
       .from("contracts")
-      .select("*")
+      .select("*");
+    
+    // Apply filters if provided
+    if (filters) {
+      if (filters.status) {
+        query = query.eq("status", filters.status);
+      }
+      
+      if (filters.customerId) {
+        query = query.eq("customer_id", filters.customerId);
+      }
+      
+      if (filters.searchTerm && filters.searchTerm.trim() !== '') {
+        const searchTerm = filters.searchTerm.trim().toLowerCase();
+        query = query.ilike("name", `%${searchTerm}%`);
+      }
+      
+      if (filters.isActive !== undefined) {
+        query = query.eq("is_active", filters.isActive);
+      }
+    }
+    
+    // Execute the query with ordering
+    const { data, error } = await query
       .order("is_active", { ascending: false })
       .order("status", { ascending: true })
       .order("end_date", { ascending: true });
