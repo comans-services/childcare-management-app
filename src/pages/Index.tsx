@@ -522,8 +522,6 @@ const Dashboard = () => {
                         formatter: (value) => `${value}%`,
                       }}
                       background={{fill: "#f5f5f5"}}
-                      minAngle={15}
-                      maxAngle={360}
                     />
                     <Legend 
                       iconSize={10}
