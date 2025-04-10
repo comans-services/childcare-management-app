@@ -159,7 +159,7 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
         throw error;
       }
 
-      savedContract = data?.[0] as Contract;
+      savedContract = data?.[0];
       console.log("Contract updated successfully:", savedContract);
     } else {
       // Create new contract
@@ -181,7 +181,7 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
         throw error;
       }
 
-      savedContract = data?.[0] as Contract;
+      savedContract = data?.[0];
       contractId = savedContract.id;
       console.log("Contract created successfully:", savedContract);
     }
@@ -296,7 +296,7 @@ export const fetchContractTimeEntries = async (
     const contractIds = [...new Set(entriesData.map(entry => entry.contract_id))];
     
     if (contractIds.length === 0) {
-      return entriesData;
+      return entriesData as ContractTimeEntry[];
     }
     
     const { data: contractsData, error: contractsError } = await supabase
@@ -306,7 +306,7 @@ export const fetchContractTimeEntries = async (
 
     if (contractsError) {
       console.error("Error fetching contracts for entries:", contractsError);
-      return entriesData;
+      return entriesData as ContractTimeEntry[];
     }
 
     console.log(`Fetched ${contractsData?.length || 0} contracts for time entries`);
@@ -321,7 +321,7 @@ export const fetchContractTimeEntries = async (
     const entriesWithContracts = entriesData.map(entry => ({
       ...entry,
       contract: contractsMap[entry.contract_id]
-    }));
+    })) as ContractTimeEntry[];
 
     return entriesWithContracts;
   } catch (error) {
