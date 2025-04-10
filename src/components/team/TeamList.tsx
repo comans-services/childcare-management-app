@@ -20,11 +20,10 @@ import { UserCog, Edit, UserPlus } from "lucide-react";
 const TeamList = () => {
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
   // Fetch users
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: fetchUsers,
   });
@@ -49,47 +48,30 @@ const TeamList = () => {
     },
   });
 
-  // Create user mutation
-  const createUserMutation = useMutation({
-    mutationFn: createUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast({
-        title: "User created",
-        description: "The user has been successfully created.",
-      });
-      setIsAddUserOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to create user",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleEditUser = (user: User) => {
+    console.log("Editing user:", user);
     setEditingUser(user);
   };
 
   const handleUserUpdate = (user: User) => {
+    console.log("Updating user:", user);
     updateUserMutation.mutate(user);
-  };
-
-  const handleUserCreate = (userData: Partial<User> & { password: string }) => {
-    createUserMutation.mutate(userData);
   };
 
   const isAdminOrManager = userRole === "admin" || userRole === "manager";
 
+  if (error) {
+    return (
+      <div className="p-6 text-center text-red-500">
+        <p>Error loading team members. Please try again later.</p>
+        <p className="text-sm mt-2">{(error as Error).message}</p>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Team Members</h2>
-          <Skeleton className="h-10 w-28" />
-        </div>
         <div className="border rounded-md">
           <Table>
             <TableHeader>
@@ -121,21 +103,21 @@ const TeamList = () => {
   }
 
   return (
-    <div>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Organization</TableHead>
-              <TableHead>Time Zone</TableHead>
-              {isAdminOrManager && <TableHead>Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users?.map((user) => (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Organization</TableHead>
+            <TableHead>Time Zone</TableHead>
+            {isAdminOrManager && <TableHead>Actions</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {users && users.length > 0 ? (
+            users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.full_name || "N/A"}</TableCell>
                 <TableCell>{user.email || "N/A"}</TableCell>
@@ -159,40 +141,22 @@ const TeamList = () => {
                   </TableCell>
                 )}
               </TableRow>
-            ))}
-            {users?.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={isAdminOrManager ? 6 : 5} className="text-center py-8">
-                  No team members found.
-                  {isAdminOrManager && (
-                    <Button 
-                      variant="outline" 
-                      className="ml-2"
-                      onClick={() => setIsAddUserOpen(true)}
-                    >
-                      <UserPlus className="h-4 w-4 mr-1" /> 
-                      Add Team Member
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={isAdminOrManager ? 6 : 5} className="text-center py-8">
+                No team members found.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
 
       <AddEditUserDialog
         user={editingUser}
         isOpen={!!editingUser}
         onClose={() => setEditingUser(null)}
         onSave={handleUserUpdate}
-      />
-
-      <AddEditUserDialog
-        isOpen={isAddUserOpen}
-        onClose={() => setIsAddUserOpen(false)}
-        onSave={handleUserCreate}
-        isNewUser={true}
       />
     </div>
   );
