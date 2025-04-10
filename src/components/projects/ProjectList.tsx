@@ -266,6 +266,10 @@ const ProjectList: React.FC<ProjectListProps> = ({
     }
   }, [editingField, queryClient]);
 
+  const handleCustomerSelectorClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
@@ -457,10 +461,11 @@ const ProjectList: React.FC<ProjectListProps> = ({
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {isEditingThisProjectCustomer ? (
-                        <div className="flex flex-col gap-2" data-editing="true">
+                        <div className="flex flex-col gap-2" data-editing="true" onClick={handleCustomerSelectorClick}>
                           <CustomerSelector
                             selectedCustomerId={editingCustomerId}
                             onSelectCustomer={setEditingCustomerId}
+                            containerClassName="m-0"
                           />
                           <div className="flex gap-2 justify-end mt-1">
                             <Button 

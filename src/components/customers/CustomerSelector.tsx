@@ -17,12 +17,14 @@ interface CustomerSelectorProps {
   selectedCustomerId: string | null | undefined;
   onSelectCustomer: (customerId: string | null) => void;
   disabled?: boolean;
+  containerClassName?: string; // Add prop for container class
 }
 
 const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   selectedCustomerId,
   onSelectCustomer,
-  disabled = false
+  disabled = false,
+  containerClassName = "space-y-2" // Default class
 }) => {
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
@@ -41,7 +43,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   });
 
   return (
-    <div className="space-y-2">
+    <div className={containerClassName}>
       <div className="flex items-center gap-2">
         <div className="flex-1">
           <Select
