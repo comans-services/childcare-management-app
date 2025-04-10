@@ -18,9 +18,11 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend
+  Legend,
+  RadialBarChart,
+  RadialBar
 } from "recharts";
-import { AlertCircle, Clock, CalendarClock, Send } from "lucide-react";
+import { AlertCircle, Clock, CalendarClock, Send, ClipboardCheck, Calendar, CheckCircle2, TimerIcon } from "lucide-react";
 import { fetchTimesheetEntries, fetchUserProjects } from "@/lib/timesheet-service";
 import { fetchCustomers } from "@/lib/customer-service";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -28,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 
 const COLORS = [
   "#0088FE", "#00C49F", "#FFBB28", "#FF8042", 
@@ -306,6 +309,43 @@ const Dashboard = () => {
     }
   };
 
+  const statsData = [
+    {
+      name: "Week Progress",
+      value: Math.round(weekProgress),
+      icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
+      description: `${Math.round(weekProgress)}% Complete`,
+      color: "#10b981"
+    },
+    {
+      name: "Hours Logged",
+      value: hoursLoggedToDate,
+      icon: <Clock className="h-5 w-5 text-blue-500" />,
+      description: `${hoursLoggedToDate} of ${expectedHoursToDate}`,
+      color: "#3b82f6"
+    },
+    {
+      name: "Entries",
+      value: timesheetEntries.length,
+      icon: <ClipboardCheck className="h-5 w-5 text-purple-500" />,
+      description: `${timesheetEntries.length} Total`,
+      color: "#8b5cf6"
+    },
+    {
+      name: "Status",
+      value: completeWeek ? 100 : Math.round(weekProgress),
+      icon: <Calendar className="h-5 w-5 text-amber-500" />,
+      description: completeWeek ? "Complete" : isTodayComplete ? "In Progress" : "Pending",
+      color: completeWeek ? "#10b981" : isTodayComplete ? "#f59e0b" : "#ef4444"
+    }
+  ];
+
+  const radialData = statsData.map((item) => ({
+    name: item.name,
+    value: item.value > 0 ? Math.max(item.value, 5) : 0,
+    fill: item.color
+  }));
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="mb-6">
@@ -379,16 +419,96 @@ const Dashboard = () => {
       )}
       
       {process.env.NODE_ENV === 'development' && (
-        <div className="text-xs text-gray-500 p-2 bg-gray-100 rounded-md mb-4">
-          <div>Has entries: {hasEntries ? 'Yes' : 'No'}</div>
-          <div>Expected hours to date: {expectedHoursToDate}</div>
-          <div>Hours logged to date: {hoursLoggedToDate}</div>
-          <div>Week progress: {weekProgress.toFixed(2)}%</div>
-          <div>Is complete: {completeWeek ? 'Yes' : 'No'}</div>
-          <div>Today is Friday: {isFridayToday ? 'Yes' : 'No'}</div>
-          <div>Today has entries: {isTodayComplete ? 'Yes' : 'No'}</div>
-          <div>Total entries: {timesheetEntries.length}</div>
-        </div>
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TimerIcon className="h-5 w-5 text-blue-500" />
+              Timesheet Status
+            </CardTitle>
+            <CardDescription>Your weekly timesheet statistics at a glance</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col space-y-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Metric</TableHead>
+                      <TableHead>Value</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        Has entries
+                      </TableCell>
+                      <TableCell className={hasEntries ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>
+                        {hasEntries ? "Yes" : "No"}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-blue-500" />
+                        Expected hours
+                      </TableCell>
+                      <TableCell>{expectedHoursToDate} hours</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <ClipboardCheck className="h-4 w-4 text-purple-500" />
+                        Hours logged
+                      </TableCell>
+                      <TableCell>{hoursLoggedToDate} hours</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-amber-500" />
+                        Week completion
+                      </TableCell>
+                      <TableCell className={completeWeek ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>
+                        {weekProgress.toFixed(2)}%
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+              
+              <div className="h-[250px] flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadialBarChart 
+                    cx="50%" 
+                    cy="50%" 
+                    innerRadius="20%" 
+                    outerRadius="90%" 
+                    data={radialData} 
+                    startAngle={90} 
+                    endAngle={-270}
+                  >
+                    <RadialBar
+                      minAngle={15}
+                      background
+                      clockWise
+                      dataKey="value"
+                      label={{
+                        position: 'insideStart',
+                        fill: '#fff',
+                        formatter: (value) => `${value}%`,
+                      }}
+                    />
+                    <Legend 
+                      iconSize={10}
+                      layout="vertical" 
+                      verticalAlign="middle"
+                      align="right"
+                    />
+                    <Tooltip />
+                  </RadialBarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
