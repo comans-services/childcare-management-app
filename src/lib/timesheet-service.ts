@@ -219,3 +219,24 @@ export const getProjectHoursUsed = async (projectId: string): Promise<number> =>
     return 0;
   }
 };
+
+export const updateProjectStatus = async (projectId: string, isActive: boolean): Promise<void> => {
+  try {
+    console.log(`Updating project ${projectId} status to ${isActive ? 'active' : 'inactive'}`);
+    
+    const { error } = await supabase
+      .from("projects")
+      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .eq("id", projectId);
+
+    if (error) {
+      console.error("Error updating project status:", error);
+      throw error;
+    }
+    
+    console.log(`Project ${projectId} status updated successfully`);
+  } catch (error) {
+    console.error("Error in updateProjectStatus:", error);
+    throw error;
+  }
+};

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import {
   Table,
@@ -9,8 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X } from "lucide-react";
-import { Project } from "@/lib/timesheet-service";
+import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2 } from "lucide-react";
+import { Project, updateProjectStatus } from "@/lib/timesheet-service";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +22,8 @@ import { formatDateDisplay } from "@/lib/date-utils";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface ProjectListProps {
   projects: Project[];
@@ -42,10 +43,50 @@ const ProjectList: React.FC<ProjectListProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [showOverBudget, setShowOverBudget] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Sorting state
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  // Status toggle mutation
+  const statusMutation = useMutation({
+    mutationFn: ({ projectId, isActive }: { projectId: string; isActive: boolean }) => 
+      updateProjectStatus(projectId, isActive),
+    onMutate: ({ projectId }) => {
+      setUpdatingStatusId(projectId);
+    },
+    onSuccess: (_, { projectId, isActive }) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast({
+        title: "Status updated",
+        description: `Project is now ${isActive ? "active" : "inactive"}`,
+        variant: isActive ? "default" : "destructive",
+      });
+      setUpdatingStatusId(null);
+    },
+    onError: (error) => {
+      console.error("Failed to update status:", error);
+      toast({
+        title: "Update failed",
+        description: "Could not update project status",
+        variant: "destructive",
+      });
+      setUpdatingStatusId(null);
+    }
+  });
+
+  // Toggle project status
+  const toggleProjectStatus = (project: Project) => {
+    if (updatingStatusId === project.id) return; // Prevent multiple clicks
+    
+    const newStatus = !(project.is_active ?? true);
+    statusMutation.mutate({
+      projectId: project.id,
+      isActive: newStatus
+    });
+  };
 
   // Helper function to calculate percentage of budget used
   const calculateBudgetPercentage = (used: number = 0, budget: number): number => {
@@ -233,6 +274,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 const hoursUsed = project.hours_used || 0;
                 const overBudget = isOverBudget(hoursUsed, project.budget_hours);
                 const budgetPercentage = calculateBudgetPercentage(hoursUsed, project.budget_hours);
+                const isUpdating = updatingStatusId === project.id;
                 
                 return (
                   <TableRow 
@@ -260,12 +302,24 @@ const ProjectList: React.FC<ProjectListProps> = ({
                       )}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      {project.is_active ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
+                      {isUpdating ? (
+                        <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Updating...
+                        </Badge>
+                      ) : project.is_active ? (
+                        <Badge 
+                          variant="outline" 
+                          className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1 cursor-pointer hover:bg-green-100"
+                          onClick={() => toggleProjectStatus(project)}
+                        >
                           <Check className="h-3 w-3" /> Active
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1">
+                        <Badge 
+                          variant="outline" 
+                          className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1 cursor-pointer hover:bg-gray-100"
+                          onClick={() => toggleProjectStatus(project)}
+                        >
                           <X className="h-3 w-3" /> Inactive
                         </Badge>
                       )}
@@ -324,6 +378,28 @@ const ProjectList: React.FC<ProjectListProps> = ({
                               className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => toggleProjectStatus(project)}
+                              disabled={isUpdating}
+                            >
+                              {isUpdating ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> 
+                                  Updating...
+                                </>
+                              ) : project.is_active ? (
+                                <>
+                                  <X className="h-4 w-4 mr-2" /> 
+                                  Mark as Inactive
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="h-4 w-4 mr-2" /> 
+                                  Mark as Active
+                                </>
+                              )}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
