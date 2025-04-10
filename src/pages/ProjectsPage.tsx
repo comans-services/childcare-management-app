@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Pencil, Trash2, Clock } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Clock, ChartBarIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Project, fetchUserProjects } from "@/lib/timesheet-service";
 import { useAuth } from "@/context/AuthContext";
@@ -51,6 +51,27 @@ const ProjectsPage = () => {
     setProjectToDelete(null);
   };
 
+  // Calculate project statistics
+  const calculateProjectStats = () => {
+    const totalProjects = projects.length;
+    const activeProjects = projects.filter(p => p.is_active).length;
+    
+    const totalBudgetHours = projects.reduce((sum, project) => sum + project.budget_hours, 0);
+    const totalHoursUsed = projects.reduce((sum, project) => sum + (project.hours_used || 0), 0);
+    
+    const overBudgetProjects = projects.filter(p => (p.hours_used || 0) > p.budget_hours).length;
+    
+    return {
+      totalProjects,
+      activeProjects,
+      totalBudgetHours,
+      totalHoursUsed,
+      overBudgetProjects
+    };
+  };
+
+  const stats = calculateProjectStats();
+
   return (
     <div className="container mx-auto">
       <div className="mb-6 flex justify-between items-center">
@@ -67,6 +88,52 @@ const ProjectsPage = () => {
           Add Project
         </Button>
       </div>
+
+      {!isLoading && projects.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Budget Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.totalHoursUsed.toFixed(1)} / {stats.totalBudgetHours} hrs
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Total hours across all projects
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Active Projects</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.activeProjects} / {stats.totalProjects}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Projects currently active
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg text-red-500">Over Budget</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-500">
+                {stats.overBudgetProjects}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Projects exceeding budget
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

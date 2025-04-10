@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
@@ -10,6 +9,7 @@ export interface Project {
   start_date?: string;
   end_date?: string;
   is_active?: boolean;
+  hours_used?: number;  // New field to track hours used
 }
 
 export interface TimesheetEntry {
@@ -38,7 +38,19 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
     }
 
     console.log(`Fetched ${data?.length || 0} projects`);
-    return data || [];
+    
+    // Fetch hours used for each project
+    const projectsWithHours = await Promise.all(
+      (data || []).map(async (project) => {
+        const hours = await getProjectHoursUsed(project.id);
+        return {
+          ...project,
+          hours_used: hours
+        };
+      })
+    );
+    
+    return projectsWithHours;
   } catch (error) {
     console.error("Error in fetchUserProjects:", error);
     throw error;
@@ -184,5 +196,26 @@ export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
   } catch (error) {
     console.error("Error in deleteTimesheetEntry:", error);
     throw error;
+  }
+};
+
+export const getProjectHoursUsed = async (projectId: string): Promise<number> => {
+  try {
+    const { data, error } = await supabase
+      .from("timesheet_entries")
+      .select("hours_logged")
+      .eq("project_id", projectId);
+      
+    if (error) {
+      console.error("Error fetching project hours:", error);
+      return 0;
+    }
+    
+    // Sum up all hours logged for the project
+    const totalHours = data?.reduce((sum, entry) => sum + entry.hours_logged, 0) || 0;
+    return totalHours;
+  } catch (error) {
+    console.error("Error in getProjectHoursUsed:", error);
+    return 0;
   }
 };
