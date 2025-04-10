@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 
 import MainLayout from "@/components/layout/MainLayout";
 import AuthPage from "@/pages/AuthPage";
+import Dashboard from "@/pages/Index";
 import TimesheetPage from "@/pages/TimesheetPage";
 import ProjectsPage from "@/pages/ProjectsPage";
 import ContractsPage from "@/pages/ContractsPage";
@@ -30,7 +31,7 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             
             <Route path="/" element={<MainLayout />}>
-              <Route index element={<TimesheetPage />} />
+              <Route index element={<Dashboard />} />
               <Route path="timesheet" element={<TimesheetPage />} />
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="contracts" element={<ContractsPage />} />
