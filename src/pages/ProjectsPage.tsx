@@ -3,14 +3,13 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Pencil, Trash2, Clock, ChartBarIcon } from "lucide-react";
+import { PlusCircle, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Project, fetchUserProjects } from "@/lib/timesheet-service";
 import { useAuth } from "@/context/AuthContext";
 import AddEditProjectDialog from "@/components/projects/AddEditProjectDialog";
 import DeleteProjectDialog from "@/components/projects/DeleteProjectDialog";
 import ProjectList from "@/components/projects/ProjectList";
-import { supabase } from "@/integrations/supabase/client";
 
 const ProjectsPage = () => {
   const { user } = useAuth();
