@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -136,14 +135,14 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
   };
 
   // Save contract mutation
-  const { mutate, isPending: isSaving } = useMutation({
-    mutationFn: (values: FormValues) => {
+  const saveContractMutation = useMutation({
+    mutationFn: (data: FormValues) => {
       const contractData = {
-        ...values,
-        name: values.name, // Ensure name is explicitly included
-        start_date: format(values.start_date, "yyyy-MM-dd"),
-        end_date: format(values.end_date, "yyyy-MM-dd"),
-        status: values.status, // Ensure status is explicitly included
+        ...data,
+        name: data.name,
+        status: data.status,
+        start_date: format(data.start_date, "yyyy-MM-dd"),
+        end_date: format(data.end_date, "yyyy-MM-dd"),
         id: existingContract?.id,
       };
       
@@ -180,8 +179,11 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
       return;
     }
     
-    mutate(values);
+    saveContractMutation.mutate(values);
   };
+
+  // Access the mutation's isPending state
+  const isSaving = saveContractMutation.isPending;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
