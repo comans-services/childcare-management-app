@@ -45,13 +45,14 @@ const DayColumn: React.FC<DayColumnProps> = ({
     if (!entry.id) return;
     
     try {
-      await deleteTimesheetEntry(entry.id, userId);
+      await deleteTimesheetEntry(entry.id);
       toast({
         title: "Entry deleted",
         description: "Time entry deleted successfully.",
       });
       onEntryChange();
     } catch (error) {
+      console.error("Error deleting entry:", error);
       toast({
         title: "Error",
         description: "Failed to delete time entry.",

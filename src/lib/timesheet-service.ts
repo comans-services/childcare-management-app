@@ -25,6 +25,7 @@ export interface TimesheetEntry {
 
 export const fetchUserProjects = async (): Promise<Project[]> => {
   try {
+    console.log("Fetching projects...");
     const { data, error } = await supabase
       .from("projects")
       .select("id, name, description, budget_hours, start_date, end_date, is_active")
@@ -36,6 +37,7 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
       throw error;
     }
 
+    console.log(`Fetched ${data?.length || 0} projects`);
     return data || [];
   } catch (error) {
     console.error("Error in fetchUserProjects:", error);
@@ -51,7 +53,7 @@ export const fetchTimesheetEntries = async (
   try {
     console.log(`Fetching entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
     
-    // First, fetch the entries - use simpler query to avoid potential RLS issues
+    // First, fetch the entries with a simpler query
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
@@ -65,14 +67,17 @@ export const fetchTimesheetEntries = async (
     }
 
     if (!entriesData || entriesData.length === 0) {
+      console.log("No entries found for the specified date range");
       return [];
     }
 
+    console.log(`Fetched ${entriesData.length} entries`);
+    
     // Then fetch the projects separately
     const projectIds = [...new Set(entriesData.map(entry => entry.project_id))];
     
     if (projectIds.length === 0) {
-      // Return entries without project details if no projects are found
+      console.log("No project IDs found in entries");
       return entriesData;
     }
     
@@ -87,6 +92,8 @@ export const fetchTimesheetEntries = async (
       return entriesData;
     }
 
+    console.log(`Fetched ${projectsData?.length || 0} projects for entries`);
+
     // Create a map of projects by ID for quick lookup
     const projectsMap = (projectsData || []).reduce((acc, project) => {
       acc[project.id] = project;
@@ -94,10 +101,12 @@ export const fetchTimesheetEntries = async (
     }, {} as Record<string, Project>);
 
     // Combine the entries with their respective projects
-    return entriesData.map(entry => ({
+    const entriesWithProjects = entriesData.map(entry => ({
       ...entry,
       project: projectsMap[entry.project_id]
     }));
+
+    return entriesWithProjects;
   } catch (error) {
     console.error("Error in fetchTimesheetEntries:", error);
     throw error;
@@ -120,7 +129,6 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
           jira_task_id: entry.jira_task_id
         })
         .eq("id", entry.id)
-        .eq("user_id", entry.user_id)
         .select();
 
       if (error) {
@@ -128,6 +136,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
         throw error;
       }
       
+      console.log("Entry updated successfully:", data?.[0]);
       return data?.[0] as TimesheetEntry;
     } else {
       // Create new entry
@@ -148,6 +157,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
         throw error;
       }
       
+      console.log("Entry created successfully:", data?.[0]);
       return data?.[0] as TimesheetEntry;
     }
   } catch (error) {
@@ -156,20 +166,21 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
   }
 };
 
-export const deleteTimesheetEntry = async (entryId: string, userId: string): Promise<void> => {
+export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
   try {
-    console.log(`Deleting entry ${entryId} for user ${userId}`);
+    console.log(`Deleting entry ${entryId}`);
     
     const { error } = await supabase
       .from("timesheet_entries")
       .delete()
-      .eq("id", entryId)
-      .eq("user_id", userId);
+      .eq("id", entryId);
 
     if (error) {
       console.error("Error deleting timesheet entry:", error);
       throw error;
     }
+    
+    console.log(`Entry ${entryId} deleted successfully`);
   } catch (error) {
     console.error("Error in deleteTimesheetEntry:", error);
     throw error;
