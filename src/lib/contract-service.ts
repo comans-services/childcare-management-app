@@ -108,7 +108,10 @@ export const fetchContracts = async (): Promise<Contract[]> => {
         };
       }
 
-      const services = serviceData.map(item => item.services as Service);
+      // Extract services from the joined data
+      const services = serviceData.map(item => 
+        (item.services as unknown) as Service
+      ).filter(Boolean);
       
       return {
         ...contract,
@@ -144,6 +147,7 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
           customer_id: contract.customer_id,
           start_date: contract.start_date,
           end_date: contract.end_date,
+          status: contract.status,
           is_active: contract.is_active ?? true,
           updated_at: new Date().toISOString()
         })
@@ -167,6 +171,7 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
           customer_id: contract.customer_id,
           start_date: contract.start_date,
           end_date: contract.end_date,
+          status: contract.status,
           is_active: contract.is_active ?? true
         })
         .select();

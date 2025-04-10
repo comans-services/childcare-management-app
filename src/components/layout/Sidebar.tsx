@@ -9,7 +9,7 @@ import {
   Users, 
   Settings,
   Building2,
-  FileContract 
+  FileText 
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -36,7 +36,7 @@ const Sidebar = () => {
         </NavLink>
 
         <NavLink to="/contracts" className={navLinkClass}>
-          <FileContract className="h-5 w-5" />
+          <FileText className="h-5 w-5" />
           <span>Contracts</span>
         </NavLink>
 

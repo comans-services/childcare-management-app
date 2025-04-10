@@ -20,6 +20,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -50,6 +57,7 @@ const formSchema = z.object({
   customer_id: z.string().nullable().optional(),
   start_date: z.date(),
   end_date: z.date(),
+  status: z.enum(['active', 'expired', 'pending_renewal', 'renewed']).default('active'),
   is_active: z.boolean().default(true),
 });
 
@@ -79,6 +87,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
       customer_id: null,
       start_date: new Date(),
       end_date: addDays(new Date(), 365), // Default to 1 year
+      status: 'active',
       is_active: true,
     },
   });
@@ -92,6 +101,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         customer_id: existingContract.customer_id || null,
         start_date: existingContract.start_date ? new Date(existingContract.start_date) : new Date(),
         end_date: existingContract.end_date ? new Date(existingContract.end_date) : addDays(new Date(), 365),
+        status: existingContract.status || 'active',
         is_active: existingContract.is_active !== false,
       });
       
@@ -109,6 +119,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         customer_id: null,
         start_date: new Date(),
         end_date: addDays(new Date(), 365),
+        status: 'active',
         is_active: true,
       });
       setSelectedServiceIds([]);
@@ -315,6 +326,37 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contract Status</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="pending_renewal">Pending Renewal</SelectItem>
+                      <SelectItem value="renewed">Renewed</SelectItem>
+                      <SelectItem value="expired">Expired</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Status will automatically update based on the end date.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div>
               <FormLabel>Services</FormLabel>
