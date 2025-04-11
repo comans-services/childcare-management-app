@@ -6,7 +6,7 @@ export interface User {
   role?: string;
   organization?: string;
   time_zone?: string;
-  email?: string; // Adding email field to the User interface
+  email?: string; // Email field explicitly defined in the interface
 }
 
 export interface NewUser extends Omit<User, "id"> {
@@ -28,10 +28,10 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     console.log("Current authenticated user:", authData?.user?.email);
     
-    // Get all profiles from the profiles table
+    // Get all profiles from the profiles table - now including email field
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone");
+      .select("id, full_name, role, organization, time_zone, email");
     
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -51,7 +51,7 @@ export const fetchUsers = async (): Promise<User[]> => {
         role: "admin",
         organization: "Comans Services",
         time_zone: "Australia/Sydney",
-        email: authData.user.email,
+        email: authData.user.email, // Add email directly in profile now
       };
       
       // Insert the new profile
@@ -64,108 +64,48 @@ export const fetchUsers = async (): Promise<User[]> => {
         console.error("Error creating profile:", createError);
       } else if (createdProfile && createdProfile.length > 0) {
         console.log("Created profile for current user:", createdProfile);
-        // Return the newly created profile with email
-        return createdProfile.map(profile => ({
-          ...profile,
-          email: authData.user?.email || null
-        }));
+        return createdProfile as User[];
       }
     }
     
-    // Get all auth users to match emails with profiles
-    const { data: allUsers, error: listUsersError } = await supabase.auth.admin.listUsers();
-    
-    if (listUsersError) {
-      console.error("Error listing all users:", listUsersError);
-      // Continue with the data we have, just won't have emails for all users
-    }
-    
-    // Map of user IDs to emails
-    const userEmailMap = new Map();
-    
-    if (allUsers?.users) {
-      console.log("Found auth users:", allUsers.users.length);
-      allUsers.users.forEach(user => {
-        userEmailMap.set(user.id, user.email);
-      });
-    }
-    
-    // Ensure the current user is included
-    if (authData.user) {
-      userEmailMap.set(authData.user.id, authData.user.email);
-    }
-    
-    console.log("User email map:", [...userEmailMap.entries()]);
-    
-    // Enhance profiles with email data
-    const users: User[] = profilesData?.map(profile => {
-      return {
-        ...profile,
-        email: userEmailMap.get(profile.id) || null
-      };
-    }) || [];
-    
-    // Check if the current user's profile exists in the list
-    const currentUserExists = users.some(u => u.id === authData.user?.id);
-    
-    // If the current user doesn't exist in the profiles but is authenticated, add them
-    if (!currentUserExists && authData.user) {
-      console.log("Current user's profile not found, creating it:", authData.user.email);
+    // If we have profiles data but some are missing emails,
+    // try to fetch emails from auth.users as a fallback
+    if (profilesData) {
+      // Create a list of profiles that are missing emails
+      const profilesWithoutEmails = profilesData.filter(profile => !profile.email);
       
-      const newUserProfile = {
-        id: authData.user.id,
-        full_name: authData.user.user_metadata?.full_name || "Admin User",
-        role: "admin",
-        organization: "Comans Services",
-        time_zone: "Australia/Sydney",
-        email: authData.user.email,
-      };
-      
-      try {
-        const { data: insertedProfile, error: insertError } = await supabase
-          .from("profiles")
-          .insert([{
-            id: newUserProfile.id,
-            full_name: newUserProfile.full_name,
-            role: newUserProfile.role,
-            organization: newUserProfile.organization,
-            time_zone: newUserProfile.time_zone
-          }])
-          .select();
+      if (profilesWithoutEmails.length > 0) {
+        console.log(`Found ${profilesWithoutEmails.length} profiles without emails, attempting to fetch from auth`);
         
-        if (insertError) {
-          console.error("Error inserting current user profile:", insertError);
-        } else if (insertedProfile) {
-          // Fix: Add proper type checking and type assertion
-          const profileArray = insertedProfile as Array<{
-            id: string;
-            full_name?: string;
-            role?: string;
-            organization?: string;
-            time_zone?: string;
-          }>;
+        // Get auth users to match emails with profiles that are missing them
+        const { data: authUsers } = await supabase.auth.admin.listUsers();
+        
+        if (authUsers && authUsers.users) {
+          console.log(`Fetched ${authUsers.users.length} auth users to match missing emails`);
           
-          if (profileArray.length > 0) {
-            const profileData = profileArray[0];
-            const newUser: User = {
-              id: profileData.id,
-              full_name: profileData.full_name,
-              role: profileData.role,
-              organization: profileData.organization,
-              time_zone: profileData.time_zone,
-              email: authData.user.email
-            };
-            users.push(newUser);
-            console.log("Created profile for current user:", newUser);
+          // Update profiles with missing emails
+          for (const profile of profilesWithoutEmails) {
+            const matchingAuthUser = authUsers.users.find(user => user.id === profile.id);
+            
+            if (matchingAuthUser && matchingAuthUser.email) {
+              // Update the profile in the database with the email
+              await supabase
+                .from("profiles")
+                .update({ email: matchingAuthUser.email })
+                .eq("id", profile.id);
+                
+              // Also update it in our local data
+              profile.email = matchingAuthUser.email;
+            }
           }
         }
-      } catch (err) {
-        console.error("Error creating user profile:", err);
       }
+      
+      console.log("Final profiles data with emails:", profilesData);
+      return profilesData as User[];
     }
     
-    console.log("Enhanced users with available email data:", users);
-    return users;
+    return [];
   } catch (error) {
     console.error("Error in fetchUsers:", error);
     throw error;
@@ -250,6 +190,7 @@ export const updateUser = async (user: User): Promise<User> => {
         role: user.role,
         organization: user.organization,
         time_zone: user.time_zone,
+        email: user.email, // Now we can update email directly in profiles
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id)
@@ -290,7 +231,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
     
     console.log("Auth user created successfully:", authData.user);
     
-    // Create profile record for the new user
+    // Create profile record for the new user, now including email
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .insert([{
@@ -299,6 +240,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         role: userData.role || "employee",
         organization: userData.organization,
         time_zone: userData.time_zone,
+        email: userData.email, // Store email directly in profiles table
         updated_at: new Date().toISOString(),
       }])
       .select();
@@ -310,18 +252,23 @@ export const createUser = async (userData: NewUser): Promise<User> => {
     
     console.log("User profile created successfully:", profileData);
     
-    // Create the User object with data from auth and userData
-    const newUser: User = {
-      id: authData.user.id,
-      full_name: userData.full_name,
-      role: userData.role || "employee",
-      organization: userData.organization,
-      time_zone: userData.time_zone,
-      email: userData.email
-    };
-    
-    console.log("Returning new user:", newUser);
-    return newUser;
+    if (profileData && profileData.length > 0) {
+      // Return the newly created user from the profile data
+      return profileData[0] as User;
+    } else {
+      // Create the User object manually if no profile data is returned
+      const newUser: User = {
+        id: authData.user.id,
+        full_name: userData.full_name,
+        role: userData.role || "employee",
+        organization: userData.organization,
+        time_zone: userData.time_zone,
+        email: userData.email
+      };
+      
+      console.log("Returning new user:", newUser);
+      return newUser;
+    }
   } catch (error) {
     console.error("Error in createUser:", error);
     throw error;
