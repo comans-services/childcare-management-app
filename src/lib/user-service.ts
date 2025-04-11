@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -74,18 +73,19 @@ export const fetchUsers = async (): Promise<User[]> => {
     }
     
     // Get all auth users to match emails with profiles
-    const { data: allAuthUsers, error: allAuthError } = await supabase.auth.admin.listUsers();
+    const { data: allUsers, error: listUsersError } = await supabase.auth.admin.listUsers();
     
-    if (allAuthError) {
-      console.error("Error fetching all auth users:", allAuthError);
+    if (listUsersError) {
+      console.error("Error listing all users:", listUsersError);
       // Continue with the data we have, just won't have emails for all users
     }
     
     // Map of user IDs to emails
     const userEmailMap = new Map();
     
-    if (allAuthUsers?.users) {
-      allAuthUsers.users.forEach(user => {
+    if (allUsers?.users) {
+      console.log("Found auth users:", allUsers.users.length);
+      allUsers.users.forEach(user => {
         userEmailMap.set(user.id, user.email);
       });
     }
@@ -94,6 +94,8 @@ export const fetchUsers = async (): Promise<User[]> => {
     if (authData.user) {
       userEmailMap.set(authData.user.id, authData.user.email);
     }
+    
+    console.log("User email map:", [...userEmailMap.entries()]);
     
     // Enhance profiles with email data
     const users: User[] = profilesData?.map(profile => {

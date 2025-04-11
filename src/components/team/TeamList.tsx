@@ -168,7 +168,7 @@ const TeamList = () => {
                     {user.role || "employee"}
                   </span>
                 </TableCell>
-                <TableCell>{user.email || "N/A"}</TableCell>
+                <TableCell>{user.email || "No email available"}</TableCell>
                 <TableCell>{user.organization || "N/A"}</TableCell>
                 <TableCell>{user.time_zone || "N/A"}</TableCell>
                 {isAdminOrManager && (
