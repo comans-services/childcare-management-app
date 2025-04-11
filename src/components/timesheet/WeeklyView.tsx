@@ -8,7 +8,7 @@ import {
   formatDateDisplay,
 } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, ArrowLeft, RefreshCw } from "lucide-react";
 import {
   fetchUserProjects,
   fetchTimesheetEntries,
@@ -25,6 +25,7 @@ import {
   CarouselPrevious,
   CarouselNext,
 } from "@/components/ui/carousel";
+import { Progress } from "@/components/ui/progress";
 
 const WeeklyView: React.FC = () => {
   const { user } = useAuth();
@@ -35,7 +36,8 @@ const WeeklyView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const isMobile = useIsMobile();
-
+  const [weeklyTarget] = useState(40); // Default weekly target of 40 hours
+  
   useEffect(() => {
     const dates = getCurrentWeekDates(currentDate);
     setWeekDates(dates);
@@ -98,6 +100,17 @@ const WeeklyView: React.FC = () => {
     setCurrentDate(new Date());
   };
 
+  const totalWeekHours = entries.reduce((sum, entry) => sum + entry.hours_logged, 0);
+  const weekProgress = Math.min((totalWeekHours / weeklyTarget) * 100, 100);
+  
+  // Determine the color for the progress bar
+  const getProgressColor = () => {
+    if (weekProgress < 30) return "bg-amber-500";
+    if (weekProgress < 70) return "bg-blue-500";
+    if (weekProgress < 100) return "bg-emerald-500";
+    return "bg-violet-500"; // Over 100%
+  };
+
   // Render the desktop version with all days visible
   const renderDesktopView = () => (
     <div className="grid grid-cols-7 gap-2">
@@ -131,8 +144,8 @@ const WeeklyView: React.FC = () => {
         ))}
       </CarouselContent>
       <div className="flex justify-center mt-2">
-        <CarouselPrevious className="relative static mr-2 translate-y-0 translate-x-0" />
-        <CarouselNext className="relative static ml-2 translate-y-0 translate-x-0" />
+        <CarouselPrevious className="relative static mr-2 translate-y-0 translate-x-0 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />
+        <CarouselNext className="relative static ml-2 translate-y-0 translate-x-0 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />
       </div>
     </Carousel>
   );
@@ -145,6 +158,7 @@ const WeeklyView: React.FC = () => {
             variant="outline"
             size="icon"
             onClick={navigateToPreviousWeek}
+            className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -152,22 +166,37 @@ const WeeklyView: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={navigateToCurrentWeek}
+            className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 flex items-center gap-1"
           >
-            Today
+            <Calendar className="h-3.5 w-3.5" />
+            <span>Today</span>
           </Button>
           <Button
             variant="outline"
             size="icon"
             onClick={navigateToNextWeek}
+            className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
+          
+          {error && (
+            <Button 
+              onClick={fetchData} 
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-primary"
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              <span>Retry</span>
+            </Button>
+          )}
         </div>
         <div className="font-medium text-sm md:text-base truncate">
           {weekDates.length > 0 && (
-            <>
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-primary">
               {formatDateDisplay(weekDates[0])} - {formatDateDisplay(weekDates[weekDates.length - 1])}
-            </>
+            </span>
           )}
         </div>
       </div>
@@ -185,7 +214,7 @@ const WeeklyView: React.FC = () => {
             <Button 
               onClick={fetchData} 
               variant="outline"
-              className="mt-4"
+              className="mt-4 hover:scale-105 transition-transform duration-200"
             >
               Try Again
             </Button>
@@ -206,9 +235,16 @@ const WeeklyView: React.FC = () => {
       )}
 
       {!loading && !error && entries.length > 0 && (
-        <div className="text-right text-sm text-muted-foreground mt-2">
-          Total Week Hours:{" "}
-          {entries.reduce((sum, entry) => sum + entry.hours_logged, 0).toFixed(2)}
+        <div className="mt-4 space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium">Weekly Progress: {totalWeekHours.toFixed(2)}/{weeklyTarget} hours</span>
+            <span className="text-sm font-medium">{weekProgress.toFixed(0)}%</span>
+          </div>
+          <Progress 
+            value={weekProgress} 
+            className="h-2" 
+            indicatorClassName={getProgressColor()} 
+          />
         </div>
       )}
     </div>

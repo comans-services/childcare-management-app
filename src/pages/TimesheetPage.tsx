@@ -53,10 +53,10 @@ const TimesheetPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-2 md:px-4">
-      <div className="mb-4 md:mb-6 flex justify-between items-center">
+    <div className="container mx-auto px-2 md:px-4 py-4 md:py-6">
+      <div className="mb-6 md:mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold">My Timesheet</h1>
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">My Timesheet</h1>
           <p className="text-gray-600 text-sm md:text-base">Track and manage your working hours</p>
         </div>
         
@@ -66,6 +66,7 @@ const TimesheetPage = () => {
             size="sm"
             onClick={() => setIsDeleteDialogOpen(true)}
             disabled={isDeleting}
+            className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md"
           >
             <TrashIcon className="h-4 w-4 mr-2" />
             Reset All Entries
@@ -78,9 +79,9 @@ const TimesheetPage = () => {
         <TimerComponent />
       )}
 
-      <Card className="mb-4 md:mb-6">
+      <Card className="mb-6 md:mb-8 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg md:text-xl">Weekly Overview</CardTitle>
+          <CardTitle className="text-lg md:text-xl font-semibold">Weekly Overview</CardTitle>
           <CardDescription className="text-sm">Your time entries for the current week</CardDescription>
         </CardHeader>
         <CardContent className="pt-2">
@@ -100,7 +101,7 @@ const TimesheetPage = () => {
       )}
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-xl border-red-200 shadow-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete All Entries</AlertDialogTitle>
             <AlertDialogDescription>
@@ -109,10 +110,10 @@ const TimesheetPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting} className="hover:scale-105 transition-transform duration-200">Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteAllEntries}
-              className="bg-destructive text-destructive-foreground"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
               disabled={isDeleting}
             >
               {isDeleting ? "Deleting..." : "Delete All Entries"}
