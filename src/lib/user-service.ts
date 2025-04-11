@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -305,7 +306,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       throw error;
     }
     
-    // Create a new User object explicitly with the correct types
+    // Create the User object directly from available data, rather than depending on the data array
     const newUser: User = {
       id: authData.user.id,
       full_name: userData.full_name,
@@ -315,7 +316,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       email: userData.email
     };
     
-    console.log("User profile updated successfully:", newUser);
+    console.log("User profile created successfully:", newUser);
     return newUser;
   } catch (error) {
     console.error("Error in createUser:", error);
