@@ -134,11 +134,13 @@ export const fetchUsers = async (): Promise<User[]> => {
         if (insertError) {
           console.error("Error inserting current user profile:", insertError);
         } else if (insertedProfile && insertedProfile.length > 0) {
-          console.log("Created profile for current user:", insertedProfile);
-          users.push({
+          // Fix: Properly handle the type by ensuring the array has elements before accessing
+          const newUser: User = {
             ...insertedProfile[0],
             email: authData.user.email
-          });
+          };
+          users.push(newUser);
+          console.log("Created profile for current user:", newUser);
         }
       } catch (err) {
         console.error("Error creating user profile:", err);
