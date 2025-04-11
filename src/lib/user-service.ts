@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -12,6 +13,20 @@ export interface User {
 export interface NewUser extends Omit<User, "id"> {
   email: string;
   password: string;
+}
+
+// Define the Supabase Auth User interface to ensure correct typing
+interface SupabaseAuthUser {
+  id: string;
+  email?: string;
+  app_metadata: Record<string, any>;
+  user_metadata: Record<string, any>;
+  aud: string;
+}
+
+interface AuthUsersResponse {
+  users: SupabaseAuthUser[];
+  total?: number;
 }
 
 export const fetchUsers = async (): Promise<User[]> => {
@@ -78,14 +93,23 @@ export const fetchUsers = async (): Promise<User[]> => {
         console.log(`Found ${profilesWithoutEmails.length} profiles without emails, attempting to fetch from auth`);
         
         // Get auth users to match emails with profiles that are missing them
+        // Properly type the response from listUsers
         const { data: authUsersData } = await supabase.auth.admin.listUsers();
         
-        if (authUsersData && 'users' in authUsersData && Array.isArray(authUsersData.users)) {
-          console.log(`Fetched ${authUsersData.users.length} auth users to match missing emails`);
+        // Safely check and access the users array with proper type checking
+        const authUsers: SupabaseAuthUser[] = 
+          authUsersData && 
+          'users' in authUsersData && 
+          Array.isArray(authUsersData.users) ? 
+          authUsersData.users as SupabaseAuthUser[] : 
+          [];
+        
+        if (authUsers.length > 0) {
+          console.log(`Fetched ${authUsers.length} auth users to match missing emails`);
           
           // Update profiles with missing emails
           for (const profile of profilesWithoutEmails) {
-            const matchingAuthUser = authUsersData.users.find(user => user.id === profile.id);
+            const matchingAuthUser = authUsers.find(user => user.id === profile.id);
             
             if (matchingAuthUser && matchingAuthUser.email) {
               // Update the profile in the database with the email
