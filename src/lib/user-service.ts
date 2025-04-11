@@ -133,7 +133,7 @@ export const fetchUsers = async (): Promise<User[]> => {
         
         if (insertError) {
           console.error("Error inserting current user profile:", insertError);
-        } else {
+        } else if (insertedProfile && insertedProfile.length > 0) {
           console.log("Created profile for current user:", insertedProfile);
           users.push({
             ...insertedProfile[0],
