@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchUsers, User, updateUser } from "@/lib/user-service";
 import { useAuth } from "@/context/AuthContext";
@@ -23,10 +23,11 @@ const TeamList = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Fetch users
+  // Fetch users with staleTime set to 0 to ensure fresh data
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users", refreshTrigger],
     queryFn: fetchUsers,
+    staleTime: 0, // Always fetch fresh data
   });
 
   // Update user mutation
@@ -61,10 +62,13 @@ const TeamList = () => {
 
   const handleRefresh = () => {
     console.log("Refreshing team list...");
+    // Increment refresh trigger to force refetch
     setRefreshTrigger(prev => prev + 1);
+    // Also invalidate the users query
+    queryClient.invalidateQueries({ queryKey: ["users"] });
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Log the current user and users loaded
     console.log("Current user email:", user?.email);
     console.log("Team members loaded:", users?.length);
