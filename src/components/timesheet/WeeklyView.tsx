@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -110,9 +111,9 @@ const WeeklyView: React.FC = () => {
   };
 
   const renderDesktopView = () => (
-    <div className="grid grid-cols-7 gap-2 overflow-x-hidden">
+    <div className="grid grid-cols-7 gap-2 w-full overflow-hidden">
       {weekDates.map((date) => (
-        <div key={date.toISOString()} className="w-full min-w-0">
+        <div key={date.toISOString()} className="w-full min-w-0 max-w-full">
           <DayColumn
             date={date}
             userId={user?.id || ""}
@@ -126,10 +127,10 @@ const WeeklyView: React.FC = () => {
   );
 
   const renderMobileView = () => (
-    <Carousel className="w-full">
+    <Carousel className="w-full max-w-full">
       <CarouselContent>
         {weekDates.map((date) => (
-          <CarouselItem key={date.toISOString()} className="basis-full">
+          <CarouselItem key={date.toISOString()} className="basis-full min-w-0">
             <DayColumn
               date={date}
               userId={user?.id || ""}
@@ -148,7 +149,7 @@ const WeeklyView: React.FC = () => {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex space-x-2">
           <Button
@@ -189,9 +190,9 @@ const WeeklyView: React.FC = () => {
             </Button>
           )}
         </div>
-        <div className="font-medium text-sm md:text-base truncate">
+        <div className="font-medium text-sm md:text-base">
           {weekDates.length > 0 && (
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-primary">
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-primary whitespace-nowrap">
               {formatDateDisplay(weekDates[0])} - {formatDateDisplay(weekDates[weekDates.length - 1])}
             </span>
           )}
@@ -218,7 +219,7 @@ const WeeklyView: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="overflow-x-hidden w-full">
+        <div className="w-full max-w-full overflow-hidden">
           {projects.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500">No projects found. Please create a project first.</p>

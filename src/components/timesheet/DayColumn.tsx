@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { formatDateShort, isToday, formatDate } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
@@ -171,7 +172,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full min-w-0 w-full">
+    <div className="flex flex-col h-full min-w-0 w-full max-w-full">
       <div className={cn(
         "text-xs md:text-sm font-medium p-2 md:p-3 rounded-t-md relative overflow-hidden",
         isToday(date) 
@@ -195,7 +196,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
         )}
       </div>
 
-      <div className="h-full overflow-hidden bg-background border border-t-0 rounded-b-md shadow-sm">
+      <div className="h-full flex-grow overflow-hidden bg-background border border-t-0 rounded-b-md shadow-sm">
         {showForm ? (
           <Card className="h-full border-0 shadow-none">
             <CardContent className="pt-4 p-2 md:p-4">
@@ -211,7 +212,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
           </Card>
         ) : (
           <ScrollArea className="h-[50vh] md:h-[60vh]">
-            <div className="flex flex-col p-2 space-y-2">
+            <div className="flex flex-col p-2 space-y-2 min-w-0">
               <div className="text-center py-1">
                 <Button
                   variant="secondary"
@@ -237,18 +238,18 @@ const DayColumn: React.FC<DayColumnProps> = ({
                     )}
                   >
                     <CardContent className="p-2 md:p-3">
-                      <div className="flex justify-between items-center">
-                        <div className="font-medium text-xs md:text-sm truncate max-w-[70%]">
+                      <div className="flex justify-between items-start">
+                        <div className="font-medium text-xs md:text-sm break-words whitespace-normal mr-2 max-w-[70%]">
                           {entry.project?.name || "Unknown Project"}
                         </div>
                         <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
-                          <Clock className="h-3 w-3 mr-1 inline" />
+                          <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" />
                           {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
                         </div>
                       </div>
                       
                       {entry.jira_task_id && (
-                        <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block mt-1.5 truncate max-w-full">
+                        <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block mt-1.5 truncate max-w-full break-all">
                           {entry.jira_task_id}
                         </div>
                       )}
@@ -256,7 +257,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
                       {entry.notes && (
                         <div className="flex items-start mt-1.5">
                           <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1 flex-shrink-0" />
-                          <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 break-words w-full">
+                          <p className="text-[10px] md:text-xs text-muted-foreground break-words whitespace-normal w-full">
                             {entry.notes}
                           </p>
                         </div>
