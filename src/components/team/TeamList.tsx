@@ -23,11 +23,13 @@ const TeamList = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Fetch users with staleTime set to 0 to ensure fresh data
-  const { data: users, isLoading, error } = useQuery({
+  // Fetch users with staleTime set to 0 to ensure fresh data and refetch on focus
+  const { data: users, isLoading, error, refetch } = useQuery({
     queryKey: ["users", refreshTrigger],
     queryFn: fetchUsers,
     staleTime: 0, // Always fetch fresh data
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Update user mutation
@@ -64,8 +66,9 @@ const TeamList = () => {
     console.log("Refreshing team list...");
     // Increment refresh trigger to force refetch
     setRefreshTrigger(prev => prev + 1);
-    // Also invalidate the users query
+    // Also invalidate the users query and refetch
     queryClient.invalidateQueries({ queryKey: ["users"] });
+    refetch();
   };
 
   React.useEffect(() => {

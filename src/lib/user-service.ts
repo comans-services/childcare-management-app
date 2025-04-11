@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -285,26 +286,29 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       throw authError || new Error("Failed to create user");
     }
     
-    console.log("Auth user created successfully");
+    console.log("Auth user created successfully:", authData.user);
     
-    // The profile should be created automatically by the trigger, but we'll update it with additional info
-    const { error } = await supabase
+    // Create profile record for the new user
+    const { data: profileData, error: profileError } = await supabase
       .from("profiles")
-      .update({
+      .insert([{
+        id: authData.user.id,
         full_name: userData.full_name,
         role: userData.role || "employee",
         organization: userData.organization,
         time_zone: userData.time_zone,
         updated_at: new Date().toISOString(),
-      })
-      .eq("id", authData.user.id);
+      }])
+      .select();
     
-    if (error) {
-      console.error("Error updating profile:", error);
-      throw error;
+    if (profileError) {
+      console.error("Error creating profile:", profileError);
+      throw profileError;
     }
     
-    // Create the User object directly from the authData and userData rather than depending on database query results
+    console.log("User profile created successfully:", profileData);
+    
+    // Create the User object with data from auth and userData
     const newUser: User = {
       id: authData.user.id,
       full_name: userData.full_name,
@@ -314,7 +318,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       email: userData.email
     };
     
-    console.log("User profile created successfully:", newUser);
+    console.log("Returning new user:", newUser);
     return newUser;
   } catch (error) {
     console.error("Error in createUser:", error);

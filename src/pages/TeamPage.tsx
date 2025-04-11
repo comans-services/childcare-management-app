@@ -38,8 +38,12 @@ const TeamPage = () => {
           description: `New team member ${createdUser.full_name || createdUser.email} has been added successfully`,
         });
         setIsAddUserOpen(false);
-        // Force refetch users after creating a new user
-        queryClient.invalidateQueries({ queryKey: ["users"] });
+        
+        // Force refetch users after creating a new user - use multiple strategies for reliability
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["users"] });
+          queryClient.refetchQueries({ queryKey: ["users"] });
+        }, 500);
       })
       .catch((error) => {
         toast({
