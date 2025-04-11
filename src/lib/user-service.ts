@@ -6,7 +6,7 @@ export interface User {
   role?: string;
   organization?: string;
   time_zone?: string;
-  email?: string; // Email field explicitly defined in the interface
+  email?: string;
 }
 
 export interface NewUser extends Omit<User, "id"> {
@@ -51,7 +51,7 @@ export const fetchUsers = async (): Promise<User[]> => {
         role: "admin",
         organization: "Comans Services",
         time_zone: "Australia/Sydney",
-        email: authData.user.email, // Add email directly in profile now
+        email: authData.user.email,
       };
       
       // Insert the new profile
@@ -78,14 +78,14 @@ export const fetchUsers = async (): Promise<User[]> => {
         console.log(`Found ${profilesWithoutEmails.length} profiles without emails, attempting to fetch from auth`);
         
         // Get auth users to match emails with profiles that are missing them
-        const { data: authUsers } = await supabase.auth.admin.listUsers();
+        const { data: authUsersData } = await supabase.auth.admin.listUsers();
         
-        if (authUsers && authUsers.users) {
-          console.log(`Fetched ${authUsers.users.length} auth users to match missing emails`);
+        if (authUsersData && 'users' in authUsersData && Array.isArray(authUsersData.users)) {
+          console.log(`Fetched ${authUsersData.users.length} auth users to match missing emails`);
           
           // Update profiles with missing emails
           for (const profile of profilesWithoutEmails) {
-            const matchingAuthUser = authUsers.users.find(user => user.id === profile.id);
+            const matchingAuthUser = authUsersData.users.find(user => user.id === profile.id);
             
             if (matchingAuthUser && matchingAuthUser.email) {
               // Update the profile in the database with the email
@@ -190,7 +190,7 @@ export const updateUser = async (user: User): Promise<User> => {
         role: user.role,
         organization: user.organization,
         time_zone: user.time_zone,
-        email: user.email, // Now we can update email directly in profiles
+        email: user.email,
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id)
@@ -240,7 +240,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         role: userData.role || "employee",
         organization: userData.organization,
         time_zone: userData.time_zone,
-        email: userData.email, // Store email directly in profiles table
+        email: userData.email,
         updated_at: new Date().toISOString(),
       }])
       .select();
