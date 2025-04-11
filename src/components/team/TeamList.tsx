@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchUsers, User, updateUser } from "@/lib/user-service";
 import { useAuth } from "@/context/AuthContext";
@@ -15,16 +15,17 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import AddEditUserDialog from "./AddEditUserDialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit } from "lucide-react";
+import { Edit, RefreshCw } from "lucide-react";
 
 const TeamList = () => {
-  const { userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const queryClient = useQueryClient();
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Fetch users
   const { data: users, isLoading, error } = useQuery({
-    queryKey: ["users"],
+    queryKey: ["users", refreshTrigger],
     queryFn: fetchUsers,
   });
 
@@ -58,13 +59,31 @@ const TeamList = () => {
     updateUserMutation.mutate(user);
   };
 
+  const handleRefresh = () => {
+    console.log("Refreshing team list...");
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   const isAdminOrManager = userRole === "admin" || userRole === "manager";
+
+  useEffect(() => {
+    console.log("Current user role:", userRole);
+    console.log("Team members:", users);
+  }, [userRole, users]);
 
   if (error) {
     return (
-      <div className="p-6 text-center text-red-500">
-        <p>Error loading team members. Please try again later.</p>
-        <p className="text-sm mt-2">{(error as Error).message}</p>
+      <div className="p-6 text-center">
+        <p className="text-red-500">Error loading team members.</p>
+        <p className="text-sm mt-2 text-red-400">{(error as Error).message}</p>
+        <Button 
+          onClick={handleRefresh} 
+          className="mt-4"
+          variant="outline"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Try Again
+        </Button>
       </div>
     );
   }
@@ -78,6 +97,7 @@ const TeamList = () => {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Organization</TableHead>
                 <TableHead>Time Zone</TableHead>
                 <TableHead></TableHead>
@@ -88,6 +108,7 @@ const TeamList = () => {
                 <TableRow key={index}>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-8 w-16" /></TableCell>
@@ -102,11 +123,23 @@ const TeamList = () => {
 
   return (
     <div className="overflow-x-auto">
+      <div className="flex justify-end mb-4 px-4">
+        <Button 
+          onClick={handleRefresh}
+          variant="outline"
+          size="sm"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh List
+        </Button>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Role</TableHead>
+            <TableHead>Email</TableHead>
             <TableHead>Organization</TableHead>
             <TableHead>Time Zone</TableHead>
             {isAdminOrManager && <TableHead>Actions</TableHead>}
@@ -116,12 +149,17 @@ const TeamList = () => {
           {users && users.length > 0 ? (
             users.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.full_name || "N/A"}</TableCell>
+                <TableCell className="font-medium">{user.full_name || "Not set"}</TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-blue-100 text-blue-800">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
+                    user.role === 'manager' ? 'bg-blue-100 text-blue-800' : 
+                    'bg-green-100 text-green-800'
+                  }`}>
                     {user.role || "employee"}
                   </span>
                 </TableCell>
+                <TableCell>{user.email || "N/A"}</TableCell>
                 <TableCell>{user.organization || "N/A"}</TableCell>
                 <TableCell>{user.time_zone || "N/A"}</TableCell>
                 {isAdminOrManager && (
@@ -130,6 +168,7 @@ const TeamList = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditUser(user)}
+                      className="flex items-center"
                     >
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
@@ -140,8 +179,8 @@ const TeamList = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={isAdminOrManager ? 5 : 4} className="text-center py-8">
-                No team members found.
+              <TableCell colSpan={isAdminOrManager ? 6 : 5} className="text-center py-8">
+                No team members found. {!isAdminOrManager && "Contact an administrator to add team members."}
               </TableCell>
             </TableRow>
           )}

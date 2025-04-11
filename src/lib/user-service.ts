@@ -19,7 +19,7 @@ export const fetchUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching users...");
     
-    // Get profiles
+    // Get all profiles from the profiles table
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
       .select("id, full_name, role, organization, time_zone");
@@ -31,13 +31,55 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     console.log(`Fetched ${profilesData?.length || 0} profiles`);
     
-    // We need to get emails from auth.users, but we can't query that directly
-    // Instead, we'll use the admin API to get user data
-    const users: User[] = profilesData || [];
+    // Get authenticated users to get emails
+    const { data: authData } = await supabase.auth.getUser();
+    console.log("Current authenticated user:", authData?.user?.email);
     
-    // Fetch user emails if needed through a separate function or API
-    // For now, the email fields will be undefined
+    // If no profiles are found, create one for the current user
+    if ((!profilesData || profilesData.length === 0) && authData.user) {
+      console.log("No profiles found, creating one for current user");
+      
+      // Create a profile for the current user
+      const newProfile = {
+        id: authData.user.id,
+        full_name: authData.user.user_metadata?.full_name || "Admin User",
+        role: "admin",
+        organization: "Default Organization",
+        time_zone: "UTC",
+        email: authData.user.email,
+      };
+      
+      // Insert the new profile
+      const { data: createdProfile, error: createError } = await supabase
+        .from("profiles")
+        .insert([newProfile])
+        .select();
+      
+      if (createError) {
+        console.error("Error creating profile:", createError);
+      } else {
+        console.log("Created profile for current user:", createdProfile);
+        // Return the newly created profile with email
+        return createdProfile.map(profile => ({
+          ...profile,
+          email: authData.user?.email
+        }));
+      }
+    }
     
+    // Enhance profiles with email data if available
+    const users: User[] = profilesData?.map(profile => {
+      // For the current user, we can add the email
+      if (authData.user && profile.id === authData.user.id) {
+        return {
+          ...profile,
+          email: authData.user.email
+        };
+      }
+      return profile;
+    }) || [];
+    
+    console.log("Enhanced users with available email data:", users);
     return users;
   } catch (error) {
     console.error("Error in fetchUsers:", error);
@@ -75,7 +117,7 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
       // Create default profile
       const newProfile = {
         id: userId,
-        full_name: "",
+        full_name: authData.user.user_metadata?.full_name || "",
         role: "employee",
         organization: "",
         time_zone: "UTC",
@@ -94,6 +136,15 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
       }
       
       return createdProfile;
+    }
+    
+    // Try to get the email from auth
+    const { data: authData } = await supabase.auth.getUser();
+    if (authData.user && authData.user.id === userId) {
+      return {
+        ...data,
+        email: authData.user.email
+      };
     }
     
     return data;
