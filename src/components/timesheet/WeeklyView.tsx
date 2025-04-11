@@ -6,6 +6,7 @@ import {
   getNextWeek,
   getPreviousWeek,
   formatDateDisplay,
+  formatDate,
 } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar, RefreshCw } from "lucide-react";
@@ -14,6 +15,7 @@ import {
   fetchTimesheetEntries,
   Project,
   TimesheetEntry,
+  saveTimesheetEntry,
 } from "@/lib/timesheet-service";
 import DayColumn from "./DayColumn";
 import { toast } from "@/hooks/use-toast";
@@ -26,6 +28,7 @@ import {
   CarouselNext,
 } from "@/components/ui/carousel";
 import { Progress } from "@/components/ui/progress";
+import { DragDropContext, DropResult } from "react-beautiful-dnd";
 
 const WeeklyView: React.FC = () => {
   const { user } = useAuth();
@@ -110,9 +113,58 @@ const WeeklyView: React.FC = () => {
     return "bg-violet-500"; // Over 100%
   };
 
+  // Handle drag and drop between days
+  const handleDragEnd = async (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+    
+    // If dropped outside a droppable area or in the same position
+    if (!destination) return;
+    
+    // Get the entry that was dragged
+    const draggedEntry = entries.find(entry => entry.id === draggableId);
+    if (!draggedEntry) return;
+    
+    // Get source and destination dates
+    const sourceDate = weekDates[parseInt(source.droppableId)];
+    const destDate = weekDates[parseInt(destination.droppableId)];
+    
+    // If moving within the same day, we don't need to update anything
+    if (source.droppableId === destination.droppableId) return;
+    
+    try {
+      // Create a copy of the entry with the updated date
+      const updatedEntry: TimesheetEntry = {
+        ...draggedEntry,
+        entry_date: formatDate(destDate)
+      };
+      
+      // Update the entry in the database
+      const savedEntry = await saveTimesheetEntry(updatedEntry);
+      
+      // Update local state
+      setEntries(prevEntries => 
+        prevEntries.map(entry => 
+          entry.id === savedEntry.id ? savedEntry : entry
+        )
+      );
+      
+      toast({
+        title: "Entry moved",
+        description: `Entry moved to ${formatDateDisplay(destDate)}`,
+      });
+    } catch (error) {
+      console.error("Failed to update entry date:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move entry. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const renderDesktopView = () => (
     <div className="grid grid-cols-7 gap-2 w-full overflow-hidden">
-      {weekDates.map((date) => (
+      {weekDates.map((date, index) => (
         <div key={date.toISOString()} className="w-full min-w-0 max-w-full">
           <DayColumn
             date={date}
@@ -120,6 +172,7 @@ const WeeklyView: React.FC = () => {
             entries={entries}
             projects={projects}
             onEntryChange={fetchData}
+            droppableId={index.toString()}
           />
         </div>
       ))}
@@ -129,7 +182,7 @@ const WeeklyView: React.FC = () => {
   const renderMobileView = () => (
     <Carousel className="w-full max-w-full">
       <CarouselContent>
-        {weekDates.map((date) => (
+        {weekDates.map((date, index) => (
           <CarouselItem key={date.toISOString()} className="basis-full min-w-0">
             <DayColumn
               date={date}
@@ -137,6 +190,7 @@ const WeeklyView: React.FC = () => {
               entries={entries}
               projects={projects}
               onEntryChange={fetchData}
+              droppableId={index.toString()}
             />
           </CarouselItem>
         ))}
@@ -225,9 +279,9 @@ const WeeklyView: React.FC = () => {
               <p className="text-gray-500">No projects found. Please create a project first.</p>
             </div>
           ) : (
-            <>
+            <DragDropContext onDragEnd={handleDragEnd}>
               {isMobile ? renderMobileView() : renderDesktopView()}
-            </>
+            </DragDropContext>
           )}
         </div>
       )}

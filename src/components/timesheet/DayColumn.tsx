@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { formatDateShort, isToday, formatDate } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Clock, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, Clock, FileText, GripVertical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import EntryForm from "./EntryForm";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
+import { Droppable, Draggable } from "react-beautiful-dnd";
 
 interface DayColumnProps {
   date: Date;
@@ -18,6 +19,7 @@ interface DayColumnProps {
   entries: TimesheetEntry[];
   projects: Project[];
   onEntryChange: () => void;
+  droppableId: string;
 }
 
 const PROJECT_COLORS: { [key: string]: string } = {
@@ -35,6 +37,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
   entries,
   projects,
   onEntryChange,
+  droppableId,
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
@@ -224,67 +227,101 @@ const DayColumn: React.FC<DayColumnProps> = ({
                 </Button>
               </div>
 
-              {dayEntries.length === 0 ? (
-                <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
-                  No entries for this day
-                </div>
-              ) : (
-                dayEntries.map((entry) => (
-                  <Card 
-                    key={entry.id || `temp-${Date.now()}-${Math.random()}`}
+              <Droppable droppableId={droppableId}>
+                {(provided, snapshot) => (
+                  <div 
+                    ref={provided.innerRef} 
+                    {...provided.droppableProps}
                     className={cn(
-                      "overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border",
-                      getProjectColor(entry.project)
+                      "flex flex-col space-y-2 min-h-[50px] p-1 transition-colors rounded-md",
+                      snapshot.isDraggingOver ? "bg-primary/5" : ""
                     )}
                   >
-                    <CardContent className="p-2 md:p-3">
-                      <div className="flex justify-between items-start">
-                        <div className="font-medium text-xs md:text-sm break-words whitespace-normal mr-2 max-w-[70%]">
-                          {entry.project?.name || "Unknown Project"}
-                        </div>
-                        <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
-                          <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" />
-                          {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
-                        </div>
+                    {dayEntries.length === 0 ? (
+                      <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
+                        No entries for this day
                       </div>
-                      
-                      {entry.jira_task_id && (
-                        <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block mt-1.5 truncate max-w-full break-all">
-                          {entry.jira_task_id}
-                        </div>
-                      )}
-                      
-                      {entry.notes && (
-                        <div className="flex items-start mt-1.5">
-                          <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1 flex-shrink-0" />
-                          <p className="text-[10px] md:text-xs text-muted-foreground break-words whitespace-normal w-full">
-                            {entry.notes}
-                          </p>
-                        </div>
-                      )}
-                      
-                      <div className="flex justify-end mt-1.5 space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-background/60 hover:text-primary transition-colors flex-shrink-0"
-                          onClick={() => handleEditEntry(entry)}
+                    ) : (
+                      dayEntries.map((entry, index) => (
+                        <Draggable 
+                          key={entry.id || `temp-${Date.now()}-${Math.random()}`} 
+                          draggableId={entry.id || `temp-${Date.now()}-${Math.random()}`} 
+                          index={index}
+                          isDragDisabled={!entry.id}
                         >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
-                          onClick={() => handleDeleteClick(entry)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={cn(
+                                "transition-all duration-200 hover:shadow-md",
+                                snapshot.isDragging ? "opacity-80 scale-[1.02] shadow-lg z-10" : ""
+                              )}
+                            >
+                              <Card 
+                                className={cn(
+                                  "overflow-hidden transition-all duration-200 hover:-translate-y-0.5 border",
+                                  getProjectColor(entry.project)
+                                )}
+                              >
+                                <CardContent className="p-2 md:p-3">
+                                  <div className="flex justify-between items-start">
+                                    <div className="font-medium text-xs md:text-sm break-words whitespace-normal mr-2 max-w-[70%] flex items-center gap-2">
+                                      <div {...provided.dragHandleProps} className="cursor-grab opacity-70 hover:opacity-100 transition-opacity">
+                                        <GripVertical className="h-3 w-3 flex-shrink-0" />
+                                      </div>
+                                      {entry.project?.name || "Unknown Project"}
+                                    </div>
+                                    <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
+                                      <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" />
+                                      {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
+                                    </div>
+                                  </div>
+                                  
+                                  {entry.jira_task_id && (
+                                    <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block mt-1.5 truncate max-w-full break-all">
+                                      {entry.jira_task_id}
+                                    </div>
+                                  )}
+                                  
+                                  {entry.notes && (
+                                    <div className="flex items-start mt-1.5">
+                                      <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1 flex-shrink-0" />
+                                      <p className="text-[10px] md:text-xs text-muted-foreground break-words whitespace-normal w-full">
+                                        {entry.notes}
+                                      </p>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex justify-end mt-1.5 space-x-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 hover:bg-background/60 hover:text-primary transition-colors flex-shrink-0"
+                                      onClick={() => handleEditEntry(entry)}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
+                                      onClick={() => handleDeleteClick(entry)}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))
+                    )}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
 
               {dayEntries.length > 0 && (
                 <div className="flex justify-between items-center py-1 px-2 text-xs font-medium">
