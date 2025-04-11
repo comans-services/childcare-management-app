@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -289,7 +288,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
     console.log("Auth user created successfully");
     
     // The profile should be created automatically by the trigger, but we'll update it with additional info
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({
         full_name: userData.full_name,
@@ -298,15 +297,14 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         time_zone: userData.time_zone,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", authData.user.id)
-      .select();
+      .eq("id", authData.user.id);
     
     if (error) {
       console.error("Error updating profile:", error);
       throw error;
     }
     
-    // Create the User object directly from available data, rather than depending on the data array
+    // Create the User object directly from the authData and userData rather than depending on database query results
     const newUser: User = {
       id: authData.user.id,
       full_name: userData.full_name,
