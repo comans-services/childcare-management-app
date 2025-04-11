@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -8,7 +7,7 @@ import {
   formatDateDisplay,
 } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar, ArrowLeft, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, RefreshCw } from "lucide-react";
 import {
   fetchUserProjects,
   fetchTimesheetEntries,
@@ -103,7 +102,6 @@ const WeeklyView: React.FC = () => {
   const totalWeekHours = entries.reduce((sum, entry) => sum + entry.hours_logged, 0);
   const weekProgress = Math.min((totalWeekHours / weeklyTarget) * 100, 100);
   
-  // Determine the color for the progress bar
   const getProgressColor = () => {
     if (weekProgress < 30) return "bg-amber-500";
     if (weekProgress < 70) return "bg-blue-500";
@@ -111,23 +109,22 @@ const WeeklyView: React.FC = () => {
     return "bg-violet-500"; // Over 100%
   };
 
-  // Render the desktop version with all days visible
   const renderDesktopView = () => (
-    <div className="grid grid-cols-7 gap-2">
+    <div className="grid grid-cols-7 gap-2 overflow-x-hidden">
       {weekDates.map((date) => (
-        <DayColumn
-          key={date.toISOString()}
-          date={date}
-          userId={user?.id || ""}
-          entries={entries}
-          projects={projects}
-          onEntryChange={fetchData}
-        />
+        <div key={date.toISOString()} className="w-full min-w-0">
+          <DayColumn
+            date={date}
+            userId={user?.id || ""}
+            entries={entries}
+            projects={projects}
+            onEntryChange={fetchData}
+          />
+        </div>
       ))}
     </div>
   );
 
-  // Render a carousel for mobile view
   const renderMobileView = () => (
     <Carousel className="w-full">
       <CarouselContent>
@@ -221,7 +218,7 @@ const WeeklyView: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div>
+        <div className="overflow-x-hidden w-full">
           {projects.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500">No projects found. Please create a project first.</p>

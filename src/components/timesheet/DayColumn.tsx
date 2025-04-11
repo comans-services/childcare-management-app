@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { formatDateShort, isToday, formatDate } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
@@ -20,7 +19,6 @@ interface DayColumnProps {
   onEntryChange: () => void;
 }
 
-// Project colors for visual differentiation
 const PROJECT_COLORS: { [key: string]: string } = {
   default: "bg-gray-100 border-gray-200 hover:bg-gray-50",
   development: "bg-blue-50 border-blue-200 hover:bg-blue-100",
@@ -42,16 +40,13 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const [localEntries, setLocalEntries] = useState<TimesheetEntry[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<TimesheetEntry | null>(null);
-  const dailyTarget = 8; // Default daily target of 8 hours
-  
-  // Format date consistently for comparison
+  const dailyTarget = 8;
+
   const formattedColumnDate = formatDate(date);
-  
-  // Filter entries for this day, using consistent date comparison
+
   const dayEntries = [...entries, ...localEntries].filter(entry => {
-    // Debug the date comparison
     if (typeof entry.entry_date === 'string') {
-      const entryDate = entry.entry_date.substring(0, 10); // Get just the YYYY-MM-DD part
+      const entryDate = entry.entry_date.substring(0, 10);
       const matches = entryDate === formattedColumnDate;
       return matches;
     }
@@ -62,18 +57,16 @@ const DayColumn: React.FC<DayColumnProps> = ({
     (sum, entry) => sum + entry.hours_logged,
     0
   );
-  
-  // Calculate progress percentage
+
   const dayProgress = Math.min((totalHours / dailyTarget) * 100, 100);
 
   const getProgressColor = () => {
     if (dayProgress < 30) return "bg-amber-500";
     if (dayProgress < 70) return "bg-blue-500";
     if (dayProgress < 100) return "bg-emerald-500";
-    return "bg-violet-500"; // Over 100%
+    return "bg-violet-500";
   };
 
-  // Get project color based on project name
   const getProjectColor = (project?: Project) => {
     if (!project) return PROJECT_COLORS.default;
     
@@ -114,7 +107,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
         description: "Time entry deleted successfully.",
       });
       
-      // Remove from local entries if it exists there
       setLocalEntries(prev => prev.filter(e => e.id !== entryToDelete.id));
       onEntryChange();
     } catch (error) {
@@ -139,14 +131,10 @@ const DayColumn: React.FC<DayColumnProps> = ({
     setShowForm(false);
     setEditingEntry(undefined);
     
-    // Add the newly saved entry to local entries for immediate display
     if (savedEntry) {
       console.log(`Saved entry date: ${savedEntry.entry_date}, column date: ${formattedColumnDate}`);
       
-      // Ensure we have consistent date format for the entry
-      // This specifically handles the case where the entry date might be in a different format
       if (savedEntry.entry_date !== formattedColumnDate) {
-        // Try to normalize dates for comparison
         const savedEntryDate = typeof savedEntry.entry_date === 'string' 
           ? savedEntry.entry_date.substring(0, 10) 
           : savedEntry.entry_date;
@@ -156,7 +144,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
           savedEntry.entry_date = formattedColumnDate;
         } else {
           console.log("Date formats don't match even after normalization");
-          // Check if the dates represent the same day
           const entryDateObj = new Date(savedEntry.entry_date);
           const columnDateObj = new Date(formattedColumnDate);
           
@@ -172,7 +159,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
       }
       
       setLocalEntries(prev => {
-        // Replace if exists, otherwise add
         const exists = prev.some(e => e.id === savedEntry.id);
         if (exists) {
           return prev.map(e => e.id === savedEntry.id ? savedEntry : e);
@@ -185,7 +171,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full min-w-0 max-w-full">
+    <div className="flex flex-col h-full min-w-0 w-full">
       <div className={cn(
         "text-xs md:text-sm font-medium p-2 md:p-3 rounded-t-md relative overflow-hidden",
         isToday(date) 
@@ -199,7 +185,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
           )}
         </div>
         
-        {/* Day progress indicator */}
         {totalHours > 0 && (
           <div className="absolute bottom-0 left-0 right-0 h-1">
             <div 
@@ -256,7 +241,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
                         <div className="font-medium text-xs md:text-sm truncate max-w-[70%]">
                           {entry.project?.name || "Unknown Project"}
                         </div>
-                        <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center">
+                        <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
                           <Clock className="h-3 w-3 mr-1 inline" />
                           {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
                         </div>
@@ -270,8 +255,8 @@ const DayColumn: React.FC<DayColumnProps> = ({
                       
                       {entry.notes && (
                         <div className="flex items-start mt-1.5">
-                          <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1" />
-                          <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 break-words">
+                          <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1 flex-shrink-0" />
+                          <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 break-words w-full">
                             {entry.notes}
                           </p>
                         </div>
@@ -281,7 +266,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 hover:bg-background/60 hover:text-primary transition-colors"
+                          className="h-6 w-6 hover:bg-background/60 hover:text-primary transition-colors flex-shrink-0"
                           onClick={() => handleEditEntry(entry)}
                         >
                           <Pencil className="h-3 w-3" />
@@ -289,7 +274,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
                           onClick={() => handleDeleteClick(entry)}
                         >
                           <Trash2 className="h-3 w-3" />
