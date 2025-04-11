@@ -64,12 +64,14 @@ const TeamList = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const isAdminOrManager = userRole === "admin" || userRole === "manager";
-
   useEffect(() => {
-    console.log("Current user role:", userRole);
-    console.log("Team members:", users);
-  }, [userRole, users]);
+    // Log the current user and users loaded
+    console.log("Current user email:", user?.email);
+    console.log("Team members loaded:", users?.length);
+    console.log("Team members data:", users);
+  }, [user, users]);
+
+  const isAdminOrManager = userRole === "admin" || userRole === "manager";
 
   if (error) {
     return (

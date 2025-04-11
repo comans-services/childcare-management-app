@@ -19,6 +19,16 @@ export const fetchUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching users...");
     
+    // First, get the authenticated user
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error("Error fetching current user:", authError);
+      throw authError;
+    }
+    
+    console.log("Current authenticated user:", authData?.user?.email);
+    
     // Get all profiles from the profiles table
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
@@ -31,10 +41,6 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     console.log(`Fetched ${profilesData?.length || 0} profiles`);
     
-    // Get authenticated users to get emails
-    const { data: authData } = await supabase.auth.getUser();
-    console.log("Current authenticated user:", authData?.user?.email);
-    
     // If no profiles are found, create one for the current user
     if ((!profilesData || profilesData.length === 0) && authData.user) {
       console.log("No profiles found, creating one for current user");
@@ -44,8 +50,8 @@ export const fetchUsers = async (): Promise<User[]> => {
         id: authData.user.id,
         full_name: authData.user.user_metadata?.full_name || "Admin User",
         role: "admin",
-        organization: "Default Organization",
-        time_zone: "UTC",
+        organization: "Comans Services",
+        time_zone: "Australia/Sydney",
         email: authData.user.email,
       };
       
@@ -67,17 +73,77 @@ export const fetchUsers = async (): Promise<User[]> => {
       }
     }
     
-    // Enhance profiles with email data if available
+    // Get all auth users to match emails with profiles
+    const { data: allAuthUsers, error: allAuthError } = await supabase.auth.admin.listUsers();
+    
+    if (allAuthError) {
+      console.error("Error fetching all auth users:", allAuthError);
+      // Continue with the data we have, just won't have emails for all users
+    }
+    
+    // Map of user IDs to emails
+    const userEmailMap = new Map();
+    
+    if (allAuthUsers?.users) {
+      allAuthUsers.users.forEach(user => {
+        userEmailMap.set(user.id, user.email);
+      });
+    }
+    
+    // Ensure the current user is included
+    if (authData.user) {
+      userEmailMap.set(authData.user.id, authData.user.email);
+    }
+    
+    // Enhance profiles with email data
     const users: User[] = profilesData?.map(profile => {
-      // For the current user, we can add the email
-      if (authData.user && profile.id === authData.user.id) {
-        return {
-          ...profile,
-          email: authData.user.email
-        };
-      }
-      return profile;
+      return {
+        ...profile,
+        email: userEmailMap.get(profile.id) || null
+      };
     }) || [];
+    
+    // Check if the current user's profile exists in the list
+    const currentUserExists = users.some(u => u.id === authData.user?.id);
+    
+    // If the current user doesn't exist in the profiles but is authenticated, add them
+    if (!currentUserExists && authData.user) {
+      console.log("Current user's profile not found, creating it:", authData.user.email);
+      
+      const newUserProfile = {
+        id: authData.user.id,
+        full_name: authData.user.user_metadata?.full_name || "Admin User",
+        role: "admin",
+        organization: "Comans Services",
+        time_zone: "Australia/Sydney",
+        email: authData.user.email,
+      };
+      
+      try {
+        const { data: insertedProfile, error: insertError } = await supabase
+          .from("profiles")
+          .insert([{
+            id: newUserProfile.id,
+            full_name: newUserProfile.full_name,
+            role: newUserProfile.role,
+            organization: newUserProfile.organization,
+            time_zone: newUserProfile.time_zone
+          }])
+          .select();
+        
+        if (insertError) {
+          console.error("Error inserting current user profile:", insertError);
+        } else {
+          console.log("Created profile for current user:", insertedProfile);
+          users.push({
+            ...insertedProfile[0],
+            email: authData.user.email
+          });
+        }
+      } catch (err) {
+        console.error("Error creating user profile:", err);
+      }
+    }
     
     console.log("Enhanced users with available email data:", users);
     return users;
