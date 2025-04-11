@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -132,10 +133,18 @@ export const fetchUsers = async (): Promise<User[]> => {
         
         if (insertError) {
           console.error("Error inserting current user profile:", insertError);
-        } else if (insertedProfile && insertedProfile.length > 0) {
-          // Fix: Type checking to ensure we have valid data
-          if (insertedProfile.length > 0 && insertedProfile[0]) {
-            const profileData = insertedProfile[0];
+        } else if (insertedProfile) {
+          // Fix: Add proper type checking and type assertion
+          const profileArray = insertedProfile as Array<{
+            id: string;
+            full_name?: string;
+            role?: string;
+            organization?: string;
+            time_zone?: string;
+          }>;
+          
+          if (profileArray.length > 0) {
+            const profileData = profileArray[0];
             const newUser: User = {
               id: profileData.id,
               full_name: profileData.full_name,
