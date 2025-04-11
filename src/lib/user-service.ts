@@ -133,18 +133,20 @@ export const fetchUsers = async (): Promise<User[]> => {
         if (insertError) {
           console.error("Error inserting current user profile:", insertError);
         } else if (insertedProfile && insertedProfile.length > 0) {
-          // Fix: Explicitly type the array element and ensure it exists
-          const profileData = insertedProfile[0];
-          const newUser: User = {
-            id: profileData.id,
-            full_name: profileData.full_name,
-            role: profileData.role,
-            organization: profileData.organization,
-            time_zone: profileData.time_zone,
-            email: authData.user.email
-          };
-          users.push(newUser);
-          console.log("Created profile for current user:", newUser);
+          // Fix: Type checking to ensure we have valid data
+          if (insertedProfile.length > 0 && insertedProfile[0]) {
+            const profileData = insertedProfile[0];
+            const newUser: User = {
+              id: profileData.id,
+              full_name: profileData.full_name,
+              role: profileData.role,
+              organization: profileData.organization,
+              time_zone: profileData.time_zone,
+              email: authData.user.email
+            };
+            users.push(newUser);
+            console.log("Created profile for current user:", newUser);
+          }
         }
       } catch (err) {
         console.error("Error creating user profile:", err);
