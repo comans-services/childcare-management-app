@@ -63,12 +63,12 @@ export const fetchUsers = async (): Promise<User[]> => {
       
       if (createError) {
         console.error("Error creating profile:", createError);
-      } else {
+      } else if (createdProfile && createdProfile.length > 0) {
         console.log("Created profile for current user:", createdProfile);
         // Return the newly created profile with email
         return createdProfile.map(profile => ({
           ...profile,
-          email: authData.user?.email
+          email: authData.user?.email || null
         }));
       }
     }
