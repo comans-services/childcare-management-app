@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -306,9 +305,13 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       throw error;
     }
     
-    // Return user data with the email from the auth data
+    // Create a new User object explicitly with the correct types
     const newUser: User = {
-      ...(data?.[0] as User),
+      id: authData.user.id,
+      full_name: userData.full_name,
+      role: userData.role || "employee",
+      organization: userData.organization,
+      time_zone: userData.time_zone,
       email: userData.email
     };
     
