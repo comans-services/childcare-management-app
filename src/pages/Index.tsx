@@ -121,7 +121,10 @@ const Dashboard = () => {
     retry: 1,
   });
 
-  const totalHours = timesheetEntries?.reduce((sum, entry) => sum + entry.hours_logged, 0) || 0;
+  const totalHours = timesheetEntries?.reduce((sum, entry) => {
+    const hoursLogged = Number(entry.hours_logged) || 0;
+    return sum + hoursLogged;
+  }, 0) || 0;
   
   const getDailyEntries = () => {
     const dailyEntries = [];
@@ -139,10 +142,15 @@ const Dashboard = () => {
         return entryDate === formattedDay;
       });
       
+      const hoursForDay = entriesForDay.reduce((sum, entry) => {
+        const hoursLogged = Number(entry.hours_logged) || 0;
+        return sum + hoursLogged;
+      }, 0);
+      
       dailyEntries.push({
         date: day,
         entries: entriesForDay,
-        hours: entriesForDay.reduce((sum, entry) => sum + entry.hours_logged, 0)
+        hours: hoursForDay
       });
     }
     
@@ -191,9 +199,11 @@ const Dashboard = () => {
         };
       }
       
-      acc[projectId].hours += entry.hours_logged || 0;
+      const hoursLogged = Number(entry.hours_logged) || 0;
+      acc[projectId].hours += hoursLogged;
+      
       return acc;
-    }, {});
+    }, {} as Record<string, { name: string, hours: number }>);
 
     console.log("Dashboard: Project hours calculation result:", result);
     return result;
@@ -203,7 +213,7 @@ const Dashboard = () => {
   console.log("Dashboard: Projects chart data:", projectsChartData);
 
   const customerHours = React.useMemo(() => {
-    const result = {};
+    const result: Record<string, { name: string, hours: number }> = {};
     
     if (!timesheetEntries || !projects || !customers || 
         timesheetEntries.length === 0 || projects.length === 0) {
@@ -236,7 +246,8 @@ const Dashboard = () => {
         };
       }
       
-      result[customerId].hours += entry.hours_logged || 0;
+      const hoursLogged = Number(entry.hours_logged) || 0;
+      result[customerId].hours += hoursLogged;
     });
     
     console.log("Dashboard: Customer hours calculation result:", result);
@@ -440,6 +451,15 @@ const Dashboard = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
         <p className="text-gray-600">Welcome to your timesheet dashboard</p>
+        {entriesError && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              There was an error loading your timesheet data. Please refresh the page.
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
       
       <Card className={`${cardStyle.background} ${cardStyle.border}`}>
