@@ -355,7 +355,8 @@ const Dashboard = () => {
         text: "text-yellow-700",
         button: "text-yellow-600 border-yellow-300 hover:bg-yellow-100"
       };
-    } else if (completeWeek && allDaysHaveEntries) {
+    } else if ((completeWeek || totalHours >= 40) && allDaysHaveEntries) {
+      // Fixed: Check both completeWeek state OR if totalHours is sufficient
       return {
         background: "bg-green-50",
         border: "border-green-200",
