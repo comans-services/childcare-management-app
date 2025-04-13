@@ -314,7 +314,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-7 w-7 hover:bg-background/60 hover:text-primary transition-colors flex-shrink-0"
+                                              className="h-7 w-7 hover:bg-green-50 hover:text-green-600 transition-colors flex-shrink-0 hover:border-green-100 hover:scale-110"
                                               onClick={() => handleEditEntry(entry)}
                                               aria-label="Edit entry"
                                             >
