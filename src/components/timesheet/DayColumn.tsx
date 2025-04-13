@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { formatDateShort, isToday, formatDate } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
@@ -277,17 +276,15 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                   )}
                                 >
                                   <CardContent className="p-3 md:p-4">
-                                    {/* Improved Project Name at the top */}
                                     <div className="flex items-center gap-2 mb-3">
                                       <div {...provided.dragHandleProps} className="cursor-grab opacity-70 hover:opacity-100 transition-opacity">
                                         <GripVertical className="h-3 w-3 flex-shrink-0" aria-label="Drag to reorder" />
                                       </div>
-                                      <h3 className="font-semibold text-sm md:text-base truncate">
+                                      <h3 className="font-semibold text-sm md:text-base break-words whitespace-normal w-full">
                                         {entry.project?.name || "Unknown Project"}
                                       </h3>
                                     </div>
 
-                                    {/* Hours logged with visual prominence */}
                                     <div className="flex justify-between items-center mb-2">
                                       <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
                                         <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" aria-hidden="true" />
@@ -301,7 +298,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                       )}
                                     </div>
                                     
-                                    {/* Notes with improved layout */}
                                     {entry.notes && (
                                       <div className="flex items-start mt-2 bg-background/30 p-1.5 rounded-md">
                                         <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1.5 flex-shrink-0" aria-hidden="true" />
@@ -311,7 +307,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                       </div>
                                     )}
                                     
-                                    {/* Action buttons moved to bottom */}
                                     <div className="flex justify-end mt-3 space-x-1 pt-1 border-t border-t-background/20">
                                       <TooltipProvider>
                                         <Tooltip>
