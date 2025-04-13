@@ -60,9 +60,7 @@ const Dashboard = () => {
   const startDate = startOfWeek(today);
   const endDate = endOfWeek(today);
   
-  // Define missing variables
   const isFridayToday = isFriday(today);
-  const completeWeek = false; // This will be calculated below
 
   useEffect(() => {
     if (!session) {
@@ -153,30 +151,23 @@ const Dashboard = () => {
   
   const dailyEntries = getDailyEntries();
   
-  // Define the checkDailyEntries function
   const checkDailyEntries = () => {
-    // Check if there's at least one entry for each workday (Monday to Friday)
     return dailyEntries
-      .filter((day, index) => index < 5) // Only consider Monday to Friday (first 5 days)
+      .filter((day, index) => index < 5)
       .every(day => day.hours > 0);
   };
   
-  // Update completeWeek variable based on entries
   const hasWorkWeekEntries = checkDailyEntries();
-  const isEndOfWeek = getDay(today) >= 5; // Friday or later in the week
+  const isEndOfWeek = getDay(today) >= 5;
   const isWeekComplete = isEndOfWeek && hasWorkWeekEntries && totalHours >= 40;
   
-  // Now we can properly define completeWeek
+  const [completeWeek, setCompleteWeek] = useState(isWeekComplete);
+  
   useEffect(() => {
-    // This runs after the component mounts and when dependencies change
     if (isWeekComplete) {
-      // Set completeWeek to true
       setCompleteWeek(true);
     }
   }, [isWeekComplete]);
-  
-  // State to track if the week is complete
-  const [completeWeek, setCompleteWeek] = useState(isWeekComplete);
   
   const projectHours = React.useMemo(() => {
     if (!timesheetEntries || timesheetEntries.length === 0) {
