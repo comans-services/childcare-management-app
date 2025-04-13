@@ -33,3 +33,22 @@ export const getPreviousWeek = (currentDate: Date): Date => {
 export const isToday = (date: Date): boolean => {
   return isSameDay(date, new Date());
 };
+
+// Helper function to format time (for timer display)
+export const formatTime = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  
+  const pad = (num: number) => num.toString().padStart(2, '0');
+  
+  return `${pad(hours)}:${pad(minutes)}:${pad(remainingSeconds)}`;
+};
+
+// Get time difference in hours between two dates
+export const getHoursDifference = (start: Date, end: Date): number => {
+  const diffMs = end.getTime() - start.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  // Round to 2 decimal places
+  return Math.round(diffHours * 100) / 100;
+};

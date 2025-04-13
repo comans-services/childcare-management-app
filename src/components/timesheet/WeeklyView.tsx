@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/carousel";
 import { Progress } from "@/components/ui/progress";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const WeeklyView: React.FC = () => {
   const { user } = useAuth();
@@ -167,7 +168,7 @@ const WeeklyView: React.FC = () => {
   };
 
   const renderDesktopView = () => (
-    <div className="grid grid-cols-7 gap-2 w-full overflow-hidden">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-2 w-full overflow-hidden">
       {weekDates.map((date, index) => (
         <div key={date.toISOString()} className="w-full min-w-0 max-w-full">
           <DayColumn
@@ -210,38 +211,71 @@ const WeeklyView: React.FC = () => {
     <div className="space-y-4 w-full max-w-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={navigateToPreviousWeek}
-            className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={navigateToCurrentWeek}
-            className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 flex items-center gap-1"
-          >
-            <Calendar className="h-3.5 w-3.5" />
-            <span>Today</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={navigateToNextWeek}
-            className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={navigateToPreviousWeek}
+                  className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
+                  aria-label="Previous week"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View previous week</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateToCurrentWeek}
+                  className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 flex items-center gap-1"
+                  aria-label="Current week"
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>Today</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Go to current week</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={navigateToNextWeek}
+                  className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
+                  aria-label="Next week"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View next week</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
           {error && (
             <Button 
               onClick={fetchData} 
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-primary"
+              className="text-muted-foreground hover:text-primary animate-pulse"
+              aria-label="Retry loading data"
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1" />
               <span>Retry</span>
@@ -291,7 +325,7 @@ const WeeklyView: React.FC = () => {
       )}
 
       {!loading && !error && entries.length > 0 && (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-2 animate-in fade-in-50">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium">Weekly Progress: {totalWeekHours.toFixed(2)}/{weeklyTarget} hours</span>
             <span className="text-sm font-medium">{weekProgress.toFixed(0)}%</span>

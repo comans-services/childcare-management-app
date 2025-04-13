@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { Droppable, Draggable } from "react-beautiful-dnd";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DayColumnProps {
   date: Date;
@@ -203,28 +204,40 @@ const DayColumn: React.FC<DayColumnProps> = ({
         {showForm ? (
           <Card className="h-full border-0 shadow-none">
             <CardContent className="pt-4 p-2 md:p-4">
-              <EntryForm
-                userId={userId}
-                date={date}
-                projects={projects}
-                existingEntry={editingEntry}
-                onSave={handleSaveComplete}
-                onCancel={() => setShowForm(false)}
-              />
+              <div className="overflow-y-auto max-h-[60vh] md:max-h-[70vh]">
+                <EntryForm
+                  userId={userId}
+                  date={date}
+                  projects={projects}
+                  existingEntry={editingEntry}
+                  onSave={handleSaveComplete}
+                  onCancel={() => setShowForm(false)}
+                />
+              </div>
             </CardContent>
           </Card>
         ) : (
           <ScrollArea className="h-[50vh] md:h-[60vh]">
             <div className="flex flex-col p-2 space-y-2 min-w-0">
               <div className="text-center py-1">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="w-full text-xs rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
-                  onClick={() => setShowForm(true)}
-                >
-                  <Plus className="mr-1 h-3 w-3" /> Add Entry
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="w-full text-xs rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
+                        onClick={handleAddEntry}
+                        aria-label="Add new time entry"
+                      >
+                        <Plus className="mr-1 h-3 w-3" /> Add Entry
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Add a new time entry for this day</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
               <Droppable droppableId={droppableId}>
@@ -242,81 +255,104 @@ const DayColumn: React.FC<DayColumnProps> = ({
                         No entries for this day
                       </div>
                     ) : (
-                      dayEntries.map((entry, index) => (
-                        <Draggable 
-                          key={entry.id || `temp-${Date.now()}-${Math.random()}`} 
-                          draggableId={entry.id || `temp-${Date.now()}-${Math.random()}`} 
-                          index={index}
-                          isDragDisabled={!entry.id}
-                        >
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className={cn(
-                                "transition-all duration-200 hover:shadow-md",
-                                snapshot.isDragging ? "opacity-80 scale-[1.02] shadow-lg z-10" : ""
-                              )}
-                            >
-                              <Card 
+                      <div className="grid grid-cols-1 gap-2">
+                        {dayEntries.map((entry, index) => (
+                          <Draggable 
+                            key={entry.id || `temp-${Date.now()}-${Math.random()}`} 
+                            draggableId={entry.id || `temp-${Date.now()}-${Math.random()}`} 
+                            index={index}
+                            isDragDisabled={!entry.id}
+                          >
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
                                 className={cn(
-                                  "overflow-hidden transition-all duration-200 hover:-translate-y-0.5 border",
-                                  getProjectColor(entry.project)
+                                  "transition-all duration-200 hover:shadow-md animate-in fade-in-50",
+                                  snapshot.isDragging ? "opacity-80 scale-[1.02] shadow-lg z-10" : ""
                                 )}
                               >
-                                <CardContent className="p-2 md:p-3">
-                                  <div className="flex justify-between items-start">
-                                    <div className="font-medium text-xs md:text-sm break-words whitespace-normal mr-2 max-w-[70%] flex items-center gap-2">
-                                      <div {...provided.dragHandleProps} className="cursor-grab opacity-70 hover:opacity-100 transition-opacity">
-                                        <GripVertical className="h-3 w-3 flex-shrink-0" />
+                                <Card 
+                                  className={cn(
+                                    "overflow-hidden transition-all duration-200 hover:-translate-y-0.5 border",
+                                    getProjectColor(entry.project)
+                                  )}
+                                >
+                                  <CardContent className="p-3 md:p-4">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div className="font-medium text-sm md:text-base break-words whitespace-normal mr-2 max-w-[80%] flex items-center gap-2">
+                                        <div {...provided.dragHandleProps} className="cursor-grab opacity-70 hover:opacity-100 transition-opacity">
+                                          <GripVertical className="h-3 w-3 flex-shrink-0" aria-label="Drag to reorder" />
+                                        </div>
+                                        {entry.project?.name || "Unknown Project"}
                                       </div>
-                                      {entry.project?.name || "Unknown Project"}
+                                      <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
+                                        <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" aria-hidden="true" />
+                                        {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
+                                      </div>
                                     </div>
-                                    <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
-                                      <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" />
-                                      {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
+                                    
+                                    {entry.jira_task_id && (
+                                      <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block mt-1 truncate max-w-full break-all">
+                                        {entry.jira_task_id}
+                                      </div>
+                                    )}
+                                    
+                                    {entry.notes && (
+                                      <div className="flex items-start mt-2">
+                                        <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1 flex-shrink-0" aria-hidden="true" />
+                                        <p className="text-[10px] md:text-xs text-muted-foreground break-words whitespace-normal w-full">
+                                          {entry.notes}
+                                        </p>
+                                      </div>
+                                    )}
+                                    
+                                    <div className="flex justify-end mt-3 space-x-1">
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-7 w-7 hover:bg-background/60 hover:text-primary transition-colors flex-shrink-0"
+                                              onClick={() => handleEditEntry(entry)}
+                                              aria-label="Edit entry"
+                                            >
+                                              <Pencil className="h-3.5 w-3.5" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Edit this entry</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
+                                              onClick={() => handleDeleteClick(entry)}
+                                              aria-label="Delete entry"
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Delete this entry</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
                                     </div>
-                                  </div>
-                                  
-                                  {entry.jira_task_id && (
-                                    <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block mt-1.5 truncate max-w-full break-all">
-                                      {entry.jira_task_id}
-                                    </div>
-                                  )}
-                                  
-                                  {entry.notes && (
-                                    <div className="flex items-start mt-1.5">
-                                      <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1 flex-shrink-0" />
-                                      <p className="text-[10px] md:text-xs text-muted-foreground break-words whitespace-normal w-full">
-                                        {entry.notes}
-                                      </p>
-                                    </div>
-                                  )}
-                                  
-                                  <div className="flex justify-end mt-1.5 space-x-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 hover:bg-background/60 hover:text-primary transition-colors flex-shrink-0"
-                                      onClick={() => handleEditEntry(entry)}
-                                    >
-                                      <Pencil className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
-                                      onClick={() => handleDeleteClick(entry)}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                      </div>
                     )}
                     {provided.placeholder}
                   </div>
