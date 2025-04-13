@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -176,13 +177,17 @@ const EntryForm: React.FC<EntryFormProps> = ({
                     disabled={isSubmitting}
                   >
                     <FormControl>
-                      <SelectTrigger className="w-full transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger className="w-full transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20 whitespace-normal break-words">
                         <SelectValue placeholder="Select a project" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
+                        <SelectItem 
+                          key={project.id} 
+                          value={project.id}
+                          className="whitespace-normal break-words"
+                        >
                           {project.name}
                         </SelectItem>
                       ))}
