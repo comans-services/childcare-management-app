@@ -277,9 +277,21 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                 >
                                   <CardContent className="p-3 md:p-4">
                                     <div className="flex items-center gap-2 mb-3">
-                                      <div {...provided.dragHandleProps} className="cursor-grab opacity-70 hover:opacity-100 transition-opacity">
-                                        <GripVertical className="h-3 w-3 flex-shrink-0" aria-label="Drag to reorder" />
-                                      </div>
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div 
+                                              {...provided.dragHandleProps} 
+                                              className="cursor-grab opacity-70 hover:opacity-100 transition-opacity"
+                                            >
+                                              <GripVertical className="h-3 w-3 flex-shrink-0" aria-label="Drag to reorder" />
+                                            </div>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Drag to reorder this entry</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
                                       <h3 className="font-semibold text-sm md:text-base break-words whitespace-normal w-full">
                                         {entry.project?.name || "Unknown Project"}
                                       </h3>
