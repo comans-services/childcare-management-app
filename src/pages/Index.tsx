@@ -66,25 +66,60 @@ const Dashboard = () => {
     }
   }, [session, navigate]);
 
-  const { data: timesheetEntries = [], isLoading: entriesLoading } = useQuery({
+  const { data: timesheetEntries = [], isLoading: entriesLoading, error: entriesError } = useQuery({
     queryKey: ["timesheet", session?.user?.id, startDate, endDate],
-    queryFn: () => session?.user?.id 
-      ? fetchTimesheetEntries(session.user.id, startDate, endDate) 
-      : Promise.resolve([]),
-    enabled: !!session?.user?.id
+    queryFn: async () => {
+      if (!session?.user?.id) return Promise.resolve([]);
+      console.log(`Fetching timesheet entries for dashboard: User ID: ${session.user.id}, Date Range: ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
+      try {
+        const result = await fetchTimesheetEntries(session.user.id, startDate, endDate);
+        console.log(`Dashboard: Fetched ${result.length} timesheet entries`);
+        return result;
+      } catch (err) {
+        console.error("Error fetching timesheet entries for dashboard:", err);
+        throw err;
+      }
+    },
+    enabled: !!session?.user?.id,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: ["projects"],
-    queryFn: () => fetchUserProjects(),
+    queryFn: async () => {
+      console.log("Dashboard: Fetching projects");
+      try {
+        const result = await fetchUserProjects();
+        console.log(`Dashboard: Fetched ${result.length} projects`);
+        return result;
+      } catch (err) {
+        console.error("Error fetching projects for dashboard:", err);
+        throw err;
+      }
+    },
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: ["customers"],
-    queryFn: () => fetchCustomers(),
+    queryFn: async () => {
+      console.log("Dashboard: Fetching customers");
+      try {
+        const result = await fetchCustomers();
+        console.log(`Dashboard: Fetched ${result.length} customers`);
+        return result;
+      } catch (err) {
+        console.error("Error fetching customers for dashboard:", err);
+        throw err;
+      }
+    },
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
-  const totalHours = timesheetEntries.reduce((sum, entry) => sum + entry.hours_logged, 0);
+  const totalHours = timesheetEntries?.reduce((sum, entry) => sum + entry.hours_logged, 0) || 0;
   
   const getDailyEntries = () => {
     const dailyEntries = [];
@@ -114,48 +149,82 @@ const Dashboard = () => {
   
   const dailyEntries = getDailyEntries();
   
-  const projectHours = timesheetEntries.reduce((acc, entry) => {
-    const projectId = entry.project_id;
-    const projectName = entry.project?.name || "Unknown Project";
-    
-    if (!acc[projectId]) {
-      acc[projectId] = {
-        name: projectName,
-        hours: 0
-      };
+  const projectHours = React.useMemo(() => {
+    if (!timesheetEntries || timesheetEntries.length === 0) {
+      console.log("Dashboard: No timesheet entries available for project hours calculation");
+      return {};
     }
-    
-    acc[projectId].hours += entry.hours_logged;
-    return acc;
-  }, {});
+
+    const result = timesheetEntries.reduce((acc, entry) => {
+      if (!entry.project_id) {
+        console.log("Dashboard: Entry without project_id found:", entry);
+        return acc;
+      }
+
+      const projectId = entry.project_id;
+      const projectName = entry.project?.name || "Unknown Project";
+      
+      if (!acc[projectId]) {
+        acc[projectId] = {
+          name: projectName,
+          hours: 0
+        };
+      }
+      
+      acc[projectId].hours += entry.hours_logged || 0;
+      return acc;
+    }, {});
+
+    console.log("Dashboard: Project hours calculation result:", result);
+    return result;
+  }, [timesheetEntries]);
   
   const projectsChartData = Object.values(projectHours);
+  console.log("Dashboard: Projects chart data:", projectsChartData);
 
-  const customerHours = {};
-  
-  if (timesheetEntries.length > 0) {
+  const customerHours = React.useMemo(() => {
+    const result = {};
+    
+    if (!timesheetEntries || !projects || !customers || 
+        timesheetEntries.length === 0 || projects.length === 0) {
+      console.log("Dashboard: Missing data for customer hours calculation");
+      return result;
+    }
+
     timesheetEntries.forEach(entry => {
+      if (!entry.project_id) return;
+      
       const project = projects.find(p => p.id === entry.project_id);
-      if (!project) return;
+      if (!project || !project.customer_id) {
+        console.log("Dashboard: Entry with missing project or customer reference:", entry);
+        return;
+      }
       
       const customerId = project.customer_id;
-      if (!customerId) return;
-      
       const customer = customers.find(c => c.id === customerId);
-      const customerName = customer ? customer.name : "Unknown Customer";
+      if (!customer) {
+        console.log("Dashboard: Customer not found for ID:", customerId);
+        return;
+      }
+
+      const customerName = customer.name || "Unknown Customer";
       
-      if (!customerHours[customerId]) {
-        customerHours[customerId] = {
+      if (!result[customerId]) {
+        result[customerId] = {
           name: customerName,
           hours: 0
         };
       }
       
-      customerHours[customerId].hours += entry.hours_logged;
+      result[customerId].hours += entry.hours_logged || 0;
     });
-  }
+    
+    console.log("Dashboard: Customer hours calculation result:", result);
+    return result;
+  }, [timesheetEntries, projects, customers]);
   
   const customersChartData = Object.values(customerHours);
+  console.log("Dashboard: Customers chart data:", customersChartData);
 
   const fridayCOB = new Date();
   fridayCOB.setDate(fridayCOB.getDate() + (5 - fridayCOB.getDay()));
@@ -176,7 +245,7 @@ const Dashboard = () => {
   }
   
   const calculateExpectedHours = () => {
-    if (timesheetEntries.length === 0) {
+    if (!timesheetEntries || timesheetEntries.length === 0) {
       return 0;
     }
     
@@ -194,7 +263,7 @@ const Dashboard = () => {
   const expectedHoursToDate = calculateExpectedHours();
   
   const calculateHoursLoggedToDate = () => {
-    if (timesheetEntries.length === 0) {
+    if (!timesheetEntries || timesheetEntries.length === 0) {
       return 0;
     }
     
@@ -231,23 +300,10 @@ const Dashboard = () => {
   const hoursRemaining = calculateHoursRemaining();
   const caughtUp = hoursLoggedToDate >= expectedHoursToDate;
 
-  const hasEntries = timesheetEntries.length > 0;
-  const completeWeek = weekProgress >= 100;
-  const isFridayToday = isFriday(today);
+  const hasEntries = timesheetEntries && timesheetEntries.length > 0;
+  const isLoading = entriesLoading || projectsLoading || customersLoading;
+  const hasError = !!entriesError;
 
-  const checkDailyEntries = () => {
-    const workdays = [1, 2, 3, 4, 5];
-    const today = new Date();
-    const dayOfWeek = getDay(today);
-    
-    const daysToCheck = workdays.filter(day => day <= Math.min(dayOfWeek, 5));
-    
-    return daysToCheck.every(day => {
-      const entriesForDay = dailyEntries.find(entry => getDay(entry.date) === day);
-      return entriesForDay && entriesForDay.hours > 0;
-    });
-  };
-  
   const allDaysHaveEntries = checkDailyEntries();
   const isTodayComplete = dailyEntries
     .filter(day => isSameDay(day.date, today))
@@ -549,7 +605,15 @@ const Dashboard = () => {
             <CardDescription>Distribution of your hours across projects</CardDescription>
           </CardHeader>
           <CardContent>
-            {projectsChartData.length > 0 ? (
+            {isLoading ? (
+              <div className="h-80 flex items-center justify-center">
+                <p className="text-gray-400">Loading project data...</p>
+              </div>
+            ) : hasError ? (
+              <div className="h-80 flex items-center justify-center text-red-500">
+                <p>Error loading project data. Please refresh the page.</p>
+              </div>
+            ) : projectsChartData.length > 0 ? (
               <ChartContainer className="aspect-video h-80" config={{}}>
                 <BarChart data={projectsChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -561,7 +625,7 @@ const Dashboard = () => {
               </ChartContainer>
             ) : (
               <div className="h-80 flex items-center justify-center text-gray-400">
-                No timesheet data available
+                <p>No timesheet data available</p>
               </div>
             )}
           </CardContent>
@@ -573,7 +637,15 @@ const Dashboard = () => {
             <CardDescription>Distribution of your hours across customers</CardDescription>
           </CardHeader>
           <CardContent>
-            {customersChartData.length > 0 ? (
+            {isLoading ? (
+              <div className="h-80 flex items-center justify-center">
+                <p className="text-gray-400">Loading customer data...</p>
+              </div>
+            ) : hasError ? (
+              <div className="h-80 flex items-center justify-center text-red-500">
+                <p>Error loading customer data. Please refresh the page.</p>
+              </div>
+            ) : customersChartData.length > 0 ? (
               <ChartContainer className="aspect-video h-80" config={{}}>
                 <PieChart>
                   <Pie 
@@ -595,7 +667,7 @@ const Dashboard = () => {
               </ChartContainer>
             ) : (
               <div className="h-80 flex items-center justify-center text-gray-400">
-                No customer data available
+                <p>No customer data available</p>
               </div>
             )}
           </CardContent>
