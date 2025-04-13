@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -160,140 +161,146 @@ const EntryForm: React.FC<EntryFormProps> = ({
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="font-medium text-lg">{formatDateDisplay(date)}</div>
-        
-        {projects.length === 0 ? (
-          <div className="text-amber-600 p-2 border rounded bg-amber-50">
-            No projects available. Please create a project first.
-          </div>
-        ) : (
+    <div className="entry-form-container overflow-y-auto p-2 md:p-4 max-h-[70vh] animate-in fade-in-50 duration-200">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="font-medium text-lg">{formatDateDisplay(date)}</div>
+          
+          {projects.length === 0 ? (
+            <div className="text-amber-600 p-2 border rounded bg-amber-50">
+              No projects available. Please create a project first.
+            </div>
+          ) : (
+            <FormField
+              control={form.control}
+              name="project_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Project</FormLabel>
+                  <Select
+                    defaultValue={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isSubmitting}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectValue placeholder="Select a project" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
           <FormField
             control={form.control}
-            name="project_id"
+            name="hours_logged"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Project</FormLabel>
-                <Select
-                  defaultValue={field.value}
-                  onValueChange={field.onChange}
-                  disabled={isSubmitting}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a project" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormLabel>Hours</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    placeholder="0.00"
+                    disabled={isSubmitting || projects.length === 0}
+                    value={hoursInputValue}
+                    className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20"
+                    onChange={(e) => {
+                      // Allow empty string or valid numbers (including decimals)
+                      const value = e.target.value;
+                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                        setHoursInputValue(value);
+                        
+                        // Update form value only with valid numbers
+                        if (value === "") {
+                          field.onChange(0);
+                        } else {
+                          const numValue = parseFloat(value);
+                          if (!isNaN(numValue)) {
+                            field.onChange(numValue);
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        )}
 
-        <FormField
-          control={form.control}
-          name="hours_logged"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Hours</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  placeholder="0.00"
-                  disabled={isSubmitting || projects.length === 0}
-                  value={hoursInputValue}
-                  onChange={(e) => {
-                    // Allow empty string or valid numbers (including decimals)
-                    const value = e.target.value;
-                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                      setHoursInputValue(value);
-                      
-                      // Update form value only with valid numbers
-                      if (value === "") {
-                        field.onChange(0);
-                      } else {
-                        const numValue = parseFloat(value);
-                        if (!isNaN(numValue)) {
-                          field.onChange(numValue);
-                        }
-                      }
-                    }
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="jira_task_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>JIRA Task ID</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="e.g. PROJ-123" 
+                    disabled={isSubmitting || projects.length === 0} 
+                    className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="jira_task_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>JIRA Task ID</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="e.g. PROJ-123" 
-                  disabled={isSubmitting || projects.length === 0} 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Add details about your work..."
+                    className="min-h-[100px] transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20"
+                    disabled={isSubmitting || projects.length === 0}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Add details about your work..."
-                  className="min-h-[100px]"
-                  disabled={isSubmitting || projects.length === 0}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end space-x-2 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="submit" 
-            disabled={isSubmitting || projects.length === 0}
-          >
-            {isSubmitting
-              ? "Saving..."
-              : existingEntry
-              ? "Update Entry"
-              : "Save Entry"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          <div className="flex justify-end space-x-2 pt-4 sticky bottom-0 bg-background pb-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+              className="transition-all duration-200 hover:bg-gray-100 hover:scale-[1.02]"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || projects.length === 0}
+              className="transition-all duration-200 hover:scale-[1.02]"
+            >
+              {isSubmitting
+                ? "Saving..."
+                : existingEntry
+                ? "Update Entry"
+                : "Save Entry"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 };
 

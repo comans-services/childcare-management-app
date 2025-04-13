@@ -168,7 +168,7 @@ const WeeklyView: React.FC = () => {
   };
 
   const renderDesktopView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-2 w-full overflow-hidden">
+    <div className="grid grid-cols-1 md:grid-cols-7 gap-2 w-full overflow-hidden animate-in fade-in-50">
       {weekDates.map((date, index) => (
         <div key={date.toISOString()} className="w-full min-w-0 max-w-full">
           <DayColumn
@@ -185,7 +185,7 @@ const WeeklyView: React.FC = () => {
   );
 
   const renderMobileView = () => (
-    <Carousel className="w-full max-w-full">
+    <Carousel className="w-full max-w-full animate-in fade-in-50">
       <CarouselContent>
         {weekDates.map((date, index) => (
           <CarouselItem key={date.toISOString()} className="basis-full min-w-0">
@@ -209,8 +209,8 @@ const WeeklyView: React.FC = () => {
 
   return (
     <div className="space-y-4 w-full max-w-full">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex space-x-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div className="flex flex-wrap items-center gap-2">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -292,14 +292,14 @@ const WeeklyView: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-10">
+        <div className="flex justify-center py-10 animate-pulse">
           <div className="text-center">
             <div className="text-lg">Loading timesheet data...</div>
           </div>
         </div>
       ) : error ? (
         <div className="flex justify-center py-10">
-          <div className="text-center">
+          <div className="text-center animate-in fade-in-50">
             <div className="text-red-500">{error}</div>
             <Button 
               onClick={fetchData} 
@@ -313,7 +313,7 @@ const WeeklyView: React.FC = () => {
       ) : (
         <div className="w-full max-w-full overflow-hidden">
           {projects.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-8 animate-in fade-in-50">
               <p className="text-gray-500">No projects found. Please create a project first.</p>
             </div>
           ) : (
@@ -325,7 +325,7 @@ const WeeklyView: React.FC = () => {
       )}
 
       {!loading && !error && entries.length > 0 && (
-        <div className="mt-4 space-y-2 animate-in fade-in-50">
+        <div className="mt-4 space-y-2 animate-in fade-in-50 duration-300">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium">Weekly Progress: {totalWeekHours.toFixed(2)}/{weeklyTarget} hours</span>
             <span className="text-sm font-medium">{weekProgress.toFixed(0)}%</span>

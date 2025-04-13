@@ -204,16 +204,14 @@ const DayColumn: React.FC<DayColumnProps> = ({
         {showForm ? (
           <Card className="h-full border-0 shadow-none">
             <CardContent className="pt-4 p-2 md:p-4">
-              <div className="overflow-y-auto max-h-[60vh] md:max-h-[70vh]">
-                <EntryForm
-                  userId={userId}
-                  date={date}
-                  projects={projects}
-                  existingEntry={editingEntry}
-                  onSave={handleSaveComplete}
-                  onCancel={() => setShowForm(false)}
-                />
-              </div>
+              <EntryForm
+                userId={userId}
+                date={date}
+                projects={projects}
+                existingEntry={editingEntry}
+                onSave={handleSaveComplete}
+                onCancel={() => setShowForm(false)}
+              />
             </CardContent>
           </Card>
         ) : (
@@ -268,46 +266,53 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 className={cn(
-                                  "transition-all duration-200 hover:shadow-md animate-in fade-in-50",
+                                  "transition-all duration-300 hover:shadow-md animate-in fade-in-50",
                                   snapshot.isDragging ? "opacity-80 scale-[1.02] shadow-lg z-10" : ""
                                 )}
                               >
                                 <Card 
                                   className={cn(
-                                    "overflow-hidden transition-all duration-200 hover:-translate-y-0.5 border",
+                                    "overflow-hidden transition-all duration-200 hover:-translate-y-0.5 border rounded-xl",
                                     getProjectColor(entry.project)
                                   )}
                                 >
                                   <CardContent className="p-3 md:p-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                      <div className="font-medium text-sm md:text-base break-words whitespace-normal mr-2 max-w-[80%] flex items-center gap-2">
-                                        <div {...provided.dragHandleProps} className="cursor-grab opacity-70 hover:opacity-100 transition-opacity">
-                                          <GripVertical className="h-3 w-3 flex-shrink-0" aria-label="Drag to reorder" />
-                                        </div>
-                                        {entry.project?.name || "Unknown Project"}
+                                    {/* Improved Project Name at the top */}
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <div {...provided.dragHandleProps} className="cursor-grab opacity-70 hover:opacity-100 transition-opacity">
+                                        <GripVertical className="h-3 w-3 flex-shrink-0" aria-label="Drag to reorder" />
                                       </div>
+                                      <h3 className="font-semibold text-sm md:text-base truncate">
+                                        {entry.project?.name || "Unknown Project"}
+                                      </h3>
+                                    </div>
+
+                                    {/* Hours logged with visual prominence */}
+                                    <div className="flex justify-between items-center mb-2">
                                       <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
                                         <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" aria-hidden="true" />
                                         {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
                                       </div>
+                                      
+                                      {entry.jira_task_id && (
+                                        <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block truncate max-w-[120px]">
+                                          {entry.jira_task_id}
+                                        </div>
+                                      )}
                                     </div>
                                     
-                                    {entry.jira_task_id && (
-                                      <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block mt-1 truncate max-w-full break-all">
-                                        {entry.jira_task_id}
-                                      </div>
-                                    )}
-                                    
+                                    {/* Notes with improved layout */}
                                     {entry.notes && (
-                                      <div className="flex items-start mt-2">
-                                        <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1 flex-shrink-0" aria-hidden="true" />
+                                      <div className="flex items-start mt-2 bg-background/30 p-1.5 rounded-md">
+                                        <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1.5 flex-shrink-0" aria-hidden="true" />
                                         <p className="text-[10px] md:text-xs text-muted-foreground break-words whitespace-normal w-full">
                                           {entry.notes}
                                         </p>
                                       </div>
                                     )}
                                     
-                                    <div className="flex justify-end mt-3 space-x-1">
+                                    {/* Action buttons moved to bottom */}
+                                    <div className="flex justify-end mt-3 space-x-1 pt-1 border-t border-t-background/20">
                                       <TooltipProvider>
                                         <Tooltip>
                                           <TooltipTrigger asChild>
