@@ -164,7 +164,20 @@ const EntryForm: React.FC<EntryFormProps> = ({
     <div className="entry-form-container overflow-y-auto p-2 md:p-4 max-h-[70vh] animate-in fade-in-50 duration-200">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="font-medium text-lg">{formatDateDisplay(date)}</div>
+          {/* Cancel button at the top for better accessibility */}
+          <div className="flex justify-between items-center">
+            <div className="font-medium text-lg">{formatDateDisplay(date)}</div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onCancel}
+              disabled={isSubmitting}
+              className="transition-all duration-200 hover:bg-gray-100 hover:scale-[1.02]"
+            >
+              Cancel
+            </Button>
+          </div>
           
           {projects.length === 0 ? (
             <div className="text-amber-600 p-2 border rounded bg-amber-50">
@@ -277,19 +290,11 @@ const EntryForm: React.FC<EntryFormProps> = ({
           />
 
           <div className="flex justify-end space-x-2 pt-4 sticky bottom-0 bg-background pb-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={isSubmitting}
-              className="transition-all duration-200 hover:bg-gray-100 hover:scale-[1.02]"
-            >
-              Cancel
-            </Button>
             <Button 
               type="submit" 
               disabled={isSubmitting || projects.length === 0}
               className="transition-all duration-200 hover:scale-[1.02]"
+              size="sm"
             >
               {isSubmitting
                 ? "Saving..."
