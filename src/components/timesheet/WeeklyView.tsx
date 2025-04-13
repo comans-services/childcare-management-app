@@ -103,7 +103,11 @@ const WeeklyView: React.FC = () => {
     setCurrentDate(new Date());
   };
 
-  const totalWeekHours = entries.reduce((sum, entry) => sum + entry.hours_logged, 0);
+  const totalWeekHours = entries.reduce((sum, entry) => {
+    const hoursLogged = Number(entry.hours_logged) || 0;
+    return sum + hoursLogged;
+  }, 0);
+  
   const weekProgress = Math.min((totalWeekHours / weeklyTarget) * 100, 100);
   
   const getProgressColor = () => {

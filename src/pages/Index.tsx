@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfWeek, endOfWeek, isToday, isFriday, getDay, parseISO, isSameDay } from "date-fns";
+import { format, startOfWeek, endOfWeek, isToday, isFriday, getDay, parseISO, isSameDay, addDays } from "date-fns";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -56,11 +57,13 @@ const Dashboard = () => {
   const [issueDescription, setIssueDescription] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
+  // Modified to ensure we're using Monday as the start of the week and Sunday as the end
   const today = new Date();
-  const startDate = startOfWeek(today);
-  const endDate = endOfWeek(today);
+  const startDate = startOfWeek(today, { weekStartsOn: 1 }); // Start week on Monday
+  const endDate = addDays(startDate, 6); // End on Sunday (6 days after Monday)
   
   const isFridayToday = isFriday(today);
+  const [completeWeek, setCompleteWeek] = useState(false);
 
   useEffect(() => {
     if (!session) {
@@ -129,6 +132,7 @@ const Dashboard = () => {
   const getDailyEntries = () => {
     const dailyEntries = [];
     
+    // Generate entries for each day of the week (Monday to Sunday)
     for (let i = 0; i < 7; i++) {
       const day = new Date(startDate);
       day.setDate(startDate.getDate() + i);
@@ -159,17 +163,16 @@ const Dashboard = () => {
   
   const dailyEntries = getDailyEntries();
   
+  // Check for entries on all workdays (Monday to Friday)
   const checkDailyEntries = () => {
     return dailyEntries
-      .filter((day, index) => index < 5)
+      .filter((day, index) => index < 5) // Monday to Friday (first 5 days)
       .every(day => day.hours > 0);
   };
   
   const hasWorkWeekEntries = checkDailyEntries();
-  const isEndOfWeek = getDay(today) >= 5;
+  const isEndOfWeek = getDay(today) >= 5; // Friday, Saturday, Sunday
   const isWeekComplete = isEndOfWeek && hasWorkWeekEntries && totalHours >= 40;
-  
-  const [completeWeek, setCompleteWeek] = useState(isWeekComplete);
   
   useEffect(() => {
     if (isWeekComplete) {
@@ -257,6 +260,7 @@ const Dashboard = () => {
   const customersChartData = Object.values(customerHours);
   console.log("Dashboard: Customers chart data:", customersChartData);
 
+  // Set Friday COB as 5pm on Friday
   const fridayCOB = new Date();
   fridayCOB.setDate(fridayCOB.getDate() + (5 - fridayCOB.getDay()));
   fridayCOB.setHours(17, 0, 0, 0);

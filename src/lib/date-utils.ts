@@ -15,8 +15,9 @@ export const formatDateShort = (date: Date): string => {
 };
 
 export const getCurrentWeekDates = (currentDate: Date = new Date()): Date[] => {
+  // Modified to always use Monday as the start of the week and Sunday as the end
   const start = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start week on Monday
-  const end = endOfWeek(start, { weekStartsOn: 1 });
+  const end = addDays(start, 6); // End on Sunday (6 days after Monday)
   
   return eachDayOfInterval({ start, end });
 };
