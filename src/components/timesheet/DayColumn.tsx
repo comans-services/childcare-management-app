@@ -292,7 +292,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                           </TooltipContent>
                                         </Tooltip>
                                       </TooltipProvider>
-                                      <h3 className="font-semibold text-sm md:text-base break-words whitespace-normal w-full">
+                                      <h3 className="font-semibold text-xs md:text-sm break-words whitespace-normal w-full">
                                         {entry.project?.name || "Unknown Project"}
                                       </h3>
                                     </div>
