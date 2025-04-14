@@ -44,6 +44,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const [localEntries, setLocalEntries] = useState<TimesheetEntry[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<TimesheetEntry | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const dailyTarget = 8;
 
   const formattedColumnDate = formatDate(date);
@@ -105,6 +106,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
     if (!entryToDelete || !entryToDelete.id) return;
     
     try {
+      setIsDeleting(true);
       await deleteTimesheetEntry(entryToDelete.id);
       toast({
         title: "Entry deleted",
@@ -121,6 +123,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
         variant: "destructive",
       });
     } finally {
+      setIsDeleting(false);
       setDeleteConfirmOpen(false);
       setEntryToDelete(null);
     }
@@ -348,6 +351,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                               className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
                                               onClick={() => handleDeleteClick(entry)}
                                               aria-label="Delete entry"
+                                              disabled={isDeleting}
                                             >
                                               <Trash2 className="h-3.5 w-3.5" />
                                             </Button>
@@ -395,8 +399,9 @@ const DayColumn: React.FC<DayColumnProps> = ({
             <AlertDialogAction 
               onClick={handleConfirmDelete} 
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-105 transition-all duration-200"
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
