@@ -286,7 +286,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
           </div>
 
           {useTimeRange ? (
-            <div className="grid grid-cols-2 gap-4 mt-2">
+            <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="start_time"
