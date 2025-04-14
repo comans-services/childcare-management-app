@@ -304,24 +304,24 @@ const EntryForm: React.FC<EntryFormProps> = ({
                         <FormControl>
                           <Button 
                             variant="outline" 
-                            className={`w-full h-9 px-3 py-1 text-xs font-normal justify-start text-left bg-background ${isSubmitting || projects.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full h-9 px-2 py-1 text-xs font-normal justify-start text-left bg-background truncate ${isSubmitting || projects.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                             disabled={isSubmitting || projects.length === 0}
                           >
-                            <Clock className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                            {formatTimeForDisplay(field.value)}
+                            <Clock className="mr-1 h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                            <span className="truncate">{formatTimeForDisplay(field.value)}</span>
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <div className="p-3 bg-popover border-b">
-                          <div className="text-sm font-medium mb-2">Select start time</div>
+                        <div className="p-2 bg-popover border-b">
+                          <div className="text-xs font-medium mb-1">Select start time</div>
                           <div className="grid grid-cols-4 gap-1">
                             {Array.from({ length: 24 }).map((_, hour) => (
                               <div key={hour} className="time-column">
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-8 w-full text-xs"
+                                  className="h-7 w-full text-xs"
                                   onClick={() => {
                                     const newTime = `${hour.toString().padStart(2, '0')}:00`;
                                     field.onChange(newTime);
@@ -339,7 +339,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-8 w-full text-xs"
+                                  className="h-7 w-full text-xs"
                                   onClick={() => {
                                     const newTime = `${hour.toString().padStart(2, '0')}:30`;
                                     field.onChange(newTime);
@@ -392,24 +392,24 @@ const EntryForm: React.FC<EntryFormProps> = ({
                         <FormControl>
                           <Button 
                             variant="outline" 
-                            className={`w-full h-9 px-3 py-1 text-xs font-normal justify-start text-left bg-background ${isSubmitting || projects.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full h-9 px-2 py-1 text-xs font-normal justify-start text-left bg-background truncate ${isSubmitting || projects.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                             disabled={isSubmitting || projects.length === 0}
                           >
-                            <Clock className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                            {formatTimeForDisplay(field.value)}
+                            <Clock className="mr-1 h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                            <span className="truncate">{formatTimeForDisplay(field.value)}</span>
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <div className="p-3 bg-popover border-b">
-                          <div className="text-sm font-medium mb-2">Select end time</div>
+                        <div className="p-2 bg-popover border-b">
+                          <div className="text-xs font-medium mb-1">Select end time</div>
                           <div className="grid grid-cols-4 gap-1">
                             {Array.from({ length: 24 }).map((_, hour) => (
                               <div key={hour} className="time-column">
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-8 w-full text-xs"
+                                  className="h-7 w-full text-xs"
                                   onClick={() => {
                                     const newTime = `${hour.toString().padStart(2, '0')}:00`;
                                     field.onChange(newTime);
@@ -427,7 +427,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-8 w-full text-xs"
+                                  className="h-7 w-full text-xs"
                                   onClick={() => {
                                     const newTime = `${hour.toString().padStart(2, '0')}:30`;
                                     field.onChange(newTime);
