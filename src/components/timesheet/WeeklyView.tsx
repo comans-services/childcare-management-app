@@ -137,7 +137,7 @@ const WeeklyView: React.FC = () => {
     if (source.droppableId === destination.droppableId) return;
     
     try {
-      // Create a copy of the entry with the updated date
+      // Create a copy of the entry with the updated date, but preserve all other properties including project data
       const updatedEntry: TimesheetEntry = {
         ...draggedEntry,
         entry_date: formatDate(destDate)
@@ -146,10 +146,13 @@ const WeeklyView: React.FC = () => {
       // Update the entry in the database
       const savedEntry = await saveTimesheetEntry(updatedEntry);
       
-      // Update local state
+      // Update local state - important: preserve project data in the local entry
       setEntries(prevEntries => 
         prevEntries.map(entry => 
-          entry.id === savedEntry.id ? savedEntry : entry
+          entry.id === savedEntry.id ? {
+            ...savedEntry,
+            project: draggedEntry.project // Preserve the project data
+          } : entry
         )
       );
       

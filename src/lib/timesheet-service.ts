@@ -188,7 +188,14 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       }
       
       console.log("Entry updated successfully:", data?.[0]);
-      return data?.[0] as TimesheetEntry;
+      
+      // Return entry with preserved project data
+      const updatedEntry = data?.[0] as TimesheetEntry;
+      if (entry.project) {
+        updatedEntry.project = entry.project;
+      }
+      
+      return updatedEntry;
     } else {
       // Create new entry
       const { data, error } = await supabase
@@ -209,7 +216,14 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       }
       
       console.log("Entry created successfully:", data?.[0]);
-      return data?.[0] as TimesheetEntry;
+      
+      // Return entry with preserved project data
+      const newEntry = data?.[0] as TimesheetEntry;
+      if (entry.project) {
+        newEntry.project = entry.project;
+      }
+      
+      return newEntry;
     }
   } catch (error) {
     console.error("Error in saveTimesheetEntry:", error);
