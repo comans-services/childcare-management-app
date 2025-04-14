@@ -143,8 +143,17 @@ const WeeklyView: React.FC = () => {
         entry_date: formatDate(destDate)
       };
       
+      // Log the entry before update for debugging
+      console.log("Updating entry in database:", {
+        originalEntry: draggedEntry,
+        updatedEntry: updatedEntry
+      });
+      
       // Update the entry in the database
       const savedEntry = await saveTimesheetEntry(updatedEntry);
+      
+      // Log the saved entry for confirmation
+      console.log("Entry saved in database:", savedEntry);
       
       // Update local state - important: preserve project data in the local entry
       setEntries(prevEntries => 
