@@ -260,30 +260,30 @@ const EntryForm: React.FC<EntryFormProps> = ({
             />
           )}
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 mb-2">
             <Switch
               checked={useTimeRange}
               onCheckedChange={(checked) => setUseTimeRange(checked)}
               disabled={isSubmitting || projects.length === 0}
               id="use-time-range"
             />
-            <FormLabel htmlFor="use-time-range" className="cursor-pointer">
+            <FormLabel htmlFor="use-time-range" className="cursor-pointer text-sm m-0">
               Use time range
             </FormLabel>
           </div>
 
           {useTimeRange ? (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 mt-2">
               <FormField
                 control={form.control}
                 name="start_time"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start Time</FormLabel>
+                    <FormLabel className="text-xs font-medium mb-1 block">Start Time</FormLabel>
                     <FormControl>
                       <Input 
                         type="time"
-                        className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20"
+                        className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20 h-9 text-sm"
                         disabled={isSubmitting || projects.length === 0}
                         {...field}
                         onChange={(e) => {
@@ -307,11 +307,11 @@ const EntryForm: React.FC<EntryFormProps> = ({
                 name="end_time"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>End Time</FormLabel>
+                    <FormLabel className="text-xs font-medium mb-1 block">End Time</FormLabel>
                     <FormControl>
                       <Input 
                         type="time"
-                        className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20"
+                        className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20 h-9 text-sm"
                         disabled={isSubmitting || projects.length === 0}
                         {...field}
                         onChange={(e) => {
