@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, email")  // Also fetch email
         .eq("id", userId)
         .single();
 
@@ -76,6 +76,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data) {
         setUserRole(data.role as "employee" | "manager" | "admin" || "employee");
+        
+        // Update user profile with email if missing
+        if (!data.email && user?.email) {
+          console.log(`User profile missing email, updating with ${user.email}`);
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({ email: user.email })
+            .eq("id", userId);
+            
+          if (updateError) {
+            console.error("Error updating profile email:", updateError);
+          }
+        }
       }
     } catch (error) {
       console.error("Error fetching user role:", error);
@@ -128,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      // Create profile after signup
+      // Create profile after signup, including email field
       if (data.user) {
         const { error: profileError } = await supabase
           .from("profiles")
@@ -137,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               id: data.user.id,
               full_name: fullName,
               role: "employee", // Default role
+              email: email, // Explicitly store email
             },
           ]);
 

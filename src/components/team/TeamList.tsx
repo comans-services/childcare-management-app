@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchUsers, User, updateUser } from "@/lib/user-service";
@@ -23,16 +22,14 @@ const TeamList = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Fetch users with staleTime set to 0 to ensure fresh data and refetch on focus
   const { data: users, isLoading, error, refetch } = useQuery({
     queryKey: ["users", refreshTrigger],
     queryFn: fetchUsers,
-    staleTime: 0, // Always fetch fresh data
+    staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
 
-  // Update user mutation
   const updateUserMutation = useMutation({
     mutationFn: updateUser,
     onSuccess: () => {
@@ -64,15 +61,23 @@ const TeamList = () => {
 
   const handleRefresh = () => {
     console.log("Refreshing team list...");
-    // Increment refresh trigger to force refetch
     setRefreshTrigger(prev => prev + 1);
-    // Also invalidate the users query and refetch
     queryClient.invalidateQueries({ queryKey: ["users"] });
     refetch();
   };
 
+  const handleForceRefresh = async () => {
+    console.log("Force refreshing team data...");
+    setRefreshTrigger(prev => prev + 1);
+    queryClient.removeQueries({ queryKey: ["users"] });
+    await refetch();
+    toast({
+      title: "Refreshed",
+      description: "Team member data has been refreshed",
+    });
+  };
+
   React.useEffect(() => {
-    // Log the current user and users loaded
     console.log("Current user email:", user?.email);
     console.log("Team members loaded:", users?.length);
     console.log("Team members data:", users);
@@ -134,7 +139,7 @@ const TeamList = () => {
     <div className="overflow-x-auto">
       <div className="flex justify-end mb-4 px-4">
         <Button 
-          onClick={handleRefresh}
+          onClick={handleForceRefresh}
           variant="outline"
           size="sm"
         >

@@ -43,7 +43,7 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     console.log("Current authenticated user:", authData?.user?.email);
     
-    // Get all profiles from the profiles table - now including email field
+    // Get all profiles from the profiles table
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
       .select("id, full_name, role, organization, time_zone, email");
@@ -83,43 +83,59 @@ export const fetchUsers = async (): Promise<User[]> => {
       }
     }
     
-    // If we have profiles data but some are missing emails,
-    // try to fetch emails from auth.users as a fallback
-    if (profilesData) {
-      // Create a list of profiles that are missing emails
+    // If profiles exist but some are missing emails, fetch the emails from auth
+    if (profilesData && profilesData.length > 0) {
+      // Find profiles with missing emails
       const profilesWithoutEmails = profilesData.filter(profile => !profile.email);
       
       if (profilesWithoutEmails.length > 0) {
-        console.log(`Found ${profilesWithoutEmails.length} profiles without emails, attempting to fetch from auth`);
+        console.log(`Found ${profilesWithoutEmails.length} profiles without emails, attempting to fetch and update`);
         
-        // Get auth users to match emails with profiles that are missing them
-        // Properly type the response from listUsers
-        const { data: authUsersData } = await supabase.auth.admin.listUsers();
-        
-        // Safely check and access the users array with proper type checking
-        const authUsers: SupabaseAuthUser[] = 
-          authUsersData && 
-          'users' in authUsersData && 
-          Array.isArray(authUsersData.users) ? 
-          authUsersData.users as SupabaseAuthUser[] : 
-          [];
-        
-        if (authUsers.length > 0) {
-          console.log(`Fetched ${authUsers.length} auth users to match missing emails`);
+        try {
+          // Fetch all auth users (requires admin privileges)
+          const { data: authUsersData } = await supabase.auth.admin.listUsers();
           
-          // Update profiles with missing emails
-          for (const profile of profilesWithoutEmails) {
-            const matchingAuthUser = authUsers.find(user => user.id === profile.id);
+          if (authUsersData && 'users' in authUsersData && Array.isArray(authUsersData.users)) {
+            console.log(`Fetched ${authUsersData.users.length} auth users`);
             
-            if (matchingAuthUser && matchingAuthUser.email) {
-              // Update the profile in the database with the email
+            // Update each profile with missing email
+            for (const profile of profilesWithoutEmails) {
+              const matchingAuthUser = authUsersData.users.find(user => user.id === profile.id);
+              
+              if (matchingAuthUser && matchingAuthUser.email) {
+                console.log(`Updating profile ${profile.id} with email ${matchingAuthUser.email}`);
+                
+                // Update profile in database
+                const { error: updateError } = await supabase
+                  .from("profiles")
+                  .update({ email: matchingAuthUser.email })
+                  .eq("id", profile.id);
+                
+                if (updateError) {
+                  console.error(`Error updating email for profile ${profile.id}:`, updateError);
+                } else {
+                  // Update email in our local data
+                  profile.email = matchingAuthUser.email;
+                }
+              }
+            }
+          }
+        } catch (authError) {
+          console.error("Error fetching auth users:", authError);
+          
+          // Alternative approach for non-admin users: try to match the current user
+          if (authData.user) {
+            const currentUserProfile = profilesWithoutEmails.find(p => p.id === authData.user?.id);
+            if (currentUserProfile && authData.user.email) {
+              console.log(`Updating current user profile with email ${authData.user.email}`);
+              
+              // Update the current user's profile with their email
               await supabase
                 .from("profiles")
-                .update({ email: matchingAuthUser.email })
-                .eq("id", profile.id);
-                
-              // Also update it in our local data
-              profile.email = matchingAuthUser.email;
+                .update({ email: authData.user.email })
+                .eq("id", authData.user.id);
+              
+              currentUserProfile.email = authData.user.email;
             }
           }
         }
@@ -207,6 +223,7 @@ export const updateUser = async (user: User): Promise<User> => {
   try {
     console.log("Updating user:", user);
     
+    // Ensure the email is included in the update
     const { data, error } = await supabase
       .from("profiles")
       .update({
@@ -214,7 +231,7 @@ export const updateUser = async (user: User): Promise<User> => {
         role: user.role,
         organization: user.organization,
         time_zone: user.time_zone,
-        email: user.email,
+        email: user.email, // Make sure email is updated
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id)
@@ -255,7 +272,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
     
     console.log("Auth user created successfully:", authData.user);
     
-    // Create profile record for the new user, now including email
+    // Create profile record for the new user WITH email field
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .insert([{
@@ -264,7 +281,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         role: userData.role || "employee",
         organization: userData.organization,
         time_zone: userData.time_zone,
-        email: userData.email,
+        email: userData.email, // Explicitly store email in profile
         updated_at: new Date().toISOString(),
       }])
       .select();
