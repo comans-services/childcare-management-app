@@ -20,6 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
@@ -127,6 +132,20 @@ const EntryForm: React.FC<EntryFormProps> = ({
     } catch (error) {
       console.error("Error calculating hours:", error);
       return 0;
+    }
+  };
+
+  // Format time for display
+  const formatTimeForDisplay = (timeString: string): string => {
+    if (!timeString) return "";
+    
+    try {
+      const [hours, minutes] = timeString.split(":").map(Number);
+      const period = hours >= 12 ? "PM" : "AM";
+      const displayHours = hours % 12 || 12;
+      return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+    } catch {
+      return timeString;
     }
   };
 
@@ -280,23 +299,83 @@ const EntryForm: React.FC<EntryFormProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs font-medium mb-1 block">Start Time</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="time"
-                        className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20 h-9 text-sm"
-                        disabled={isSubmitting || projects.length === 0}
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          const endTime = form.getValues("end_time");
-                          if (endTime) {
-                            const calculatedHours = calculateHoursFromTimeRange(e.target.value, endTime);
-                            setHoursInputValue(calculatedHours.toFixed(2));
-                            form.setValue("hours_logged", calculatedHours);
-                          }
-                        }}
-                      />
-                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button 
+                            variant="outline" 
+                            className={`w-full h-9 px-3 py-1 text-xs font-normal justify-start text-left bg-background ${isSubmitting || projects.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={isSubmitting || projects.length === 0}
+                          >
+                            <Clock className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                            {formatTimeForDisplay(field.value)}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <div className="p-3 bg-popover border-b">
+                          <div className="text-sm font-medium mb-2">Select start time</div>
+                          <div className="grid grid-cols-4 gap-1">
+                            {Array.from({ length: 24 }).map((_, hour) => (
+                              <div key={hour} className="time-column">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-8 w-full text-xs"
+                                  onClick={() => {
+                                    const newTime = `${hour.toString().padStart(2, '0')}:00`;
+                                    field.onChange(newTime);
+                                    // Update hours when start time changes
+                                    const endTime = form.getValues("end_time");
+                                    if (endTime) {
+                                      const calculatedHours = calculateHoursFromTimeRange(newTime, endTime);
+                                      setHoursInputValue(calculatedHours.toFixed(2));
+                                      form.setValue("hours_logged", calculatedHours);
+                                    }
+                                  }}
+                                >
+                                  {hour.toString().padStart(2, '0')}:00
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-8 w-full text-xs"
+                                  onClick={() => {
+                                    const newTime = `${hour.toString().padStart(2, '0')}:30`;
+                                    field.onChange(newTime);
+                                    // Update hours when start time changes
+                                    const endTime = form.getValues("end_time");
+                                    if (endTime) {
+                                      const calculatedHours = calculateHoursFromTimeRange(newTime, endTime);
+                                      setHoursInputValue(calculatedHours.toFixed(2));
+                                      form.setValue("hours_logged", calculatedHours);
+                                    }
+                                  }}
+                                >
+                                  {hour.toString().padStart(2, '0')}:30
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="p-2 bg-muted/20">
+                          <Input 
+                            type="time"
+                            className="h-8 text-xs"
+                            value={field.value}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              const endTime = form.getValues("end_time");
+                              if (endTime) {
+                                const calculatedHours = calculateHoursFromTimeRange(e.target.value, endTime);
+                                setHoursInputValue(calculatedHours.toFixed(2));
+                                form.setValue("hours_logged", calculatedHours);
+                              }
+                            }}
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -308,23 +387,83 @@ const EntryForm: React.FC<EntryFormProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs font-medium mb-1 block">End Time</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="time"
-                        className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20 h-9 text-sm"
-                        disabled={isSubmitting || projects.length === 0}
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          const startTime = form.getValues("start_time");
-                          if (startTime) {
-                            const calculatedHours = calculateHoursFromTimeRange(startTime, e.target.value);
-                            setHoursInputValue(calculatedHours.toFixed(2));
-                            form.setValue("hours_logged", calculatedHours);
-                          }
-                        }}
-                      />
-                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button 
+                            variant="outline" 
+                            className={`w-full h-9 px-3 py-1 text-xs font-normal justify-start text-left bg-background ${isSubmitting || projects.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={isSubmitting || projects.length === 0}
+                          >
+                            <Clock className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                            {formatTimeForDisplay(field.value)}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <div className="p-3 bg-popover border-b">
+                          <div className="text-sm font-medium mb-2">Select end time</div>
+                          <div className="grid grid-cols-4 gap-1">
+                            {Array.from({ length: 24 }).map((_, hour) => (
+                              <div key={hour} className="time-column">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-8 w-full text-xs"
+                                  onClick={() => {
+                                    const newTime = `${hour.toString().padStart(2, '0')}:00`;
+                                    field.onChange(newTime);
+                                    // Update hours when end time changes
+                                    const startTime = form.getValues("start_time");
+                                    if (startTime) {
+                                      const calculatedHours = calculateHoursFromTimeRange(startTime, newTime);
+                                      setHoursInputValue(calculatedHours.toFixed(2));
+                                      form.setValue("hours_logged", calculatedHours);
+                                    }
+                                  }}
+                                >
+                                  {hour.toString().padStart(2, '0')}:00
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-8 w-full text-xs"
+                                  onClick={() => {
+                                    const newTime = `${hour.toString().padStart(2, '0')}:30`;
+                                    field.onChange(newTime);
+                                    // Update hours when end time changes
+                                    const startTime = form.getValues("start_time");
+                                    if (startTime) {
+                                      const calculatedHours = calculateHoursFromTimeRange(startTime, newTime);
+                                      setHoursInputValue(calculatedHours.toFixed(2));
+                                      form.setValue("hours_logged", calculatedHours);
+                                    }
+                                  }}
+                                >
+                                  {hour.toString().padStart(2, '0')}:30
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="p-2 bg-muted/20">
+                          <Input 
+                            type="time"
+                            className="h-8 text-xs"
+                            value={field.value}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              const startTime = form.getValues("start_time");
+                              if (startTime) {
+                                const calculatedHours = calculateHoursFromTimeRange(startTime, e.target.value);
+                                setHoursInputValue(calculatedHours.toFixed(2));
+                                form.setValue("hours_logged", calculatedHours);
+                              }
+                            }}
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
