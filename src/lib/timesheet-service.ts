@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
@@ -220,18 +221,18 @@ export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
   try {
     console.log(`Deleting entry ${entryId}`);
     
-    const { error, count } = await supabase
+    // Remove the .select("count") part that was causing the error
+    const { error } = await supabase
       .from("timesheet_entries")
       .delete()
-      .eq("id", entryId)
-      .select("count");
+      .eq("id", entryId);
 
     if (error) {
       console.error("Error deleting timesheet entry:", error);
       throw error;
     }
     
-    console.log(`Entry ${entryId} deleted successfully. Rows affected: ${count}`);
+    console.log(`Entry ${entryId} deleted successfully.`);
   } catch (error) {
     console.error("Error in deleteTimesheetEntry:", error);
     throw error;
