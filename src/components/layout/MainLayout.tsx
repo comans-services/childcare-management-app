@@ -23,7 +23,7 @@ export const MainLayout = () => {
           <Sidebar />
         </div>
         {isMobile && <Sidebar />}
-        <main className="flex-1 p-4 sm:p-6">
+        <main className="flex-1 p-4 sm:p-6 w-[110%]">
           <Outlet />
         </main>
       </div>
