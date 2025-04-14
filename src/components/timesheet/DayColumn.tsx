@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { formatDateShort, isToday, formatDate } from "@/lib/date-utils";
-import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
+import { TimesheetEntry, Project, deleteTimesheetEntry, duplicateTimesheetEntry } from "@/lib/timesheet-service";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Clock, FileText, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, Clock, FileText, GripVertical, Copy } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import EntryForm from "./EntryForm";
@@ -45,6 +45,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<TimesheetEntry | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const dailyTarget = 8;
 
   const formattedColumnDate = formatDate(date);
@@ -126,6 +127,36 @@ const DayColumn: React.FC<DayColumnProps> = ({
       setIsDeleting(false);
       setDeleteConfirmOpen(false);
       setEntryToDelete(null);
+    }
+  };
+
+  const handleDuplicateEntry = async (entry: TimesheetEntry) => {
+    if (!entry.id) return;
+    
+    try {
+      setIsDuplicating(true);
+      const duplicatedEntry = await duplicateTimesheetEntry(entry.id);
+      
+      toast({
+        title: "Entry duplicated",
+        description: "Time entry has been duplicated successfully.",
+      });
+      
+      setLocalEntries(prev => [
+        ...prev, 
+        { ...duplicatedEntry, project: entry.project }
+      ]);
+      
+      onEntryChange();
+    } catch (error) {
+      console.error("Error duplicating entry:", error);
+      toast({
+        title: "Error",
+        description: "Failed to duplicate time entry.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
@@ -332,6 +363,26 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                     )}
                                     
                                     <div className="flex justify-end mt-3 space-x-1 pt-1 border-t border-t-background/20">
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-7 w-7 hover:bg-amber-50 hover:text-amber-600 transition-colors flex-shrink-0 hover:border-amber-100 hover:scale-110"
+                                              onClick={() => handleDuplicateEntry(entry)}
+                                              aria-label="Duplicate entry"
+                                              disabled={isDuplicating}
+                                            >
+                                              <Copy className="h-3.5 w-3.5" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Duplicate this entry</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+
                                       <TooltipProvider>
                                         <Tooltip>
                                           <TooltipTrigger asChild>
