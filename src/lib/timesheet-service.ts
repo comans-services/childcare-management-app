@@ -201,10 +201,15 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       
       console.log("Entry updated successfully:", data?.[0]);
       
-      // Return entry with preserved project data
+      // Return entry with preserved project and user data
       const updatedEntry = data?.[0] as TimesheetEntry;
       if (entry.project) {
         updatedEntry.project = entry.project;
+      }
+      
+      // Preserve user data from the original entry
+      if (entry.user) {
+        updatedEntry.user = entry.user;
       }
       
       return updatedEntry;
@@ -225,10 +230,15 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       
       console.log("Entry created successfully:", data?.[0]);
       
-      // Return entry with preserved project data
+      // Return entry with preserved project and user data
       const newEntry = data?.[0] as TimesheetEntry;
       if (entry.project) {
         newEntry.project = entry.project;
+      }
+      
+      // Preserve user data from the original entry
+      if (entry.user) {
+        newEntry.user = entry.user;
       }
       
       return newEntry;

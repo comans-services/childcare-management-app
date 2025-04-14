@@ -118,49 +118,40 @@ const WeeklyView: React.FC = () => {
     return "bg-violet-500"; // Over 100%
   };
 
-  // Handle drag and drop between days
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
     
-    // If dropped outside a droppable area or in the same position
     if (!destination) return;
     
-    // Get the entry that was dragged
     const draggedEntry = entries.find(entry => entry.id === draggableId);
     if (!draggedEntry) return;
     
-    // Get source and destination dates
     const sourceDate = weekDates[parseInt(source.droppableId)];
     const destDate = weekDates[parseInt(destination.droppableId)];
     
-    // If moving within the same day, we don't need to update anything
     if (source.droppableId === destination.droppableId) return;
     
     try {
-      // Create a copy of the entry with the updated date, but preserve all other properties including project data
       const updatedEntry: TimesheetEntry = {
         ...draggedEntry,
         entry_date: formatDate(destDate)
       };
       
-      // Log the entry before update for debugging
       console.log("Updating entry in database:", {
         originalEntry: draggedEntry,
         updatedEntry: updatedEntry
       });
       
-      // Update the entry in the database
       const savedEntry = await saveTimesheetEntry(updatedEntry);
       
-      // Log the saved entry for confirmation
       console.log("Entry saved in database:", savedEntry);
       
-      // Update local state - important: preserve project data in the local entry
       setEntries(prevEntries => 
         prevEntries.map(entry => 
           entry.id === savedEntry.id ? {
             ...savedEntry,
-            project: draggedEntry.project // Preserve the project data
+            project: draggedEntry.project,
+            user: draggedEntry.user
           } : entry
         )
       );
