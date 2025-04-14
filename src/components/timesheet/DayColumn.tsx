@@ -313,6 +313,15 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                       )}
                                     </div>
                                     
+                                    {entry.start_time && entry.end_time && (
+                                      <div className="flex items-center mt-2 bg-background/20 p-1 rounded-md text-[10px] md:text-xs">
+                                        <Clock className="h-3 w-3 mr-1 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+                                        <span className="text-muted-foreground">
+                                          {entry.start_time} - {entry.end_time}
+                                        </span>
+                                      </div>
+                                    )}
+                                    
                                     {entry.notes && (
                                       <div className="flex items-start mt-2 bg-background/30 p-1.5 rounded-md">
                                         <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1.5 flex-shrink-0" aria-hidden="true" />

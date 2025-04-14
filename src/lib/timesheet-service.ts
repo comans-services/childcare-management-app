@@ -22,6 +22,8 @@ export interface TimesheetEntry {
   hours_logged: number;
   notes?: string;
   jira_task_id?: string;
+  start_time?: string; // New field for start time
+  end_time?: string;   // New field for end time
   project?: Project;
   user?: {
     id: string;
@@ -177,7 +179,9 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
           entry_date: entry.entry_date,
           hours_logged: entry.hours_logged,
           notes: entry.notes,
-          jira_task_id: entry.jira_task_id
+          jira_task_id: entry.jira_task_id,
+          start_time: entry.start_time,
+          end_time: entry.end_time
         })
         .eq("id", entry.id)
         .select();
@@ -206,7 +210,9 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
           entry_date: entry.entry_date,
           hours_logged: entry.hours_logged,
           notes: entry.notes,
-          jira_task_id: entry.jira_task_id
+          jira_task_id: entry.jira_task_id,
+          start_time: entry.start_time,
+          end_time: entry.end_time
         })
         .select();
 

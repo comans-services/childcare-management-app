@@ -9,6 +9,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,9 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
-import { formatDateDisplay, formatDate } from "@/lib/date-utils";
+import { formatDateDisplay, formatDate, getHoursDifference } from "@/lib/date-utils";
+import { Clock } from "lucide-react";
 
 interface EntryFormProps {
   userId: string;
@@ -44,6 +47,9 @@ const EntryForm: React.FC<EntryFormProps> = ({
   const [hoursInputValue, setHoursInputValue] = useState(
     existingEntry?.hours_logged?.toString() || ""
   );
+  const [useTimeRange, setUseTimeRange] = useState(
+    !!(existingEntry?.start_time && existingEntry?.end_time)
+  );
 
   const getDefaultProjectId = () => {
     if (existingEntry?.project_id) return existingEntry.project_id;
@@ -57,12 +63,16 @@ const EntryForm: React.FC<EntryFormProps> = ({
     hours_logged: number;
     notes: string;
     jira_task_id: string;
+    start_time: string;
+    end_time: string;
   }>({
     defaultValues: {
       project_id: getDefaultProjectId(),
       hours_logged: existingEntry?.hours_logged || 0,
       notes: existingEntry?.notes || "",
       jira_task_id: existingEntry?.jira_task_id || "",
+      start_time: existingEntry?.start_time || "09:00",
+      end_time: existingEntry?.end_time || "17:00",
     },
   });
 
@@ -73,24 +83,73 @@ const EntryForm: React.FC<EntryFormProps> = ({
         hours_logged: existingEntry.hours_logged,
         notes: existingEntry.notes || "",
         jira_task_id: existingEntry.jira_task_id || "",
+        start_time: existingEntry.start_time || "09:00",
+        end_time: existingEntry.end_time || "17:00",
       });
       setHoursInputValue(existingEntry.hours_logged?.toString() || "");
+      setUseTimeRange(!!(existingEntry.start_time && existingEntry.end_time));
     } else {
       form.reset({
         project_id: getDefaultProjectId(),
         hours_logged: 0,
         notes: "",
         jira_task_id: "",
+        start_time: "09:00",
+        end_time: "17:00",
       });
       setHoursInputValue("");
+      setUseTimeRange(false);
     }
   }, [existingEntry, projects, form]);
+
+  // Calculate hours from time range
+  const calculateHoursFromTimeRange = (startTime: string, endTime: string): number => {
+    if (!startTime || !endTime) return 0;
+    
+    try {
+      const today = new Date();
+      const start = new Date(today);
+      const end = new Date(today);
+      
+      const [startHours, startMinutes] = startTime.split(":").map(Number);
+      const [endHours, endMinutes] = endTime.split(":").map(Number);
+      
+      start.setHours(startHours, startMinutes, 0);
+      end.setHours(endHours, endMinutes, 0);
+      
+      // If end time is before start time, assume it's the next day
+      if (end < start) {
+        end.setDate(end.getDate() + 1);
+      }
+      
+      // Calculate hours difference and round to 2 decimal places
+      return getHoursDifference(start, end);
+    } catch (error) {
+      console.error("Error calculating hours:", error);
+      return 0;
+    }
+  };
+
+  // Handle time changes
+  useEffect(() => {
+    if (useTimeRange) {
+      const startTime = form.getValues("start_time");
+      const endTime = form.getValues("end_time");
+      if (startTime && endTime) {
+        const calculatedHours = calculateHoursFromTimeRange(startTime, endTime);
+        setHoursInputValue(calculatedHours.toFixed(2));
+        form.setValue("hours_logged", calculatedHours);
+      }
+    }
+  }, [useTimeRange, form]);
 
   const onSubmit = async (values: {
     project_id: string;
     hours_logged: number;
     notes: string;
     jira_task_id: string;
+    start_time: string;
+    end_time: string;
   }) => {
     if (!values.project_id) {
       toast({
@@ -125,6 +184,8 @@ const EntryForm: React.FC<EntryFormProps> = ({
         hours_logged: hours,
         notes: values.notes,
         jira_task_id: values.jira_task_id,
+        start_time: useTimeRange ? values.start_time : undefined,
+        end_time: useTimeRange ? values.end_time : undefined,
       };
 
       console.log("Saving entry:", entry);
@@ -198,6 +259,78 @@ const EntryForm: React.FC<EntryFormProps> = ({
               )}
             />
           )}
+          
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={useTimeRange}
+              onCheckedChange={(checked) => setUseTimeRange(checked)}
+              disabled={isSubmitting || projects.length === 0}
+              id="use-time-range"
+            />
+            <FormLabel htmlFor="use-time-range" className="cursor-pointer">
+              Use time range
+            </FormLabel>
+          </div>
+
+          {useTimeRange ? (
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="start_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Time</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="time"
+                        className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20"
+                        disabled={isSubmitting || projects.length === 0}
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const endTime = form.getValues("end_time");
+                          if (endTime) {
+                            const calculatedHours = calculateHoursFromTimeRange(e.target.value, endTime);
+                            setHoursInputValue(calculatedHours.toFixed(2));
+                            form.setValue("hours_logged", calculatedHours);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="end_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Time</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="time"
+                        className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20"
+                        disabled={isSubmitting || projects.length === 0}
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const startTime = form.getValues("start_time");
+                          if (startTime) {
+                            const calculatedHours = calculateHoursFromTimeRange(startTime, e.target.value);
+                            setHoursInputValue(calculatedHours.toFixed(2));
+                            form.setValue("hours_logged", calculatedHours);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          ) : null}
 
           <FormField
             control={form.control}
@@ -209,9 +342,9 @@ const EntryForm: React.FC<EntryFormProps> = ({
                   <Input
                     type="text"
                     placeholder="0.00"
-                    disabled={isSubmitting || projects.length === 0}
+                    disabled={isSubmitting || projects.length === 0 || useTimeRange}
                     value={hoursInputValue}
-                    className="transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20"
+                    className={`transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20 ${useTimeRange ? 'bg-gray-100' : ''}`}
                     onChange={(e) => {
                       const value = e.target.value;
                       if (value === "" || /^\d*\.?\d*$/.test(value)) {
@@ -229,6 +362,11 @@ const EntryForm: React.FC<EntryFormProps> = ({
                     }}
                   />
                 </FormControl>
+                {useTimeRange && (
+                  <FormDescription className="text-xs text-muted-foreground">
+                    Hours automatically calculated from time range
+                  </FormDescription>
+                )}
                 <FormMessage />
               </FormItem>
             )}
