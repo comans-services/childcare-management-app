@@ -19,7 +19,7 @@ export const MainLayout = () => {
     <div className="min-h-screen bg-slate-50">
       <Header />
       <div className="flex">
-        <div className="hidden md:block w-[52px] border-r min-h-[calc(100vh-4rem)] bg-white">
+        <div className="hidden md:block w-44 border-r min-h-[calc(100vh-4rem)] bg-white">
           <Sidebar />
         </div>
         {isMobile && <Sidebar />}
@@ -32,3 +32,4 @@ export const MainLayout = () => {
 };
 
 export default MainLayout;
+
