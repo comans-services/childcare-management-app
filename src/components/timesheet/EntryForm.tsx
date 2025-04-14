@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -107,7 +106,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
     }
   }, [existingEntry, projects, form]);
 
-  // Calculate hours from time range
   const calculateHoursFromTimeRange = (startTime: string, endTime: string): number => {
     if (!startTime || !endTime) return 0;
     
@@ -122,12 +120,10 @@ const EntryForm: React.FC<EntryFormProps> = ({
       start.setHours(startHours, startMinutes, 0);
       end.setHours(endHours, endMinutes, 0);
       
-      // If end time is before start time, assume it's the next day
       if (end < start) {
         end.setDate(end.getDate() + 1);
       }
       
-      // Calculate hours difference and round to 2 decimal places
       return getHoursDifference(start, end);
     } catch (error) {
       console.error("Error calculating hours:", error);
@@ -135,7 +131,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
     }
   };
 
-  // Format time for display
   const formatTimeForDisplay = (timeString: string): string => {
     if (!timeString) return "";
     
@@ -149,7 +144,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
     }
   };
 
-  // Handle time changes
   useEffect(() => {
     if (useTimeRange) {
       const startTime = form.getValues("start_time");
@@ -308,7 +302,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                             disabled={isSubmitting || projects.length === 0}
                           >
                             <Clock className="mr-1 h-3 w-3 flex-shrink-0 text-muted-foreground" />
-                            <span className="truncate">{formatTimeForDisplay(field.value)}</span>
+                            <span className="ml-1 truncate">{formatTimeForDisplay(field.value)}</span>
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -325,7 +319,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
                                   onClick={() => {
                                     const newTime = `${hour.toString().padStart(2, '0')}:00`;
                                     field.onChange(newTime);
-                                    // Update hours when start time changes
                                     const endTime = form.getValues("end_time");
                                     if (endTime) {
                                       const calculatedHours = calculateHoursFromTimeRange(newTime, endTime);
@@ -343,7 +336,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
                                   onClick={() => {
                                     const newTime = `${hour.toString().padStart(2, '0')}:30`;
                                     field.onChange(newTime);
-                                    // Update hours when start time changes
                                     const endTime = form.getValues("end_time");
                                     if (endTime) {
                                       const calculatedHours = calculateHoursFromTimeRange(newTime, endTime);
@@ -396,7 +388,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                             disabled={isSubmitting || projects.length === 0}
                           >
                             <Clock className="mr-1 h-3 w-3 flex-shrink-0 text-muted-foreground" />
-                            <span className="truncate">{formatTimeForDisplay(field.value)}</span>
+                            <span className="ml-1 truncate">{formatTimeForDisplay(field.value)}</span>
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -413,7 +405,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
                                   onClick={() => {
                                     const newTime = `${hour.toString().padStart(2, '0')}:00`;
                                     field.onChange(newTime);
-                                    // Update hours when end time changes
                                     const startTime = form.getValues("start_time");
                                     if (startTime) {
                                       const calculatedHours = calculateHoursFromTimeRange(startTime, newTime);
@@ -431,7 +422,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
                                   onClick={() => {
                                     const newTime = `${hour.toString().padStart(2, '0')}:30`;
                                     field.onChange(newTime);
-                                    // Update hours when end time changes
                                     const startTime = form.getValues("start_time");
                                     if (startTime) {
                                       const calculatedHours = calculateHoursFromTimeRange(startTime, newTime);
