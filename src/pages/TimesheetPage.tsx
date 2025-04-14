@@ -53,7 +53,7 @@ const TimesheetPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-[115%] w-[115%]">
+    <div className="container mx-auto px-2 md:px-4 py-4 md:py-6">
       <div className="mb-6 md:mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">My Timesheet</h1>
