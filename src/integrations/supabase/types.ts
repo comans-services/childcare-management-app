@@ -217,34 +217,40 @@ export type Database = {
       timesheet_entries: {
         Row: {
           created_at: string
+          end_time: string | null
           entry_date: string
           hours_logged: number
           id: string
           jira_task_id: string | null
           notes: string | null
           project_id: string
+          start_time: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          end_time?: string | null
           entry_date: string
           hours_logged: number
           id?: string
           jira_task_id?: string | null
           notes?: string | null
           project_id: string
+          start_time?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          end_time?: string | null
           entry_date?: string
           hours_logged?: number
           id?: string
           jira_task_id?: string | null
           notes?: string | null
           project_id?: string
+          start_time?: string | null
           updated_at?: string
           user_id?: string
         }

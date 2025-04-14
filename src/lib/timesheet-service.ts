@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
@@ -170,19 +169,24 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
   try {
     console.log("Saving timesheet entry:", entry);
     
+    // Create a clean data object for the database operation
+    const dbEntry = {
+      project_id: entry.project_id,
+      entry_date: entry.entry_date,
+      hours_logged: entry.hours_logged,
+      notes: entry.notes,
+      jira_task_id: entry.jira_task_id,
+      start_time: entry.start_time || null,
+      end_time: entry.end_time || null,
+    };
+
+    console.log("Database entry data:", dbEntry);
+    
     if (entry.id) {
       // Update existing entry
       const { data, error } = await supabase
         .from("timesheet_entries")
-        .update({
-          project_id: entry.project_id,
-          entry_date: entry.entry_date,
-          hours_logged: entry.hours_logged,
-          notes: entry.notes,
-          jira_task_id: entry.jira_task_id,
-          start_time: entry.start_time,
-          end_time: entry.end_time
-        })
+        .update(dbEntry)
         .eq("id", entry.id)
         .select();
 
@@ -205,14 +209,8 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       const { data, error } = await supabase
         .from("timesheet_entries")
         .insert({
-          project_id: entry.project_id,
-          user_id: entry.user_id,
-          entry_date: entry.entry_date,
-          hours_logged: entry.hours_logged,
-          notes: entry.notes,
-          jira_task_id: entry.jira_task_id,
-          start_time: entry.start_time,
-          end_time: entry.end_time
+          ...dbEntry,
+          user_id: entry.user_id
         })
         .select();
 
