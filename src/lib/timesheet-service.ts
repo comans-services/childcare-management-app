@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
@@ -72,7 +73,7 @@ export const fetchTimesheetEntries = async (
   userId: string,
   startDate: Date,
   endDate: Date,
-  includeUserData: boolean = false
+  includeUserData: boolean = true
 ): Promise<TimesheetEntry[]> => {
   try {
     console.log(`Fetching entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
@@ -128,7 +129,7 @@ export const fetchTimesheetEntries = async (
       project: projectsMap[entry.project_id]
     }));
 
-    // If user data is requested, fetch and add it to entries
+    // Always include user data for entries
     if (includeUserData) {
       const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
       
@@ -138,7 +139,7 @@ export const fetchTimesheetEntries = async (
           .select("id, full_name, email, organization, time_zone")
           .in("id", userIds);
           
-        if (!usersError && usersData) {
+        if (!usersError && usersData && usersData.length > 0) {
           console.log(`Fetched ${usersData.length} users for entries`);
           
           // Create a map of users by ID for quick lookup
@@ -150,10 +151,13 @@ export const fetchTimesheetEntries = async (
           // Add user data to entries
           entriesWithProjects = entriesWithProjects.map(entry => ({
             ...entry,
-            user: usersMap[entry.user_id]
+            user: usersMap[entry.user_id] || { id: entry.user_id }
           }));
+          
+          console.log("Entries with user data:", entriesWithProjects);
         } else {
           console.error("Error fetching users for entries:", usersError);
+          console.log("Available user IDs:", userIds);
         }
       }
     }

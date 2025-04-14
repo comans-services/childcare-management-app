@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -69,7 +68,8 @@ const WeeklyView: React.FC = () => {
         const entriesData = await fetchTimesheetEntries(
           user.id,
           weekDates[0],
-          weekDates[weekDates.length - 1]
+          weekDates[weekDates.length - 1],
+          true // Explicitly set includeUserData to true
         ).catch(err => {
           console.error("Entries error:", err);
           setError("Failed to load timesheet entries. Please try again.");

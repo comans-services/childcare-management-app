@@ -94,7 +94,12 @@ const DayColumn: React.FC<DayColumnProps> = ({
   };
 
   const formatUserName = (user?: { full_name?: string; email?: string }) => {
-    if (!user) return "Unknown";
+    if (!user) {
+      console.log("No user data provided for formatUserName");
+      return "Unknown";
+    }
+    
+    console.log("Formatting user name for:", user);
     
     if (user.full_name) {
       const nameParts = user.full_name.trim().split(" ");
