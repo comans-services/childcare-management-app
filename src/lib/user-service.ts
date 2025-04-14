@@ -26,7 +26,6 @@ interface SupabaseAuthUser {
 
 interface AuthUsersResponse {
   users: SupabaseAuthUser[];
-  total?: number;
 }
 
 export const fetchUsers = async (): Promise<User[]> => {
@@ -95,12 +94,15 @@ export const fetchUsers = async (): Promise<User[]> => {
           // Fetch all auth users (requires admin privileges)
           const { data: authUsersData } = await supabase.auth.admin.listUsers();
           
+          // Fix the type issue here - properly type the authUsersData to avoid the "never" type error
           if (authUsersData && 'users' in authUsersData && Array.isArray(authUsersData.users)) {
             console.log(`Fetched ${authUsersData.users.length} auth users`);
             
             // Update each profile with missing email
             for (const profile of profilesWithoutEmails) {
-              const matchingAuthUser = authUsersData.users.find(user => user.id === profile.id);
+              // Ensure users array is properly typed
+              const users = authUsersData.users as SupabaseAuthUser[];
+              const matchingAuthUser = users.find(user => user.id === profile.id);
               
               if (matchingAuthUser && matchingAuthUser.email) {
                 console.log(`Updating profile ${profile.id} with email ${matchingAuthUser.email}`);
