@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { formatDateShort, isToday, formatDate } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry, duplicateTimesheetEntry } from "@/lib/timesheet-service";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Clock, FileText, GripVertical, Copy } from "lucide-react";
+import { Plus, Pencil, Trash2, Clock, FileText, GripVertical, Copy, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import EntryForm from "./EntryForm";
@@ -91,6 +91,25 @@ const DayColumn: React.FC<DayColumnProps> = ({
     }
     
     return PROJECT_COLORS.default;
+  };
+
+  const formatUserName = (user?: { full_name?: string; email?: string }) => {
+    if (!user) return "Unknown";
+    
+    if (user.full_name) {
+      const nameParts = user.full_name.trim().split(" ");
+      if (nameParts.length > 1) {
+        return `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`;
+      }
+      return user.full_name;
+    }
+    
+    if (user.email) {
+      const emailUsername = user.email.split("@")[0];
+      return emailUsername;
+    }
+    
+    return "Unknown";
   };
 
   const handleEditEntry = (entry: TimesheetEntry) => {
@@ -342,6 +361,11 @@ const DayColumn: React.FC<DayColumnProps> = ({
                                           {entry.jira_task_id}
                                         </div>
                                       )}
+                                    </div>
+                                    
+                                    <div className="flex items-center mt-1.5 mb-1.5 text-[10px] md:text-xs text-muted-foreground">
+                                      <User className="h-3 w-3 mr-1 flex-shrink-0" aria-hidden="true" />
+                                      <span>{formatUserName(entry.user)}</span>
                                     </div>
                                     
                                     {entry.start_time && entry.end_time && (
