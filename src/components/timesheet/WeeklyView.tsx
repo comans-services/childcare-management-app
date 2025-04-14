@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -167,10 +168,7 @@ const WeeklyView: React.FC = () => {
   };
 
   const renderDesktopView = () => (
-    <div 
-      className="grid grid-cols-1 md:grid-cols-7 gap-4 w-full overflow-hidden animate-in fade-in-50" 
-      style={{ transform: 'scale(1.2)' }} // Increase size by 20%
-    >
+    <div className="grid grid-cols-1 md:grid-cols-7 gap-2 w-full overflow-hidden animate-in fade-in-50">
       {weekDates.map((date, index) => (
         <div key={date.toISOString()} className="w-full min-w-0 max-w-full">
           <DayColumn
@@ -187,10 +185,7 @@ const WeeklyView: React.FC = () => {
   );
 
   const renderMobileView = () => (
-    <Carousel 
-      className="w-full max-w-full animate-in fade-in-50" 
-      style={{ transform: 'scale(1.2)' }} // Increase size by 20%
-    >
+    <Carousel className="w-full max-w-full animate-in fade-in-50">
       <CarouselContent>
         {weekDates.map((date, index) => (
           <CarouselItem key={date.toISOString()} className="basis-full min-w-0">
