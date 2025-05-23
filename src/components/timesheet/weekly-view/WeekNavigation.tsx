@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, RefreshCw, CalendarDays } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -12,6 +12,8 @@ interface WeekNavigationProps {
   navigateToCurrentWeek: () => void;
   error: string | null;
   fetchData: () => void;
+  viewMode: "day" | "week";
+  toggleViewMode: () => void;
 }
 
 const WeekNavigation: React.FC<WeekNavigationProps> = ({
@@ -21,6 +23,8 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
   navigateToCurrentWeek,
   error,
   fetchData,
+  viewMode,
+  toggleViewMode,
 }) => {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
@@ -39,7 +43,7 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>View previous week</p>
+              <p>View previous {viewMode}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -52,14 +56,14 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
                 size="sm"
                 onClick={navigateToCurrentWeek}
                 className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 flex items-center gap-1"
-                aria-label="Current week"
+                aria-label="Current day/week"
               >
                 <Calendar className="h-3.5 w-3.5" />
                 <span>Today</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Go to current week</p>
+              <p>Go to current {viewMode}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -78,7 +82,36 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>View next week</p>
+              <p>View next {viewMode}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={viewMode === "day" ? "default" : "outline"}
+                size="sm"
+                onClick={toggleViewMode}
+                className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 flex items-center gap-1"
+                aria-label="Toggle view mode"
+              >
+                {viewMode === "day" ? (
+                  <>
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    <span>Week</span>
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Day</span>
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Switch to {viewMode === "day" ? "week" : "day"} view</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -99,7 +132,10 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
       <div className="font-medium text-sm md:text-base">
         {weekDates.length > 0 && (
           <span className="rounded-full bg-primary/10 px-3 py-1 text-primary whitespace-nowrap">
-            {formatDateDisplay(weekDates[0])} - {formatDateDisplay(weekDates[weekDates.length - 1])}
+            {viewMode === "day" 
+              ? formatDateDisplay(weekDates[0])
+              : `${formatDateDisplay(weekDates[0])} - ${formatDateDisplay(weekDates[weekDates.length - 1])}`
+            }
           </span>
         )}
       </div>
