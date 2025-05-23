@@ -44,36 +44,54 @@ export type Database = {
           customer_id: string | null
           description: string | null
           end_date: string
+          file_id: string | null
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string | null
           id: string
           is_active: boolean | null
           name: string
           start_date: string
           status: string
           updated_at: string
+          uploaded_at: string | null
         }
         Insert: {
           created_at?: string
           customer_id?: string | null
           description?: string | null
           end_date: string
+          file_id?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
           id?: string
           is_active?: boolean | null
           name: string
           start_date: string
           status: string
           updated_at?: string
+          uploaded_at?: string | null
         }
         Update: {
           created_at?: string
           customer_id?: string | null
           description?: string | null
           end_date?: string
+          file_id?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
           start_date?: string
           status?: string
           updated_at?: string
+          uploaded_at?: string | null
         }
         Relationships: []
       }

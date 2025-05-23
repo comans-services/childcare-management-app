@@ -24,9 +24,14 @@ import {
   Info,
   FileText,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Upload,
+  FileUp,
+  Download
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import ContractFileUploadDialog from "./ContractFileUploadDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContractListProps {
   contracts: Contract[];
@@ -42,6 +47,8 @@ const ContractList: React.FC<ContractListProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const [isFileUploadOpen, setIsFileUploadOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   
   // Handle expanding/collapsing a row
   const toggleRowExpansion = (contractId: string) => {
@@ -72,6 +79,27 @@ const ContractList: React.FC<ContractListProps> = ({
         variant: "destructive",
       });
     }
+  };
+
+  // Handle file upload click
+  const handleFileUploadClick = (contract: Contract) => {
+    setSelectedContract(contract);
+    setIsFileUploadOpen(true);
+  };
+
+  // Handle file download
+  const handleFileDownload = async (contract: Contract) => {
+    if (!contract.file_url) {
+      toast({
+        title: "No file available",
+        description: "This contract does not have an attached file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Open file URL in a new tab
+    window.open(contract.file_url, '_blank');
   };
   
   // Get appropriate badge for contract status
@@ -182,6 +210,24 @@ const ContractList: React.FC<ContractListProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => handleFileUploadClick(contract)}
+                      title="Upload File"
+                    >
+                      <FileUp className="h-4 w-4 text-blue-500" />
+                    </Button>
+                    {contract.file_url && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleFileDownload(contract)}
+                        title="Download File"
+                      >
+                        <Download className="h-4 w-4 text-green-500" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => onEdit(contract)}
                     >
                       <Edit className="h-4 w-4" />
@@ -216,6 +262,17 @@ const ContractList: React.FC<ContractListProps> = ({
                         <div>
                           <span className="font-medium">Updated:</span> {contract.updated_at ? new Date(contract.updated_at).toLocaleDateString() : 'N/A'}
                         </div>
+
+                        {/* File information */}
+                        <div>
+                          <span className="font-medium">Attached File:</span> {contract.file_name || 'No file attached'}
+                          {contract.file_name && (
+                            <div className="mt-2 text-xs text-gray-500">
+                              <div>Size: {contract.file_size ? `${(contract.file_size / 1024 / 1024).toFixed(2)} MB` : 'Unknown'}</div>
+                              <div>Uploaded: {contract.uploaded_at ? new Date(contract.uploaded_at).toLocaleDateString() : 'Unknown'}</div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
@@ -243,6 +300,13 @@ const ContractList: React.FC<ContractListProps> = ({
           ))}
         </TableBody>
       </Table>
+
+      <ContractFileUploadDialog
+        isOpen={isFileUploadOpen}
+        onClose={() => setIsFileUploadOpen(false)}
+        contract={selectedContract}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["contracts"] })}
+      />
     </div>
   );
 };
