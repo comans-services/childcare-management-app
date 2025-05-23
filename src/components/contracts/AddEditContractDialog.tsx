@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -38,11 +39,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format, addDays } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, FileText, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Contract, saveContract, fetchServices } from "@/lib/contract-service";
 import CustomerSelector from "../customers/CustomerSelector";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AddEditContractDialogProps {
   isOpen: boolean;
@@ -69,6 +72,20 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // Allowed file types for contract documents
+  const ALLOWED_FILE_TYPES = [
+    'application/pdf', // PDF
+    'application/msword', // doc
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+  ];
+  
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
   // Fetch available services
   const { data: services = [], isLoading: isServicesLoading } = useQuery({
@@ -110,6 +127,11 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
       } else {
         setSelectedServiceIds([]);
       }
+      
+      // Clear any selected file when opening dialog
+      setSelectedFile(null);
+      setFileError(null);
+      setUploadProgress(0);
     } else if (isOpen) {
       // Reset form for a new contract
       form.reset({
@@ -122,6 +144,9 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         is_active: true,
       });
       setSelectedServiceIds([]);
+      setSelectedFile(null);
+      setFileError(null);
+      setUploadProgress(0);
     }
   }, [existingContract, isOpen, form]);
 
@@ -133,10 +158,99 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         : [...prev, serviceId]
     );
   };
+  
+  // Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null);
+    
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      setFileError("Only PDF or Word documents are allowed");
+      setSelectedFile(null);
+      return;
+    }
+    
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError(`File size exceeds the limit (${MAX_FILE_SIZE / (1024 * 1024)}MB)`);
+      setSelectedFile(null);
+      return;
+    }
+    
+    setSelectedFile(file);
+  };
+  
+  // Handle file upload to Supabase storage
+  const uploadFile = async (file: File, contractId: string) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      // Create a unique file name to avoid collisions
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${contractId}-${Date.now()}.${fileExt}`;
+      const filePath = `contracts/${fileName}`;
+      
+      // Upload the file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('contracts')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) throw error;
+      
+      // Get the public URL for the file
+      const { data: urlData } = supabase.storage
+        .from('contracts')
+        .getPublicUrl(filePath);
+      
+      // Update the contract record with file information
+      const { error: updateError } = await supabase
+        .from('contracts')
+        .update({
+          file_id: data?.id,
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          file_url: urlData.publicUrl,
+          uploaded_at: new Date().toISOString()
+        })
+        .eq('id', contractId);
+      
+      if (updateError) throw updateError;
+      
+      setUploadProgress(100);
+      return true;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "File upload failed",
+        description: "There was an error uploading your file. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
+  // Clear selected file
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setFileError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   // Save contract mutation
   const saveContractMutation = useMutation({
-    mutationFn: (data: FormValues) => {
+    mutationFn: async (data: FormValues) => {
       const contractData = {
         ...data,
         name: data.name,
@@ -146,7 +260,18 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         id: existingContract?.id,
       };
       
-      return saveContract(contractData, selectedServiceIds);
+      const savedContract = await saveContract(contractData, selectedServiceIds);
+      
+      // If a file is selected, upload it
+      if (selectedFile) {
+        const uploadSuccess = await uploadFile(selectedFile, savedContract.id);
+        if (!uploadSuccess) {
+          // Even if upload fails, we still return the saved contract
+          console.warn("Contract saved but file upload failed");
+        }
+      }
+      
+      return savedContract;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
@@ -184,6 +309,32 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
 
   // Access the mutation's isPending state
   const isSaving = saveContractMutation.isPending;
+
+  // Get file extension from file type
+  const getFileExtension = (fileType: string) => {
+    switch(fileType) {
+      case 'application/pdf':
+        return 'PDF';
+      case 'application/msword':
+        return 'DOC';
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        return 'DOCX';
+      default:
+        return 'Unknown';
+    }
+  };
+  
+  // Truncate file name for display
+  const truncateFileName = (fileName: string, maxLength: number = 20) => {
+    if (!fileName) return '';
+    if (fileName.length <= maxLength) return fileName;
+    
+    const extension = fileName.split('.').pop() || '';
+    const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+    
+    const truncatedName = nameWithoutExt.substring(0, maxLength - extension.length - 3) + '...';
+    return `${truncatedName}.${extension}`;
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -361,6 +512,87 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
                 </FormItem>
               )}
             />
+            
+            {/* File Upload Section */}
+            <div className="space-y-2">
+              <FormLabel>Contract Document</FormLabel>
+              <div className="border rounded-md p-4">
+                {!selectedFile && !existingContract?.file_name ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <FileText className="h-10 w-10 text-gray-400 mb-2" />
+                      <div className="text-sm text-muted-foreground mb-2">
+                        Upload a PDF or Word document (max 10MB)
+                      </div>
+                      
+                      <label htmlFor="contract-file" className="cursor-pointer">
+                        <div className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md flex items-center gap-2">
+                          <Upload className="h-4 w-4" />
+                          <span>Select File</span>
+                        </div>
+                        <input
+                          id="contract-file"
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                          onChange={handleFileChange}
+                          ref={fileInputRef}
+                        />
+                      </label>
+                    </div>
+                    {existingContract && (
+                      <div className="text-center text-sm text-muted-foreground">
+                        {existingContract.file_name ? 
+                          <div className="p-2 border border-dashed rounded flex items-center justify-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <span>Current file: {truncateFileName(existingContract.file_name)}</span>
+                          </div> : 
+                          <span>No document currently attached</span>
+                        }
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-2 border rounded bg-muted/30">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <FileText className="h-5 w-5 flex-shrink-0" />
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-sm font-medium truncate">
+                              {selectedFile ? selectedFile.name : existingContract?.file_name}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {selectedFile ? selectedFile.name : existingContract?.file_name}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Badge variant="outline" className="ml-2">
+                        {selectedFile 
+                          ? getFileExtension(selectedFile.type) 
+                          : existingContract?.file_type && getFileExtension(existingContract.file_type)}
+                      </Badge>
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0" 
+                      onClick={clearSelectedFile}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+                {fileError && (
+                  <div className="mt-2 text-sm text-destructive">{fileError}</div>
+                )}
+              </div>
+              <FormDescription>
+                Attach the contract document in PDF or Word format
+              </FormDescription>
+            </div>
 
             <div>
               <FormLabel>Services</FormLabel>
@@ -449,7 +681,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
                 type="submit" 
                 disabled={saveContractMutation.isPending}
               >
-                {saveContractMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {(saveContractMutation.isPending || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {existingContract ? "Update Contract" : "Create Contract"}
               </Button>
             </DialogFooter>
