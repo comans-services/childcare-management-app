@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -29,6 +30,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import TimeEntryDialog from "./TimeEntryDialog";
 
 const WeeklyView: React.FC = () => {
   const { user } = useAuth();
@@ -40,6 +42,11 @@ const WeeklyView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const [weeklyTarget] = useState(40); // Default weekly target of 40 hours
+  
+  // New state for the time entry dialog
+  const [entryDialogOpen, setEntryDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
   
   useEffect(() => {
     const dates = getCurrentWeekDates(currentDate);
@@ -118,6 +125,21 @@ const WeeklyView: React.FC = () => {
     return "bg-violet-500"; // Over 100%
   };
 
+  // Handler for opening the entry dialog
+  const handleOpenEntryDialog = (date: Date, entry?: TimesheetEntry) => {
+    setSelectedDate(date);
+    setEditingEntry(entry);
+    setEntryDialogOpen(true);
+  };
+
+  // Handler for saving an entry
+  const handleSaveEntry = (savedEntry?: TimesheetEntry) => {
+    fetchData(); // Refresh all data after saving
+    setEntryDialogOpen(false);
+    setSelectedDate(null);
+    setEditingEntry(undefined);
+  };
+
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
     
@@ -181,6 +203,8 @@ const WeeklyView: React.FC = () => {
             projects={projects}
             onEntryChange={fetchData}
             droppableId={index.toString()}
+            onAddEntry={() => handleOpenEntryDialog(date)}
+            onEditEntry={(entry) => handleOpenEntryDialog(date, entry)}
           />
         </div>
       ))}
@@ -199,6 +223,8 @@ const WeeklyView: React.FC = () => {
               projects={projects}
               onEntryChange={fetchData}
               droppableId={index.toString()}
+              onAddEntry={() => handleOpenEntryDialog(date)}
+              onEditEntry={(entry) => handleOpenEntryDialog(date, entry)}
             />
           </CarouselItem>
         ))}
@@ -339,6 +365,19 @@ const WeeklyView: React.FC = () => {
             indicatorClassName={getProgressColor()} 
           />
         </div>
+      )}
+
+      {/* Time Entry Dialog */}
+      {selectedDate && (
+        <TimeEntryDialog
+          open={entryDialogOpen}
+          onOpenChange={setEntryDialogOpen}
+          userId={user?.id || ""}
+          date={selectedDate}
+          projects={projects}
+          existingEntry={editingEntry}
+          onSave={handleSaveEntry}
+        />
       )}
     </div>
   );

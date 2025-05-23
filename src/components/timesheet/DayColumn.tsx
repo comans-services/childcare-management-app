@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { formatDateShort, isToday, formatDate } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry, duplicateTimesheetEntry } from "@/lib/timesheet-service";
@@ -5,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, Clock, FileText, GripVertical, Copy, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import EntryForm from "./EntryForm";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -20,6 +20,8 @@ interface DayColumnProps {
   projects: Project[];
   onEntryChange: () => void;
   droppableId: string;
+  onAddEntry: () => void;
+  onEditEntry: (entry: TimesheetEntry) => void;
 }
 
 const PROJECT_COLORS: { [key: string]: string } = {
@@ -38,10 +40,9 @@ const DayColumn: React.FC<DayColumnProps> = ({
   projects,
   onEntryChange,
   droppableId,
+  onAddEntry,
+  onEditEntry,
 }) => {
-  const [showForm, setShowForm] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
-  const [localEntries, setLocalEntries] = useState<TimesheetEntry[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<TimesheetEntry | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -50,7 +51,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
 
   const formattedColumnDate = formatDate(date);
 
-  const dayEntries = [...entries, ...localEntries].filter(entry => {
+  const dayEntries = entries.filter(entry => {
     if (typeof entry.entry_date === 'string') {
       const entryDate = entry.entry_date.substring(0, 10);
       const matches = entryDate === formattedColumnDate;
@@ -117,11 +118,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
     return "Unknown";
   };
 
-  const handleEditEntry = (entry: TimesheetEntry) => {
-    setEditingEntry(entry);
-    setShowForm(true);
-  };
-
   const handleDeleteClick = (entry: TimesheetEntry) => {
     setEntryToDelete(entry);
     setDeleteConfirmOpen(true);
@@ -138,7 +134,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
         description: "Time entry deleted successfully.",
       });
       
-      setLocalEntries(prev => prev.filter(e => e.id !== entryToDelete.id));
       onEntryChange();
     } catch (error) {
       console.error("Error deleting entry:", error);
@@ -166,11 +161,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
         description: "Time entry has been duplicated successfully.",
       });
       
-      setLocalEntries(prev => [
-        ...prev, 
-        { ...duplicatedEntry, project: entry.project }
-      ]);
-      
       onEntryChange();
     } catch (error) {
       console.error("Error duplicating entry:", error);
@@ -182,54 +172,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
     } finally {
       setIsDuplicating(false);
     }
-  };
-
-  const handleAddEntry = () => {
-    setEditingEntry(undefined);
-    setShowForm(true);
-  };
-
-  const handleSaveComplete = (savedEntry?: TimesheetEntry) => {
-    setShowForm(false);
-    setEditingEntry(undefined);
-    
-    if (savedEntry) {
-      console.log(`Saved entry date: ${savedEntry.entry_date}, column date: ${formattedColumnDate}`);
-      
-      if (savedEntry.entry_date !== formattedColumnDate) {
-        const savedEntryDate = typeof savedEntry.entry_date === 'string' 
-          ? savedEntry.entry_date.substring(0, 10) 
-          : savedEntry.entry_date;
-          
-        if (savedEntryDate === formattedColumnDate) {
-          console.log("Date formats match after normalization, updating entry");
-          savedEntry.entry_date = formattedColumnDate;
-        } else {
-          console.log("Date formats don't match even after normalization");
-          const entryDateObj = new Date(savedEntry.entry_date);
-          const columnDateObj = new Date(formattedColumnDate);
-          
-          if (
-            entryDateObj.getFullYear() === columnDateObj.getFullYear() &&
-            entryDateObj.getMonth() === columnDateObj.getMonth() &&
-            entryDateObj.getDate() === columnDateObj.getDate()
-          ) {
-            console.log("Same calendar day detected, updating entry date format");
-            savedEntry.entry_date = formattedColumnDate;
-          }
-        }
-      }
-      
-      setLocalEntries(prev => {
-        const exists = prev.some(e => e.id === savedEntry.id);
-        if (exists) {
-          return prev.map(e => e.id === savedEntry.id ? savedEntry : e);
-        }
-        return [...prev, savedEntry];
-      });
-    }
-    
-    onEntryChange();
   };
 
   return (
@@ -258,221 +200,206 @@ const DayColumn: React.FC<DayColumnProps> = ({
       </div>
 
       <div className="h-full flex-grow overflow-hidden bg-background border border-t-0 rounded-b-md shadow-sm">
-        {showForm ? (
-          <Card className="h-full border-0 shadow-none">
-            <CardContent className="pt-4 p-2 md:p-4">
-              <EntryForm
-                userId={userId}
-                date={date}
-                projects={projects}
-                existingEntry={editingEntry}
-                onSave={handleSaveComplete}
-                onCancel={() => setShowForm(false)}
-              />
-            </CardContent>
-          </Card>
-        ) : (
-          <ScrollArea className="h-[50vh] md:h-[60vh]">
-            <div className="flex flex-col p-2 space-y-2 min-w-0">
-              <div className="text-center py-1">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="w-full text-xs rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
-                        onClick={handleAddEntry}
-                        aria-label="Add new time entry"
-                      >
-                        <Plus className="mr-1 h-3 w-3" /> Add Entry
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Add a new time entry for this day</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+        <ScrollArea className="h-[50vh] md:h-[60vh]">
+          <div className="flex flex-col p-2 space-y-2 min-w-0">
+            <div className="text-center py-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full text-xs rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
+                      onClick={onAddEntry}
+                      aria-label="Add new time entry"
+                    >
+                      <Plus className="mr-1 h-3 w-3" /> Add Entry
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add a new time entry for this day</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
 
-              <Droppable droppableId={droppableId}>
-                {(provided, snapshot) => (
-                  <div 
-                    ref={provided.innerRef} 
-                    {...provided.droppableProps}
-                    className={cn(
-                      "flex flex-col space-y-2 min-h-[50px] p-1 transition-colors rounded-md",
-                      snapshot.isDraggingOver ? "bg-primary/5" : ""
-                    )}
-                  >
-                    {dayEntries.length === 0 ? (
-                      <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
-                        No entries for this day
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-2">
-                        {dayEntries.map((entry, index) => (
-                          <Draggable 
-                            key={entry.id || `temp-${Date.now()}-${Math.random()}`} 
-                            draggableId={entry.id || `temp-${Date.now()}-${Math.random()}`} 
-                            index={index}
-                            isDragDisabled={!entry.id}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
+            <Droppable droppableId={droppableId}>
+              {(provided, snapshot) => (
+                <div 
+                  ref={provided.innerRef} 
+                  {...provided.droppableProps}
+                  className={cn(
+                    "flex flex-col space-y-2 min-h-[50px] p-1 transition-colors rounded-md",
+                    snapshot.isDraggingOver ? "bg-primary/5" : ""
+                  )}
+                >
+                  {dayEntries.length === 0 ? (
+                    <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
+                      No entries for this day
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2">
+                      {dayEntries.map((entry, index) => (
+                        <Draggable 
+                          key={entry.id || `temp-${Date.now()}-${Math.random()}`} 
+                          draggableId={entry.id || `temp-${Date.now()}-${Math.random()}`} 
+                          index={index}
+                          isDragDisabled={!entry.id}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={cn(
+                                "transition-all duration-300 hover:shadow-md animate-in fade-in-50",
+                                snapshot.isDragging ? "opacity-80 scale-[1.02] shadow-lg z-10" : ""
+                              )}
+                            >
+                              <Card 
                                 className={cn(
-                                  "transition-all duration-300 hover:shadow-md animate-in fade-in-50",
-                                  snapshot.isDragging ? "opacity-80 scale-[1.02] shadow-lg z-10" : ""
+                                  "overflow-hidden transition-all duration-200 hover:-translate-y-0.5 border rounded-xl",
+                                  getProjectColor(entry.project)
                                 )}
                               >
-                                <Card 
-                                  className={cn(
-                                    "overflow-hidden transition-all duration-200 hover:-translate-y-0.5 border rounded-xl",
-                                    getProjectColor(entry.project)
+                                <CardContent className="p-3 md:p-4">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <div 
+                                            {...provided.dragHandleProps} 
+                                            className="cursor-grab opacity-70 hover:opacity-100 transition-opacity"
+                                          >
+                                            <GripVertical className="h-3 w-3 flex-shrink-0" aria-label="Drag to reorder" />
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Drag to reorder this entry</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                    <h3 className="font-semibold text-xs md:text-sm break-words whitespace-normal w-full">
+                                      {entry.project?.name || "Unknown Project"}
+                                    </h3>
+                                  </div>
+
+                                  <div className="flex justify-between items-center mb-2">
+                                    <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
+                                      <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" aria-hidden="true" />
+                                      {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
+                                    </div>
+                                    
+                                    {entry.jira_task_id && (
+                                      <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block truncate max-w-[120px]">
+                                        {entry.jira_task_id}
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex items-center mt-1.5 mb-1.5 text-[10px] md:text-xs text-muted-foreground">
+                                    <User className="h-3 w-3 mr-1 flex-shrink-0" aria-hidden="true" />
+                                    <span>{formatUserName(entry.user)}</span>
+                                  </div>
+                                  
+                                  {entry.start_time && entry.end_time && (
+                                    <div className="flex items-center mt-2 bg-background/20 p-1 rounded-md text-[10px] md:text-xs">
+                                      <Clock className="h-3 w-3 mr-1 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+                                      <span className="text-muted-foreground">
+                                        {entry.start_time} - {entry.end_time}
+                                      </span>
+                                    </div>
                                   )}
-                                >
-                                  <CardContent className="p-3 md:p-4">
-                                    <div className="flex items-center gap-2 mb-3">
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <div 
-                                              {...provided.dragHandleProps} 
-                                              className="cursor-grab opacity-70 hover:opacity-100 transition-opacity"
-                                            >
-                                              <GripVertical className="h-3 w-3 flex-shrink-0" aria-label="Drag to reorder" />
-                                            </div>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Drag to reorder this entry</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                      <h3 className="font-semibold text-xs md:text-sm break-words whitespace-normal w-full">
-                                        {entry.project?.name || "Unknown Project"}
-                                      </h3>
+                                  
+                                  {entry.notes && (
+                                    <div className="flex items-start mt-2 bg-background/30 p-1.5 rounded-md">
+                                      <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1.5 flex-shrink-0" aria-hidden="true" />
+                                      <p className="text-[10px] md:text-xs text-muted-foreground break-words whitespace-normal w-full">
+                                        {entry.notes}
+                                      </p>
                                     </div>
+                                  )}
+                                  
+                                  <div className="flex justify-end mt-3 space-x-1 pt-1 border-t border-t-background/20">
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 hover:bg-amber-50 hover:text-amber-600 transition-colors flex-shrink-0 hover:border-amber-100 hover:scale-110"
+                                            onClick={() => handleDuplicateEntry(entry)}
+                                            aria-label="Duplicate entry"
+                                            disabled={isDuplicating}
+                                          >
+                                            <Copy className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Duplicate this entry</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
 
-                                    <div className="flex justify-between items-center mb-2">
-                                      <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
-                                        <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" aria-hidden="true" />
-                                        {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
-                                      </div>
-                                      
-                                      {entry.jira_task_id && (
-                                        <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block truncate max-w-[120px]">
-                                          {entry.jira_task_id}
-                                        </div>
-                                      )}
-                                    </div>
-                                    
-                                    <div className="flex items-center mt-1.5 mb-1.5 text-[10px] md:text-xs text-muted-foreground">
-                                      <User className="h-3 w-3 mr-1 flex-shrink-0" aria-hidden="true" />
-                                      <span>{formatUserName(entry.user)}</span>
-                                    </div>
-                                    
-                                    {entry.start_time && entry.end_time && (
-                                      <div className="flex items-center mt-2 bg-background/20 p-1 rounded-md text-[10px] md:text-xs">
-                                        <Clock className="h-3 w-3 mr-1 text-muted-foreground flex-shrink-0" aria-hidden="true" />
-                                        <span className="text-muted-foreground">
-                                          {entry.start_time} - {entry.end_time}
-                                        </span>
-                                      </div>
-                                    )}
-                                    
-                                    {entry.notes && (
-                                      <div className="flex items-start mt-2 bg-background/30 p-1.5 rounded-md">
-                                        <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1.5 flex-shrink-0" aria-hidden="true" />
-                                        <p className="text-[10px] md:text-xs text-muted-foreground break-words whitespace-normal w-full">
-                                          {entry.notes}
-                                        </p>
-                                      </div>
-                                    )}
-                                    
-                                    <div className="flex justify-end mt-3 space-x-1 pt-1 border-t border-t-background/20">
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-7 w-7 hover:bg-amber-50 hover:text-amber-600 transition-colors flex-shrink-0 hover:border-amber-100 hover:scale-110"
-                                              onClick={() => handleDuplicateEntry(entry)}
-                                              aria-label="Duplicate entry"
-                                              disabled={isDuplicating}
-                                            >
-                                              <Copy className="h-3.5 w-3.5" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Duplicate this entry</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 hover:bg-green-50 hover:text-green-600 transition-colors flex-shrink-0 hover:border-green-100 hover:scale-110"
+                                            onClick={() => onEditEntry(entry)}
+                                            aria-label="Edit entry"
+                                          >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Edit this entry</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
 
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-7 w-7 hover:bg-green-50 hover:text-green-600 transition-colors flex-shrink-0 hover:border-green-100 hover:scale-110"
-                                              onClick={() => handleEditEntry(entry)}
-                                              aria-label="Edit entry"
-                                            >
-                                              <Pencil className="h-3.5 w-3.5" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Edit this entry</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
-                                              onClick={() => handleDeleteClick(entry)}
-                                              aria-label="Delete entry"
-                                              disabled={isDeleting}
-                                            >
-                                              <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Delete this entry</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                      </div>
-                    )}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-
-              {dayEntries.length > 0 && (
-                <div className="flex justify-between items-center py-1 px-2 text-xs font-medium">
-                  <span>Total:</span>
-                  <span className="font-bold">{totalHours} hr{totalHours !== 1 ? "s" : ""}</span>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
+                                            onClick={() => handleDeleteClick(entry)}
+                                            aria-label="Delete entry"
+                                            disabled={isDeleting}
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Delete this entry</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                    </div>
+                  )}
+                  {provided.placeholder}
                 </div>
               )}
-            </div>
-          </ScrollArea>
-        )}
+            </Droppable>
+
+            {dayEntries.length > 0 && (
+              <div className="flex justify-between items-center py-1 px-2 text-xs font-medium">
+                <span>Total:</span>
+                <span className="font-bold">{totalHours} hr{totalHours !== 1 ? "s" : ""}</span>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
       </div>
       
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
