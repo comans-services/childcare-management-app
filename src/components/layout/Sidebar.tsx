@@ -36,7 +36,7 @@ const SidebarContent = () => {
       <div className="flex flex-col space-y-1 p-2">
         <Link to="/" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
           <Home className="h-5 w-5" />
-          <span>Home</span>
+          <span className="text-red-600">Home</span>
         </Link>
         <Link to="/timesheet" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
           <Calendar className="h-5 w-5" />
