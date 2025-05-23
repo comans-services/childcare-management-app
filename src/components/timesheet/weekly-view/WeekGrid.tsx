@@ -4,6 +4,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import DayColumn from "../DayColumn";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { isToday } from "@/lib/date-utils";
 import {
   Carousel,
   CarouselContent,
@@ -21,6 +22,7 @@ interface WeekGridProps {
   onDragEnd: (result: DropResult) => void;
   onAddEntry: (date: Date) => void;
   onEditEntry: (date: Date, entry: TimesheetEntry) => void;
+  viewMode: "today" | "week";
 }
 
 const WeekGrid: React.FC<WeekGridProps> = ({
@@ -32,12 +34,18 @@ const WeekGrid: React.FC<WeekGridProps> = ({
   onDragEnd,
   onAddEntry,
   onEditEntry,
+  viewMode,
 }) => {
   const isMobile = useIsMobile();
+  
+  // If in today mode, only show today's date
+  const displayDates = viewMode === "today" 
+    ? weekDates.filter(date => isToday(date))
+    : weekDates;
 
   const renderDesktopView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-7 gap-2 w-full overflow-hidden animate-in fade-in-50">
-      {weekDates.map((date, index) => (
+    <div className={`grid gap-2 w-full overflow-hidden animate-in fade-in-50 ${viewMode === "today" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-7"}`}>
+      {displayDates.map((date, index) => (
         <div key={date.toISOString()} className="w-full min-w-0 max-w-full">
           <DayColumn
             date={date}
@@ -57,7 +65,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
   const renderMobileView = () => (
     <Carousel className="w-full max-w-full animate-in fade-in-50">
       <CarouselContent>
-        {weekDates.map((date, index) => (
+        {displayDates.map((date, index) => (
           <CarouselItem key={date.toISOString()} className="basis-full min-w-0">
             <DayColumn
               date={date}

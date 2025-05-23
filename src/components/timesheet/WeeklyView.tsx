@@ -6,6 +6,7 @@ import {
   getNextWeek,
   getPreviousWeek,
   formatDate,
+  isToday,
 } from "@/lib/date-utils";
 import {
   fetchUserProjects,
@@ -33,6 +34,7 @@ const WeeklyView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [weeklyTarget] = useState(40); // Default weekly target of 40 hours
+  const [viewMode, setViewMode] = useState<"today" | "week">("week");
   
   // Time entry dialog state
   const [entryDialogOpen, setEntryDialogOpen] = useState(false);
@@ -100,12 +102,34 @@ const WeeklyView: React.FC = () => {
 
   const navigateToCurrentWeek = () => {
     setCurrentDate(new Date());
+    // If in today view, make sure we show today's entries
+    if (viewMode === "today") {
+      setViewMode("today");
+    }
+  };
+  
+  const toggleViewMode = () => {
+    setViewMode(prevMode => prevMode === "today" ? "week" : "today");
   };
 
-  const totalWeekHours = entries.reduce((sum, entry) => {
+  // Filter entries based on the view mode
+  const filteredEntries = viewMode === "today" 
+    ? entries.filter(entry => {
+        if (typeof entry.entry_date === 'string') {
+          const entryDate = entry.entry_date.substring(0, 10);
+          return entryDate === formatDate(new Date());
+        }
+        return false;
+      })
+    : entries;
+
+  const totalHours = filteredEntries.reduce((sum, entry) => {
     const hoursLogged = Number(entry.hours_logged) || 0;
     return sum + hoursLogged;
   }, 0);
+
+  // Calculate the target based on view mode
+  const progressTarget = viewMode === "today" ? 8 : weeklyTarget;
 
   // Handler for opening the entry dialog
   const handleOpenEntryDialog = (date: Date, entry?: TimesheetEntry) => {
@@ -183,6 +207,8 @@ const WeeklyView: React.FC = () => {
         navigateToCurrentWeek={navigateToCurrentWeek}
         error={error}
         fetchData={fetchData}
+        viewMode={viewMode}
+        toggleViewMode={toggleViewMode}
       />
 
       {loading ? (
@@ -203,15 +229,16 @@ const WeeklyView: React.FC = () => {
               onDragEnd={handleDragEnd}
               onAddEntry={handleOpenEntryDialog}
               onEditEntry={handleOpenEntryDialog}
+              viewMode={viewMode}
             />
           )}
         </div>
       )}
 
-      {!loading && !error && entries.length > 0 && (
+      {!loading && !error && filteredEntries.length > 0 && (
         <WeeklyProgressBar 
-          totalWeekHours={totalWeekHours} 
-          weeklyTarget={weeklyTarget} 
+          totalWeekHours={totalHours} 
+          weeklyTarget={progressTarget} 
         />
       )}
 
