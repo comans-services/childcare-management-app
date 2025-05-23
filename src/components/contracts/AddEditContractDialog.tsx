@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useRef } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -38,11 +39,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format, addDays } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, File, UploadCloud, X, AlertCircle, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Contract, saveContract, fetchServices } from "@/lib/contract-service";
 import CustomerSelector from "../customers/CustomerSelector";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AddEditContractDialogProps {
   isOpen: boolean;
@@ -69,7 +74,14 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
-
+  
+  // File upload related states
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   // Fetch available services
   const { data: services = [], isLoading: isServicesLoading } = useQuery({
     queryKey: ["services"],
@@ -110,6 +122,12 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
       } else {
         setSelectedServiceIds([]);
       }
+      
+      // Reset file upload state
+      setFile(null);
+      setUploading(false);
+      setUploadProgress(0);
+      setUploadError(null);
     } else if (isOpen) {
       // Reset form for a new contract
       form.reset({
@@ -122,6 +140,12 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         is_active: true,
       });
       setSelectedServiceIds([]);
+      
+      // Reset file upload state
+      setFile(null);
+      setUploading(false);
+      setUploadProgress(0);
+      setUploadError(null);
     }
   }, [existingContract, isOpen, form]);
 
@@ -132,6 +156,94 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         ? prev.filter(id => id !== serviceId)
         : [...prev, serviceId]
     );
+  };
+  
+  // Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] || null;
+    setFile(selectedFile);
+    setUploadError(null);
+    setUploadProgress(0);
+  };
+  
+  // Reset file upload state
+  const resetFileUpload = () => {
+    setFile(null);
+    setUploadProgress(0);
+    setUploadError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Upload file to Supabase storage
+  const uploadFile = async (contract: Contract): Promise<void> => {
+    if (!file) return;
+    
+    setUploading(true);
+    setUploadProgress(10);
+    
+    try {
+      // Generate a unique file path
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${contract.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${contract.id}/${fileName}`;
+
+      // Upload file to Supabase storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('contract_files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      setUploadProgress(60);
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      // Get the public URL
+      const { data: urlData } = await supabase.storage
+        .from('contract_files')
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
+
+      setUploadProgress(80);
+
+      // Update contract record with file information
+      const { error: updateError } = await supabase
+        .from('contracts')
+        .update({
+          file_id: uploadData?.id || null,
+          file_name: file.name,
+          file_url: urlData?.signedUrl || null,
+          file_size: file.size,
+          file_type: file.type,
+          uploaded_at: new Date().toISOString()
+        })
+        .eq('id', contract.id);
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      setUploadProgress(100);
+      toast({
+        title: "File uploaded successfully",
+        description: `${file.name} has been attached to this contract.`,
+      });
+      
+      // Reset file upload state after successful upload
+      setTimeout(() => {
+        resetFileUpload();
+      }, 1000);
+      
+    } catch (err) {
+      console.error("Upload error:", err);
+      setUploadError(err instanceof Error ? err.message : "Error uploading file");
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Save contract mutation
@@ -148,7 +260,12 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
       
       return saveContract(contractData, selectedServiceIds);
     },
-    onSuccess: () => {
+    onSuccess: async (savedContract) => {
+      // If there's a file to upload, upload it after saving the contract
+      if (file && savedContract) {
+        await uploadFile(savedContract);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
       toast({
         title: existingContract ? "Contract updated" : "Contract created",
@@ -184,6 +301,11 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
 
   // Access the mutation's isPending state
   const isSaving = saveContractMutation.isPending;
+  
+  // Function to handle file browse click
+  const handleFileBrowseClick = () => {
+    fileInputRef.current?.click();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -362,6 +484,107 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
               )}
             />
 
+            {/* File Upload Section */}
+            <div>
+              <FormLabel>Contract Document</FormLabel>
+              <FormDescription className="mb-2">
+                Upload a copy of the contract document (PDF, Word, Excel or image file)
+              </FormDescription>
+              
+              {!file ? (
+                <div 
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={handleFileBrowseClick}
+                >
+                  <UploadCloud className="mx-auto h-8 w-8 text-gray-400" />
+                  <div className="mt-2 text-sm text-gray-600">
+                    <span className="font-medium text-primary hover:text-primary/80 cursor-pointer">
+                      Click to upload
+                    </span>
+                    <p className="text-xs mt-1">PDF, Word, Excel or image files (max. 10MB)</p>
+                  </div>
+                  <input 
+                    id="file-upload"
+                    name="file-upload"
+                    type="file"
+                    className="sr-only"
+                    onChange={handleFileChange}
+                    ref={fileInputRef}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                  />
+                </div>
+              ) : (
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center space-x-3">
+                    <File className="h-6 w-6 text-blue-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-sm font-medium truncate">{file.name}</p>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{file.name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                    <Button
+                      variant="ghost" 
+                      size="sm"
+                      onClick={resetFileUpload}
+                      disabled={uploading}
+                      className="flex-shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Remove file</span>
+                    </Button>
+                  </div>
+                  
+                  {uploadProgress > 0 && (
+                    <div className="mt-4">
+                      <Progress value={uploadProgress} className="h-2" />
+                      <p className="text-xs text-gray-500 mt-1">Uploading: {uploadProgress}%</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {existingContract?.file_name && !file && (
+                <div className="mt-3 bg-blue-50 border border-blue-200 rounded-md p-3 text-sm flex items-center">
+                  <Info className="h-4 w-4 text-blue-500 mr-2" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-blue-700">
+                      Current file: 
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="font-medium ml-1 inline-block max-w-[200px] truncate align-bottom">
+                              {existingContract.file_name}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{existingContract.file_name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Upload a new file to replace the current one
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {uploadError && (
+                <div className="mt-3 bg-red-50 border border-red-200 rounded-md p-3 text-sm flex items-center text-red-800">
+                  <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                  {uploadError}
+                </div>
+              )}
+            </div>
+
             <div>
               <FormLabel>Services</FormLabel>
               <div className="mt-2 border rounded-md p-4 max-h-48 overflow-y-auto">
@@ -441,15 +664,15 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                disabled={saveContractMutation.isPending}
+                disabled={saveContractMutation.isPending || uploading}
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
-                disabled={saveContractMutation.isPending}
+                disabled={saveContractMutation.isPending || uploading}
               >
-                {saveContractMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {(saveContractMutation.isPending || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {existingContract ? "Update Contract" : "Create Contract"}
               </Button>
             </DialogFooter>

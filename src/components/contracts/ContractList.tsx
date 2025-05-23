@@ -25,13 +25,9 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
-  Upload,
-  FileUp,
   Download
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import ContractFileUploadDialog from "./ContractFileUploadDialog";
-import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ContractListProps {
@@ -48,8 +44,6 @@ const ContractList: React.FC<ContractListProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-  const [isFileUploadOpen, setIsFileUploadOpen] = useState(false);
-  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   
   // Handle expanding/collapsing a row
   const toggleRowExpansion = (contractId: string) => {
@@ -80,12 +74,6 @@ const ContractList: React.FC<ContractListProps> = ({
         variant: "destructive",
       });
     }
-  };
-
-  // Handle file upload click
-  const handleFileUploadClick = (contract: Contract) => {
-    setSelectedContract(contract);
-    setIsFileUploadOpen(true);
   };
 
   // Handle file download
@@ -208,14 +196,6 @@ const ContractList: React.FC<ContractListProps> = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleFileUploadClick(contract)}
-                      title="Upload File"
-                    >
-                      <FileUp className="h-4 w-4 text-blue-500" />
-                    </Button>
                     {contract.file_url && (
                       <Button
                         variant="ghost"
@@ -312,13 +292,6 @@ const ContractList: React.FC<ContractListProps> = ({
           ))}
         </TableBody>
       </Table>
-
-      <ContractFileUploadDialog
-        isOpen={isFileUploadOpen}
-        onClose={() => setIsFileUploadOpen(false)}
-        contract={selectedContract}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["contracts"] })}
-      />
     </div>
   );
 };
