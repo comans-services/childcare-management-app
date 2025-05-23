@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Clock, AlertTriangle, CheckCircle, Search, FileText, Filter, RefreshCw } from "lucide-react";
+import { PlusCircle, Clock, AlertTriangle, CheckCircle, Search, FileText, Filter, RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Contract, fetchContracts } from "@/lib/contract-service";
@@ -12,9 +13,10 @@ import DeleteContractDialog from "@/components/contracts/DeleteContractDialog";
 import ContractFilters from "@/components/contracts/ContractFilters";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Navigate } from "react-router-dom";
 
 const ContractsPage = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [isAddContractOpen, setIsAddContractOpen] = useState(false);
   const [isDeleteContractOpen, setIsDeleteContractOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
@@ -29,6 +31,23 @@ const ContractsPage = () => {
   
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  // Check if user is admin
+  const isAdmin = userRole === 'admin';
+
+  // If not admin, show access denied or redirect
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto flex flex-col items-center justify-center h-[70vh]">
+        <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+        <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
+        <Button onClick={() => window.history.back()}>
+          Go Back
+        </Button>
+      </div>
+    );
+  }
+
   const { 
     data: contracts = [], 
     isLoading, 
@@ -42,7 +61,7 @@ const ContractsPage = () => {
       searchTerm: filters.searchTerm,
       isActive: filters.isActive
     }),
-    enabled: !!user
+    enabled: !!user && isAdmin
   });
 
   useEffect(() => {
