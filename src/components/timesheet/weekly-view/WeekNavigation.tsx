@@ -72,24 +72,7 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
           </Tooltip>
         </TooltipProvider>
         
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={navigateToCurrentWeek}
-                className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
-                aria-label="Current period"
-              >
-                Go to Current {viewMode === "today" ? "Day" : "Week"}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Go to current {viewMode === "today" ? "day" : "week"}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {/* Removed "Go to Current Day/Week" button */}
         
         <TooltipProvider>
           <Tooltip>
