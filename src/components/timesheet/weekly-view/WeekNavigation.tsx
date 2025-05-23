@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar, RefreshCw, CalendarDays } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Toggle } from "@/components/ui/toggle";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface WeekNavigationProps {
   weekDates: Date[];
@@ -56,39 +54,39 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={navigateToCurrentWeek}
+                onClick={toggleViewMode}
                 className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 flex items-center gap-1"
-                aria-label="Current week"
+                aria-label="Toggle view mode"
               >
                 {viewMode === "today" ? (
-                  <Calendar className="h-3.5 w-3.5" />
+                  <Calendar className="h-3.5 w-3.5 mr-1" />
                 ) : (
-                  <CalendarDays className="h-3.5 w-3.5" />
+                  <CalendarDays className="h-3.5 w-3.5 mr-1" />
                 )}
                 <span>{viewMode === "today" ? "Today" : "Week"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Go to current {viewMode === "today" ? "day" : "week"}</p>
+              <p>Switch to {viewMode === "today" ? "week" : "today"} view</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-
+        
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={toggleViewMode}
+                onClick={navigateToCurrentWeek}
                 className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
-                aria-label="Toggle view mode"
+                aria-label="Current period"
               >
-                {viewMode === "today" ? "Show Week" : "Show Today"}
+                Go to Current {viewMode === "today" ? "Day" : "Week"}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Switch to {viewMode === "today" ? "week" : "today"} view</p>
+              <p>Go to current {viewMode === "today" ? "day" : "week"}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
