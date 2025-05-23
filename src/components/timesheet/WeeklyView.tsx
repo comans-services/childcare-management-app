@@ -6,7 +6,6 @@ import {
   getNextWeek,
   getPreviousWeek,
   formatDate,
-  isToday,
 } from "@/lib/date-utils";
 import {
   fetchUserProjects,
@@ -34,7 +33,6 @@ const WeeklyView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [weeklyTarget] = useState(40); // Default weekly target of 40 hours
-  const [viewMode, setViewMode] = useState<"day" | "week">("week");
   
   // Time entry dialog state
   const [entryDialogOpen, setEntryDialogOpen] = useState(false);
@@ -104,27 +102,7 @@ const WeeklyView: React.FC = () => {
     setCurrentDate(new Date());
   };
 
-  const toggleViewMode = () => {
-    setViewMode(prev => prev === "day" ? "week" : "day");
-  };
-
-  // Filter entries based on viewMode
-  const visibleEntries = entries.filter(entry => {
-    // In week mode, show all entries
-    if (viewMode === "week") return true;
-    
-    // In day mode, only show entries for today
-    return weekDates.some(weekDate => {
-      return isToday(weekDate) && formatDate(weekDate) === entry.entry_date?.substring(0, 10);
-    });
-  });
-
-  // Filter weekDates based on viewMode
-  const visibleDates = viewMode === "week" 
-    ? weekDates 
-    : weekDates.filter(date => isToday(date));
-
-  const totalVisibleHours = visibleEntries.reduce((sum, entry) => {
+  const totalWeekHours = entries.reduce((sum, entry) => {
     const hoursLogged = Number(entry.hours_logged) || 0;
     return sum + hoursLogged;
   }, 0);
@@ -199,14 +177,12 @@ const WeeklyView: React.FC = () => {
   return (
     <div className="space-y-4 w-full max-w-full">
       <WeekNavigation 
-        weekDates={visibleDates}
+        weekDates={weekDates}
         navigateToPreviousWeek={navigateToPreviousWeek}
         navigateToNextWeek={navigateToNextWeek}
         navigateToCurrentWeek={navigateToCurrentWeek}
         error={error}
         fetchData={fetchData}
-        viewMode={viewMode}
-        toggleViewMode={toggleViewMode}
       />
 
       {loading ? (
@@ -219,9 +195,9 @@ const WeeklyView: React.FC = () => {
             <EmptyState />
           ) : (
             <WeekGrid
-              weekDates={visibleDates}
+              weekDates={weekDates}
               userId={user?.id || ""}
-              entries={visibleEntries}
+              entries={entries}
               projects={projects}
               onEntryChange={fetchData}
               onDragEnd={handleDragEnd}
@@ -234,8 +210,8 @@ const WeeklyView: React.FC = () => {
 
       {!loading && !error && entries.length > 0 && (
         <WeeklyProgressBar 
-          totalWeekHours={totalVisibleHours} 
-          weeklyTarget={viewMode === "week" ? weeklyTarget : (weeklyTarget / 5)} // Daily target for day view
+          totalWeekHours={totalWeekHours} 
+          weeklyTarget={weeklyTarget} 
         />
       )}
 

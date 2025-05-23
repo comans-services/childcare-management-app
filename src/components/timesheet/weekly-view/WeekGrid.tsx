@@ -34,14 +34,11 @@ const WeekGrid: React.FC<WeekGridProps> = ({
   onEditEntry,
 }) => {
   const isMobile = useIsMobile();
-  
-  // Handle single-day view (e.g., just Today) vs week view
-  const isSingleDayView = weekDates.length === 1;
-  
+
   const renderDesktopView = () => (
-    <div className={`grid grid-cols-1 ${isSingleDayView ? 'md:grid-cols-1' : 'md:grid-cols-7'} gap-2 w-full overflow-hidden animate-in fade-in-50`}>
+    <div className="grid grid-cols-1 md:grid-cols-7 gap-2 w-full overflow-hidden animate-in fade-in-50">
       {weekDates.map((date, index) => (
-        <div key={date.toISOString()} className={`w-full min-w-0 max-w-full ${isSingleDayView ? 'md:max-w-md md:mx-auto' : ''}`}>
+        <div key={date.toISOString()} className="w-full min-w-0 max-w-full">
           <DayColumn
             date={date}
             userId={userId}
@@ -75,12 +72,10 @@ const WeekGrid: React.FC<WeekGridProps> = ({
           </CarouselItem>
         ))}
       </CarouselContent>
-      {weekDates.length > 1 && (
-        <div className="flex justify-center mt-2">
-          <CarouselPrevious className="relative static mr-2 translate-y-0 translate-x-0 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />
-          <CarouselNext className="relative static ml-2 translate-y-0 translate-x-0 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />
-        </div>
-      )}
+      <div className="flex justify-center mt-2">
+        <CarouselPrevious className="relative static mr-2 translate-y-0 translate-x-0 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />
+        <CarouselNext className="relative static ml-2 translate-y-0 translate-x-0 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />
+      </div>
     </Carousel>
   );
 
