@@ -32,6 +32,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import ContractFileUploadDialog from "./ContractFileUploadDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ContractListProps {
   contracts: Contract[];
@@ -263,9 +264,20 @@ const ContractList: React.FC<ContractListProps> = ({
                           <span className="font-medium">Updated:</span> {contract.updated_at ? new Date(contract.updated_at).toLocaleDateString() : 'N/A'}
                         </div>
 
-                        {/* File information */}
+                        {/* File information with tooltip */}
                         <div>
-                          <span className="font-medium">Attached File:</span> {contract.file_name || 'No file attached'}
+                          <span className="font-medium">Attached File:</span> {!contract.file_name ? 'No file attached' : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="ml-1 inline-block max-w-[200px] truncate align-bottom">{contract.file_name}</span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{contract.file_name}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           {contract.file_name && (
                             <div className="mt-2 text-xs text-gray-500">
                               <div>Size: {contract.file_size ? `${(contract.file_size / 1024 / 1024).toFixed(2)} MB` : 'Unknown'}</div>

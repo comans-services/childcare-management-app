@@ -7,6 +7,7 @@ import { UploadCloud, Loader2, File, AlertCircle, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { Contract } from "@/lib/contract-service";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ContractFileUploadDialogProps {
   isOpen: boolean;
@@ -156,9 +157,18 @@ const ContractFileUploadDialog: React.FC<ContractFileUploadDialogProps> = ({
           ) : (
             <div className="border rounded-lg p-4">
               <div className="flex items-center space-x-3">
-                <File className="h-8 w-8 text-blue-500" />
-                <div className="flex-1 truncate">
-                  <p className="text-sm font-medium">{file.name}</p>
+                <File className="h-8 w-8 text-blue-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{file.name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
                 <Button
@@ -166,6 +176,7 @@ const ContractFileUploadDialog: React.FC<ContractFileUploadDialogProps> = ({
                   size="sm"
                   onClick={resetState}
                   disabled={uploading}
+                  className="flex-shrink-0"
                 >
                   Change
                 </Button>
