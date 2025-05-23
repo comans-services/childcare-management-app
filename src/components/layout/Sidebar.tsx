@@ -18,16 +18,13 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const SidebarContent = () => {
-  const { user, userRole, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await signOut();
     navigate("/auth");
   };
-
-  // Only show contracts link to admin users
-  const isAdmin = userRole === 'admin';
 
   return (
     <>
@@ -53,12 +50,10 @@ const SidebarContent = () => {
           <Users className="h-5 w-5" />
           <span>Customers</span>
         </Link>
-        {isAdmin && (
-          <Link to="/contracts" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
-            <FileText className="h-5 w-5" />
-            <span>Contracts</span>
-          </Link>
-        )}
+        <Link to="/contracts" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
+          <FileText className="h-5 w-5" />
+          <span>Contracts</span>
+        </Link>
         <Link to="/reports" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
           <BarChart className="h-5 w-5" />
           <span>Reports</span>

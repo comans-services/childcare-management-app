@@ -24,11 +24,9 @@ import {
   Info,
   FileText,
   ChevronDown,
-  ChevronUp,
-  Download
+  ChevronUp
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ContractListProps {
   contracts: Contract[];
@@ -74,21 +72,6 @@ const ContractList: React.FC<ContractListProps> = ({
         variant: "destructive",
       });
     }
-  };
-
-  // Handle file download
-  const handleFileDownload = async (contract: Contract) => {
-    if (!contract.file_url) {
-      toast({
-        title: "No file available",
-        description: "This contract does not have an attached file.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Open file URL in a new tab
-    window.open(contract.file_url, '_blank');
   };
   
   // Get appropriate badge for contract status
@@ -196,16 +179,6 @@ const ContractList: React.FC<ContractListProps> = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {contract.file_url && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleFileDownload(contract)}
-                        title="Download File"
-                      >
-                        <Download className="h-4 w-4 text-green-500" />
-                      </Button>
-                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -242,28 +215,6 @@ const ContractList: React.FC<ContractListProps> = ({
                         </div>
                         <div>
                           <span className="font-medium">Updated:</span> {contract.updated_at ? new Date(contract.updated_at).toLocaleDateString() : 'N/A'}
-                        </div>
-
-                        {/* File information with tooltip */}
-                        <div>
-                          <span className="font-medium">Attached File:</span> {!contract.file_name ? 'No file attached' : (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="ml-1 inline-block max-w-[200px] truncate align-bottom">{contract.file_name}</span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{contract.file_name}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                          {contract.file_name && (
-                            <div className="mt-2 text-xs text-gray-500">
-                              <div>Size: {contract.file_size ? `${(contract.file_size / 1024 / 1024).toFixed(2)} MB` : 'Unknown'}</div>
-                              <div>Uploaded: {contract.uploaded_at ? new Date(contract.uploaded_at).toLocaleDateString() : 'Unknown'}</div>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>

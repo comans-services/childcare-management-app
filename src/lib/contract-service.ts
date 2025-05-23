@@ -24,13 +24,6 @@ export interface Contract {
   customer_name?: string;
   days_until_expiry?: number;
   renewal_reminder_sent?: boolean;
-  // New file-related fields
-  file_id?: string | null;
-  file_name?: string | null;
-  file_url?: string | null;
-  file_size?: number | null;
-  file_type?: string | null;
-  uploaded_at?: string | null;
 }
 
 export interface ContractTimeEntry {
