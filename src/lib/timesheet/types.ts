@@ -1,0 +1,34 @@
+
+// Define all the shared types for the timesheet functionality
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  budget_hours: number;
+  start_date?: string;
+  end_date?: string;
+  is_active?: boolean;
+  hours_used?: number;  
+  customer_id?: string; 
+}
+
+export interface TimesheetEntry {
+  id?: string;
+  project_id: string;
+  user_id: string;
+  entry_date: string;
+  hours_logged: number;
+  notes?: string;
+  jira_task_id?: string;
+  start_time?: string;
+  end_time?: string;
+  project?: Project;
+  user?: {
+    id: string;
+    full_name?: string;
+    email?: string;
+    organization?: string;
+    time_zone?: string;
+  };
+}
