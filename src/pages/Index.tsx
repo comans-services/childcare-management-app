@@ -77,7 +77,8 @@ const Dashboard = () => {
       if (!session?.user?.id) return Promise.resolve([]);
       console.log(`Fetching timesheet entries for dashboard: User ID: ${session.user.id}, Date Range: ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
       try {
-        const result = await fetchTimesheetEntries(session.user.id, startDate, endDate);
+        // Fixed: Remove user ID parameter since RLS handles user filtering automatically
+        const result = await fetchTimesheetEntries(startDate, endDate);
         console.log(`Dashboard: Fetched ${result.length} timesheet entries`);
         return result;
       } catch (err) {
