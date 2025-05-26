@@ -59,7 +59,6 @@ export const getProjectHoursUsed = async (projectId: string): Promise<number> =>
       .from("timesheet_entries")
       .select("hours_logged")
       .eq("project_id", projectId)
-      .eq("user_id", user.id);
       
     if (error) {
       console.error("Error fetching project hours:", error);
