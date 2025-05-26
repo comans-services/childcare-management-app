@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchUsers, User, updateUser } from "@/lib/user-service";
@@ -84,7 +83,7 @@ const TeamList = () => {
     console.log("Team members data:", users);
   }, [user, users]);
 
-  const isAdmin = userRole === "admin";
+  const isAdminOrManager = userRole === "admin" || userRole === "manager";
 
   if (error) {
     return (
@@ -157,7 +156,7 @@ const TeamList = () => {
             <TableHead>Email</TableHead>
             <TableHead>Organization</TableHead>
             <TableHead>Time Zone</TableHead>
-            {isAdmin && <TableHead>Actions</TableHead>}
+            {isAdminOrManager && <TableHead>Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -167,15 +166,17 @@ const TeamList = () => {
                 <TableCell className="font-medium">{user.full_name || "Not set"}</TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
+                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
+                    user.role === 'manager' ? 'bg-blue-100 text-blue-800' : 
+                    'bg-green-100 text-green-800'
                   }`}>
-                    {user.role || "staff"}
+                    {user.role || "employee"}
                   </span>
                 </TableCell>
                 <TableCell>{user.email || "No email available"}</TableCell>
                 <TableCell>{user.organization || "N/A"}</TableCell>
                 <TableCell>{user.time_zone || "N/A"}</TableCell>
-                {isAdmin && (
+                {isAdminOrManager && (
                   <TableCell>
                     <Button
                       variant="outline"
@@ -192,8 +193,8 @@ const TeamList = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={isAdmin ? 6 : 5} className="text-center py-8">
-                No team members found. {!isAdmin && "Contact an administrator to add team members."}
+              <TableCell colSpan={isAdminOrManager ? 6 : 5} className="text-center py-8">
+                No team members found. {!isAdminOrManager && "Contact an administrator to add team members."}
               </TableCell>
             </TableRow>
           )}
