@@ -32,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const COLORS = [
   "#0088FE", "#00C49F", "#FFBB28", "#FF8042", 
@@ -82,6 +83,8 @@ const Dashboard = () => {
         return result;
       } catch (err) {
         console.error("Error fetching timesheet entries for dashboard:", err);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        console.error("Detailed error:", errorMessage);
         throw err;
       }
     },
@@ -652,7 +655,10 @@ const Dashboard = () => {
           <CardContent>
             {isLoading ? (
               <div className="h-80 flex items-center justify-center">
-                <p className="text-gray-400">Loading project data...</p>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32 mx-auto" />
+                  <Skeleton className="h-4 w-24 mx-auto" />
+                </div>
               </div>
             ) : hasError ? (
               <div className="h-80 flex items-center justify-center text-red-500">
@@ -684,7 +690,10 @@ const Dashboard = () => {
           <CardContent>
             {isLoading ? (
               <div className="h-80 flex items-center justify-center">
-                <p className="text-gray-400">Loading customer data...</p>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32 mx-auto" />
+                  <Skeleton className="h-4 w-24 mx-auto" />
+                </div>
               </div>
             ) : hasError ? (
               <div className="h-80 flex items-center justify-center text-red-500">
