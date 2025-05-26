@@ -1,3 +1,4 @@
+
 import { supabase, executeSQL } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
@@ -24,6 +25,12 @@ export interface Contract {
   customer_name?: string;
   days_until_expiry?: number;
   renewal_reminder_sent?: boolean;
+  file_id?: string;
+  file_name?: string;
+  file_type?: string;
+  file_size?: number;
+  file_url?: string;
+  uploaded_at?: string;
 }
 
 export interface ContractTimeEntry {
