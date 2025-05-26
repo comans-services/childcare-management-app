@@ -108,52 +108,81 @@ export const fetchReportData = async (
     console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
     console.log(`Filters:`, filters);
 
-    // Use the new admin-only reporting function - note: no schema prefix in RPC calls
-    const { data: reportData, error } = await supabase.rpc('timesheet_entries_report', {
-      p_start_date: startDate.toISOString().slice(0, 10),
-      p_end_date: endDate.toISOString().slice(0, 10),
-      p_user_id: filters.userId || null,
-      p_project_id: filters.projectId || null,
-      p_customer_id: filters.customerId || null
-    });
+    // Get current user to check admin status
+    const { data: { user } } = await supabase.auth.getUser();
     
-    if (error) {
-      console.error("Error calling admin reporting function:", error);
-      throw error;
+    if (!user) {
+      console.log("No authenticated user found");
+      throw new Error("Authentication required");
     }
-    
-    console.log(`Admin function returned ${reportData?.length || 0} entries`);
-    
-    // Transform the data to match the expected TimesheetEntry format
-    const transformedData = reportData?.map((entry: any) => ({
-      id: entry.id,
-      user_id: entry.user_id,
-      project_id: entry.project_id,
-      entry_date: entry.entry_date,
-      hours_logged: entry.hours_logged,
-      created_at: entry.created_at,
-      updated_at: entry.updated_at,
-      notes: entry.notes,
-      jira_task_id: entry.jira_task_id,
-      start_time: entry.start_time,
-      end_time: entry.end_time,
-      // Add the joined data as nested objects
-      project: {
-        id: entry.project_id,
-        name: entry.project_name,
-        description: entry.project_description,
-        customer_id: entry.project_customer_id
-      },
-      user: {
-        id: entry.user_id,
-        full_name: entry.user_full_name,
-        email: entry.user_email,
-        organization: entry.user_organization,
-        time_zone: entry.user_time_zone
+
+    // Check if user is admin by checking their role
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
+      throw new Error("Unable to verify user permissions");
+    }
+
+    const isAdmin = profileData?.role === 'admin';
+    console.log(`User is admin: ${isAdmin}`);
+
+    if (isAdmin) {
+      // Use the admin RPC function for full access
+      const { data: reportData, error } = await supabase.rpc('timesheet_entries_report', {
+        p_start_date: startDate.toISOString().slice(0, 10),
+        p_end_date: endDate.toISOString().slice(0, 10),
+        p_user_id: filters.userId || null,
+        p_project_id: filters.projectId || null,
+        p_customer_id: filters.customerId || null
+      });
+      
+      if (error) {
+        console.error("Error calling admin reporting function:", error);
+        throw error;
       }
-    })) || [];
-    
-    return transformedData;
+      
+      console.log(`Admin function returned ${reportData?.length || 0} entries`);
+      
+      // Transform the data to match the expected TimesheetEntry format
+      const transformedData = reportData?.map((entry: any) => ({
+        id: entry.id,
+        user_id: entry.user_id,
+        project_id: entry.project_id,
+        entry_date: entry.entry_date,
+        hours_logged: entry.hours_logged,
+        created_at: entry.created_at,
+        updated_at: entry.updated_at,
+        notes: entry.notes,
+        jira_task_id: entry.jira_task_id,
+        start_time: entry.start_time,
+        end_time: entry.end_time,
+        // Add the joined data as nested objects
+        project: {
+          id: entry.project_id,
+          name: entry.project_name,
+          description: entry.project_description,
+          customer_id: entry.project_customer_id
+        },
+        user: {
+          id: entry.user_id,
+          full_name: entry.user_full_name,
+          email: entry.user_email,
+          organization: entry.user_organization,
+          time_zone: entry.user_time_zone
+        }
+      })) || [];
+      
+      return transformedData;
+    } else {
+      // Non-admin users can only see their own data
+      console.log("Non-admin user, fetching own entries only");
+      return await fetchTimesheetEntries(startDate, endDate, true);
+    }
   } catch (error) {
     console.error("Error in fetchReportData:", error);
     throw error;
