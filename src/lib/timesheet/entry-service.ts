@@ -16,11 +16,16 @@ export const fetchTimesheetEntries = async (
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     
     if (!currentUser) {
+      console.error("No authenticated user found");
       throw new Error("Authentication required");
     }
 
+    console.log("Current authenticated user:", currentUser.id);
+    console.log("Requested user:", userId);
+
     // Security check: Only allow fetching for the current authenticated user
     if (userId !== currentUser.id) {
+      console.error(`Security violation: User ${currentUser.id} attempted to fetch data for user ${userId}`);
       throw new Error("Access denied: You can only access your own timesheet entries");
     }
     
@@ -37,19 +42,28 @@ export const fetchTimesheetEntries = async (
       throw entriesError;
     }
 
+    console.log(`Fetched ${entriesData?.length || 0} entries for user ${currentUser.id}`);
+    
     if (!entriesData || entriesData.length === 0) {
       console.log("No entries found for the specified date range");
       return [];
     }
 
-    console.log(`Fetched ${entriesData.length} entries`);
+    // Additional security check: Verify all entries belong to the current user
+    const invalidEntries = entriesData.filter(entry => entry.user_id !== currentUser.id);
+    if (invalidEntries.length > 0) {
+      console.error("Security warning: Found entries that don't belong to current user", invalidEntries);
+      // Filter out invalid entries
+      const validEntries = entriesData.filter(entry => entry.user_id === currentUser.id);
+      console.log(`Filtered to ${validEntries.length} valid entries`);
+    }
     
     // Fetch projects separately
     const projectIds = [...new Set(entriesData.map(entry => entry.project_id))];
     
     if (projectIds.length === 0) {
       console.log("No project IDs found in entries");
-      return entriesData;
+      return entriesData.filter(entry => entry.user_id === currentUser.id);
     }
     
     const { data: projectsData, error: projectsError } = await supabase
@@ -60,7 +74,7 @@ export const fetchTimesheetEntries = async (
     if (projectsError) {
       console.error("Error fetching projects for entries:", projectsError);
       // Return entries without project details rather than failing completely
-      return entriesData;
+      return entriesData.filter(entry => entry.user_id === currentUser.id);
     }
 
     console.log(`Fetched ${projectsData?.length || 0} projects for entries`);
@@ -71,50 +85,44 @@ export const fetchTimesheetEntries = async (
       return acc;
     }, {} as Record<string, any>);
 
-    let entriesWithProjects = entriesData.map(entry => ({
+    // Filter entries to only include current user's entries
+    const userEntries = entriesData.filter(entry => entry.user_id === currentUser.id);
+    
+    let entriesWithProjects = userEntries.map(entry => ({
       ...entry,
       project: projectsMap[entry.project_id]
     }));
 
     // Fetch user data if requested
     if (includeUserData) {
-      const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
-      
-      if (userIds.length > 0) {
-        const { data: usersData, error: usersError } = await supabase
-          .from("profiles")
-          .select("id, full_name, email, organization, time_zone")
-          .in("id", userIds);
+      const { data: usersData, error: usersError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, organization, time_zone")
+        .eq("id", currentUser.id)
+        .single();
           
-        if (!usersError && usersData && usersData.length > 0) {
-          console.log(`Fetched ${usersData.length} users for entries`);
-          
-          // Create a map of users by ID for quick lookup
-          const usersMap = usersData.reduce((acc, user) => {
-            acc[user.id] = user;
-            return acc;
-          }, {} as Record<string, any>);
-          
-          // Add user data to entries
-          entriesWithProjects = entriesWithProjects.map(entry => ({
-            ...entry,
-            user: usersMap[entry.user_id] || { id: entry.user_id }
-          }));
-          
-          console.log("Entries with user data:", entriesWithProjects);
-        } else {
-          console.error("Error fetching users for entries:", usersError);
-          console.log("Available user IDs:", userIds);
-          
-          // Add basic user data even if fetch failed
-          entriesWithProjects = entriesWithProjects.map(entry => ({
-            ...entry,
-            user: { id: entry.user_id }
-          }));
-        }
+      if (!usersError && usersData) {
+        console.log(`Fetched user data for current user`);
+        
+        // Add user data to entries
+        entriesWithProjects = entriesWithProjects.map(entry => ({
+          ...entry,
+          user: usersData
+        }));
+        
+        console.log("Entries with user data:", entriesWithProjects);
+      } else {
+        console.error("Error fetching user data:", usersError);
+        
+        // Add basic user data even if fetch failed
+        entriesWithProjects = entriesWithProjects.map(entry => ({
+          ...entry,
+          user: { id: entry.user_id }
+        }));
       }
     }
 
+    console.log(`Returning ${entriesWithProjects.length} entries for user ${currentUser.id}`);
     return entriesWithProjects;
   } catch (error) {
     console.error("Error in fetchTimesheetEntries:", error);
