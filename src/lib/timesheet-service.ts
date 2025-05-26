@@ -15,24 +15,6 @@ import {
 } from "./timesheet/entry-service";
 
 // Re-export all types and functions
-
-export const fetchTimesheetEntries = async (
-  userId: string,
-  startDate: Date,
-  endDate: Date,
-  includeUserData = false
-): Promise<TimesheetEntry[]> => {
-  if (!userId) {
-    throw new Error("fetchTimesheetEntries: userId is required");
-  }
-
-  console.log("API call to fetchTimesheetEntries", {
-    userId,
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
-    includeUserData,
-  });
-
 export type { Project, TimesheetEntry };
 
 export {
