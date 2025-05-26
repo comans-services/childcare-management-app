@@ -16,7 +16,7 @@ export interface Project {
 export interface TimesheetEntry {
   id?: string;
   project_id: string;
-  user_id: string;
+  user_id?: string; // Made optional since DB trigger will set this
   entry_date: string;
   hours_logged: number;
   notes?: string;
@@ -31,4 +31,20 @@ export interface TimesheetEntry {
     organization?: string;
     time_zone?: string;
   };
+}
+
+// Type for creating new entries - user_id is completely omitted since trigger handles it
+export interface CreateTimesheetEntry {
+  project_id: string;
+  entry_date: string;
+  hours_logged: number;
+  notes?: string;
+  jira_task_id?: string;
+  start_time?: string;
+  end_time?: string;
+}
+
+// Type for updating entries - user_id should not be changed
+export interface UpdateTimesheetEntry extends CreateTimesheetEntry {
+  id: string;
 }

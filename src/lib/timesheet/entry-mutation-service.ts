@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { TimesheetEntry } from "./types";
+import { TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry } from "./types";
 
 export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
   try {
@@ -8,15 +8,15 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     console.log("Entry data:", entry);
     
     // Create a clean data object for the database operation
-    // Note: user_id is now automatically set by the database trigger
-    const dbEntry = {
+    // Note: user_id is automatically set by the database trigger
+    const dbEntry: CreateTimesheetEntry = {
       project_id: entry.project_id,
       entry_date: entry.entry_date,
       hours_logged: entry.hours_logged,
-      notes: entry.notes,
-      jira_task_id: entry.jira_task_id,
-      start_time: entry.start_time || null,
-      end_time: entry.end_time || null,
+      notes: entry.notes || "",
+      jira_task_id: entry.jira_task_id || "",
+      start_time: entry.start_time || "",
+      end_time: entry.end_time || "",
     };
 
     console.log("Database entry data (user_id will be auto-assigned by trigger):", dbEntry);
