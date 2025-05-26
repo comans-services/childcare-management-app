@@ -47,35 +47,42 @@ const WeeklyView: React.FC = () => {
   }, [currentDate]);
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error("WeeklyView: No user found.");
+      setError("User is not authenticated.");
+      return;
+    }
+
+    console.log("WeeklyView: user ID", user.id);
+    console.log("WeeklyView: weekDates", weekDates);
 
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Fetch projects first
-      const projectsData = await fetchUserProjects()
-        .catch(err => {
-          console.error("Projects error:", err);
-          setError("Failed to load projects. Please try again.");
-          return [] as Project[];
-        });
-      
+      const projectsData = await fetchUserProjects().catch(err => {
+        console.error("Projects error:", err);
+        setError("Failed to load projects. Please try again.");
+        return [] as Project[];
+      });
+
       setProjects(projectsData);
-      
-      // Then fetch entries if we have valid dates
+
       if (weekDates.length > 0) {
         const entriesData = await fetchTimesheetEntries(
           user.id,
           weekDates[0],
           weekDates[weekDates.length - 1],
-          true // Explicitly set includeUserData to true
+          true
         ).catch(err => {
           console.error("Entries error:", err);
+          if (err?.response) {
+            console.error("API error response:", err.response);
+          }
           setError("Failed to load timesheet entries. Please try again.");
           return [] as TimesheetEntry[];
         });
-        
+
         setEntries(entriesData);
       }
     } catch (error) {
