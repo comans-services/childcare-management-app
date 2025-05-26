@@ -12,10 +12,18 @@ export const fetchTimesheetEntries = async (
   try {
     console.log(`Fetching entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
     
+    // Check authentication first
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Authentication error:", authError);
+      throw new Error("User not authenticated");
+    }
+
     // First, fetch the entries with a simpler query
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
+      .eq("user_id", userId)
       .gte("entry_date", formatDate(startDate))
       .lte("entry_date", formatDate(endDate));
 
