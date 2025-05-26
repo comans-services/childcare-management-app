@@ -27,11 +27,21 @@ const TimesheetPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Redirect if no user is authenticated
+  if (!user) {
+    return (
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-[110%] w-full">
+        <div className="p-4 md:p-8 text-center">
+          <p className="text-gray-500">Please sign in to view your timesheet</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleDeleteAllEntries = async () => {
-    if (!user) return;
-    
     setIsDeleting(true);
     try {
+      // Only delete entries for the current authenticated user
       const deletedCount = await deleteAllTimesheetEntries(user.id);
       toast({
         title: "Entries deleted",
@@ -60,22 +70,20 @@ const TimesheetPage = () => {
           <p className="text-gray-600 text-sm md:text-base">Track and manage your working hours</p>
         </div>
         
-        {user && (
-          <Button 
-            variant="destructive" 
-            size="sm"
-            onClick={() => setIsDeleteDialogOpen(true)}
-            disabled={isDeleting}
-            className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md"
-          >
-            <TrashIcon className="h-4 w-4 mr-2" />
-            Reset All Entries
-          </Button>
-        )}
+        <Button 
+          variant="destructive" 
+          size="sm"
+          onClick={() => setIsDeleteDialogOpen(true)}
+          disabled={isDeleting}
+          className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md"
+        >
+          <TrashIcon className="h-4 w-4 mr-2" />
+          Reset All Entries
+        </Button>
       </div>
 
       {/* Show timer prominently on mobile devices */}
-      {isMobile && user && (
+      {isMobile && (
         <TimerComponent />
       )}
 
@@ -85,18 +93,13 @@ const TimesheetPage = () => {
           <CardDescription className="text-sm">Your time entries for the current week</CardDescription>
         </CardHeader>
         <CardContent className="pt-2">
-          {user ? (
-            <WeeklyView key={refreshKey} />
-          ) : (
-            <div className="p-4 md:p-8 text-center">
-              <p className="text-gray-500">Please sign in to view your timesheet</p>
-            </div>
-          )}
+          {/* Pass only the current user's ID to WeeklyView - no external user targeting allowed */}
+          <WeeklyView key={refreshKey} userId={user.id} />
         </CardContent>
       </Card>
 
       {/* Show timer below weekly view on desktop */}
-      {!isMobile && user && (
+      {!isMobile && (
         <TimerComponent />
       )}
 

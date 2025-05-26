@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "../date-utils";
 import { TimesheetEntry } from "./types";
@@ -11,7 +12,19 @@ export const fetchTimesheetEntries = async (
   try {
     console.log(`Fetching entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
     
-    // Fetch entries with a simple query - RLS will handle filtering
+    // Get current authenticated user to validate access
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    
+    if (!currentUser) {
+      throw new Error("Authentication required");
+    }
+
+    // Security check: Only allow fetching for the current authenticated user
+    if (userId !== currentUser.id) {
+      throw new Error("Access denied: You can only access your own timesheet entries");
+    }
+    
+    // Fetch entries with RLS automatically filtering by user_id = auth.uid()
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
@@ -113,8 +126,21 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
   try {
     console.log("Saving timesheet entry:", entry);
     
+    // Get current authenticated user to validate access
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    
+    if (!currentUser) {
+      throw new Error("Authentication required");
+    }
+
+    // Security check: Ensure user can only save their own entries
+    if (entry.user_id !== currentUser.id) {
+      throw new Error("Access denied: You can only modify your own timesheet entries");
+    }
+    
     // Create a clean data object for the database operation
     const dbEntry = {
+      user_id: currentUser.id, // Always use authenticated user's ID
       project_id: entry.project_id,
       entry_date: entry.entry_date,
       hours_logged: entry.hours_logged,
@@ -127,7 +153,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     console.log("Database entry data:", dbEntry);
     
     if (entry.id) {
-      // Update existing entry
+      // Update existing entry - RLS will ensure user can only update their own entries
       const { data, error } = await supabase
         .from("timesheet_entries")
         .update(dbEntry)
@@ -154,13 +180,10 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       
       return updatedEntry;
     } else {
-      // Create new entry
+      // Create new entry - RLS will ensure user_id matches auth.uid()
       const { data, error } = await supabase
         .from("timesheet_entries")
-        .insert({
-          ...dbEntry,
-          user_id: entry.user_id
-        })
+        .insert(dbEntry)
         .select();
 
       if (error) {
@@ -193,7 +216,14 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
   try {
     console.log(`Duplicating entry ${entryId}`);
     
-    // First get the original entry
+    // Get current authenticated user to validate access
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    
+    if (!currentUser) {
+      throw new Error("Authentication required");
+    }
+    
+    // First get the original entry - RLS will ensure we only get user's own entries
     const { data: originalEntry, error: fetchError } = await supabase
       .from("timesheet_entries")
       .select("*")
@@ -208,10 +238,15 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
     if (!originalEntry) {
       throw new Error("Original entry not found");
     }
+
+    // Security check: Ensure the entry belongs to the current user
+    if (originalEntry.user_id !== currentUser.id) {
+      throw new Error("Access denied: You can only duplicate your own entries");
+    }
     
     // Create a new entry with the same data but a new ID
     const newEntryData = {
-      user_id: originalEntry.user_id,
+      user_id: currentUser.id, // Always use authenticated user's ID
       project_id: originalEntry.project_id,
       entry_date: originalEntry.entry_date,
       hours_logged: originalEntry.hours_logged,
@@ -246,6 +281,14 @@ export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
   try {
     console.log(`Deleting entry ${entryId}`);
     
+    // Get current authenticated user to validate access
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    
+    if (!currentUser) {
+      throw new Error("Authentication required");
+    }
+
+    // RLS will ensure user can only delete their own entries
     const { error } = await supabase
       .from("timesheet_entries")
       .delete()
@@ -267,22 +310,33 @@ export const deleteAllTimesheetEntries = async (userId: string): Promise<number>
   try {
     console.log(`Deleting all timesheet entries for user ${userId}`);
     
-    // First, get the count of entries that will be deleted
+    // Get current authenticated user to validate access
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    
+    if (!currentUser) {
+      throw new Error("Authentication required");
+    }
+
+    // Security check: Only allow deleting for the current authenticated user
+    if (userId !== currentUser.id) {
+      throw new Error("Access denied: You can only delete your own timesheet entries");
+    }
+    
+    // First, get the count of entries that will be deleted - RLS will filter automatically
     const { count: entriesCount, error: countError } = await supabase
       .from("timesheet_entries")
-      .select("id", { count: 'exact' })
-      .eq("user_id", userId);
+      .select("id", { count: 'exact' });
     
     if (countError) {
       console.error("Error counting timesheet entries:", countError);
       throw countError;
     }
     
-    // Then perform the deletion without using RETURNING
+    // Then perform the deletion - RLS will ensure only user's own entries are deleted
     const { error: deleteError } = await supabase
       .from("timesheet_entries")
       .delete()
-      .eq("user_id", userId);
+      .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all entries (RLS will filter)
 
     if (deleteError) {
       console.error("Error deleting all timesheet entries:", deleteError);
@@ -310,6 +364,13 @@ export const fetchReportData = async (
   try {
     console.log(`Fetching report data from ${formatDate(startDate)} to ${formatDate(endDate)} with filters:`, filters);
     
+    // Get current authenticated user
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    
+    if (!currentUser) {
+      throw new Error("Authentication required");
+    }
+
     // Start with base query including joins for related data
     let query = supabase
       .from("timesheet_entries")
@@ -327,7 +388,8 @@ export const fetchReportData = async (
       .gte('entry_date', startDateStr)
       .lte('entry_date', endDateStr);
 
-    // Apply conditional filters only when they have values
+    // For regular users, only show their own data (RLS will handle this)
+    // For admin users, they can filter by userId if provided
     if (filters.userId) {
       query = query.eq("user_id", filters.userId);
     }
@@ -340,7 +402,7 @@ export const fetchReportData = async (
       query = query.eq("projects.customer_id", filters.customerId);
     }
 
-    // Execute the query
+    // Execute the query - RLS will automatically filter results
     const { data: entries, error } = await query.order("entry_date", { ascending: true });
     
     if (error) {
