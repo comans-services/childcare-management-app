@@ -58,7 +58,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     try {
       const entryData: TimesheetEntry = {
         id: existingEntry?.id,
-        user_id: userId,
         project_id: values.project_id,
         entry_date: formatDate(date),
         hours_logged: values.hours_logged,

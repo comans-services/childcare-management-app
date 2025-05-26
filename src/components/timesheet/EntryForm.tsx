@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -191,7 +192,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
       
       const entry: TimesheetEntry = {
         id: existingEntry?.id,
-        user_id: userId,
         project_id: values.project_id,
         entry_date: formattedDate,
         hours_logged: hours,

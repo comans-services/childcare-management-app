@@ -70,7 +70,6 @@ const TimerComponent = () => {
     
     try {
       await saveTimesheetEntry({
-        user_id: user.id,
         project_id: selectedProject,
         entry_date: formatDate(today),
         hours_logged: hoursLogged,
