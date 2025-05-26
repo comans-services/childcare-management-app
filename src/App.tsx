@@ -16,7 +16,6 @@ import CustomersPage from "@/pages/CustomersPage";
 import ReportsPage from "@/pages/ReportsPage";
 import TeamPage from "@/pages/TeamPage";
 import SettingsPage from "@/pages/SettingsPage";
-import DevTestsPage from "@/pages/DevTestsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,7 +39,6 @@ const App = () => (
               <Route path="reports" element={<ReportsPage />} />
               <Route path="team" element={<TeamPage />} />
               <Route path="settings" element={<SettingsPage />} />
-              <Route path="dev-tests" element={<DevTestsPage />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
