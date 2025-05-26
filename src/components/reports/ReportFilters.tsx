@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,9 +10,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCustomers } from "@/lib/customer-service";
 import { fetchContracts } from "@/lib/contract-service";
-import { fetchUserProjects } from "@/lib/timesheet-service";
+import { fetchUserProjects, fetchReportData } from "@/lib/timesheet-service";
 import { fetchUsers } from "@/lib/user-service";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
@@ -83,55 +81,13 @@ const ReportFilters = ({
     try {
       console.log("Generating report with filters:", filters);
       
-      // Start with base query
-      let query = supabase
-        .from("timesheet_entries")
-        .select(`
-          *,
-          projects!inner(id, name, description, customer_id),
-          profiles!inner(id, full_name, email, organization, time_zone)
-        `);
-
-      // Apply date range filters (required)
-      const startDateStr = filters.startDate.toISOString().slice(0, 10);
-      const endDateStr = filters.endDate.toISOString().slice(0, 10);
-      
-      query = query
-        .gte('entry_date', startDateStr)
-        .lte('entry_date', endDateStr);
-
-      // Apply conditional filters only when they are not null/empty
-      if (filters.userId) {
-        query = query.eq("user_id", filters.userId);
-      }
-
-      if (filters.projectId) {
-        query = query.eq("project_id", filters.projectId);
-      }
-
-      if (filters.customerId) {
-        query = query.eq("projects.customer_id", filters.customerId);
-      }
-
-      // Note: Contract filtering would need to be implemented through a join
-      // if contracts are linked to projects, but this isn't in the current schema
-      
-      // Execute the query
-      const { data: entries, error } = await query.order("entry_date", { ascending: true });
-      
-      if (error) {
-        console.error("Error fetching report data:", error);
-        throw error;
-      }
-      
-      console.log(`Fetched ${entries?.length || 0} entries for report`);
-      
-      // Transform the data to match the expected format
-      const transformedData = entries?.map(entry => ({
-        ...entry,
-        project: entry.projects,
-        user: entry.profiles
-      })) || [];
+      // Use the proper fetchReportData function that handles admin permissions
+      const transformedData = await fetchReportData(filters.startDate, filters.endDate, {
+        userId: filters.userId,
+        projectId: filters.projectId,
+        customerId: filters.customerId,
+        contractId: filters.contractId
+      });
       
       setReportData(transformedData);
     } catch (error) {
