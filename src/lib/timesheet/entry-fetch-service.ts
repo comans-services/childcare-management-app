@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "../date-utils";
 import { TimesheetEntry } from "./types";
@@ -107,8 +108,8 @@ export const fetchReportData = async (
     console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
     console.log(`Filters:`, filters);
 
-    // Use the new admin-only reporting function in the reporting schema
-    const { data: reportData, error } = await supabase.rpc('reporting.timesheet_entries_report', {
+    // Use the new admin-only reporting function - note: no schema prefix in RPC calls
+    const { data: reportData, error } = await supabase.rpc('timesheet_entries_report', {
       p_start_date: startDate.toISOString().slice(0, 10),
       p_end_date: endDate.toISOString().slice(0, 10),
       p_user_id: filters.userId || null,
