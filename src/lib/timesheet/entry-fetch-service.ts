@@ -13,10 +13,19 @@ export const fetchTimesheetEntries = async (
     console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
     console.log(`Include user data: ${includeUserData}`);
     
-    // RLS will automatically filter by user_id = auth.uid()
+    // Get current user for defensive filtering
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.log("No authenticated user found");
+      return [];
+    }
+    
+    // RLS will automatically filter by user_id = auth.uid(), but add defensive filter
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
+      .eq('user_id', user.id) // Defensive filter
       .gte("entry_date", formatDate(startDate))
       .lte("entry_date", formatDate(endDate))
       .order("entry_date", { ascending: true });
@@ -26,7 +35,7 @@ export const fetchTimesheetEntries = async (
       throw entriesError;
     }
 
-    console.log(`RLS filtered entries count: ${entriesData?.length || 0}`);
+    console.log(`Filtered entries count: ${entriesData?.length || 0}`);
     
     if (!entriesData || entriesData.length === 0) {
       console.log("No entries found for the current user in the specified date range");
@@ -71,13 +80,10 @@ export const fetchTimesheetEntries = async (
 
     // Add current user info if requested
     if (includeUserData) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        entriesWithProjects = entriesWithProjects.map(entry => ({
-          ...entry,
-          user: { id: user.id, full_name: 'You' }
-        }));
-      }
+      entriesWithProjects = entriesWithProjects.map(entry => ({
+        ...entry,
+        user: { id: user.id, full_name: 'You' }
+      }));
     }
 
     return entriesWithProjects;
@@ -102,6 +108,14 @@ export const fetchReportData = async (
     console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
     console.log(`Filters:`, filters);
 
+    // Get current user for defensive filtering
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.log("No authenticated user found");
+      return [];
+    }
+
     // Start with base query including joins for related data
     let query = supabase
       .from("timesheet_entries")
@@ -109,7 +123,8 @@ export const fetchReportData = async (
         *,
         projects!inner(id, name, description, customer_id, budget_hours, is_active),
         profiles!inner(id, full_name, email, organization, time_zone)
-      `);
+      `)
+      .eq('user_id', user.id); // Defensive filter
 
     // Apply date range filters (required)
     const startDateStr = startDate.toISOString().slice(0, 10);
