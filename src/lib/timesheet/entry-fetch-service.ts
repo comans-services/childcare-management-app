@@ -1,98 +1,78 @@
+/* ──────────────────────────────────────────────────────────────
+ * entry-fetch-service.ts
+ * All read-only queries for timesheets and reports
+ * ──────────────────────────────────────────────────────────── */
 
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "../date-utils";
+import { isAdmin } from "@/utils/roles";
 import { TimesheetEntry } from "./types";
 
+/*-------------------------------------------------------------
+  1 · Daily / weekly fetch   (Timesheet & Dashboard)
+-------------------------------------------------------------*/
 export const fetchTimesheetEntries = async (
   startDate: Date,
   endDate: Date,
-  includeUserData: boolean = false
+  options: {
+    /** join users table? (dashboard needs it) */
+    includeUserData?: boolean;
+    /** always restrict to this user_id (Timesheet view forces self) */
+    forceUserId?: string;
+  } = {}
 ): Promise<TimesheetEntry[]> => {
-  try {
-    console.log(`=== FETCHING TIMESHEET ENTRIES ===`);
-    console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
-    console.log(`Include user data: ${includeUserData}`);
-    
-    // Get current user for defensive filtering
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      console.log("No authenticated user found");
-      return [];
-    }
-    
-    // RLS will automatically filter by user_id = auth.uid(), but add defensive filter
-    const { data: entriesData, error: entriesError } = await supabase
-      .from("timesheet_entries")
-      .select("*")
-      .eq('user_id', user.id) // Defensive filter
-      .gte("entry_date", formatDate(startDate))
-      .lte("entry_date", formatDate(endDate))
-      .order("entry_date", { ascending: true });
+  const { includeUserData = false, forceUserId } = options;
 
-    if (entriesError) {
-      console.error("Error fetching timesheet entries:", entriesError);
-      throw entriesError;
-    }
+  // Session user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authentication required");
 
-    console.log(`Filtered entries count: ${entriesData?.length || 0}`);
-    
-    if (!entriesData || entriesData.length === 0) {
-      console.log("No entries found for the current user in the specified date range");
-      return [];
-    }
+  let q = supabase
+    .from("timesheet_entries")
+    .select(
+      includeUserData
+        ? `*, users ( id, full_name )`
+        : `*`
+    )
+    .gte("entry_date", formatDate(startDate))
+    .lte("entry_date", formatDate(endDate));
 
-    // Fetch projects separately (only get unique project IDs)
-    const projectIds = [...new Set(entriesData.map(entry => entry.project_id))];
-    console.log(`Fetching ${projectIds.length} unique projects`);
-    
-    if (projectIds.length === 0) {
-      console.log("No project IDs found in entries");
-      return entriesData;
-    }
-    
-    const { data: projectsData, error: projectsError } = await supabase
+  /* Row filter logic
+     ──────────────────────────────────────── */
+  if (forceUserId) {
+    // Timesheet screen passes its own ID – always self-only
+    q = q.eq("user_id", forceUserId);
+  } else if (!isAdmin(user)) {
+    // Employees default to self-only
+    q = q.eq("user_id", user.id);
+  }
+  // Admins with no forceUserId → no extra filter; RLS decides
+
+  const { data, error } = await q.order("entry_date", { ascending: true });
+  if (error) throw error;
+
+  /* Optionally join projects (kept from your original logic) */
+  const projectIds = [...new Set(data.map(e => e.project_id))];
+  if (projectIds.length > 0) {
+    const { data: projects } = await supabase
       .from("projects")
       .select("id, name, description, budget_hours, is_active")
       .in("id", projectIds);
 
-    if (projectsError) {
-      console.error("Error fetching projects for entries:", projectsError);
-      // Return entries without project details rather than failing completely
-      return entriesData;
-    }
-
-    console.log(`Fetched ${projectsData?.length || 0} projects for entries`);
-
-    // Create a map of projects by ID for quick lookup
-    const projectsMap = (projectsData || []).reduce((acc, project) => {
-      acc[project.id] = project;
+    const projectMap = (projects ?? []).reduce((acc, p) => {
+      acc[p.id] = p;
       return acc;
     }, {} as Record<string, any>);
 
-    // Map entries with their associated projects
-    let entriesWithProjects = entriesData.map(entry => ({
-      ...entry,
-      project: projectsMap[entry.project_id]
-    }));
-
-    console.log(`Final entries count: ${entriesWithProjects.length}`);
-
-    // Add current user info if requested
-    if (includeUserData) {
-      entriesWithProjects = entriesWithProjects.map(entry => ({
-        ...entry,
-        user: { id: user.id, full_name: 'You' }
-      }));
-    }
-
-    return entriesWithProjects;
-  } catch (error) {
-    console.error("Error in fetchTimesheetEntries:", error);
-    throw error;
+    return data.map(e => ({ ...e, project: projectMap[e.project_id] }));
   }
+
+  return data as TimesheetEntry[];
 };
 
+/*-------------------------------------------------------------
+  2 · Report fetch   (Reports page)
+-------------------------------------------------------------*/
 export const fetchReportData = async (
   startDate: Date,
   endDate: Date,
@@ -103,88 +83,25 @@ export const fetchReportData = async (
     contractId?: string | null;
   } = {}
 ): Promise<TimesheetEntry[]> => {
-  try {
-    console.log(`=== FETCHING REPORT DATA (ADMIN FUNCTION) ===`);
-    console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
-    console.log(`Filters:`, filters);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authentication required");
 
-    // Get current user to check admin status
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      console.log("No authenticated user found");
-      throw new Error("Authentication required");
-    }
-
-    // Check if user is admin by checking their role
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError) {
-      console.error("Error fetching user profile:", profileError);
-      throw new Error("Unable to verify user permissions");
-    }
-
-    const isAdmin = profileData?.role === 'admin';
-    console.log(`User is admin: ${isAdmin}`);
-
-    if (isAdmin) {
-      // Use the admin RPC function for full access
-      const { data: reportData, error } = await supabase.rpc('timesheet_entries_report', {
-        p_start_date: startDate.toISOString().slice(0, 10),
-        p_end_date: endDate.toISOString().slice(0, 10),
-        p_user_id: filters.userId || null,
-        p_project_id: filters.projectId || null,
-        p_customer_id: filters.customerId || null
-      });
-      
-      if (error) {
-        console.error("Error calling admin reporting function:", error);
-        throw error;
-      }
-      
-      console.log(`Admin function returned ${reportData?.length || 0} entries`);
-      
-      // Transform the data to match the expected TimesheetEntry format
-      const transformedData = reportData?.map((entry: any) => ({
-        id: entry.id,
-        user_id: entry.user_id,
-        project_id: entry.project_id,
-        entry_date: entry.entry_date,
-        hours_logged: entry.hours_logged,
-        created_at: entry.created_at,
-        updated_at: entry.updated_at,
-        notes: entry.notes,
-        jira_task_id: entry.jira_task_id,
-        start_time: entry.start_time,
-        end_time: entry.end_time,
-        // Add the joined data as nested objects
-        project: {
-          id: entry.project_id,
-          name: entry.project_name,
-          description: entry.project_description,
-          customer_id: entry.project_customer_id
-        },
-        user: {
-          id: entry.user_id,
-          full_name: entry.user_full_name,
-          email: entry.user_email,
-          organization: entry.user_organization,
-          time_zone: entry.user_time_zone
-        }
-      })) || [];
-      
-      return transformedData;
-    } else {
-      // Non-admin users can only see their own data
-      console.log("Non-admin user, fetching own entries only");
-      return await fetchTimesheetEntries(startDate, endDate, true);
-    }
-  } catch (error) {
-    console.error("Error in fetchReportData:", error);
-    throw error;
+  if (isAdmin(user)) {
+    /* Admin → call your RPC (full access) */
+    const { data, error } = await supabase.rpc("timesheet_entries_report", {
+      p_start_date: startDate.toISOString().slice(0, 10),
+      p_end_date:   endDate.toISOString().slice(0, 10),
+      p_user_id:    filters.userId   || null,
+      p_project_id: filters.projectId|| null,
+      p_customer_id:filters.customerId|| null
+    });
+    if (error) throw error;
+    return data ?? [];
   }
+
+  /* Non-admin → fall back to self-only fetch */
+  return fetchTimesheetEntries(startDate, endDate, {
+    includeUserData: true,
+    forceUserId: user.id
+  });
 };
