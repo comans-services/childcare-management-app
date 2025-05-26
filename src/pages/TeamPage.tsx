@@ -13,7 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 const TeamPage = () => {
   const { user, userRole } = useAuth();
   const queryClient = useQueryClient();
-  const isAdminOrManager = userRole === "admin" || userRole === "manager";
+  const isAdmin = userRole === "admin";
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
@@ -64,7 +64,7 @@ const TeamPage = () => {
           <h1 className="text-2xl font-bold">Team</h1>
           <p className="text-gray-600">Manage and view team members</p>
         </div>
-        {isAdminOrManager && (
+        {isAdmin && (
           <Button 
             onClick={handleAddUser}
             size="lg" 
@@ -81,7 +81,7 @@ const TeamPage = () => {
         <CardHeader className="bg-muted/50">
           <CardTitle>Team Members</CardTitle>
           <CardDescription>
-            {isAdminOrManager 
+            {isAdmin 
               ? "Manage your team members and their roles" 
               : "View team members"}
           </CardDescription>
@@ -91,7 +91,7 @@ const TeamPage = () => {
         </CardContent>
       </Card>
 
-      {isAdminOrManager && (
+      {isAdmin && (
         <AddEditUserDialog
           isOpen={isAddUserOpen}
           onClose={() => setIsAddUserOpen(false)}

@@ -8,7 +8,7 @@ import { Database } from "@/integrations/supabase/types";
 interface AuthContextProps {
   session: Session | null;
   user: User | null;
-  userRole: "employee" | "manager" | "admin" | null;
+  userRole: "employee" | "admin" | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -28,7 +28,7 @@ const AuthContext = createContext<AuthContextProps>({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<"employee" | "manager" | "admin" | null>(null);
+  const [userRole, setUserRole] = useState<"employee" | "admin" | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data) {
-        setUserRole(data.role as "employee" | "manager" | "admin" || "employee");
+        setUserRole(data.role as "employee" | "admin" || "employee");
         
         // Update user profile with email if missing
         if (!data.email && user?.email) {

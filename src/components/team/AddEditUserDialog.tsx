@@ -38,7 +38,7 @@ interface AddEditUserDialogProps {
 const userSchema = z.object({
   id: z.string().optional(),
   full_name: z.string().min(1, "Full name is required"),
-  role: z.enum(["employee", "manager", "admin"]),
+  role: z.enum(["employee", "admin"]),
   organization: z.string().optional().nullable(),
   time_zone: z.string().optional().nullable(),
 });
@@ -48,7 +48,7 @@ const newUserSchema = z.object({
   full_name: z.string().min(1, "Full name is required"),
   email: z.string().email("Invalid email format"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["employee", "manager", "admin"]),
+  role: z.enum(["employee", "admin"]),
   organization: z.string().optional().nullable(),
   time_zone: z.string().optional().nullable(),
 });
@@ -75,7 +75,7 @@ const AddEditUserDialog = ({
     } : {
       id: user?.id || "",
       full_name: user?.full_name || "",
-      role: (user?.role as "employee" | "manager" | "admin") || "employee",
+      role: (user?.role as "employee" | "admin") || "employee",
       organization: user?.organization || "",
       time_zone: user?.time_zone || "",
     }
@@ -95,7 +95,7 @@ const AddEditUserDialog = ({
       form.reset({
         id: user.id,
         full_name: user.full_name || "",
-        role: (user.role as "employee" | "manager" | "admin") || "employee",
+        role: (user.role as "employee" | "admin") || "employee",
         organization: user.organization || "",
         time_zone: user.time_zone || "",
       });
@@ -192,7 +192,6 @@ const AddEditUserDialog = ({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="employee">Employee</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
