@@ -6,13 +6,6 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
   try {
     console.log("Fetching projects...");
     
-    // Check authentication first
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.error("Authentication error:", authError);
-      throw new Error("User not authenticated");
-    }
-
     const { data, error } = await supabase
       .from("projects")
       .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id")
@@ -48,17 +41,10 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
 
 export const getProjectHoursUsed = async (projectId: string): Promise<number> => {
   try {
-    // Check authentication first
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.error("Authentication error:", authError);
-      return 0;
-    }
-
     const { data, error } = await supabase
       .from("timesheet_entries")
       .select("hours_logged")
-      .eq("project_id", projectId)
+      .eq("project_id", projectId);
       
     if (error) {
       console.error("Error fetching project hours:", error);
