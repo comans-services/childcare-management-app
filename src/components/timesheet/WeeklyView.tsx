@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useRBAC } from "@/hooks/use-rbac";
 import {
   getCurrentWeekDates,
   getNextWeek,
@@ -27,6 +27,7 @@ import TimeEntryDialog from "./TimeEntryDialog";
 
 const WeeklyView: React.FC = () => {
   const { user } = useAuth();
+  const { isAdmin } = useRBAC();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [weekDates, setWeekDates] = useState<Date[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -47,8 +48,12 @@ const WeeklyView: React.FC = () => {
   }, [currentDate]);
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log("No user found, skipping data fetch");
+      return;
+    }
 
+    console.log("Starting data fetch for user:", user.id, "isAdmin:", isAdmin);
     setLoading(true);
     setError(null);
     
@@ -61,10 +66,13 @@ const WeeklyView: React.FC = () => {
           return [] as Project[];
         });
       
+      console.log("Projects fetched:", projectsData.length);
       setProjects(projectsData);
       
       // Then fetch entries if we have valid dates
       if (weekDates.length > 0) {
+        console.log("Fetching entries for date range:", weekDates[0], "to", weekDates[weekDates.length - 1]);
+        
         const entriesData = await fetchTimesheetEntries(
           user.id,
           weekDates[0],
@@ -76,6 +84,7 @@ const WeeklyView: React.FC = () => {
           return [] as TimesheetEntry[];
         });
         
+        console.log("Entries fetched:", entriesData.length);
         setEntries(entriesData);
       }
     } catch (error) {
@@ -88,9 +97,10 @@ const WeeklyView: React.FC = () => {
 
   useEffect(() => {
     if (weekDates.length > 0 && user) {
+      console.log("Dependencies changed, fetching data...");
       fetchData();
     }
-  }, [weekDates, user]);
+  }, [weekDates, user, isAdmin]);
 
   const navigateToPreviousWeek = () => {
     setCurrentDate(getPreviousWeek(currentDate));
@@ -202,13 +212,13 @@ const WeeklyView: React.FC = () => {
     <div className="space-y-4 w-full max-w-full">
       <WeekNavigation 
         weekDates={weekDates}
-        navigateToPreviousWeek={navigateToPreviousWeek}
-        navigateToNextWeek={navigateToNextWeek}
-        navigateToCurrentWeek={navigateToCurrentWeek}
+        navigateToPreviousWeek={() => setCurrentDate(getPreviousWeek(currentDate))}
+        navigateToNextWeek={() => setCurrentDate(getNextWeek(currentDate))}
+        navigateToCurrentWeek={() => setCurrentDate(new Date())}
         error={error}
         fetchData={fetchData}
         viewMode={viewMode}
-        toggleViewMode={toggleViewMode}
+        toggleViewMode={() => setViewMode(prevMode => prevMode === "today" ? "week" : "today")}
       />
 
       {loading ? (
@@ -217,7 +227,7 @@ const WeeklyView: React.FC = () => {
         <ErrorState error={error} onRetry={fetchData} />
       ) : (
         <div className="w-full max-w-full overflow-hidden">
-          {projects.length === 0 ? (
+          {projects.length === 0 && !isAdmin ? (
             <EmptyState />
           ) : (
             <WeekGrid
@@ -226,7 +236,57 @@ const WeeklyView: React.FC = () => {
               entries={entries}
               projects={projects}
               onEntryChange={fetchData}
-              onDragEnd={handleDragEnd}
+              onDragEnd={async (result: DropResult) => {
+                const { source, destination, draggableId } = result;
+                
+                if (!destination) return;
+                
+                const draggedEntry = entries.find(entry => entry.id === draggableId);
+                if (!draggedEntry) return;
+                
+                const sourceDate = weekDates[parseInt(source.droppableId)];
+                const destDate = weekDates[parseInt(destination.droppableId)];
+                
+                if (source.droppableId === destination.droppableId) return;
+                
+                try {
+                  const updatedEntry: TimesheetEntry = {
+                    ...draggedEntry,
+                    entry_date: formatDate(destDate)
+                  };
+                  
+                  console.log("Updating entry in database:", {
+                    originalEntry: draggedEntry,
+                    updatedEntry: updatedEntry
+                  });
+                  
+                  const savedEntry = await saveTimesheetEntry(updatedEntry);
+                  
+                  console.log("Entry saved in database:", savedEntry);
+                  
+                  setEntries(prevEntries => 
+                    prevEntries.map(entry => 
+                      entry.id === savedEntry.id ? {
+                        ...savedEntry,
+                        project: draggedEntry.project,
+                        user: draggedEntry.user
+                      } : entry
+                    )
+                  );
+                  
+                  toast({
+                    title: "Entry moved",
+                    description: `Entry moved to ${formatDate(destDate)}`,
+                  });
+                } catch (error) {
+                  console.error("Failed to update entry date:", error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to move entry. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
               onAddEntry={handleOpenEntryDialog}
               onEditEntry={handleOpenEntryDialog}
               viewMode={viewMode}

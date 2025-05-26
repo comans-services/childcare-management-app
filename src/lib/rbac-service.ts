@@ -17,19 +17,81 @@ export const fetchUserRole = async (userId: string): Promise<UserRole | null> =>
   try {
     console.log(`Fetching role for user: ${userId}`);
     
-    const { data, error } = await supabase
+    // Check if user has a role in user_roles table
+    const { data: roleData, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error("Error fetching user role:", error);
-      return null;
+    if (roleError) {
+      console.error("Error fetching user role from user_roles:", roleError);
+      
+      // Fallback: check auth user email and assign appropriate role
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData.user) {
+        console.error("Error fetching auth user:", authError);
+        return null;
+      }
+
+      const userEmail = authData.user.email;
+      console.log(`No role found for user ${userId}, checking email: ${userEmail}`);
+      
+      // Check if user should be admin based on email
+      const isAdminEmail = userEmail === 'jason.comeau@comansservices.com.au' || 
+                          userEmail === 'belinda.comeau@comansservices.com.au';
+      
+      const assignedRole: UserRole = isAdminEmail ? 'admin' : 'staff';
+      
+      // Try to create the role assignment
+      const { error: insertError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: userId,
+          role: assignedRole
+        });
+      
+      if (insertError) {
+        console.error("Error creating user role:", insertError);
+        // Return the determined role even if we couldn't save it
+        return assignedRole;
+      }
+      
+      console.log(`Created ${assignedRole} role for user ${userId}`);
+      return assignedRole;
     }
 
-    console.log(`User role fetched: ${data?.role || 'none'}`);
-    return data?.role as UserRole || null;
+    const role = roleData?.role as UserRole || null;
+    console.log(`User role fetched: ${role || 'none'}`);
+    
+    // Additional check: ensure admin emails always have admin role
+    if (role) {
+      const { data: authData } = await supabase.auth.getUser();
+      const userEmail = authData.user?.email;
+      
+      if (userEmail && 
+          (userEmail === 'jason.comeau@comansservices.com.au' || 
+           userEmail === 'belinda.comeau@comansservices.com.au') &&
+          role !== 'admin') {
+        
+        console.log(`Correcting role for admin email ${userEmail}`);
+        
+        // Update to admin role
+        const { error: updateError } = await supabase
+          .from("user_roles")
+          .update({ role: 'admin' })
+          .eq("user_id", userId);
+        
+        if (updateError) {
+          console.error("Error updating user role to admin:", updateError);
+        } else {
+          console.log(`Updated role to admin for ${userEmail}`);
+          return 'admin';
+        }
+      }
+    }
+    
+    return role;
   } catch (error) {
     console.error("Error in fetchUserRole:", error);
     return null;

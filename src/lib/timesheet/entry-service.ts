@@ -12,12 +12,52 @@ export const fetchTimesheetEntries = async (
   try {
     console.log(`Fetching entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
     
-    // First, fetch the entries with a simpler query
-    const { data: entriesData, error: entriesError } = await supabase
+    // Get current user to check if they're admin
+    const { data: authData } = await supabase.auth.getUser();
+    const currentUserId = authData.user?.id;
+    
+    console.log("Current user ID:", currentUserId);
+    console.log("Requested user ID:", userId);
+    
+    // Build query - admins can see all entries, staff only see their own
+    let query = supabase
       .from("timesheet_entries")
       .select("*")
       .gte("entry_date", formatDate(startDate))
       .lte("entry_date", formatDate(endDate));
+
+    // For staff users, filter by their user ID
+    // For admin users, if a specific userId is provided, filter by that, otherwise show all
+    if (currentUserId === userId) {
+      // User is viewing their own data
+      query = query.eq("user_id", userId);
+    } else {
+      // Check if current user is admin by checking their role
+      try {
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", currentUserId)
+          .maybeSingle();
+        
+        if (roleData?.role === 'admin') {
+          // Admin can view any user's data or all data
+          if (userId && userId !== 'all') {
+            query = query.eq("user_id", userId);
+          }
+          console.log("Admin access granted for timesheet entries");
+        } else {
+          // Non-admin trying to view other user's data - restrict to their own
+          query = query.eq("user_id", currentUserId);
+          console.log("Non-admin user restricted to own entries");
+        }
+      } catch (roleError) {
+        console.error("Error checking user role, defaulting to user's own entries:", roleError);
+        query = query.eq("user_id", currentUserId);
+      }
+    }
+
+    const { data: entriesData, error: entriesError } = await query;
 
     if (entriesError) {
       console.error("Error fetching timesheet entries:", entriesError);
@@ -25,13 +65,13 @@ export const fetchTimesheetEntries = async (
     }
 
     if (!entriesData || entriesData.length === 0) {
-      console.log("No entries found for the specified date range");
+      console.log("No entries found for the specified date range and user");
       return [];
     }
 
     console.log(`Fetched ${entriesData.length} entries`);
     
-    // Then fetch the projects separately
+    // Fetch the projects separately
     const projectIds = [...new Set(entriesData.map(entry => entry.project_id))];
     
     if (projectIds.length === 0) {
@@ -63,7 +103,7 @@ export const fetchTimesheetEntries = async (
       project: projectsMap[entry.project_id]
     }));
 
-    // Always include user data for entries
+    // Include user data for entries if requested
     if (includeUserData) {
       const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
       
