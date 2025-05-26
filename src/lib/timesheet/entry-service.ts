@@ -7,7 +7,7 @@ export const fetchTimesheetEntries = async (
   userId: string,
   startDate: Date,
   endDate: Date,
-  includeUserData: boolean = false
+  includeUserData: boolean = true
 ): Promise<TimesheetEntry[]> => {
   try {
     console.log(`Fetching entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
@@ -21,13 +21,6 @@ export const fetchTimesheetEntries = async (
 
     if (entriesError) {
       console.error("Error fetching timesheet entries:", entriesError);
-      
-      // Handle database policy recursion errors specifically
-      if (entriesError.code === "42P17" || entriesError.message?.includes("infinite recursion")) {
-        console.error("Database policy recursion error detected in entries fetch");
-        throw new Error("Database configuration issue detected. Please contact your administrator.");
-      }
-      
       throw entriesError;
     }
 
@@ -70,47 +63,35 @@ export const fetchTimesheetEntries = async (
       project: projectsMap[entry.project_id]
     }));
 
-    // Only include user data if specifically requested and not experiencing recursion issues
+    // Always include user data for entries
     if (includeUserData) {
       const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
       
       if (userIds.length > 0) {
-        try {
-          const { data: usersData, error: usersError } = await supabase
-            .from("profiles")
-            .select("id, full_name, email, organization, time_zone")
-            .in("id", userIds);
-            
-          if (usersError) {
-            console.error("Error fetching users for entries:", usersError);
-            
-            // Handle database policy recursion errors for profiles
-            if (usersError.code === "42P17" || usersError.message?.includes("infinite recursion")) {
-              console.error("Database policy recursion error detected in profiles fetch - skipping user data");
-              // Don't throw error, just skip user data
-            } else {
-              console.log("Available user IDs:", userIds);
-            }
-          } else if (usersData && usersData.length > 0) {
-            console.log(`Fetched ${usersData.length} users for entries`);
-            
-            // Create a map of users by ID for quick lookup
-            const usersMap = usersData.reduce((acc, user) => {
-              acc[user.id] = user;
-              return acc;
-            }, {} as Record<string, any>);
-            
-            // Add user data to entries
-            entriesWithProjects = entriesWithProjects.map(entry => ({
-              ...entry,
-              user: usersMap[entry.user_id] || { id: entry.user_id }
-            }));
-            
-            console.log("Entries with user data:", entriesWithProjects);
-          }
-        } catch (userFetchError) {
-          console.error("Unexpected error fetching user data:", userFetchError);
-          // Continue without user data rather than failing completely
+        const { data: usersData, error: usersError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, organization, time_zone")
+          .in("id", userIds);
+          
+        if (!usersError && usersData && usersData.length > 0) {
+          console.log(`Fetched ${usersData.length} users for entries`);
+          
+          // Create a map of users by ID for quick lookup
+          const usersMap = usersData.reduce((acc, user) => {
+            acc[user.id] = user;
+            return acc;
+          }, {} as Record<string, any>);
+          
+          // Add user data to entries
+          entriesWithProjects = entriesWithProjects.map(entry => ({
+            ...entry,
+            user: usersMap[entry.user_id] || { id: entry.user_id }
+          }));
+          
+          console.log("Entries with user data:", entriesWithProjects);
+        } else {
+          console.error("Error fetching users for entries:", usersError);
+          console.log("Available user IDs:", userIds);
         }
       }
     }
