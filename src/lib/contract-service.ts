@@ -1,5 +1,4 @@
-
-import { supabase, executeSQL } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "./date-utils";
 
 export interface Service {
@@ -81,22 +80,28 @@ const ensureContractsTableExists = async (): Promise<boolean> => {
         console.log("Contracts table doesn't exist, creating it...");
         
         // Create the contracts table
-        const createResult = await executeSQL(`
-          CREATE TABLE IF NOT EXISTS public.contracts (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            name TEXT NOT NULL,
-            description TEXT,
-            customer_id UUID,
-            start_date DATE NOT NULL,
-            end_date DATE NOT NULL,
-            status TEXT NOT NULL,
-            is_active BOOLEAN DEFAULT true,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
-          );
-        `);
+        const createResult = await supabase.supabase.rpc(
+          'create_table_if_not_exists',
+          {
+            table_name: 'contracts',
+            create_statement: `
+              CREATE TABLE IF NOT EXISTS public.contracts (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                name TEXT NOT NULL,
+                description TEXT,
+                customer_id UUID,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
+                status TEXT NOT NULL,
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+              );
+            `
+          }
+        );
         
-        if (!createResult.success) {
+        if (createResult.error) {
           console.error("Failed to create contracts table:", createResult.error);
           return false;
         }
