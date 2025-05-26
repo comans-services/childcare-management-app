@@ -20,37 +20,35 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const TimesheetPage = () => {
-  const { user } = useAuth();
-  const isMobile = useMediaQuery("(max-width: 768px)");
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+const handleDeleteAllEntries = async () => {
+  if (!user) {
+    console.error("TimesheetPage: No user found for deletion.");
+    return;
+  }
 
-  const handleDeleteAllEntries = async () => {
-    if (!user) return;
-    
-    setIsDeleting(true);
-    try {
-      const deletedCount = await deleteAllTimesheetEntries(user.id);
-      toast({
-        title: "Entries deleted",
-        description: `Successfully deleted ${deletedCount} timesheet entries.`,
-      });
-      // Force refresh of the WeeklyView component
-      setRefreshKey(prev => prev + 1);
-    } catch (error) {
-      console.error("Error deleting entries:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete timesheet entries.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteDialogOpen(false);
-    }
-  };
+  console.log("Attempting to delete entries for user:", user.id);
+
+  setIsDeleting(true);
+  try {
+    const deletedCount = await deleteAllTimesheetEntries(user.id);
+    toast({
+      title: "Entries deleted",
+      description: `Successfully deleted ${deletedCount} timesheet entries.`,
+    });
+    setRefreshKey(prev => prev + 1);
+  } catch (error) {
+    console.error("Error deleting entries:", error);
+    toast({
+      title: "Error",
+      description: "Failed to delete timesheet entries.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsDeleting(false);
+    setIsDeleteDialogOpen(false);
+  }
+};
+
 
   return (
     <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-[110%] w-full">
