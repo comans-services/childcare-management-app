@@ -108,13 +108,23 @@ export const fetchReportData = async (
     console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
     console.log(`Filters:`, filters);
 
-    // Get current user for defensive filtering
+    // Get current user and check if they're an admin
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       console.log("No authenticated user found");
       return [];
     }
+
+    // Check user role to determine if they can access all data
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+    console.log(`User is admin: ${isAdmin}`);
 
     // Start with base query including joins for related data
     let query = supabase
@@ -123,8 +133,7 @@ export const fetchReportData = async (
         *,
         projects!inner(id, name, description, customer_id, budget_hours, is_active),
         profiles!inner(id, full_name, email, organization, time_zone)
-      `)
-      .eq('user_id', user.id); // Defensive filter
+      `);
 
     // Apply date range filters (required)
     const startDateStr = startDate.toISOString().slice(0, 10);
@@ -134,7 +143,15 @@ export const fetchReportData = async (
       .gte('entry_date', startDateStr)
       .lte('entry_date', endDateStr);
 
-    // RLS will automatically filter to user's own data
+    // Only filter by user_id if not an admin or if a specific user is requested
+    if (!isAdmin || filters.userId) {
+      const targetUserId = filters.userId || user.id;
+      query = query.eq('user_id', targetUserId);
+      console.log(`Filtering by user_id: ${targetUserId}`);
+    } else {
+      console.log("Admin user - fetching data for all users");
+    }
+
     if (filters.projectId) {
       query = query.eq("project_id", filters.projectId);
     }
@@ -143,7 +160,7 @@ export const fetchReportData = async (
       query = query.eq("projects.customer_id", filters.customerId);
     }
 
-    // Execute the query - RLS will automatically filter results
+    // Execute the query - RLS policies will handle access control
     const { data: entries, error } = await query.order("entry_date", { ascending: true });
     
     if (error) {
