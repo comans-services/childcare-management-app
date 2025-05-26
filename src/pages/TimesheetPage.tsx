@@ -41,7 +41,7 @@ const TimesheetPage = () => {
   const handleDeleteAllEntries = async () => {
     setIsDeleting(true);
     try {
-      // Only delete entries for the current authenticated user
+      // RLS will ensure only current user's entries are deleted
       const deletedCount = await deleteAllTimesheetEntries(user.id);
       toast({
         title: "Entries deleted",
@@ -93,8 +93,8 @@ const TimesheetPage = () => {
           <CardDescription className="text-sm">Your time entries for the current week</CardDescription>
         </CardHeader>
         <CardContent className="pt-2">
-          {/* Pass only the current user's ID to WeeklyView - no external user targeting allowed */}
-          <WeeklyView key={refreshKey} userId={user.id} />
+          {/* Remove userId prop - WeeklyView will use auth context internally */}
+          <WeeklyView key={refreshKey} />
         </CardContent>
       </Card>
 

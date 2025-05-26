@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -24,11 +25,7 @@ import WeekGrid from "./weekly-view/WeekGrid";
 import EmptyState from "./weekly-view/EmptyState";
 import TimeEntryDialog from "./TimeEntryDialog";
 
-interface WeeklyViewProps {
-  userId: string; // Accept userId prop but always validate against auth.uid()
-}
-
-const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
+const WeeklyView: React.FC = () => {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [weekDates, setWeekDates] = useState<Date[]>([]);
@@ -44,26 +41,15 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
 
-  // Security check: Ensure we only work with the authenticated user's data
-  const currentUserId = user?.id;
-  
   useEffect(() => {
     const dates = getCurrentWeekDates(currentDate);
     setWeekDates(dates);
   }, [currentDate]);
 
   const fetchData = async () => {
-    if (!currentUserId) {
+    if (!user?.id) {
       console.log("No authenticated user found, skipping data fetch");
       setError("Authentication required");
-      setLoading(false);
-      return;
-    }
-
-    // Security validation: Only allow fetching for the current authenticated user
-    if (userId !== currentUserId) {
-      console.error("Security violation: Attempted to fetch data for different user");
-      setError("Access denied: You can only view your own timesheet data");
       setLoading(false);
       return;
     }
@@ -72,7 +58,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
     setError(null);
     
     try {
-      console.log("Starting data fetch for authenticated user:", currentUserId);
+      console.log("Starting data fetch for authenticated user:", user.id);
       
       // Fetch projects first
       const projectsData = await fetchUserProjects();
@@ -83,10 +69,10 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
       if (weekDates.length > 0) {
         console.log("Fetching entries for date range:", weekDates[0], "to", weekDates[weekDates.length - 1]);
         const entriesData = await fetchTimesheetEntries(
-          currentUserId, // Always use the authenticated user's ID
+          user.id, // Always use the authenticated user's ID
           weekDates[0],
           weekDates[weekDates.length - 1],
-          true // Include user data
+          false // Don't include user data since we only show current user's entries
         );
         
         console.log("Successfully fetched entries:", entriesData.length);
@@ -108,10 +94,10 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
   };
 
   useEffect(() => {
-    if (weekDates.length > 0 && currentUserId) {
+    if (weekDates.length > 0 && user?.id) {
       fetchData();
     }
-  }, [weekDates, currentUserId, userId]);
+  }, [weekDates, user?.id]);
 
   const navigateToPreviousWeek = () => {
     setCurrentDate(getPreviousWeek(currentDate));
@@ -170,13 +156,13 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
     
-    if (!destination) return;
+    if (!destination || !user?.id) return;
     
     const draggedEntry = entries.find(entry => entry.id === draggableId);
     if (!draggedEntry) return;
 
     // Security check: Ensure the entry belongs to the current user
-    if (draggedEntry.user_id !== currentUserId) {
+    if (draggedEntry.user_id !== user.id) {
       toast({
         title: "Access Denied",
         description: "You can only modify your own entries.",
@@ -230,12 +216,8 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
   };
 
   // Security validation before rendering
-  if (!currentUserId) {
+  if (!user?.id) {
     return <div className="text-center text-gray-500">Please sign in to view your timesheet.</div>;
-  }
-
-  if (userId !== currentUserId) {
-    return <div className="text-center text-red-500">Access denied: You can only view your own timesheet data.</div>;
   }
 
   return (
@@ -262,7 +244,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
           ) : (
             <WeekGrid
               weekDates={weekDates}
-              userId={currentUserId} // Always use authenticated user ID
+              userId={user.id} // Always use authenticated user ID
               entries={entries}
               projects={projects}
               onEntryChange={fetchData}
@@ -283,11 +265,11 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
       )}
 
       {/* Time Entry Dialog */}
-      {selectedDate && (
+      {selectedDate && user?.id && (
         <TimeEntryDialog
           open={entryDialogOpen}
           onOpenChange={setEntryDialogOpen}
-          userId={currentUserId} // Always use authenticated user ID
+          userId={user.id} // Always use authenticated user ID
           date={selectedDate}
           projects={projects}
           existingEntry={editingEntry}

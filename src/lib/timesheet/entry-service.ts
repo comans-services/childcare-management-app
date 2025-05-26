@@ -7,7 +7,7 @@ export const fetchTimesheetEntries = async (
   userId: string,
   startDate: Date,
   endDate: Date,
-  includeUserData: boolean = true
+  includeUserData: boolean = false
 ): Promise<TimesheetEntry[]> => {
   try {
     console.log(`Fetching entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
@@ -25,6 +25,7 @@ export const fetchTimesheetEntries = async (
     }
     
     // Fetch entries with RLS automatically filtering by user_id = auth.uid()
+    // No need to add .eq('user_id', userId) as RLS handles this
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
@@ -76,43 +77,13 @@ export const fetchTimesheetEntries = async (
       project: projectsMap[entry.project_id]
     }));
 
-    // Fetch user data if requested
-    if (includeUserData) {
-      const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
-      
-      if (userIds.length > 0) {
-        const { data: usersData, error: usersError } = await supabase
-          .from("profiles")
-          .select("id, full_name, email, organization, time_zone")
-          .in("id", userIds);
-          
-        if (!usersError && usersData && usersData.length > 0) {
-          console.log(`Fetched ${usersData.length} users for entries`);
-          
-          // Create a map of users by ID for quick lookup
-          const usersMap = usersData.reduce((acc, user) => {
-            acc[user.id] = user;
-            return acc;
-          }, {} as Record<string, any>);
-          
-          // Add user data to entries
-          entriesWithProjects = entriesWithProjects.map(entry => ({
-            ...entry,
-            user: usersMap[entry.user_id] || { id: entry.user_id }
-          }));
-          
-          console.log("Entries with user data:", entriesWithProjects);
-        } else {
-          console.error("Error fetching users for entries:", usersError);
-          console.log("Available user IDs:", userIds);
-          
-          // Add basic user data even if fetch failed
-          entriesWithProjects = entriesWithProjects.map(entry => ({
-            ...entry,
-            user: { id: entry.user_id }
-          }));
-        }
-      }
+    // Since we're only showing current user's entries, we don't need to fetch other user data
+    // Just add the current user's basic info if requested
+    if (includeUserData && currentUser) {
+      entriesWithProjects = entriesWithProjects.map(entry => ({
+        ...entry,
+        user: { id: currentUser.id, full_name: 'You' }
+      }));
     }
 
     return entriesWithProjects;
@@ -167,15 +138,10 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       
       console.log("Entry updated successfully:", data?.[0]);
       
-      // Return entry with preserved project and user data
+      // Return entry with preserved project data
       const updatedEntry = data?.[0] as TimesheetEntry;
       if (entry.project) {
         updatedEntry.project = entry.project;
-      }
-      
-      // Preserve user data from the original entry
-      if (entry.user) {
-        updatedEntry.user = entry.user;
       }
       
       return updatedEntry;
@@ -193,15 +159,10 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       
       console.log("Entry created successfully:", data?.[0]);
       
-      // Return entry with preserved project and user data
+      // Return entry with preserved project data
       const newEntry = data?.[0] as TimesheetEntry;
       if (entry.project) {
         newEntry.project = entry.project;
-      }
-      
-      // Preserve user data from the original entry
-      if (entry.user) {
-        newEntry.user = entry.user;
       }
       
       return newEntry;
@@ -388,12 +349,8 @@ export const fetchReportData = async (
       .gte('entry_date', startDateStr)
       .lte('entry_date', endDateStr);
 
-    // For regular users, only show their own data (RLS will handle this)
-    // For admin users, they can filter by userId if provided
-    if (filters.userId) {
-      query = query.eq("user_id", filters.userId);
-    }
-
+    // For regular users, RLS will automatically filter to their own data
+    // For admin users who want to see all data, they would need special handling
     if (filters.projectId) {
       query = query.eq("project_id", filters.projectId);
     }
