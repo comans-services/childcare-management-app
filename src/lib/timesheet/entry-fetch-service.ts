@@ -104,77 +104,53 @@ export const fetchReportData = async (
   } = {}
 ): Promise<TimesheetEntry[]> => {
   try {
-    console.log(`=== FETCHING REPORT DATA ===`);
+    console.log(`=== FETCHING REPORT DATA (ADMIN FUNCTION) ===`);
     console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
     console.log(`Filters:`, filters);
 
-    // Get current user and check if they're an admin
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      console.log("No authenticated user found");
-      return [];
-    }
-
-    // Check user role to determine if they can access all data
-    const { data: userProfile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    const isAdmin = userProfile?.role === 'admin';
-    console.log(`User is admin: ${isAdmin}`);
-
-    // Start with base query including joins for related data
-    let query = supabase
-      .from("timesheet_entries")
-      .select(`
-        *,
-        projects!inner(id, name, description, customer_id, budget_hours, is_active),
-        profiles!inner(id, full_name, email, organization, time_zone)
-      `);
-
-    // Apply date range filters (required)
-    const startDateStr = startDate.toISOString().slice(0, 10);
-    const endDateStr = endDate.toISOString().slice(0, 10);
-    
-    query = query
-      .gte('entry_date', startDateStr)
-      .lte('entry_date', endDateStr);
-
-    // Only filter by user_id if not an admin or if a specific user is requested
-    if (!isAdmin || filters.userId) {
-      const targetUserId = filters.userId || user.id;
-      query = query.eq('user_id', targetUserId);
-      console.log(`Filtering by user_id: ${targetUserId}`);
-    } else {
-      console.log("Admin user - fetching data for all users");
-    }
-
-    if (filters.projectId) {
-      query = query.eq("project_id", filters.projectId);
-    }
-
-    if (filters.customerId) {
-      query = query.eq("projects.customer_id", filters.customerId);
-    }
-
-    // Execute the query - RLS policies will handle access control
-    const { data: entries, error } = await query.order("entry_date", { ascending: true });
+    // Use the new admin-only reporting function
+    const { data: reportData, error } = await supabase.rpc('timesheet_entries_report', {
+      p_start_date: startDate.toISOString().slice(0, 10),
+      p_end_date: endDate.toISOString().slice(0, 10),
+      p_user_id: filters.userId || null,
+      p_project_id: filters.projectId || null,
+      p_customer_id: filters.customerId || null
+    });
     
     if (error) {
-      console.error("Error fetching report data:", error);
+      console.error("Error calling admin reporting function:", error);
       throw error;
     }
     
-    console.log(`Fetched ${entries?.length || 0} entries for report`);
+    console.log(`Admin function returned ${reportData?.length || 0} entries`);
     
     // Transform the data to match the expected TimesheetEntry format
-    const transformedData = entries?.map(entry => ({
-      ...entry,
-      project: entry.projects,
-      user: entry.profiles
+    const transformedData = reportData?.map((entry: any) => ({
+      id: entry.id,
+      user_id: entry.user_id,
+      project_id: entry.project_id,
+      entry_date: entry.entry_date,
+      hours_logged: entry.hours_logged,
+      created_at: entry.created_at,
+      updated_at: entry.updated_at,
+      notes: entry.notes,
+      jira_task_id: entry.jira_task_id,
+      start_time: entry.start_time,
+      end_time: entry.end_time,
+      // Add the joined data as nested objects
+      project: {
+        id: entry.project_id,
+        name: entry.project_name,
+        description: entry.project_description,
+        customer_id: entry.project_customer_id
+      },
+      user: {
+        id: entry.user_id,
+        full_name: entry.user_full_name,
+        email: entry.user_email,
+        organization: entry.user_organization,
+        time_zone: entry.user_time_zone
+      }
     })) || [];
     
     return transformedData;
