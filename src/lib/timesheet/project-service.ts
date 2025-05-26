@@ -8,6 +8,7 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
     const { data, error } = await supabase
       .from("projects")
       .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id")
+      .eq("user_id", userId)
       .order("is_active", { ascending: false })
       .order("name", { ascending: true });
 

@@ -16,6 +16,7 @@ export const fetchTimesheetEntries = async (
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
+      .eq("user_id", userId)
       .gte("entry_date", formatDate(startDate))
       .lte("entry_date", formatDate(endDate));
 

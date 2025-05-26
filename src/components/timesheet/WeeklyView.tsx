@@ -47,7 +47,7 @@ const WeeklyView: React.FC = () => {
   }, [currentDate]);
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!user?.id) return;
 
     setLoading(true);
     setError(null);
@@ -87,10 +87,11 @@ const WeeklyView: React.FC = () => {
   };
 
   useEffect(() => {
-    if (weekDates.length > 0 && user) {
+    if (weekDates.length > 0 && user?.id) {
       fetchData();
     }
-  }, [weekDates, user]);
+  }, [weekDates, user?.id]); // ✅ Depend explicitly on user.id
+
 
   const navigateToPreviousWeek = () => {
     setCurrentDate(getPreviousWeek(currentDate));
