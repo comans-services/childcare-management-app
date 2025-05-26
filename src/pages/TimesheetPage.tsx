@@ -29,7 +29,6 @@ const TimesheetPage = () => {
 
   // Redirect if no user is authenticated
   if (!user) {
-    console.log("TimesheetPage: No authenticated user found");
     return (
       <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-[110%] w-full">
         <div className="p-4 md:p-8 text-center">
@@ -39,12 +38,9 @@ const TimesheetPage = () => {
     );
   }
 
-  console.log("TimesheetPage: Authenticated user:", user.id);
-
   const handleDeleteAllEntries = async () => {
     setIsDeleting(true);
     try {
-      console.log("Deleting all entries for user:", user.id);
       // Only delete entries for the current authenticated user
       const deletedCount = await deleteAllTimesheetEntries(user.id);
       toast({
@@ -72,7 +68,6 @@ const TimesheetPage = () => {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">My Timesheet</h1>
           <p className="text-gray-600 text-sm md:text-base">Track and manage your working hours</p>
-          <p className="text-xs text-gray-400 mt-1">User: {user.email} (ID: {user.id})</p>
         </div>
         
         <Button 
@@ -98,7 +93,7 @@ const TimesheetPage = () => {
           <CardDescription className="text-sm">Your time entries for the current week</CardDescription>
         </CardHeader>
         <CardContent className="pt-2">
-          {/* Pass ONLY the current user's ID to WeeklyView - absolutely no external user targeting allowed */}
+          {/* Pass only the current user's ID to WeeklyView - no external user targeting allowed */}
           <WeeklyView key={refreshKey} userId={user.id} />
         </CardContent>
       </Card>

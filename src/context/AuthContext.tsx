@@ -34,7 +34,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session check:", session?.user?.id);
       setSession(session);
       setUser(session?.user || null);
       if (session?.user) {
@@ -46,7 +45,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("Auth state change:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user || null);
         if (session?.user) {
@@ -65,10 +63,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserRole = async (userId: string) => {
     try {
-      console.log("Fetching role for user:", userId);
       const { data, error } = await supabase
         .from("profiles")
-        .select("role, email, full_name")
+        .select("role, email")  // Also fetch email
         .eq("id", userId)
         .single();
 
@@ -78,7 +75,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data) {
-        console.log("User profile data:", data);
         setUserRole(data.role as "employee" | "admin" || "employee");
         
         // Update user profile with email if missing
@@ -101,7 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log("Signing in user:", email);
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -127,7 +122,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      console.log("Signing up user:", email);
       const { error, data } = await supabase.auth.signUp({
         email,
         password,
@@ -149,7 +143,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Create profile after signup, including email field
       if (data.user) {
-        console.log("Creating profile for new user:", data.user.id);
         const { error: profileError } = await supabase
           .from("profiles")
           .insert([
@@ -177,7 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      console.log("Signing out user:", user?.id);
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -188,11 +180,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         throw error;
       }
-
-      // Clear local state
-      setSession(null);
-      setUser(null);
-      setUserRole(null);
 
       toast({
         title: "Signed out successfully",

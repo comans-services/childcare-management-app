@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -63,7 +62,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
 
     // Security validation: Only allow fetching for the current authenticated user
     if (userId !== currentUserId) {
-      console.error(`Security violation: Component received userId ${userId} but current user is ${currentUserId}`);
+      console.error("Security violation: Attempted to fetch data for different user");
       setError("Access denied: You can only view your own timesheet data");
       setLoading(false);
       return;
@@ -74,8 +73,6 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
     
     try {
       console.log("Starting data fetch for authenticated user:", currentUserId);
-      console.log("WeeklyView userId prop:", userId);
-      console.log("Date range:", weekDates[0], "to", weekDates[weekDates.length - 1]);
       
       // Fetch projects first
       const projectsData = await fetchUserProjects();
@@ -93,14 +90,7 @@ const WeeklyView: React.FC<WeeklyViewProps> = ({ userId }) => {
         );
         
         console.log("Successfully fetched entries:", entriesData.length);
-        
-        // Additional client-side validation: ensure all entries belong to current user
-        const validEntries = entriesData.filter(entry => entry.user_id === currentUserId);
-        if (validEntries.length !== entriesData.length) {
-          console.warn(`Filtered out ${entriesData.length - validEntries.length} entries that don't belong to current user`);
-        }
-        
-        setEntries(validEntries);
+        setEntries(entriesData);
       }
     } catch (error) {
       console.error("Error fetching timesheet data:", error);
