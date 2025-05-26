@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "../date-utils";
 import { TimesheetEntry } from "./types";
@@ -92,16 +91,9 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     console.log("=== SAVING TIMESHEET ENTRY ===");
     console.log("Entry data:", entry);
     
-    // Get current user for user_id
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      throw new Error("Authentication required");
-    }
-    
     // Create a clean data object for the database operation
+    // Note: user_id is now automatically set by the database trigger
     const dbEntry = {
-      user_id: user.id, // Always use authenticated user's ID
       project_id: entry.project_id,
       entry_date: entry.entry_date,
       hours_logged: entry.hours_logged,
@@ -111,7 +103,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       end_time: entry.end_time || null,
     };
 
-    console.log("Database entry data:", dbEntry);
+    console.log("Database entry data (user_id will be auto-assigned by trigger):", dbEntry);
     
     if (entry.id) {
       console.log(`Updating existing entry: ${entry.id}`);
@@ -138,9 +130,9 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       
       return updatedEntry;
     } else {
-      console.log("Creating new entry");
+      console.log("Creating new entry (user_id will be auto-assigned by trigger)");
       
-      // Create new entry - RLS will ensure user_id matches auth.uid()
+      // Create new entry - trigger will automatically set user_id to auth.uid()
       const { data, error } = await supabase
         .from("timesheet_entries")
         .insert(dbEntry)
@@ -171,13 +163,6 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
   try {
     console.log(`Duplicating entry ${entryId}`);
     
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      throw new Error("Authentication required");
-    }
-    
     // First get the original entry - RLS will ensure we only get user's own entries
     const { data: originalEntry, error: fetchError } = await supabase
       .from("timesheet_entries")
@@ -194,9 +179,8 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
       throw new Error("Original entry not found or access denied");
     }
     
-    // Create a new entry with the same data but a new ID
+    // Create a new entry with the same data but no user_id (trigger will set it)
     const newEntryData = {
-      user_id: user.id, // Always use authenticated user's ID
       project_id: originalEntry.project_id,
       entry_date: originalEntry.entry_date,
       hours_logged: originalEntry.hours_logged,
@@ -206,7 +190,7 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
       end_time: originalEntry.end_time
     };
     
-    console.log("Creating duplicate entry:", newEntryData);
+    console.log("Creating duplicate entry (user_id will be auto-assigned by trigger):", newEntryData);
     
     const { data: newEntry, error: insertError } = await supabase
       .from("timesheet_entries")
