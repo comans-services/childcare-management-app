@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -77,36 +76,66 @@ const Dashboard = () => {
       if (!session?.user?.id) {
         throw new Error("Dashboard: session.user.id is missing");
       }
-      console.log(`Fetching timesheet entries for dashboard: User ID: ${session.user.id}, Date Range: ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
+      
+      console.log(`Dashboard: Fetching timesheet entries for user: ${session.user.id}, Date Range: ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
+      
       try {
-        const result = await fetchTimesheetEntries(session.user.id, startDate, endDate);
-        console.log(`Dashboard: Fetched ${result.length} timesheet entries`);
+        // Fetch without user data to avoid profiles table recursion issue
+        const result = await fetchTimesheetEntries(session.user.id, startDate, endDate, false);
+        console.log(`Dashboard: Successfully fetched ${result.length} timesheet entries`);
         return result;
       } catch (err) {
-        console.error("Error fetching timesheet entries for dashboard:", err);
+        console.error("Dashboard: Error fetching timesheet entries:", err);
+        
+        // Handle database policy recursion errors specifically
+        if (err?.code === "42P17" || err?.message?.includes("infinite recursion")) {
+          console.error("Dashboard: Database policy recursion error detected");
+          throw new Error("Database configuration issue detected. Please contact your administrator.");
+        }
+        
         throw err;
       }
     },
     enabled: !!session?.user?.id,
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: (failureCount, error) => {
+      // Don't retry on database policy errors
+      if (error?.message?.includes("Database configuration issue")) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 
-  const { data: projects = [], isLoading: projectsLoading } = useQuery({
+  const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
       console.log("Dashboard: Fetching projects");
       try {
         const result = await fetchUserProjects();
-        console.log(`Dashboard: Fetched ${result.length} projects`);
+        console.log(`Dashboard: Successfully fetched ${result.length} projects`);
         return result;
       } catch (err) {
-        console.error("Error fetching projects for dashboard:", err);
+        console.error("Dashboard: Error fetching projects:", err);
+        
+        // Handle database policy recursion errors specifically
+        if (err?.code === "42P17" || err?.message?.includes("infinite recursion")) {
+          console.error("Dashboard: Database policy recursion error detected for projects");
+          // Return empty array to prevent blocking the UI
+          return [];
+        }
+        
         throw err;
       }
     },
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: (failureCount, error) => {
+      // Don't retry on database policy errors
+      if (error?.code === "42P17" || error?.message?.includes("infinite recursion")) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 
   const { data: customers = [], isLoading: customersLoading } = useQuery({
@@ -115,10 +144,10 @@ const Dashboard = () => {
       console.log("Dashboard: Fetching customers");
       try {
         const result = await fetchCustomers();
-        console.log(`Dashboard: Fetched ${result.length} customers`);
+        console.log(`Dashboard: Successfully fetched ${result.length} customers`);
         return result;
       } catch (err) {
-        console.error("Error fetching customers for dashboard:", err);
+        console.error("Dashboard: Error fetching customers:", err);
         throw err;
       }
     },
@@ -195,7 +224,7 @@ const Dashboard = () => {
       }
 
       const projectId = entry.project_id;
-      const projectName = entry.project?.name || "Unknown Project";
+      const projectName = entry.project?.name || projects.find(p => p.id === projectId)?.name || "Unknown Project";
       
       if (!acc[projectId]) {
         acc[projectId] = {
@@ -212,7 +241,7 @@ const Dashboard = () => {
 
     console.log("Dashboard: Project hours calculation result:", result);
     return result;
-  }, [timesheetEntries]);
+  }, [timesheetEntries, projects]);
   
   const projectsChartData = Object.values(projectHours);
   console.log("Dashboard: Projects chart data:", projectsChartData);
@@ -339,7 +368,7 @@ const Dashboard = () => {
 
   const hasEntries = timesheetEntries && timesheetEntries.length > 0;
   const isLoading = entriesLoading || projectsLoading || customersLoading;
-  const hasError = !!entriesError;
+  const hasError = !!entriesError || !!projectsError;
 
   const allDaysHaveEntries = checkDailyEntries();
   const isTodayComplete = dailyEntries
@@ -458,12 +487,15 @@ const Dashboard = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
         <p className="text-gray-600">Welcome to your timesheet dashboard</p>
-        {entriesError && (
+        {(entriesError || projectsError) && (
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>
-              There was an error loading your timesheet data. Please refresh the page.
+              {entriesError?.message?.includes("Database configuration") || projectsError?.message?.includes("Database configuration")
+                ? "Database configuration issue detected. Please contact your administrator."
+                : "There was an error loading your timesheet data. Please refresh the page."
+              }
             </AlertDescription>
           </Alert>
         )}
@@ -652,13 +684,23 @@ const Dashboard = () => {
             <CardDescription>Distribution of your hours across projects</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="h-80 flex items-center justify-center">
-                <p className="text-gray-400">Loading project data...</p>
+            {projectsLoading ? (
+              <div className="h-80 flex flex-col items-center justify-center space-y-4">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-64 w-full" />
               </div>
-            ) : hasError ? (
+            ) : projectsError ? (
               <div className="h-80 flex items-center justify-center text-red-500">
-                <p>Error loading project data. Please refresh the page.</p>
+                <div className="text-center">
+                  <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                  <p>Error loading project data.</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {projectsError?.message?.includes("Database configuration") 
+                      ? "Database configuration issue detected."
+                      : "Please refresh the page."
+                    }
+                  </p>
+                </div>
               </div>
             ) : projectsChartData.length > 0 ? (
               <ChartContainer className="aspect-video h-80" config={{}}>
@@ -684,13 +726,18 @@ const Dashboard = () => {
             <CardDescription>Distribution of your hours across customers</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="h-80 flex items-center justify-center">
-                <p className="text-gray-400">Loading customer data...</p>
+            {customersLoading || projectsLoading ? (
+              <div className="h-80 flex flex-col items-center justify-center space-y-4">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-64 w-full" />
               </div>
             ) : hasError ? (
               <div className="h-80 flex items-center justify-center text-red-500">
-                <p>Error loading customer data. Please refresh the page.</p>
+                <div className="text-center">
+                  <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                  <p>Error loading customer data.</p>
+                  <p className="text-sm text-gray-500 mt-1">Please refresh the page.</p>
+                </div>
               </div>
             ) : customersChartData.length > 0 ? (
               <ChartContainer className="aspect-video h-80" config={{}}>

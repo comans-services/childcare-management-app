@@ -20,6 +20,7 @@ import { DropResult } from "react-beautiful-dnd";
 import WeekNavigation from "./weekly-view/WeekNavigation";
 import WeeklyProgressBar from "./weekly-view/WeeklyProgressBar";
 import LoadingState from "./weekly-view/LoadingState";
+import SkeletonLoadingState from "./weekly-view/SkeletonLoadingState";
 import ErrorState from "./weekly-view/ErrorState";
 import WeekGrid from "./weekly-view/WeekGrid";
 import EmptyState from "./weekly-view/EmptyState";
@@ -32,8 +33,11 @@ const WeeklyView: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [projectsLoading, setProjectsLoading] = useState<boolean>(true);
+  const [entriesLoading, setEntriesLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [weeklyTarget] = useState(40); // Default weekly target of 40 hours
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const [weeklyTarget] = useState(40);
   const [viewMode, setViewMode] = useState<"today" | "week">("week");
   
   // Time entry dialog state
@@ -46,58 +50,139 @@ const WeeklyView: React.FC = () => {
     setWeekDates(dates);
   }, [currentDate]);
 
+  const fetchProjects = async () => {
+    console.log("WeeklyView: Fetching projects...");
+    setProjectsLoading(true);
+    
+    try {
+      const projectsData = await fetchUserProjects();
+      console.log(`WeeklyView: Successfully fetched ${projectsData.length} projects`);
+      setProjects(projectsData);
+      return projectsData;
+    } catch (err) {
+      console.error("WeeklyView: Projects fetch error:", err);
+      
+      // Handle specific database policy errors
+      if (err?.code === "42P17" || err?.message?.includes("infinite recursion")) {
+        console.error("WeeklyView: Database policy recursion error detected");
+        setError("Database configuration issue detected. Please contact your administrator.");
+      } else {
+        setError("Failed to load projects. Please try again.");
+      }
+      
+      return [] as Project[];
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
+  const fetchEntries = async () => {
+    if (!user || weekDates.length === 0) {
+      console.log("WeeklyView: Cannot fetch entries - missing user or week dates");
+      setEntriesLoading(false);
+      return [];
+    }
+
+    console.log("WeeklyView: Fetching entries...", {
+      userId: user.id,
+      startDate: weekDates[0],
+      endDate: weekDates[weekDates.length - 1]
+    });
+    
+    setEntriesLoading(true);
+
+    try {
+      // Simplified fetch without user data to avoid the profiles table recursion issue
+      const entriesData = await fetchTimesheetEntries(
+        user.id,
+        weekDates[0],
+        weekDates[weekDates.length - 1],
+        false // Disable user data fetching to avoid profiles table recursion
+      );
+      
+      console.log(`WeeklyView: Successfully fetched ${entriesData.length} entries`);
+      setEntries(entriesData);
+      return entriesData;
+    } catch (err) {
+      console.error("WeeklyView: Entries fetch error:", err);
+      
+      // Handle specific database policy errors
+      if (err?.code === "42P17" || err?.message?.includes("infinite recursion")) {
+        console.error("WeeklyView: Database policy recursion error detected");
+        setError("Database configuration issue detected. Please contact your administrator.");
+      } else if (err?.response) {
+        console.error("WeeklyView: API error response:", err.response);
+        setError("Failed to load timesheet entries. Please check your connection.");
+      } else {
+        setError("Failed to load timesheet entries. Please try again.");
+      }
+      
+      return [] as TimesheetEntry[];
+    } finally {
+      setEntriesLoading(false);
+    }
+  };
+
   const fetchData = async () => {
     if (!user) {
       console.error("WeeklyView: No user found.");
       setError("User is not authenticated.");
+      setLoading(false);
       return;
     }
 
-    console.log("WeeklyView: user ID", user.id);
-    console.log("WeeklyView: weekDates", weekDates);
-
+    console.log("WeeklyView: Starting data fetch for user ID:", user.id);
     setLoading(true);
     setError(null);
 
     try {
-      const projectsData = await fetchUserProjects().catch(err => {
-        console.error("Projects error:", err);
-        setError("Failed to load projects. Please try again.");
-        return [] as Project[];
-      });
+      // Fetch projects and entries in parallel but handle errors independently
+      const [projectsResult, entriesResult] = await Promise.allSettled([
+        fetchProjects(),
+        fetchEntries()
+      ]);
 
-      setProjects(projectsData);
-
-      if (weekDates.length > 0) {
-        const entriesData = await fetchTimesheetEntries(
-          user.id,
-          weekDates[0],
-          weekDates[weekDates.length - 1],
-          true
-        ).catch(err => {
-          console.error("Entries error:", err);
-          if (err?.response) {
-            console.error("API error response:", err.response);
-          }
-          setError("Failed to load timesheet entries. Please try again.");
-          return [] as TimesheetEntry[];
-        });
-
-        setEntries(entriesData);
+      // Handle projects result
+      if (projectsResult.status === 'fulfilled') {
+        setProjects(projectsResult.value);
+      } else {
+        console.error("WeeklyView: Projects fetch failed:", projectsResult.reason);
       }
+
+      // Handle entries result
+      if (entriesResult.status === 'fulfilled') {
+        setEntries(entriesResult.value);
+      } else {
+        console.error("WeeklyView: Entries fetch failed:", entriesResult.reason);
+      }
+
     } catch (error) {
-      console.error("Error fetching timesheet data:", error);
-      setError("Failed to load timesheet data. Please try again.");
+      console.error("WeeklyView: Unexpected error during data fetch:", error);
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Initial data fetch
   useEffect(() => {
     if (weekDates.length > 0 && user) {
       fetchData();
     }
   }, [weekDates, user]);
+
+  // Retry mechanism with exponential backoff
+  const handleRetry = async () => {
+    console.log(`WeeklyView: Retry attempt ${retryCount + 1}`);
+    setRetryCount(prev => prev + 1);
+    
+    // Add a small delay for subsequent retries
+    if (retryCount > 0) {
+      await new Promise(resolve => setTimeout(resolve, Math.min(1000 * retryCount, 5000)));
+    }
+    
+    await fetchData();
+  };
 
   const navigateToPreviousWeek = () => {
     setCurrentDate(getPreviousWeek(currentDate));
@@ -109,7 +194,6 @@ const WeeklyView: React.FC = () => {
 
   const navigateToCurrentWeek = () => {
     setCurrentDate(new Date());
-    // If in today view, make sure we show today's entries
     if (viewMode === "today") {
       setViewMode("today");
     }
@@ -135,17 +219,14 @@ const WeeklyView: React.FC = () => {
     return sum + hoursLogged;
   }, 0);
 
-  // Calculate the target based on view mode
   const progressTarget = viewMode === "today" ? 8 : weeklyTarget;
 
-  // Handler for opening the entry dialog
   const handleOpenEntryDialog = (date: Date, entry?: TimesheetEntry) => {
     setSelectedDate(date);
     setEditingEntry(entry);
     setEntryDialogOpen(true);
   };
 
-  // Handler for saving an entry
   const handleSaveEntry = (savedEntry?: TimesheetEntry) => {
     fetchData(); // Refresh all data after saving
     setEntryDialogOpen(false);
@@ -172,14 +253,14 @@ const WeeklyView: React.FC = () => {
         entry_date: formatDate(destDate)
       };
       
-      console.log("Updating entry in database:", {
+      console.log("WeeklyView: Updating entry in database:", {
         originalEntry: draggedEntry,
         updatedEntry: updatedEntry
       });
       
       const savedEntry = await saveTimesheetEntry(updatedEntry);
       
-      console.log("Entry saved in database:", savedEntry);
+      console.log("WeeklyView: Entry saved in database:", savedEntry);
       
       setEntries(prevEntries => 
         prevEntries.map(entry => 
@@ -196,7 +277,7 @@ const WeeklyView: React.FC = () => {
         description: `Entry moved to ${formatDate(destDate)}`,
       });
     } catch (error) {
-      console.error("Failed to update entry date:", error);
+      console.error("WeeklyView: Failed to update entry date:", error);
       toast({
         title: "Error",
         description: "Failed to move entry. Please try again.",
@@ -204,6 +285,11 @@ const WeeklyView: React.FC = () => {
       });
     }
   };
+
+  // Show skeleton loading on initial load
+  if (loading && retryCount === 0) {
+    return <SkeletonLoadingState />;
+  }
 
   return (
     <div className="space-y-4 w-full max-w-full">
@@ -213,7 +299,7 @@ const WeeklyView: React.FC = () => {
         navigateToNextWeek={navigateToNextWeek}
         navigateToCurrentWeek={navigateToCurrentWeek}
         error={error}
-        fetchData={fetchData}
+        fetchData={handleRetry}
         viewMode={viewMode}
         toggleViewMode={toggleViewMode}
       />
@@ -221,7 +307,7 @@ const WeeklyView: React.FC = () => {
       {loading ? (
         <LoadingState />
       ) : error ? (
-        <ErrorState error={error} onRetry={fetchData} />
+        <ErrorState error={error} onRetry={handleRetry} />
       ) : (
         <div className="w-full max-w-full overflow-hidden">
           {projects.length === 0 ? (
@@ -249,7 +335,6 @@ const WeeklyView: React.FC = () => {
         />
       )}
 
-      {/* Time Entry Dialog */}
       {selectedDate && (
         <TimeEntryDialog
           open={entryDialogOpen}
