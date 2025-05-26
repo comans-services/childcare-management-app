@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -50,7 +49,7 @@ const getColorByPercentage = (percentage: number): string => {
 };
 
 const Dashboard = () => {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isHRDialogOpen, setIsHRDialogOpen] = useState(false);
@@ -66,27 +65,58 @@ const Dashboard = () => {
   const [completeWeek, setCompleteWeek] = useState(false);
 
   useEffect(() => {
-    if (!session) {
+    if (!session || !user) {
+      console.log("No session or user found, redirecting to auth");
       navigate("/auth");
     }
-  }, [session, navigate]);
+  }, [session, user, navigate]);
 
   const { data: timesheetEntries = [], isLoading: entriesLoading, error: entriesError } = useQuery({
-    queryKey: ["timesheet", session?.user?.id, startDate, endDate],
+    queryKey: ["timesheet", user?.id, startDate, endDate],
     queryFn: async () => {
-      if (!session?.user?.id) return Promise.resolve([]);
-      console.log(`Fetching timesheet entries for dashboard: User ID: ${session.user.id}, Date Range: ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
+      if (!session?.user?.id || !user?.id) {
+        console.log("No authenticated session found for dashboard");
+        return Promise.resolve([]);
+      }
+      
+      // Validate session integrity
+      if (session.user.id !== user.id) {
+        console.error("Session user mismatch in dashboard!", {
+          sessionUserId: session.user.id,
+          contextUserId: user.id
+        });
+        throw new Error("Session integrity error");
+      }
+      
+      console.log(`=== DASHBOARD DATA FETCH ===`);
+      console.log(`Session user: ${session.user.id} (${session.user.email})`);
+      console.log(`Date Range: ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
+      
       try {
-        // Fixed: Remove user ID parameter since RLS handles user filtering automatically
+        // RLS handles user filtering automatically - no need to pass user ID
         const result = await fetchTimesheetEntries(startDate, endDate);
-        console.log(`Dashboard: Fetched ${result.length} timesheet entries`);
+        console.log(`Dashboard: Fetched ${result.length} timesheet entries via RLS`);
+        
+        // Additional safety check: verify all entries belong to current user
+        const invalidEntries = result.filter(entry => entry.user_id !== user.id);
+        if (invalidEntries.length > 0) {
+          console.error("SECURITY ALERT: Dashboard received invalid entries!", {
+            currentUserId: user.id,
+            invalidEntries: invalidEntries.map(e => ({ id: e.id, user_id: e.user_id }))
+          });
+          // Filter out invalid entries
+          const validEntries = result.filter(entry => entry.user_id === user.id);
+          console.log(`Dashboard: Filtered to ${validEntries.length} valid entries`);
+          return validEntries;
+        }
+        
         return result;
       } catch (err) {
         console.error("Error fetching timesheet entries for dashboard:", err);
         throw err;
       }
     },
-    enabled: !!session?.user?.id,
+    enabled: !!(session?.user?.id && user?.id),
     refetchOnWindowFocus: false,
     retry: 1,
   });
@@ -451,6 +481,17 @@ const Dashboard = () => {
     value: item.value,
     fill: item.color
   }));
+
+  // Security check before rendering
+  if (!session || !user) {
+    return (
+      <div className="container mx-auto p-4 space-y-6">
+        <div className="text-center text-gray-500">
+          <p>Please sign in to view your dashboard.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 space-y-6">

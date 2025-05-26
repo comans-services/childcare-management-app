@@ -1,7 +1,24 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "../date-utils";
 import { TimesheetEntry } from "./types";
+
+// Session validation helper
+const validateCurrentUser = async () => {
+  const { data: { user: currentUser }, error } = await supabase.auth.getUser();
+  
+  if (error) {
+    console.error("Error validating current user:", error);
+    throw new Error("Authentication validation failed");
+  }
+
+  if (!currentUser) {
+    console.error("No authenticated user found");
+    throw new Error("Authentication required");
+  }
+
+  console.log(`Session validated - Current user: ${currentUser.id} (${currentUser.email})`);
+  return currentUser;
+};
 
 export const fetchTimesheetEntries = async (
   startDate: Date,
@@ -9,19 +26,15 @@ export const fetchTimesheetEntries = async (
   includeUserData: boolean = false
 ): Promise<TimesheetEntry[]> => {
   try {
-    console.log(`Fetching entries from ${formatDate(startDate)} to ${formatDate(endDate)}`);
+    console.log(`=== FETCHING TIMESHEET ENTRIES ===`);
+    console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
+    console.log(`Include user data: ${includeUserData}`);
     
-    // Get current authenticated user to validate access
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    
-    if (!currentUser) {
-      throw new Error("Authentication required");
-    }
-
-    console.log(`Fetching entries for authenticated user: ${currentUser.id}`);
+    // Validate current user session
+    const currentUser = await validateCurrentUser();
+    console.log(`Fetching entries for authenticated user: ${currentUser.id} (${currentUser.email})`);
     
     // Fetch entries with RLS automatically filtering by user_id = auth.uid()
-    // No need to add .eq('user_id', userId) as RLS handles this
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
@@ -34,19 +47,32 @@ export const fetchTimesheetEntries = async (
       throw entriesError;
     }
 
+    console.log(`RLS filtered entries count: ${entriesData?.length || 0}`);
+    
     if (!entriesData || entriesData.length === 0) {
-      console.log("No entries found for the specified date range");
+      console.log("No entries found for the current user in the specified date range");
       return [];
     }
 
-    console.log(`Fetched ${entriesData.length} entries via RLS`);
-    
-    // Fetch projects separately
+    // Verify all entries belong to the current user (additional safety check)
+    const invalidEntries = entriesData.filter(entry => entry.user_id !== currentUser.id);
+    if (invalidEntries.length > 0) {
+      console.error("SECURITY ALERT: RLS policy leaked data!", {
+        currentUserId: currentUser.id,
+        invalidEntries: invalidEntries.map(e => ({ id: e.id, user_id: e.user_id }))
+      });
+      // Filter out invalid entries as a safeguard
+      const validEntries = entriesData.filter(entry => entry.user_id === currentUser.id);
+      console.log(`Filtered to ${validEntries.length} valid entries after security check`);
+    }
+
+    // Fetch projects separately (only get unique project IDs)
     const projectIds = [...new Set(entriesData.map(entry => entry.project_id))];
+    console.log(`Fetching ${projectIds.length} unique projects`);
     
     if (projectIds.length === 0) {
       console.log("No project IDs found in entries");
-      return entriesData;
+      return entriesData.filter(entry => entry.user_id === currentUser.id);
     }
     
     const { data: projectsData, error: projectsError } = await supabase
@@ -57,7 +83,7 @@ export const fetchTimesheetEntries = async (
     if (projectsError) {
       console.error("Error fetching projects for entries:", projectsError);
       // Return entries without project details rather than failing completely
-      return entriesData;
+      return entriesData.filter(entry => entry.user_id === currentUser.id);
     }
 
     console.log(`Fetched ${projectsData?.length || 0} projects for entries`);
@@ -68,10 +94,15 @@ export const fetchTimesheetEntries = async (
       return acc;
     }, {} as Record<string, any>);
 
-    let entriesWithProjects = entriesData.map(entry => ({
-      ...entry,
-      project: projectsMap[entry.project_id]
-    }));
+    // Only include entries that belong to the current user
+    let entriesWithProjects = entriesData
+      .filter(entry => entry.user_id === currentUser.id)
+      .map(entry => ({
+        ...entry,
+        project: projectsMap[entry.project_id]
+      }));
+
+    console.log(`Final filtered entries count: ${entriesWithProjects.length}`);
 
     // Add current user info if requested
     if (includeUserData && currentUser) {
@@ -90,14 +121,11 @@ export const fetchTimesheetEntries = async (
 
 export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
   try {
-    console.log("Saving timesheet entry:", entry);
+    console.log("=== SAVING TIMESHEET ENTRY ===");
+    console.log("Entry data:", entry);
     
-    // Get current authenticated user to validate access
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    
-    if (!currentUser) {
-      throw new Error("Authentication required");
-    }
+    // Validate current user session
+    const currentUser = await validateCurrentUser();
     
     // Create a clean data object for the database operation
     const dbEntry = {
@@ -114,6 +142,8 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     console.log("Database entry data:", dbEntry);
     
     if (entry.id) {
+      console.log(`Updating existing entry: ${entry.id}`);
+      
       // Update existing entry - RLS will ensure user can only update their own entries
       const { data, error } = await supabase
         .from("timesheet_entries")
@@ -136,6 +166,8 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       
       return updatedEntry;
     } else {
+      console.log("Creating new entry");
+      
       // Create new entry - RLS will ensure user_id matches auth.uid()
       const { data, error } = await supabase
         .from("timesheet_entries")
@@ -167,12 +199,8 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
   try {
     console.log(`Duplicating entry ${entryId}`);
     
-    // Get current authenticated user to validate access
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    
-    if (!currentUser) {
-      throw new Error("Authentication required");
-    }
+    // Validate current user session
+    const currentUser = await validateCurrentUser();
     
     // First get the original entry - RLS will ensure we only get user's own entries
     const { data: originalEntry, error: fetchError } = await supabase
@@ -227,12 +255,8 @@ export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
   try {
     console.log(`Deleting entry ${entryId}`);
     
-    // Get current authenticated user to validate access
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    
-    if (!currentUser) {
-      throw new Error("Authentication required");
-    }
+    // Validate current user session
+    const currentUser = await validateCurrentUser();
 
     // RLS will ensure user can only delete their own entries
     const { error } = await supabase
@@ -256,12 +280,8 @@ export const deleteAllTimesheetEntries = async (): Promise<number> => {
   try {
     console.log(`Deleting all timesheet entries for authenticated user`);
     
-    // Get current authenticated user to validate access
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    
-    if (!currentUser) {
-      throw new Error("Authentication required");
-    }
+    // Validate current user session
+    const currentUser = await validateCurrentUser();
     
     // First, get the count of entries that will be deleted - RLS will filter automatically
     const { count: entriesCount, error: countError } = await supabase
@@ -303,14 +323,12 @@ export const fetchReportData = async (
   } = {}
 ): Promise<TimesheetEntry[]> => {
   try {
-    console.log(`Fetching report data from ${formatDate(startDate)} to ${formatDate(endDate)} with filters:`, filters);
+    console.log(`=== FETCHING REPORT DATA ===`);
+    console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
+    console.log(`Filters:`, filters);
     
-    // Get current authenticated user
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    
-    if (!currentUser) {
-      throw new Error("Authentication required");
-    }
+    // Validate current user session
+    const currentUser = await validateCurrentUser();
 
     // Start with base query including joins for related data
     let query = supabase
