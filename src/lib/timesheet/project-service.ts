@@ -5,11 +5,9 @@ import { Project } from "./types";
 export const fetchUserProjects = async (): Promise<Project[]> => {
   try {
     console.log("Fetching projects...");
-    
     const { data, error } = await supabase
       .from("projects")
       .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id")
-      .or("is_active.eq.true,is_active.is.null")
       .order("is_active", { ascending: false })
       .order("name", { ascending: true });
 

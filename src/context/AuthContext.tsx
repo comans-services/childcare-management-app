@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,47 +63,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserRole = async (userId: string) => {
     try {
-      // Use the security definer function to safely get the role
-      const { data, error } = await supabase.rpc('get_current_user_role');
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role, email")  // Also fetch email
+        .eq("id", userId)
+        .single();
 
       if (error) {
         console.error("Error fetching user role:", error);
-        setUserRole("employee"); // Default fallback
         return;
       }
 
       if (data) {
-        setUserRole(data as "employee" | "manager" | "admin");
-      } else {
-        // If no role found, create a profile
-        console.log("No role found, creating default profile");
-        await createDefaultProfile(userId);
-        setUserRole("employee");
+        setUserRole(data.role as "employee" | "manager" | "admin" || "employee");
+        
+        // Update user profile with email if missing
+        if (!data.email && user?.email) {
+          console.log(`User profile missing email, updating with ${user.email}`);
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({ email: user.email })
+            .eq("id", userId);
+            
+          if (updateError) {
+            console.error("Error updating profile email:", updateError);
+          }
+        }
       }
     } catch (error) {
       console.error("Error fetching user role:", error);
-      setUserRole("employee"); // Default fallback
-    }
-  };
-
-  const createDefaultProfile = async (userId: string) => {
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .insert([
-          {
-            id: userId,
-            full_name: user?.user_metadata?.full_name || "",
-            role: "employee",
-            email: user?.email || "",
-          },
-        ]);
-
-      if (error) {
-        console.error("Error creating default profile:", error);
-      }
-    } catch (error) {
-      console.error("Error in createDefaultProfile:", error);
     }
   };
 

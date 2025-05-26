@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "../date-utils";
 import { TimesheetEntry } from "./types";
@@ -15,7 +16,6 @@ export const fetchTimesheetEntries = async (
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
-      .eq("user_id", userId)
       .gte("entry_date", formatDate(startDate))
       .lte("entry_date", formatDate(endDate));
 
@@ -63,19 +63,36 @@ export const fetchTimesheetEntries = async (
       project: projectsMap[entry.project_id]
     }));
 
-    // Only fetch user data if specifically requested and we have a user context
+    // Always include user data for entries
     if (includeUserData) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // For now, just add basic user info from the current session
-        entriesWithProjects = entriesWithProjects.map(entry => ({
-          ...entry,
-          user: { 
-            id: entry.user_id,
-            full_name: user.user_metadata?.full_name || user.email || 'Unknown User',
-            email: user.email || ''
-          }
-        }));
+      const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
+      
+      if (userIds.length > 0) {
+        const { data: usersData, error: usersError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, organization, time_zone")
+          .in("id", userIds);
+          
+        if (!usersError && usersData && usersData.length > 0) {
+          console.log(`Fetched ${usersData.length} users for entries`);
+          
+          // Create a map of users by ID for quick lookup
+          const usersMap = usersData.reduce((acc, user) => {
+            acc[user.id] = user;
+            return acc;
+          }, {} as Record<string, any>);
+          
+          // Add user data to entries
+          entriesWithProjects = entriesWithProjects.map(entry => ({
+            ...entry,
+            user: usersMap[entry.user_id] || { id: entry.user_id }
+          }));
+          
+          console.log("Entries with user data:", entriesWithProjects);
+        } else {
+          console.error("Error fetching users for entries:", usersError);
+          console.log("Available user IDs:", userIds);
+        }
       }
     }
 
