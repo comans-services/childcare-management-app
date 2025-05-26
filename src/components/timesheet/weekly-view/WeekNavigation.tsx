@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar, RefreshCw, CalendarDays } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/context/AuthContext";
+import UserSelector from "../UserSelector";
 
 interface WeekNavigationProps {
   weekDates: Date[];
@@ -14,6 +16,8 @@ interface WeekNavigationProps {
   fetchData: () => void;
   viewMode: "today" | "week";
   toggleViewMode: () => void;
+  selectedUserId?: string | null;
+  onUserSelect?: (userId: string | null) => void;
 }
 
 const WeekNavigation: React.FC<WeekNavigationProps> = ({
@@ -25,7 +29,12 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
   fetchData,
   viewMode,
   toggleViewMode,
+  selectedUserId,
+  onUserSelect,
 }) => {
+  const { userRole } = useAuth();
+  const isAdmin = userRole === "admin";
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -72,8 +81,6 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
           </Tooltip>
         </TooltipProvider>
         
-        {/* Removed "Go to Current Day/Week" button */}
-        
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -106,15 +113,27 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
           </Button>
         )}
       </div>
-      <div className="font-medium text-sm md:text-base">
-        {weekDates.length > 0 && (
-          <span className="rounded-full bg-primary/10 px-3 py-1 text-primary whitespace-nowrap">
-            {viewMode === "today" 
-              ? formatDateDisplay(new Date()) 
-              : `${formatDateDisplay(weekDates[0])} - ${formatDateDisplay(weekDates[weekDates.length - 1])}`
-            }
-          </span>
+      
+      <div className="flex items-center gap-4">
+        {/* User Selector - only visible for admins */}
+        {isAdmin && onUserSelect && (
+          <UserSelector 
+            selectedUserId={selectedUserId || null}
+            onUserSelect={onUserSelect}
+          />
         )}
+        
+        {/* Date Display */}
+        <div className="font-medium text-sm md:text-base">
+          {weekDates.length > 0 && (
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-primary whitespace-nowrap">
+              {viewMode === "today" 
+                ? formatDateDisplay(new Date()) 
+                : `${formatDateDisplay(weekDates[0])} - ${formatDateDisplay(weekDates[weekDates.length - 1])}`
+              }
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -26,7 +25,7 @@ import EmptyState from "./weekly-view/EmptyState";
 import TimeEntryDialog from "./TimeEntryDialog";
 
 const WeeklyView: React.FC = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [weekDates, setWeekDates] = useState<Date[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -35,11 +34,15 @@ const WeeklyView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [weeklyTarget] = useState(40); // Default weekly target of 40 hours
   const [viewMode, setViewMode] = useState<"today" | "week">("week");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   
   // Time entry dialog state
   const [entryDialogOpen, setEntryDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
+  
+  const isAdmin = userRole === "admin";
+  const effectiveUserId = isAdmin && selectedUserId ? selectedUserId : user?.id;
   
   useEffect(() => {
     const dates = getCurrentWeekDates(currentDate);
@@ -56,18 +59,18 @@ const WeeklyView: React.FC = () => {
     setError(null);
     
     try {
-      console.log("Starting data fetch for user:", user.id);
+      console.log("Starting data fetch for user:", effectiveUserId);
       
       // Fetch projects first
       const projectsData = await fetchUserProjects();
       console.log("Successfully fetched projects:", projectsData.length);
       setProjects(projectsData);
       
-      // Then fetch entries if we have valid dates
-      if (weekDates.length > 0) {
+      // Then fetch entries if we have valid dates and effective user
+      if (weekDates.length > 0 && effectiveUserId) {
         console.log("Fetching entries for date range:", weekDates[0], "to", weekDates[weekDates.length - 1]);
         const entriesData = await fetchTimesheetEntries(
-          user.id,
+          effectiveUserId,
           weekDates[0],
           weekDates[weekDates.length - 1],
           true // Include user data
@@ -95,7 +98,7 @@ const WeeklyView: React.FC = () => {
     if (weekDates.length > 0 && user) {
       fetchData();
     }
-  }, [weekDates, user]);
+  }, [weekDates, user, selectedUserId]);
 
   const navigateToPreviousWeek = () => {
     setCurrentDate(getPreviousWeek(currentDate));
@@ -115,6 +118,10 @@ const WeeklyView: React.FC = () => {
   
   const toggleViewMode = () => {
     setViewMode(prevMode => prevMode === "today" ? "week" : "today");
+  };
+
+  const handleUserSelect = (userId: string | null) => {
+    setSelectedUserId(userId);
   };
 
   // Filter entries based on the view mode
@@ -214,6 +221,8 @@ const WeeklyView: React.FC = () => {
         fetchData={fetchData}
         viewMode={viewMode}
         toggleViewMode={toggleViewMode}
+        selectedUserId={selectedUserId}
+        onUserSelect={isAdmin ? handleUserSelect : undefined}
       />
 
       {loading ? (
@@ -227,7 +236,7 @@ const WeeklyView: React.FC = () => {
           ) : (
             <WeekGrid
               weekDates={weekDates}
-              userId={user?.id || ""}
+              userId={effectiveUserId || ""}
               entries={entries}
               projects={projects}
               onEntryChange={fetchData}
@@ -252,7 +261,7 @@ const WeeklyView: React.FC = () => {
         <TimeEntryDialog
           open={entryDialogOpen}
           onOpenChange={setEntryDialogOpen}
-          userId={user?.id || ""}
+          userId={effectiveUserId || ""}
           date={selectedDate}
           projects={projects}
           existingEntry={editingEntry}

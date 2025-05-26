@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("role, email")  // Also fetch email
+        .select("role, email")
         .eq("id", userId)
         .single();
 
