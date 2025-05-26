@@ -100,7 +100,7 @@ const WeeklyView: React.FC = () => {
         const entriesData = await fetchTimesheetEntries(
           weekDates[0],
           weekDates[weekDates.length - 1],
-          false // Don't include user data since we only show current user's entries
+          { includeUser: false, forceUserId: user.id }   // ← ALWAYS self-only
         );
         
         console.log("Successfully fetched entries via RLS:", entriesData.length);
