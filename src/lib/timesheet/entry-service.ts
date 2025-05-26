@@ -4,13 +4,12 @@ import { formatDate } from "../date-utils";
 import { TimesheetEntry } from "./types";
 
 export const fetchTimesheetEntries = async (
-  userId: string,
   startDate: Date,
   endDate: Date,
   includeUserData: boolean = false
 ): Promise<TimesheetEntry[]> => {
   try {
-    console.log(`Fetching entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
+    console.log(`Fetching entries from ${formatDate(startDate)} to ${formatDate(endDate)}`);
     
     // Get current authenticated user to validate access
     const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -19,10 +18,7 @@ export const fetchTimesheetEntries = async (
       throw new Error("Authentication required");
     }
 
-    // Security check: Only allow fetching for the current authenticated user
-    if (userId !== currentUser.id) {
-      throw new Error("Access denied: You can only access your own timesheet entries");
-    }
+    console.log(`Fetching entries for authenticated user: ${currentUser.id}`);
     
     // Fetch entries with RLS automatically filtering by user_id = auth.uid()
     // No need to add .eq('user_id', userId) as RLS handles this
@@ -43,7 +39,7 @@ export const fetchTimesheetEntries = async (
       return [];
     }
 
-    console.log(`Fetched ${entriesData.length} entries`);
+    console.log(`Fetched ${entriesData.length} entries via RLS`);
     
     // Fetch projects separately
     const projectIds = [...new Set(entriesData.map(entry => entry.project_id))];
@@ -77,8 +73,7 @@ export const fetchTimesheetEntries = async (
       project: projectsMap[entry.project_id]
     }));
 
-    // Since we're only showing current user's entries, we don't need to fetch other user data
-    // Just add the current user's basic info if requested
+    // Add current user info if requested
     if (includeUserData && currentUser) {
       entriesWithProjects = entriesWithProjects.map(entry => ({
         ...entry,
@@ -102,11 +97,6 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     
     if (!currentUser) {
       throw new Error("Authentication required");
-    }
-
-    // Security check: Ensure user can only save their own entries
-    if (entry.user_id !== currentUser.id) {
-      throw new Error("Access denied: You can only modify your own timesheet entries");
     }
     
     // Create a clean data object for the database operation
@@ -197,12 +187,7 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
     }
     
     if (!originalEntry) {
-      throw new Error("Original entry not found");
-    }
-
-    // Security check: Ensure the entry belongs to the current user
-    if (originalEntry.user_id !== currentUser.id) {
-      throw new Error("Access denied: You can only duplicate your own entries");
+      throw new Error("Original entry not found or access denied");
     }
     
     // Create a new entry with the same data but a new ID
@@ -267,20 +252,15 @@ export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
   }
 };
 
-export const deleteAllTimesheetEntries = async (userId: string): Promise<number> => {
+export const deleteAllTimesheetEntries = async (): Promise<number> => {
   try {
-    console.log(`Deleting all timesheet entries for user ${userId}`);
+    console.log(`Deleting all timesheet entries for authenticated user`);
     
     // Get current authenticated user to validate access
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     
     if (!currentUser) {
       throw new Error("Authentication required");
-    }
-
-    // Security check: Only allow deleting for the current authenticated user
-    if (userId !== currentUser.id) {
-      throw new Error("Access denied: You can only delete your own timesheet entries");
     }
     
     // First, get the count of entries that will be deleted - RLS will filter automatically
@@ -349,8 +329,7 @@ export const fetchReportData = async (
       .gte('entry_date', startDateStr)
       .lte('entry_date', endDateStr);
 
-    // For regular users, RLS will automatically filter to their own data
-    // For admin users who want to see all data, they would need special handling
+    // RLS will automatically filter to user's own data
     if (filters.projectId) {
       query = query.eq("project_id", filters.projectId);
     }

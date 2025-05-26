@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -68,14 +67,14 @@ const WeeklyView: React.FC = () => {
       // Then fetch entries if we have valid dates - RLS will automatically filter by user
       if (weekDates.length > 0) {
         console.log("Fetching entries for date range:", weekDates[0], "to", weekDates[weekDates.length - 1]);
+        // No longer need to pass userId - RLS handles filtering automatically
         const entriesData = await fetchTimesheetEntries(
-          user.id, // Always use the authenticated user's ID
           weekDates[0],
           weekDates[weekDates.length - 1],
           false // Don't include user data since we only show current user's entries
         );
         
-        console.log("Successfully fetched entries:", entriesData.length);
+        console.log("Successfully fetched entries via RLS:", entriesData.length);
         setEntries(entriesData);
       }
     } catch (error) {
@@ -160,16 +159,6 @@ const WeeklyView: React.FC = () => {
     
     const draggedEntry = entries.find(entry => entry.id === draggableId);
     if (!draggedEntry) return;
-
-    // Security check: Ensure the entry belongs to the current user
-    if (draggedEntry.user_id !== user.id) {
-      toast({
-        title: "Access Denied",
-        description: "You can only modify your own entries.",
-        variant: "destructive",
-      });
-      return;
-    }
     
     const sourceDate = weekDates[parseInt(source.droppableId)];
     const destDate = weekDates[parseInt(destination.droppableId)];
@@ -244,7 +233,7 @@ const WeeklyView: React.FC = () => {
           ) : (
             <WeekGrid
               weekDates={weekDates}
-              userId={user.id} // Always use authenticated user ID
+              userId={user.id}
               entries={entries}
               projects={projects}
               onEntryChange={fetchData}
@@ -269,7 +258,7 @@ const WeeklyView: React.FC = () => {
         <TimeEntryDialog
           open={entryDialogOpen}
           onOpenChange={setEntryDialogOpen}
-          userId={user.id} // Always use authenticated user ID
+          userId={user.id}
           date={selectedDate}
           projects={projects}
           existingEntry={editingEntry}

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useMediaQuery } from "@/hooks/use-mobile";
@@ -42,7 +41,7 @@ const TimesheetPage = () => {
     setIsDeleting(true);
     try {
       // RLS will ensure only current user's entries are deleted
-      const deletedCount = await deleteAllTimesheetEntries(user.id);
+      const deletedCount = await deleteAllTimesheetEntries();
       toast({
         title: "Entries deleted",
         description: `Successfully deleted ${deletedCount} timesheet entries.`,
@@ -93,7 +92,7 @@ const TimesheetPage = () => {
           <CardDescription className="text-sm">Your time entries for the current week</CardDescription>
         </CardHeader>
         <CardContent className="pt-2">
-          {/* Remove userId prop - WeeklyView will use auth context internally */}
+          {/* WeeklyView now handles user filtering internally via RLS */}
           <WeeklyView key={refreshKey} />
         </CardContent>
       </Card>
