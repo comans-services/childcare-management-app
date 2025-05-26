@@ -8,6 +8,7 @@ import {
 } from "./timesheet/project-service";
 import { 
   fetchTimesheetEntries,
+  fetchReportData,
   saveTimesheetEntry,
   duplicateTimesheetEntry,
   deleteTimesheetEntry,
@@ -25,6 +26,7 @@ export {
   
   // Entry related functions
   fetchTimesheetEntries,
+  fetchReportData,
   saveTimesheetEntry,
   duplicateTimesheetEntry,
   deleteTimesheetEntry,

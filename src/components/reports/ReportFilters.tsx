@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,8 +11,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCustomers } from "@/lib/customer-service";
 import { fetchContracts } from "@/lib/contract-service";
-import { fetchUserProjects, fetchTimesheetEntries } from "@/lib/timesheet-service";
+import { fetchUserProjects } from "@/lib/timesheet-service";
 import { fetchUsers } from "@/lib/user-service";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
@@ -79,23 +81,62 @@ const ReportFilters = ({
     
     setIsLoading(true);
     try {
-      const userId = filters.userId || user.id;
-      const entries = await fetchTimesheetEntries(
-        userId,
-        filters.startDate,
-        filters.endDate,
-        true
-      );
+      console.log("Generating report with filters:", filters);
       
-      let filteredData = entries;
+      // Start with base query
+      let query = supabase
+        .from("timesheet_entries")
+        .select(`
+          *,
+          projects!inner(id, name, description, customer_id),
+          profiles!inner(id, full_name, email, organization, time_zone)
+        `);
+
+      // Apply date range filters (required)
+      const startDateStr = filters.startDate.toISOString().slice(0, 10);
+      const endDateStr = filters.endDate.toISOString().slice(0, 10);
       
+      query = query
+        .gte('entry_date', startDateStr)
+        .lte('entry_date', endDateStr);
+
+      // Apply conditional filters only when they are not null/empty
+      if (filters.userId) {
+        query = query.eq("user_id", filters.userId);
+      }
+
       if (filters.projectId) {
-        filteredData = filteredData.filter(entry => entry.project_id === filters.projectId);
+        query = query.eq("project_id", filters.projectId);
+      }
+
+      if (filters.customerId) {
+        query = query.eq("projects.customer_id", filters.customerId);
+      }
+
+      // Note: Contract filtering would need to be implemented through a join
+      // if contracts are linked to projects, but this isn't in the current schema
+      
+      // Execute the query
+      const { data: entries, error } = await query.order("entry_date", { ascending: true });
+      
+      if (error) {
+        console.error("Error fetching report data:", error);
+        throw error;
       }
       
-      setReportData(filteredData);
+      console.log(`Fetched ${entries?.length || 0} entries for report`);
+      
+      // Transform the data to match the expected format
+      const transformedData = entries?.map(entry => ({
+        ...entry,
+        project: entry.projects,
+        user: entry.profiles
+      })) || [];
+      
+      setReportData(transformedData);
     } catch (error) {
       console.error("Error generating report:", error);
+      setReportData([]);
     } finally {
       setIsLoading(false);
     }

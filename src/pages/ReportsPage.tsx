@@ -9,10 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Download, FileSpreadsheet } from "lucide-react";
-import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { TimesheetEntry, Project, fetchReportData } from "@/lib/timesheet-service";
 import { Contract } from "@/lib/contract-service";
 import { Customer } from "@/lib/customer-service";
-import { User } from "@/lib/user-service"; // Import User type
+import { User } from "@/lib/user-service";
 import { toast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/date-utils";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export-utils";
@@ -23,7 +23,7 @@ export type ReportFiltersType = {
   customerId: string | null;
   contractId: string | null;
   projectId: string | null;
-  userId: string | null; // Added userId to filters
+  userId: string | null;
 };
 
 const ReportsPage = () => {
@@ -33,7 +33,7 @@ const ReportsPage = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [users, setUsers] = useState<User[]>([]); // Added state for users
+  const [users, setUsers] = useState<User[]>([]);
   
   const [filters, setFilters] = useState<ReportFiltersType>({
     startDate: new Date(new Date().setDate(1)), // First day of current month
@@ -132,7 +132,7 @@ const ReportsPage = () => {
             setProjects={setProjects}
             setContracts={setContracts}
             setCustomers={setCustomers}
-            setUsers={setUsers} // Added users state setter
+            setUsers={setUsers}
             setIsLoading={setIsLoading}
           />
           
@@ -147,7 +147,7 @@ const ReportsPage = () => {
               <ReportCharts 
                 reportData={reportData} 
                 projects={projects}
-                users={users} // Added users prop
+                users={users}
                 isLoading={isLoading}
               />
             </TabsContent>
@@ -155,7 +155,7 @@ const ReportsPage = () => {
               <ReportDataTable 
                 reportData={reportData}
                 projects={projects}
-                users={users} // Added users prop
+                users={users}
                 isLoading={isLoading}
               />
             </TabsContent>

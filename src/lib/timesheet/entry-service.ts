@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "../date-utils";
 import { TimesheetEntry } from "./types";
@@ -294,6 +293,73 @@ export const deleteAllTimesheetEntries = async (userId: string): Promise<number>
     return entriesCount || 0;
   } catch (error) {
     console.error("Error in deleteAllTimesheetEntries:", error);
+    throw error;
+  }
+};
+
+export const fetchReportData = async (
+  startDate: Date,
+  endDate: Date,
+  filters: {
+    userId?: string | null;
+    projectId?: string | null;
+    customerId?: string | null;
+    contractId?: string | null;
+  } = {}
+): Promise<TimesheetEntry[]> => {
+  try {
+    console.log(`Fetching report data from ${formatDate(startDate)} to ${formatDate(endDate)} with filters:`, filters);
+    
+    // Start with base query including joins for related data
+    let query = supabase
+      .from("timesheet_entries")
+      .select(`
+        *,
+        projects!inner(id, name, description, customer_id, budget_hours, is_active),
+        profiles!inner(id, full_name, email, organization, time_zone)
+      `);
+
+    // Apply date range filters (required)
+    const startDateStr = startDate.toISOString().slice(0, 10);
+    const endDateStr = endDate.toISOString().slice(0, 10);
+    
+    query = query
+      .gte('entry_date', startDateStr)
+      .lte('entry_date', endDateStr);
+
+    // Apply conditional filters only when they have values
+    if (filters.userId) {
+      query = query.eq("user_id", filters.userId);
+    }
+
+    if (filters.projectId) {
+      query = query.eq("project_id", filters.projectId);
+    }
+
+    if (filters.customerId) {
+      query = query.eq("projects.customer_id", filters.customerId);
+    }
+
+    // Execute the query
+    const { data: entries, error } = await query.order("entry_date", { ascending: true });
+    
+    if (error) {
+      console.error("Error fetching report data:", error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${entries?.length || 0} entries for report`);
+    
+    // Transform the data to match the expected TimesheetEntry format
+    const transformedData = entries?.map(entry => ({
+      ...entry,
+      project: entry.projects,
+      user: entry.profiles
+    })) || [];
+    
+    return transformedData;
+  } catch (error) {
+    console.error("Error in fetchReportData:", error);
     throw error;
   }
 };
