@@ -1,20 +1,7 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "../date-utils";
 import { TimesheetEntry } from "./types";
-
-export const getUserRole = async (userId: string): Promise<string | null> => {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
-  
-  if (error) {
-    console.error("getUserRole error", error);
-    return null;
-  }
-  return data?.role ?? null;
-};
 
 export const fetchTimesheetEntries = async (
   startDate: Date,
@@ -117,64 +104,28 @@ export const fetchReportData = async (
   } = {}
 ): Promise<TimesheetEntry[]> => {
   try {
-    console.log(`=== FETCHING REPORT DATA (FIXED ADMIN FUNCTION) ===`);
+    console.log(`=== FETCHING REPORT DATA (ADMIN FUNCTION) ===`);
     console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
     console.log(`Filters:`, filters);
 
-    const { data: { user: sessionUser } } = await supabase.auth.getUser();
-    if (!sessionUser) throw new Error("Not authenticated");
-
-    const isAdmin = await getUserRole(sessionUser.id) === "admin";
-    console.log(`User is admin: ${isAdmin}`);
-
-    let query = supabase
-      .from("timesheet_entries")
-      .select(`
-        *,
-        project:projects(id, name, description, customer_id),
-        user:profiles(id, full_name, email, organization, time_zone)
-      `)
-      .gte("entry_date", startDate.toISOString().slice(0, 10))
-      .lte("entry_date", endDate.toISOString().slice(0, 10));
-
-    // USER SCOPING - This is the key fix
-    if (filters.userId) {
-      // Explicit employee filter chosen in UI
-      console.log(`Filtering by specific user: ${filters.userId}`);
-      query = query.eq("user_id", filters.userId);
-    } else if (!isAdmin) {
-      // Normal employee: force own rows
-      console.log(`Non-admin user, filtering to own data: ${sessionUser.id}`);
-      query = query.eq("user_id", sessionUser.id);
-      // (Admins skip this to see everyone)
-    } else {
-      console.log(`Admin user, showing all entries`);
-    }
-
-    if (filters.projectId) {
-      console.log(`Filtering by project: ${filters.projectId}`);
-      query = query.eq("project_id", filters.projectId);
-    }
-    if (filters.customerId) {
-      console.log(`Filtering by customer: ${filters.customerId}`);
-      query = query.eq("customer_id", filters.customerId);
-    }
-    if (filters.contractId) {
-      console.log(`Filtering by contract: ${filters.contractId}`);
-      query = query.eq("contract_id", filters.contractId);
-    }
-
-    const { data, error } = await query;
+    // Use the new admin-only reporting function - note: no schema prefix in RPC calls
+    const { data: reportData, error } = await supabase.rpc('timesheet_entries_report', {
+      p_start_date: startDate.toISOString().slice(0, 10),
+      p_end_date: endDate.toISOString().slice(0, 10),
+      p_user_id: filters.userId || null,
+      p_project_id: filters.projectId || null,
+      p_customer_id: filters.customerId || null
+    });
     
     if (error) {
-      console.error("Error in direct query:", error);
+      console.error("Error calling admin reporting function:", error);
       throw error;
     }
     
-    console.log(`Direct query returned ${data?.length || 0} entries`);
+    console.log(`Admin function returned ${reportData?.length || 0} entries`);
     
     // Transform the data to match the expected TimesheetEntry format
-    const transformedData = data?.map((entry: any) => ({
+    const transformedData = reportData?.map((entry: any) => ({
       id: entry.id,
       user_id: entry.user_id,
       project_id: entry.project_id,
@@ -187,8 +138,19 @@ export const fetchReportData = async (
       start_time: entry.start_time,
       end_time: entry.end_time,
       // Add the joined data as nested objects
-      project: entry.project,
-      user: entry.user
+      project: {
+        id: entry.project_id,
+        name: entry.project_name,
+        description: entry.project_description,
+        customer_id: entry.project_customer_id
+      },
+      user: {
+        id: entry.user_id,
+        full_name: entry.user_full_name,
+        email: entry.user_email,
+        organization: entry.user_organization,
+        time_zone: entry.user_time_zone
+      }
     })) || [];
     
     return transformedData;
