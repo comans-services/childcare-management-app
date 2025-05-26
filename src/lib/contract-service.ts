@@ -65,63 +65,6 @@ export const fetchServices = async (): Promise<Service[]> => {
   }
 };
 
-const ensureContractsTableExists = async (): Promise<boolean> => {
-  try {
-    console.log("Checking if contracts table exists...");
-    
-    // Check if the table exists by trying to query it
-    const { error } = await supabase
-      .from('contracts')
-      .select('id')
-      .limit(1);
-    
-    if (error) {
-      if (error.code === '42P01') { // Table doesn't exist
-        console.log("Contracts table doesn't exist, creating it...");
-        
-        // Create the contracts table
-        const createResult = await supabase.supabase.rpc(
-          'create_table_if_not_exists',
-          {
-            table_name: 'contracts',
-            create_statement: `
-              CREATE TABLE IF NOT EXISTS public.contracts (
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                name TEXT NOT NULL,
-                description TEXT,
-                customer_id UUID,
-                start_date DATE NOT NULL,
-                end_date DATE NOT NULL,
-                status TEXT NOT NULL,
-                is_active BOOLEAN DEFAULT true,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
-              );
-            `
-          }
-        );
-        
-        if (createResult.error) {
-          console.error("Failed to create contracts table:", createResult.error);
-          return false;
-        }
-        
-        console.log("Contracts table created successfully");
-        return true;
-      }
-      
-      console.error("Unexpected error checking contracts table:", error);
-      return false;
-    }
-    
-    console.log("Contracts table already exists");
-    return true;
-  } catch (error) {
-    console.error("Error in ensureContractsTableExists:", error);
-    return false;
-  }
-};
-
 /**
  * Determines the contract status based on start and end dates
  */
@@ -152,9 +95,6 @@ export const fetchContracts = async (filters?: {
 }): Promise<Contract[]> => {
   try {
     console.log("Fetching contracts with filters:", filters);
-    
-    // Ensure contracts table exists
-    await ensureContractsTableExists();
     
     // Start building the query
     let query = supabase
@@ -288,9 +228,6 @@ export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: strin
   try {
     console.log("Saving contract:", contract);
     console.log("Selected services:", selectedServiceIds);
-
-    // Ensure contracts table exists
-    await ensureContractsTableExists();
 
     // Calculate the contract status based on dates
     const calculatedStatus = determineContractStatus(contract.start_date, contract.end_date);
