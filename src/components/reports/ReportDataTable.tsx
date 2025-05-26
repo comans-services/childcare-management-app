@@ -5,6 +5,7 @@ import { User } from "@/lib/user-service";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FileX, Filter } from "lucide-react";
 
 interface ReportDataTableProps {
   reportData: TimesheetEntry[];
@@ -61,10 +62,21 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
     );
   }
 
+  // Show fallback UI only after attempting fetch and getting no results
   if (reportData.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">No data available. Please adjust your filters and generate a report.</p>
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+        <FileX className="h-12 w-12 text-gray-400" />
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">No data found</h3>
+          <p className="text-sm text-gray-500 mt-2 max-w-sm">
+            No timesheet entries match your current filters. Try adjusting the date range or removing some filters.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 px-3 py-2 rounded">
+          <Filter className="h-3 w-3" />
+          <span>Tip: Use "Generate Report" button to fetch data with your current filters</span>
+        </div>
       </div>
     );
   }

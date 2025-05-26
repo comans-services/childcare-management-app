@@ -7,6 +7,7 @@ import { User } from "@/lib/user-service";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { FileX, Filter } from "lucide-react";
 
 interface ReportChartsProps {
   reportData: TimesheetEntry[];
@@ -101,10 +102,21 @@ const ReportCharts = ({ reportData, projects, users, isLoading }: ReportChartsPr
     );
   }
 
+  // Show fallback UI only after attempting fetch and getting no results
   if (reportData.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">No data available. Please adjust your filters and generate a report.</p>
+      <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+        <FileX className="h-16 w-16 text-gray-400" />
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900">No data to visualize</h3>
+          <p className="text-sm text-gray-500 mt-2 max-w-md">
+            No timesheet entries match your current filters. Adjust your filters and generate a report to see visual charts.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 px-4 py-3 rounded-lg">
+          <Filter className="h-4 w-4" />
+          <span>Tip: Try widening your date range or removing specific filters</span>
+        </div>
       </div>
     );
   }

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { CalendarIcon, Search } from "lucide-react";
+import { CalendarIcon, Search, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCustomers } from "@/lib/customer-service";
@@ -14,6 +15,7 @@ import { fetchUserProjects, fetchReportData } from "@/lib/timesheet-service";
 import { fetchUsers } from "@/lib/user-service";
 import { cn } from "@/lib/utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";
+import { toast } from "@/hooks/use-toast";
 
 interface ReportFiltersProps {
   filters: ReportFiltersType;
@@ -38,6 +40,7 @@ const ReportFilters = ({
 }: ReportFiltersProps) => {
   const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   
   const { data: customersData } = useQuery({
     queryKey: ['customers'],
@@ -74,26 +77,70 @@ const ReportFilters = ({
     }
   }, [customersData, contractsData, projectsData, usersData, setCustomers, setContracts, setProjects, setUsers]);
 
-  const handleGenerateReport = async () => {
-    if (!user) return;
+  const generateReport = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to generate reports",
+        variant: "destructive"
+      });
+      return;
+    }
     
+    console.log("=== GENERATING REPORT ===");
+    console.log("Current user:", user);
+    console.log("Filters:", filters);
+    
+    setIsGeneratingReport(true);
     setIsLoading(true);
+    
     try {
-      console.log("Generating report with filters:", filters);
-      
-      // Use the proper fetchReportData function that handles admin permissions
-      const transformedData = await fetchReportData(filters.startDate, filters.endDate, {
+      // Call fetchReportData with all filters
+      const reportData = await fetchReportData(filters.startDate, filters.endDate, {
         userId: filters.userId,
         projectId: filters.projectId,
         customerId: filters.customerId,
         contractId: filters.contractId
       });
       
-      setReportData(transformedData);
+      console.log("Report data received:", reportData);
+      console.log("Number of entries:", reportData.length);
+      
+      setReportData(reportData);
+      
+      if (reportData.length === 0) {
+        toast({
+          title: "No data found",
+          description: "No timesheet entries found for the selected criteria. Try adjusting your filters.",
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Report generated successfully",
+          description: `Found ${reportData.length} timesheet entries`,
+          variant: "default"
+        });
+      }
     } catch (error) {
       console.error("Error generating report:", error);
       setReportData([]);
+      
+      let errorMessage = "There was an error generating the report";
+      if (error instanceof Error) {
+        if (error.message.includes("Access denied")) {
+          errorMessage = "Access denied. Admin role required to generate reports.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Report generation failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
+      setIsGeneratingReport(false);
       setIsLoading(false);
     }
   };
@@ -247,11 +294,21 @@ const ReportFilters = ({
             {isExpanded ? 'Less Filters' : 'More Filters'}
           </Button>
           <Button 
-            onClick={handleGenerateReport}
+            onClick={generateReport}
             size="sm"
+            disabled={isGeneratingReport}
           >
-            <Search className="mr-2 h-4 w-4" />
-            Generate Report
+            {isGeneratingReport ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Search className="mr-2 h-4 w-4" />
+                Generate Report
+              </>
+            )}
           </Button>
         </div>
       </div>

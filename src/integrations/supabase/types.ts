@@ -291,6 +291,35 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      timesheet_entries_report: {
+        Args: {
+          p_start_date: string
+          p_end_date: string
+          p_user_id?: string
+          p_project_id?: string
+          p_customer_id?: string
+        }
+        Returns: {
+          id: string
+          user_id: string
+          project_id: string
+          entry_date: string
+          hours_logged: number
+          created_at: string
+          updated_at: string
+          notes: string
+          jira_task_id: string
+          start_time: string
+          end_time: string
+          project_name: string
+          project_description: string
+          project_customer_id: string
+          user_full_name: string
+          user_email: string
+          user_organization: string
+          user_time_zone: string
+        }[]
+      }
     }
     Enums: {
       user_role: "employee" | "manager" | "admin"
