@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -91,13 +90,6 @@ const WeeklyView: React.FC = () => {
       const projectsData = await fetchUserProjects();
       console.log("Successfully fetched projects:", projectsData.length);
       
-      // Safety check: ensure we still have the same user
-      if (user.id !== session.user?.id) {
-        console.error("User mismatch detected during fetch!");
-        setError("Session mismatch detected");
-        return;
-      }
-      
       setProjects(projectsData);
       
       // Then fetch entries if we have valid dates - RLS will automatically filter by user
@@ -111,21 +103,7 @@ const WeeklyView: React.FC = () => {
         );
         
         console.log("Successfully fetched entries via RLS:", entriesData.length);
-        
-        // Additional safety check: verify all entries belong to current user
-        const invalidEntries = entriesData.filter(entry => entry.user_id !== user.id);
-        if (invalidEntries.length > 0) {
-          console.error("SECURITY ALERT: Invalid entries detected in WeeklyView!", {
-            currentUserId: user.id,
-            invalidEntries: invalidEntries.map(e => ({ id: e.id, user_id: e.user_id }))
-          });
-          // Filter out invalid entries
-          const validEntries = entriesData.filter(entry => entry.user_id === user.id);
-          setEntries(validEntries);
-          console.log(`Filtered to ${validEntries.length} valid entries`);
-        } else {
-          setEntries(entriesData);
-        }
+        setEntries(entriesData);
       }
     } catch (error) {
       console.error("Error fetching timesheet data:", error);
@@ -189,20 +167,6 @@ const WeeklyView: React.FC = () => {
 
   // Handler for opening the entry dialog
   const handleOpenEntryDialog = (date: Date, entry?: TimesheetEntry) => {
-    // Additional security check before opening dialog
-    if (entry && entry.user_id !== user?.id) {
-      console.error("Attempted to edit entry that doesn't belong to current user!", {
-        entryUserId: entry.user_id,
-        currentUserId: user?.id
-      });
-      toast({
-        title: "Access denied",
-        description: "You can only edit your own timesheet entries.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setSelectedDate(date);
     setEditingEntry(entry);
     setEntryDialogOpen(true);
@@ -223,20 +187,6 @@ const WeeklyView: React.FC = () => {
     
     const draggedEntry = entries.find(entry => entry.id === draggableId);
     if (!draggedEntry) return;
-    
-    // Security check: ensure user owns the entry they're trying to move
-    if (draggedEntry.user_id !== user.id) {
-      console.error("Attempted to drag entry that doesn't belong to current user!", {
-        entryUserId: draggedEntry.user_id,
-        currentUserId: user.id
-      });
-      toast({
-        title: "Access denied",
-        description: "You can only move your own timesheet entries.",
-        variant: "destructive",
-      });
-      return;
-    }
     
     const sourceDate = weekDates[parseInt(source.droppableId)];
     const destDate = weekDates[parseInt(destination.droppableId)];

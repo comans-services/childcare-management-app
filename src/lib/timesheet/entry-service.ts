@@ -1,24 +1,7 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "../date-utils";
 import { TimesheetEntry } from "./types";
-
-// Session validation helper
-const validateCurrentUser = async () => {
-  const { data: { user: currentUser }, error } = await supabase.auth.getUser();
-  
-  if (error) {
-    console.error("Error validating current user:", error);
-    throw new Error("Authentication validation failed");
-  }
-
-  if (!currentUser) {
-    console.error("No authenticated user found");
-    throw new Error("Authentication required");
-  }
-
-  console.log(`Session validated - Current user: ${currentUser.id} (${currentUser.email})`);
-  return currentUser;
-};
 
 export const fetchTimesheetEntries = async (
   startDate: Date,
@@ -30,11 +13,7 @@ export const fetchTimesheetEntries = async (
     console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
     console.log(`Include user data: ${includeUserData}`);
     
-    // Validate current user session
-    const currentUser = await validateCurrentUser();
-    console.log(`Fetching entries for authenticated user: ${currentUser.id} (${currentUser.email})`);
-    
-    // Fetch entries with RLS automatically filtering by user_id = auth.uid()
+    // RLS will automatically filter by user_id = auth.uid()
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
@@ -54,25 +33,13 @@ export const fetchTimesheetEntries = async (
       return [];
     }
 
-    // Verify all entries belong to the current user (additional safety check)
-    const invalidEntries = entriesData.filter(entry => entry.user_id !== currentUser.id);
-    if (invalidEntries.length > 0) {
-      console.error("SECURITY ALERT: RLS policy leaked data!", {
-        currentUserId: currentUser.id,
-        invalidEntries: invalidEntries.map(e => ({ id: e.id, user_id: e.user_id }))
-      });
-      // Filter out invalid entries as a safeguard
-      const validEntries = entriesData.filter(entry => entry.user_id === currentUser.id);
-      console.log(`Filtered to ${validEntries.length} valid entries after security check`);
-    }
-
     // Fetch projects separately (only get unique project IDs)
     const projectIds = [...new Set(entriesData.map(entry => entry.project_id))];
     console.log(`Fetching ${projectIds.length} unique projects`);
     
     if (projectIds.length === 0) {
       console.log("No project IDs found in entries");
-      return entriesData.filter(entry => entry.user_id === currentUser.id);
+      return entriesData;
     }
     
     const { data: projectsData, error: projectsError } = await supabase
@@ -83,7 +50,7 @@ export const fetchTimesheetEntries = async (
     if (projectsError) {
       console.error("Error fetching projects for entries:", projectsError);
       // Return entries without project details rather than failing completely
-      return entriesData.filter(entry => entry.user_id === currentUser.id);
+      return entriesData;
     }
 
     console.log(`Fetched ${projectsData?.length || 0} projects for entries`);
@@ -94,22 +61,23 @@ export const fetchTimesheetEntries = async (
       return acc;
     }, {} as Record<string, any>);
 
-    // Only include entries that belong to the current user
-    let entriesWithProjects = entriesData
-      .filter(entry => entry.user_id === currentUser.id)
-      .map(entry => ({
-        ...entry,
-        project: projectsMap[entry.project_id]
-      }));
+    // Map entries with their associated projects
+    let entriesWithProjects = entriesData.map(entry => ({
+      ...entry,
+      project: projectsMap[entry.project_id]
+    }));
 
-    console.log(`Final filtered entries count: ${entriesWithProjects.length}`);
+    console.log(`Final entries count: ${entriesWithProjects.length}`);
 
     // Add current user info if requested
-    if (includeUserData && currentUser) {
-      entriesWithProjects = entriesWithProjects.map(entry => ({
-        ...entry,
-        user: { id: currentUser.id, full_name: 'You' }
-      }));
+    if (includeUserData) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        entriesWithProjects = entriesWithProjects.map(entry => ({
+          ...entry,
+          user: { id: user.id, full_name: 'You' }
+        }));
+      }
     }
 
     return entriesWithProjects;
@@ -124,12 +92,16 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     console.log("=== SAVING TIMESHEET ENTRY ===");
     console.log("Entry data:", entry);
     
-    // Validate current user session
-    const currentUser = await validateCurrentUser();
+    // Get current user for user_id
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error("Authentication required");
+    }
     
     // Create a clean data object for the database operation
     const dbEntry = {
-      user_id: currentUser.id, // Always use authenticated user's ID
+      user_id: user.id, // Always use authenticated user's ID
       project_id: entry.project_id,
       entry_date: entry.entry_date,
       hours_logged: entry.hours_logged,
@@ -199,8 +171,12 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
   try {
     console.log(`Duplicating entry ${entryId}`);
     
-    // Validate current user session
-    const currentUser = await validateCurrentUser();
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error("Authentication required");
+    }
     
     // First get the original entry - RLS will ensure we only get user's own entries
     const { data: originalEntry, error: fetchError } = await supabase
@@ -220,7 +196,7 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
     
     // Create a new entry with the same data but a new ID
     const newEntryData = {
-      user_id: currentUser.id, // Always use authenticated user's ID
+      user_id: user.id, // Always use authenticated user's ID
       project_id: originalEntry.project_id,
       entry_date: originalEntry.entry_date,
       hours_logged: originalEntry.hours_logged,
@@ -254,9 +230,6 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
 export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
   try {
     console.log(`Deleting entry ${entryId}`);
-    
-    // Validate current user session
-    const currentUser = await validateCurrentUser();
 
     // RLS will ensure user can only delete their own entries
     const { error } = await supabase
@@ -279,9 +252,6 @@ export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
 export const deleteAllTimesheetEntries = async (): Promise<number> => {
   try {
     console.log(`Deleting all timesheet entries for authenticated user`);
-    
-    // Validate current user session
-    const currentUser = await validateCurrentUser();
     
     // First, get the count of entries that will be deleted - RLS will filter automatically
     const { count: entriesCount, error: countError } = await supabase
@@ -326,9 +296,6 @@ export const fetchReportData = async (
     console.log(`=== FETCHING REPORT DATA ===`);
     console.log(`Date range: ${formatDate(startDate)} to ${formatDate(endDate)}`);
     console.log(`Filters:`, filters);
-    
-    // Validate current user session
-    const currentUser = await validateCurrentUser();
 
     // Start with base query including joins for related data
     let query = supabase
