@@ -51,6 +51,7 @@ export const getProjectHoursUsed = async (projectId: string): Promise<number> =>
     
     // Sum up all hours logged for the project
     const totalHours = data?.reduce((sum, entry) => sum + entry.hours_logged, 0) || 0;
+    console.log(`Project ${projectId} has ${totalHours} hours used`);
     return totalHours;
   } catch (error) {
     console.error("Error in getProjectHoursUsed:", error);

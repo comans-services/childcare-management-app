@@ -47,40 +47,45 @@ const WeeklyView: React.FC = () => {
   }, [currentDate]);
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log("No user found, skipping data fetch");
+      return;
+    }
 
     setLoading(true);
     setError(null);
     
     try {
-      // Fetch projects first
-      const projectsData = await fetchUserProjects()
-        .catch(err => {
-          console.error("Projects error:", err);
-          setError("Failed to load projects. Please try again.");
-          return [] as Project[];
-        });
+      console.log("Starting data fetch for user:", user.id);
       
+      // Fetch projects first
+      const projectsData = await fetchUserProjects();
+      console.log("Successfully fetched projects:", projectsData.length);
       setProjects(projectsData);
       
       // Then fetch entries if we have valid dates
       if (weekDates.length > 0) {
+        console.log("Fetching entries for date range:", weekDates[0], "to", weekDates[weekDates.length - 1]);
         const entriesData = await fetchTimesheetEntries(
           user.id,
           weekDates[0],
           weekDates[weekDates.length - 1],
-          true // Explicitly set includeUserData to true
-        ).catch(err => {
-          console.error("Entries error:", err);
-          setError("Failed to load timesheet entries. Please try again.");
-          return [] as TimesheetEntry[];
-        });
+          true // Include user data
+        );
         
+        console.log("Successfully fetched entries:", entriesData.length);
         setEntries(entriesData);
       }
     } catch (error) {
       console.error("Error fetching timesheet data:", error);
-      setError("Failed to load timesheet data. Please try again.");
+      setError(`Failed to load timesheet data: ${error.message || 'Unknown error'}`);
+      
+      // Show user-friendly error message
+      toast({
+        title: "Error loading data",
+        description: "There was a problem loading your timesheet. Please try refreshing the page.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

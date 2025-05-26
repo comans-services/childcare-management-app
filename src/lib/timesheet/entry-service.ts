@@ -12,12 +12,13 @@ export const fetchTimesheetEntries = async (
   try {
     console.log(`Fetching entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
     
-    // First, fetch the entries with a simpler query
+    // Fetch entries with a simple query - RLS will handle filtering
     const { data: entriesData, error: entriesError } = await supabase
       .from("timesheet_entries")
       .select("*")
       .gte("entry_date", formatDate(startDate))
-      .lte("entry_date", formatDate(endDate));
+      .lte("entry_date", formatDate(endDate))
+      .order("entry_date", { ascending: true });
 
     if (entriesError) {
       console.error("Error fetching timesheet entries:", entriesError);
@@ -31,7 +32,7 @@ export const fetchTimesheetEntries = async (
 
     console.log(`Fetched ${entriesData.length} entries`);
     
-    // Then fetch the projects separately
+    // Fetch projects separately
     const projectIds = [...new Set(entriesData.map(entry => entry.project_id))];
     
     if (projectIds.length === 0) {
@@ -63,7 +64,7 @@ export const fetchTimesheetEntries = async (
       project: projectsMap[entry.project_id]
     }));
 
-    // Always include user data for entries
+    // Fetch user data if requested
     if (includeUserData) {
       const userIds = [...new Set(entriesData.map(entry => entry.user_id))];
       
@@ -92,6 +93,12 @@ export const fetchTimesheetEntries = async (
         } else {
           console.error("Error fetching users for entries:", usersError);
           console.log("Available user IDs:", userIds);
+          
+          // Add basic user data even if fetch failed
+          entriesWithProjects = entriesWithProjects.map(entry => ({
+            ...entry,
+            user: { id: entry.user_id }
+          }));
         }
       }
     }
