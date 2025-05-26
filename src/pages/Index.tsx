@@ -74,7 +74,9 @@ const Dashboard = () => {
   const { data: timesheetEntries = [], isLoading: entriesLoading, error: entriesError } = useQuery({
     queryKey: ["timesheet", session?.user?.id, startDate, endDate],
     queryFn: async () => {
-      if (!session?.user?.id) return Promise.resolve([]);
+      if (!session?.user?.id) {
+        throw new Error("Dashboard: session.user.id is missing");
+      }
       console.log(`Fetching timesheet entries for dashboard: User ID: ${session.user.id}, Date Range: ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
       try {
         const result = await fetchTimesheetEntries(session.user.id, startDate, endDate);
