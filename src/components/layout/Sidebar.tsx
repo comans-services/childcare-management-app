@@ -16,11 +16,9 @@ import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, User
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useRBAC } from "@/hooks/use-rbac";
 
 const SidebarContent = () => {
   const { user, signOut } = useAuth();
-  const { canAccessProjects, canAccessContracts, canAccessTeamManagement, canAccessCustomers } = useRBAC();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -44,41 +42,26 @@ const SidebarContent = () => {
           <Calendar className="h-5 w-5" />
           <span>Timesheet</span>
         </Link>
-        
-        {/* Admin-only menu items */}
-        {canAccessProjects && (
-          <Link to="/projects" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
-            <FolderKanban className="h-5 w-5" />
-            <span>Projects</span>
-          </Link>
-        )}
-        
-        {canAccessCustomers && (
-          <Link to="/customers" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
-            <Users className="h-5 w-5" />
-            <span>Customers</span>
-          </Link>
-        )}
-        
-        {canAccessContracts && (
-          <Link to="/contracts" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
-            <FileText className="h-5 w-5" />
-            <span>Contracts</span>
-          </Link>
-        )}
-        
-        {canAccessTeamManagement && (
-          <>
-            <Link to="/reports" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
-              <BarChart className="h-5 w-5" />
-              <span>Reports</span>
-            </Link>
-            <Link to="/team" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
-              <UserPlus className="h-5 w-5" />
-              <span>Team</span>
-            </Link>
-          </>
-        )}
+        <Link to="/projects" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
+          <FolderKanban className="h-5 w-5" />
+          <span>Projects</span>
+        </Link>
+        <Link to="/customers" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
+          <Users className="h-5 w-5" />
+          <span>Customers</span>
+        </Link>
+        <Link to="/contracts" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
+          <FileText className="h-5 w-5" />
+          <span>Contracts</span>
+        </Link>
+        <Link to="/reports" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
+          <BarChart className="h-5 w-5" />
+          <span>Reports</span>
+        </Link>
+        <Link to="/team" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
+          <UserPlus className="h-5 w-5" />
+          <span>Team</span>
+        </Link>
       </div>
       <Separator className="my-2" />
       <div className="flex flex-col space-y-1 p-2">

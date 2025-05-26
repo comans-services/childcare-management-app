@@ -4,17 +4,15 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { fetchUserRole, UserRole, assignUserRole } from "@/lib/rbac-service";
 
 interface AuthContextProps {
   session: Session | null;
   user: User | null;
-  userRole: UserRole | null;
+  userRole: "employee" | "manager" | "admin" | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
-  refreshUserRole: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps>({
@@ -25,76 +23,13 @@ const AuthContext = createContext<AuthContextProps>({
   signUp: async () => {},
   signOut: async () => {},
   loading: true,
-  refreshUserRole: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userRole, setUserRole] = useState<"employee" | "manager" | "admin" | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-
-  const refreshUserRole = async () => {
-    if (!user?.id) {
-      setUserRole(null);
-      return;
-    }
-    
-    try {
-      const role = await fetchUserRole(user.id);
-      setUserRole(role);
-      console.log(`User role refreshed: ${role}`);
-    } catch (error) {
-      console.error("Error refreshing user role:", error);
-      setUserRole(null);
-    }
-  };
-
-  const ensureUserProfile = async (userId: string, userEmail: string, fullName?: string) => {
-    try {
-      // Check if profile exists
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error("Error checking profile:", profileError);
-        return;
-      }
-
-      // Create profile if it doesn't exist
-      if (!profileData) {
-        console.log("Creating profile for user:", userId);
-        
-        // Determine if user should be admin based on email
-        const isAdminEmail = userEmail === 'jason.comeau@comansservices.com.au' || 
-                            userEmail === 'belinda.comeau@comansservices.com.au';
-        
-        const { error: createProfileError } = await supabase
-          .from("profiles")
-          .insert([{
-            id: userId,
-            full_name: fullName || "",
-            email: userEmail,
-            role: isAdminEmail ? "admin" : "employee", // Legacy role field
-          }]);
-
-        if (createProfileError) {
-          console.error("Error creating profile:", createProfileError);
-        } else {
-          console.log("Profile created successfully");
-        }
-
-        // Ensure user role is set correctly
-        const roleToAssign: UserRole = isAdminEmail ? 'admin' : 'staff';
-        await assignUserRole(userId, roleToAssign);
-      }
-    } catch (error) {
-      console.error("Error in ensureUserProfile:", error);
-    }
-  };
 
   useEffect(() => {
     // Get initial session
@@ -102,13 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user || null);
       if (session?.user) {
-        ensureUserProfile(
-          session.user.id, 
-          session.user.email || "", 
-          session.user.user_metadata?.full_name
-        ).then(() => {
-          fetchUserRoleData(session.user.id);
-        });
+        fetchUserRole(session.user.id);
       }
       setLoading(false);
     });
@@ -116,21 +45,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.email);
         setSession(session);
         setUser(session?.user || null);
-        
         if (session?.user) {
-          ensureUserProfile(
-            session.user.id, 
-            session.user.email || "", 
-            session.user.user_metadata?.full_name
-          ).then(() => {
-            // Defer role fetching to prevent potential deadlocks
-            setTimeout(() => {
-              fetchUserRoleData(session.user.id);
-            }, 100);
-          });
+          fetchUserRole(session.user.id);
         } else {
           setUserRole(null);
         }
@@ -143,15 +61,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const fetchUserRoleData = async (userId: string) => {
+  const fetchUserRole = async (userId: string) => {
     try {
-      console.log("Fetching user role for:", userId);
-      const role = await fetchUserRole(userId);
-      setUserRole(role);
-      console.log("User role set to:", role);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role, email")  // Also fetch email
+        .eq("id", userId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user role:", error);
+        return;
+      }
+
+      if (data) {
+        setUserRole(data.role as "employee" | "manager" | "admin" || "employee");
+        
+        // Update user profile with email if missing
+        if (!data.email && user?.email) {
+          console.log(`User profile missing email, updating with ${user.email}`);
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({ email: user.email })
+            .eq("id", userId);
+            
+          if (updateError) {
+            console.error("Error updating profile email:", updateError);
+          }
+        }
+      }
     } catch (error) {
       console.error("Error fetching user role:", error);
-      setUserRole(null);
     }
   };
 
@@ -201,6 +141,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      // Create profile after signup, including email field
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .insert([
+            {
+              id: data.user.id,
+              full_name: fullName,
+              role: "employee", // Default role
+              email: email, // Explicitly store email
+            },
+          ]);
+
+        if (profileError) {
+          console.error("Error creating profile:", profileError);
+        }
+      }
+
       toast({
         title: "Account created",
         description: "You have successfully created an account.",
@@ -223,9 +181,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      // Clear local state
-      setUserRole(null);
-
       toast({
         title: "Signed out successfully",
       });
@@ -244,7 +199,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signOut,
         loading,
-        refreshUserRole,
       }}
     >
       {children}
