@@ -1,3 +1,4 @@
+
 /* ──────────────────────────────────────────────────────────────
  * entry-fetch-service.ts
  * All read-only queries for timesheets and reports
@@ -15,7 +16,7 @@ export const fetchTimesheetEntries = async (
   startDate: Date,
   endDate: Date,
   options: {
-    /** join users table? (dashboard needs it) */
+    /** join profiles table? (dashboard needs it) */
     includeUserData?: boolean;
     /** always restrict to this user_id (Timesheet view forces self) */
     forceUserId?: string;
@@ -31,7 +32,7 @@ export const fetchTimesheetEntries = async (
     .from("timesheet_entries")
     .select(
       includeUserData
-        ? `*, users ( id, full_name )`
+        ? `*, profiles ( id, full_name )`
         : `*`
     )
     .gte("entry_date", formatDate(startDate))
