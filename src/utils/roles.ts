@@ -1,3 +1,4 @@
+
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,7 +29,7 @@ export const isAdmin = (user: Session["user"] | null | undefined): boolean => {
   // Until it resolves, return false (employee scope) once; the second
   // click will hit the cache and behave as admin.
 
-  void supabase
+  supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
@@ -38,7 +39,9 @@ export const isAdmin = (user: Session["user"] | null | undefined): boolean => {
         cachedAdminIds.add(user.id);
       }
     })
-    .catch(() => {/* ignore errors */});
+    .catch(() => {
+      // ignore errors - this is a background cache operation
+    });
 
   return false;
 };
