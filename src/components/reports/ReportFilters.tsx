@@ -79,8 +79,8 @@ const ReportFilters = ({
 
   // Helper function to properly handle null/empty values for UUID fields
   const handleSelectChange = (value: string | undefined) => {
-    // Convert empty string, "empty", or undefined to null
-    if (!value || value === "" || value === "empty") {
+    // Convert "all", empty string, "empty", or undefined to null
+    if (!value || value === "" || value === "empty" || value === "all") {
       return null;
     }
     return value;
