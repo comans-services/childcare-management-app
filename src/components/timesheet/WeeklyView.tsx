@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -100,7 +99,7 @@ const WeeklyView: React.FC = () => {
         const entriesData = await fetchTimesheetEntries(
           weekDates[0],
           weekDates[weekDates.length - 1],
-          { includeUser: false, forceUserId: user.id }   // ← ALWAYS self-only
+          { includeUserData: false, forceUserId: user.id }   // ← Fixed parameter name
         );
         
         console.log("Successfully fetched entries via RLS:", entriesData.length);

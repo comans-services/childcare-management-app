@@ -1,4 +1,5 @@
 
+
 /* ──────────────────────────────────────────────────────────────
  * entry-fetch-service.ts
  * All read-only queries for timesheets and reports
@@ -32,7 +33,7 @@ export const fetchTimesheetEntries = async (
     .from("timesheet_entries")
     .select(
       includeUserData
-        ? `*, profiles ( id, full_name )`
+        ? `*, profiles!timesheet_entries_user_id_fkey ( id, full_name )`
         : `*`
     )
     .gte("entry_date", formatDate(startDate))
