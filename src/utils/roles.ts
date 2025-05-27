@@ -29,19 +29,21 @@ export const isAdmin = (user: Session["user"] | null | undefined): boolean => {
   // Until it resolves, return false (employee scope) once; the second
   // click will hit the cache and behave as admin.
 
-  supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single()
-    .then(({ data }) => {
+  void (async () => {
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      
       if (data?.role?.toLowerCase?.() === "admin") {
         cachedAdminIds.add(user.id);
       }
-    })
-    .catch(() => {
+    } catch {
       // ignore errors - this is a background cache operation
-    });
+    }
+  })();
 
   return false;
 };
