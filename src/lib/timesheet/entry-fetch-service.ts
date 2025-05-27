@@ -107,7 +107,7 @@ export const fetchReportData = async (
   if (!user) throw new Error("Authentication required");
 
   if (isAdmin(user)) {
-    /* Admin → call your RPC (full access) */
+    /* Admin → call your RPC for full access with filters */
     const { data, error } = await supabase.rpc("timesheet_entries_report", {
       p_start_date: startDate.toISOString().slice(0, 10),
       p_end_date:   endDate.toISOString().slice(0, 10),
@@ -119,7 +119,7 @@ export const fetchReportData = async (
     return data ?? [];
   }
 
-  /* Non-admin → fall back to self-only fetch */
+  /* Non-admin → fall back to self-only fetch with user data */
   return fetchTimesheetEntries(startDate, endDate, {
     includeUserData: true,
     forceUserId: user.id
