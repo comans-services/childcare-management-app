@@ -77,6 +77,15 @@ const ReportFilters = ({
     }
   }, [customersData, contractsData, projectsData, usersData, setCustomers, setContracts, setProjects, setUsers]);
 
+  // Helper function to properly handle null/empty values for UUID fields
+  const handleSelectChange = (value: string | undefined) => {
+    // Convert empty string, "empty", or undefined to null
+    if (!value || value === "" || value === "empty") {
+      return null;
+    }
+    return value;
+  };
+
   const generateReport = async () => {
     if (!user) {
       toast({
@@ -207,13 +216,13 @@ const ReportFilters = ({
               <label className="text-sm font-medium">Customer</label>
               <Select
                 value={filters.customerId || ""}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, customerId: value || null }))}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, customerId: handleSelectChange(value) }))}
               >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="All Customers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Customers</SelectItem>
+                  <SelectItem value="all">All Customers</SelectItem>
                   {customersData?.map((customer) => (
                     <SelectItem key={customer.id} value={customer.id}>
                       {customer.name}
@@ -227,13 +236,13 @@ const ReportFilters = ({
               <label className="text-sm font-medium">Project</label>
               <Select
                 value={filters.projectId || ""}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, projectId: value || null }))}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, projectId: handleSelectChange(value) }))}
               >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="All Projects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Projects</SelectItem>
+                  <SelectItem value="all">All Projects</SelectItem>
                   {projectsData?.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
@@ -247,13 +256,13 @@ const ReportFilters = ({
               <label className="text-sm font-medium">Contract</label>
               <Select
                 value={filters.contractId || ""}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, contractId: value || null }))}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, contractId: handleSelectChange(value) }))}
               >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="All Contracts" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Contracts</SelectItem>
+                  <SelectItem value="all">All Contracts</SelectItem>
                   {contractsData?.map((contract) => (
                     <SelectItem key={contract.id} value={contract.id}>
                       {contract.name}
@@ -267,13 +276,13 @@ const ReportFilters = ({
               <label className="text-sm font-medium">Employee</label>
               <Select
                 value={filters.userId || ""}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, userId: value || null }))}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, userId: handleSelectChange(value) }))}
               >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="All Employees" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Employees</SelectItem>
+                  <SelectItem value="all">All Employees</SelectItem>
                   {usersData?.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.full_name || "Unknown User"}
