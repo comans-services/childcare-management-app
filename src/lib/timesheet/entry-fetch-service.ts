@@ -1,5 +1,6 @@
 
 
+
 /* ──────────────────────────────────────────────────────────────
  * entry-fetch-service.ts
  * All read-only queries for timesheets and reports
@@ -31,11 +32,7 @@ export const fetchTimesheetEntries = async (
 
   let q = supabase
     .from("timesheet_entries")
-    .select(
-      includeUserData
-        ? `*, profiles!timesheet_entries_user_id_fkey ( id, full_name )`
-        : `*`
-    )
+    .select("*")
     .gte("entry_date", formatDate(startDate))
     .lte("entry_date", formatDate(endDate));
 
@@ -53,8 +50,29 @@ export const fetchTimesheetEntries = async (
   const { data, error } = await q.order("entry_date", { ascending: true });
   if (error) throw error;
 
+  // If we need user data, fetch it separately
+  let entriesWithUserData = data as TimesheetEntry[];
+  
+  if (includeUserData && data.length > 0) {
+    const userIds = [...new Set(data.map(e => e.user_id))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, organization, time_zone")
+      .in("id", userIds);
+
+    const profileMap = (profiles ?? []).reduce((acc, p) => {
+      acc[p.id] = p;
+      return acc;
+    }, {} as Record<string, any>);
+
+    entriesWithUserData = data.map(e => ({
+      ...e,
+      user: profileMap[e.user_id]
+    }));
+  }
+
   /* Optionally join projects (kept from your original logic) */
-  const projectIds = [...new Set(data.map(e => e.project_id))];
+  const projectIds = [...new Set(entriesWithUserData.map(e => e.project_id))];
   if (projectIds.length > 0) {
     const { data: projects } = await supabase
       .from("projects")
@@ -66,10 +84,10 @@ export const fetchTimesheetEntries = async (
       return acc;
     }, {} as Record<string, any>);
 
-    return data.map(e => ({ ...e, project: projectMap[e.project_id] }));
+    return entriesWithUserData.map(e => ({ ...e, project: projectMap[e.project_id] }));
   }
 
-  return data as TimesheetEntry[];
+  return entriesWithUserData;
 };
 
 /*-------------------------------------------------------------
