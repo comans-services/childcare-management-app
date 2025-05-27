@@ -1,6 +1,4 @@
 
-
-
 /* ──────────────────────────────────────────────────────────────
  * entry-fetch-service.ts
  * All read-only queries for timesheets and reports
@@ -50,7 +48,7 @@ export const fetchTimesheetEntries = async (
   const { data, error } = await q.order("entry_date", { ascending: true });
   if (error) throw error;
 
-  // If we need user data, fetch it separately
+  // If we need user data, fetch it separately to avoid join issues
   let entriesWithUserData = data as TimesheetEntry[];
   
   if (includeUserData && data.length > 0) {
@@ -106,19 +104,42 @@ export const fetchReportData = async (
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Authentication required");
 
+  console.log("=== FETCH REPORT DATA ===");
+  console.log("User:", user.id);
+  console.log("Date range:", formatDate(startDate), "to", formatDate(endDate));
+  console.log("Filters:", filters);
+
   if (isAdmin(user)) {
-    /* Admin → call your RPC for full access with filters */
-    const { data, error } = await supabase.rpc("timesheet_entries_report", {
-      p_start_date: startDate.toISOString().slice(0, 10),
-      p_end_date:   endDate.toISOString().slice(0, 10),
-      p_user_id:    filters.userId   || null,
-      p_project_id: filters.projectId|| null,
-      p_customer_id:filters.customerId|| null
-    });
-    if (error) throw error;
-    return data ?? [];
+    console.log("Admin user - calling RPC function");
+    
+    // Prepare parameters for the RPC call - ensure all parameters are properly formatted
+    const rpcParams = {
+      p_start_date: formatDate(startDate),
+      p_end_date: formatDate(endDate),
+      p_user_id: filters.userId || null,
+      p_project_id: filters.projectId || null,
+      p_customer_id: filters.customerId || null
+    };
+    
+    console.log("RPC Parameters:", rpcParams);
+    
+    try {
+      const { data, error } = await supabase.rpc("timesheet_entries_report", rpcParams);
+      
+      if (error) {
+        console.error("RPC Error:", error);
+        throw error;
+      }
+      
+      console.log("RPC Success - entries found:", data?.length || 0);
+      return data ?? [];
+    } catch (error) {
+      console.error("Error calling RPC function:", error);
+      throw error;
+    }
   }
 
+  console.log("Non-admin user - using direct query");
   /* Non-admin → fall back to self-only fetch with user data */
   return fetchTimesheetEntries(startDate, endDate, {
     includeUserData: true,
