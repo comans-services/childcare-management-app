@@ -39,7 +39,7 @@ export const fetchTimesheetEntries = async (
   if (forceUserId) {
     // Timesheet screen passes its own ID – always self-only
     q = q.eq("user_id", forceUserId);
-  } else if (!isAdmin(user)) {
+  } else if (!(await isAdmin(user))) {
     // Employees default to self-only
     q = q.eq("user_id", user.id);
   }
@@ -109,7 +109,7 @@ export const fetchReportData = async (
   console.log("Date range:", formatDate(startDate), "to", formatDate(endDate));
   console.log("Filters:", filters);
 
-  if (isAdmin(user)) {
+  if (await isAdmin(user)) {
     console.log("Admin user - calling RPC function");
     
     // Prepare parameters for the RPC call - ensure all parameters are properly formatted

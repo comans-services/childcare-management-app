@@ -8,9 +8,9 @@ let cachedAdminIds = new Set<string>();       // memoise per session
  * True when the user is an admin.
  * Priority:
  *   1) role claim in JWT
- *   2) role column in public.profiles
+ *   2) role column in public.profiles (cached)
  */
-export const isAdmin = (user: Session["user"] | null | undefined): boolean => {
+export const isAdmin = async (user: Session["user"] | null | undefined): Promise<boolean> => {
   if (!user) return false;
 
   /* ---------- 1 · JWT claim (fast) ---------- */
@@ -23,27 +23,21 @@ export const isAdmin = (user: Session["user"] | null | undefined): boolean => {
   /* ---------- 2 · Cached DB lookup ---------- */
   if (cachedAdminIds.has(user.id)) return true;
 
-  /* ---------- 3 · DB lookup (sync wrapper around async) ---------- */
-  // NOTE: Supabase JS is async; but our caller expects a sync boolean.
-  // We'll kick off an async fetch and cache the result for next call.
-  // Until it resolves, return false (employee scope) once; the second
-  // click will hit the cache and behave as admin.
-
-  void (async () => {
-    try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      
-      if (data?.role?.toLowerCase?.() === "admin") {
-        cachedAdminIds.add(user.id);
-      }
-    } catch {
-      // ignore errors - this is a background cache operation
+  /* ---------- 3 · DB lookup (async) ---------- */
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    
+    if (data?.role?.toLowerCase?.() === "admin") {
+      cachedAdminIds.add(user.id);
+      return true;
     }
-  })();
+  } catch {
+    // ignore errors - default to false
+  }
 
   return false;
 };
