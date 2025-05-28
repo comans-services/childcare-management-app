@@ -132,7 +132,39 @@ export const fetchReportData = async (
       }
       
       console.log("RPC Success - entries found:", data?.length || 0);
-      return data ?? [];
+      
+      // Transform the flattened RPC response into the expected nested format
+      const transformedData = (data ?? []).map((entry: any) => ({
+        id: entry.id,
+        user_id: entry.user_id,
+        project_id: entry.project_id,
+        entry_date: entry.entry_date,
+        hours_logged: entry.hours_logged,
+        created_at: entry.created_at,
+        updated_at: entry.updated_at,
+        notes: entry.notes,
+        jira_task_id: entry.jira_task_id,
+        start_time: entry.start_time,
+        end_time: entry.end_time,
+        // Transform flattened project data into nested format
+        project: {
+          id: entry.project_id,
+          name: entry.project_name,
+          description: entry.project_description,
+          customer_id: entry.project_customer_id
+        },
+        // Transform flattened user data into nested format
+        user: {
+          id: entry.user_id,
+          full_name: entry.user_full_name,
+          email: entry.user_email,
+          organization: entry.user_organization,
+          time_zone: entry.user_time_zone
+        }
+      }));
+      
+      console.log("Transformed data sample:", transformedData[0]);
+      return transformedData;
     } catch (error) {
       console.error("Error calling RPC function:", error);
       throw error;
