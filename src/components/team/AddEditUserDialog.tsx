@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { User } from "@/lib/user-service";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import TimeZoneSelect from "@/components/auth/TimeZoneSelect";
 
 interface AddEditUserDialogProps {
   user?: User | null;
@@ -206,27 +207,13 @@ const AddEditUserDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Time Zone</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ""}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select time zone" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="UTC">UTC</SelectItem>
-                        <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                        <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                        <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                        <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                        <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                        <SelectItem value="Europe/Paris">Central European Time</SelectItem>
-                        <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                        <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <TimeZoneSelect
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        placeholder="Select time zone"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
