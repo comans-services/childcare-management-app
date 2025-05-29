@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +9,7 @@ interface AuthContextProps {
   user: User | null;
   userRole: "employee" | "admin" | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, organization: string, timeZone: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
 }
@@ -211,7 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, organization: string, timeZone: string) => {
     try {
       console.log(`Attempting sign up for: ${email}`);
       
@@ -238,7 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      // Create profile after signup, including email field
+      // Create profile after signup, including new fields
       if (data.user) {
         console.log(`Creating profile for new user: ${data.user.id}`);
         
@@ -250,13 +249,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               full_name: fullName,
               role: "employee", // Default role
               email: email, // Explicitly store email
+              organization: organization,
+              time_zone: timeZone,
             },
           ]);
 
         if (profileError) {
           console.error("Error creating profile:", profileError);
         } else {
-          console.log("Profile created successfully");
+          console.log("Profile created successfully with organization and time zone");
         }
       }
 
