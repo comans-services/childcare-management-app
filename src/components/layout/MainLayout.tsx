@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
@@ -9,10 +9,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export const MainLayout = () => {
   const { session } = useAuth();
   const isMobile = useIsMobile();
+  const location = useLocation();
 
-  // Redirect to auth page if not logged in
+  // Redirect to auth page if not logged in, but preserve the current location
   if (!session) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   return (
