@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 
 import MainLayout from "@/components/layout/MainLayout";
+import AdminRoute from "@/routes/AdminRoute";
 import AuthPage from "@/pages/AuthPage";
 import Dashboard from "@/pages/Index";
 import TimesheetPage from "@/pages/TimesheetPage";
@@ -33,12 +34,16 @@ const App = () => (
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="timesheet" element={<TimesheetPage />} />
-              <Route path="projects" element={<ProjectsPage />} />
-              <Route path="contracts" element={<ContractsPage />} />
-              <Route path="customers" element={<CustomersPage />} />
-              <Route path="reports" element={<ReportsPage />} />
-              <Route path="team" element={<TeamPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              
+              {/* Admin-only routes protected by AdminRoute */}
+              <Route element={<AdminRoute />}>
+                <Route path="projects" element={<ProjectsPage />} />
+                <Route path="contracts" element={<ContractsPage />} />
+                <Route path="customers" element={<CustomersPage />} />
+                <Route path="reports" element={<ReportsPage />} />
+                <Route path="team" element={<TeamPage />} />
+              </Route>
             </Route>
             
             <Route path="*" element={<NotFound />} />

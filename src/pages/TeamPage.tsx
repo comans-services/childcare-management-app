@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import TeamList from "@/components/team/TeamList";
 import { useAuth } from "@/context/AuthContext";
+import { isAdmin } from "@/utils/roles";
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import AddEditUserDialog from "@/components/team/AddEditUserDialog";
@@ -13,14 +14,31 @@ import { useQueryClient } from "@tanstack/react-query";
 const TeamPage = () => {
   const { user, userRole } = useAuth();
   const queryClient = useQueryClient();
-  const isAdmin = userRole === "admin";
+  const isAdminRole = userRole === "admin";
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [userIsAdmin, setUserIsAdmin] = useState<boolean | null>(null);
+
+  // Defense-in-depth: Check admin status
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user) {
+        const adminStatus = await isAdmin(user);
+        setUserIsAdmin(adminStatus);
+      }
+    };
+    checkAdmin();
+  }, [user]);
 
   useEffect(() => {
     console.log("Current user:", user);
     console.log("User role:", userRole);
   }, [user, userRole]);
+
+  // Return null if user is not admin (backup protection)
+  if (userIsAdmin === false) {
+    return null;
+  }
 
   const handleAddUser = () => {
     console.log("Opening add user dialog");
@@ -64,7 +82,7 @@ const TeamPage = () => {
           <h1 className="text-2xl font-bold">Team</h1>
           <p className="text-gray-600">Manage and view team members</p>
         </div>
-        {isAdmin && (
+        {isAdminRole && (
           <Button 
             onClick={handleAddUser}
             size="lg" 
@@ -81,7 +99,7 @@ const TeamPage = () => {
         <CardHeader className="bg-muted/50">
           <CardTitle>Team Members</CardTitle>
           <CardDescription>
-            {isAdmin 
+            {isAdminRole 
               ? "Manage your team members and their roles" 
               : "View team members"}
           </CardDescription>
@@ -91,7 +109,7 @@ const TeamPage = () => {
         </CardContent>
       </Card>
 
-      {isAdmin && (
+      {isAdminRole && (
         <AddEditUserDialog
           isOpen={isAddUserOpen}
           onClose={() => setIsAddUserOpen(false)}

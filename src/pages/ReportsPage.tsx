@@ -1,6 +1,6 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { isAdmin } from "@/utils/roles";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReportFilters from "@/components/reports/ReportFilters";
 import ReportCharts from "@/components/reports/ReportCharts";
@@ -28,6 +28,24 @@ export type ReportFiltersType = {
 
 const ReportsPage = () => {
   const { user } = useAuth();
+  const [userIsAdmin, setUserIsAdmin] = useState<boolean | null>(null);
+  
+  // Defense-in-depth: Check admin status
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user) {
+        const adminStatus = await isAdmin(user);
+        setUserIsAdmin(adminStatus);
+      }
+    };
+    checkAdmin();
+  }, [user]);
+
+  // Return null if user is not admin (backup protection)
+  if (userIsAdmin === false) {
+    return null;
+  }
+
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState<TimesheetEntry[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);

@@ -292,34 +292,24 @@ export type Database = {
         Returns: string
       }
       timesheet_entries_report: {
-        Args:
-          | {
-              p_start_date: string
-              p_end_date: string
-              p_user_id?: string
-              p_project_id?: string
-              p_customer_id?: string
-            }
-          | {
-              p_start_date: string
-              p_end_date: string
-              p_user_id?: string
-              p_project_id?: string
-              p_customer_id?: string
-              p_contract_id?: string
-            }
+        Args: {
+          p_start_date: string
+          p_end_date: string
+          p_user_id?: string
+          p_project_id?: string
+          p_customer_id?: string
+          p_contract_id?: string
+        }
         Returns: {
           id: string
           user_id: string
           project_id: string
           entry_date: string
           hours_logged: number
-          created_at: string
-          updated_at: string
           notes: string
           jira_task_id: string
-          start_time: string
-          end_time: string
+          created_at: string
+          updated_at: string
           project_name: string
           project_description: string
           project_customer_id: string
