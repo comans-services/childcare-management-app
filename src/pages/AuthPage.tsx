@@ -19,7 +19,17 @@ const AuthPage = () => {
 
   // Redirect if already logged in
   if (session && !loading) {
-    return <Navigate to="/timesheet" replace />;
+    // Check for intended redirect location
+    const intendedPath = localStorage.getItem('intended_path');
+    const redirectTo = intendedPath && intendedPath !== '/auth' ? intendedPath : '/timesheet';
+    
+    // Clear the intended path after use
+    if (intendedPath) {
+      localStorage.removeItem('intended_path');
+      console.log(`Redirecting authenticated user to intended path: ${redirectTo}`);
+    }
+    
+    return <Navigate to={redirectTo} replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -29,6 +39,7 @@ const AuthPage = () => {
 
     try {
       await signIn(email, password);
+      // Redirect will be handled by the redirect logic above after auth state changes
     } catch (error: any) {
       setError(error.message || "An error occurred during sign in");
     } finally {
@@ -43,6 +54,7 @@ const AuthPage = () => {
 
     try {
       await signUp(email, password, fullName);
+      // Redirect will be handled by the redirect logic above after auth state changes
     } catch (error: any) {
       setError(error.message || "An error occurred during sign up");
     } finally {
