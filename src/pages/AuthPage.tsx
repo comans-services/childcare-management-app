@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -7,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock } from "lucide-react";
-import TimeZoneSelect from "@/components/auth/TimeZoneSelect";
 
 const AuthPage = () => {
   const { signIn, signUp, session, loading } = useAuth();
@@ -185,11 +184,25 @@ const AuthPage = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="timeZone">Time Zone</Label>
-                    <TimeZoneSelect
+                    <Select
                       value={timeZone}
                       onValueChange={setTimeZone}
-                      placeholder="Select your timezone"
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your timezone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UTC">UTC</SelectItem>
+                        <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                        <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                        <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                        <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                        <SelectItem value="Europe/London">London (GMT)</SelectItem>
+                        <SelectItem value="Europe/Paris">Central European Time</SelectItem>
+                        <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
+                        <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <Button 
