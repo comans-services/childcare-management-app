@@ -1,56 +1,38 @@
-
+// src/components/auth/TimeZoneSelect.tsx
 import React from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface TimeZoneSelectProps {
+interface Props {
   value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
+  onChange: (val: string) => void;
 }
 
-const TimeZoneSelect: React.FC<TimeZoneSelectProps> = ({ value, onChange, disabled }) => {
-  const timeZones = Intl.supportedValuesOf("timeZone");
-  
-  // Group common time zones at the top for better UX
-  const commonTimeZones = [
-    "America/New_York",
-    "America/Chicago", 
-    "America/Denver",
-    "America/Los_Angeles",
-    "Europe/London",
-    "Europe/Paris",
-    "Asia/Tokyo",
-    "Australia/Sydney"
-  ];
-  
-  const otherTimeZones = timeZones.filter(tz => !commonTimeZones.includes(tz));
+/* Static list – avoids the TS compile error */
+const COMMON_TZ = [
+  "Australia/Sydney",
+  "Australia/Melbourne",
+  "Australia/Brisbane",
+  "Pacific/Auckland",
+  "Asia/Singapore",
+  "Europe/London",
+  "Europe/Berlin",
+  "America/Los_Angeles",
+  "America/New_York",
+  "UTC"
+];
 
-  return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger>
-        <SelectValue placeholder="Select time zone" />
-      </SelectTrigger>
-      <SelectContent>
-        {commonTimeZones.map((tz) => (
-          <SelectItem key={tz} value={tz}>
-            {tz.replace(/_/g, ' ')}
-          </SelectItem>
-        ))}
-        {otherTimeZones.length > 0 && (
-          <>
-            <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-t">
-              Other Time Zones
-            </div>
-            {otherTimeZones.map((tz) => (
-              <SelectItem key={tz} value={tz}>
-                {tz.replace(/_/g, ' ')}
-              </SelectItem>
-            ))}
-          </>
-        )}
-      </SelectContent>
-    </Select>
-  );
-};
+const TimeZoneSelect: React.FC<Props> = ({ value, onChange }) => (
+  <select
+    className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring"
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    required
+  >
+    {COMMON_TZ.map((z) => (
+      <option key={z} value={z}>
+        {z}
+      </option>
+    ))}
+  </select>
+);
 
 export default TimeZoneSelect;
