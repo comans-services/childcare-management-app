@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -7,17 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock } from "lucide-react";
-import TimeZoneSelect from "@/components/auth/TimeZoneSelect";
 
 const AuthPage = () => {
   const { signIn, signUp, session, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [organization, setOrganization] = useState("");
-  const [timeZone, setTimeZone] = useState(
-    Intl.DateTimeFormat().resolvedOptions().timeZone
-  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,7 +53,7 @@ const AuthPage = () => {
     setIsSubmitting(true);
 
     try {
-      await signUp(email, password, fullName, organization, timeZone);
+      await signUp(email, password, fullName);
       // Redirect will be handled by the redirect logic above after auth state changes
     } catch (error: any) {
       setError(error.message || "An error occurred during sign up");
@@ -143,28 +139,6 @@ const AuthPage = () => {
                       onChange={(e) => setFullName(e.target.value)}
                       disabled={isSubmitting}
                       required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="organization">Organization</Label>
-                    <Input 
-                      id="organization" 
-                      type="text"
-                      placeholder="Company or team name"
-                      value={organization}
-                      onChange={(e) => setOrganization(e.target.value)}
-                      disabled={isSubmitting}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="timeZone">Time Zone</Label>
-                    <TimeZoneSelect 
-                      value={timeZone} 
-                      onChange={setTimeZone}
-                      disabled={isSubmitting}
                     />
                   </div>
                   
