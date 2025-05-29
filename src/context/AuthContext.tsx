@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -238,42 +237,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      // Create profile after signup - using same pattern as createUser in user-service.ts
+      // Create profile after signup, including email, organization, and timezone fields
       if (data.user) {
         console.log(`Creating profile for new user: ${data.user.id}`);
         
-        const profileData = {
-          id: data.user.id,
-          full_name: fullName,
-          role: "employee", // Always set to employee for public signups
-          email: email, // Explicitly store email
-          organization: organization || null,
-          time_zone: timeZone || null,
-          updated_at: new Date().toISOString(),
-        };
-
-        const { data: createdProfile, error: profileError } = await supabase
+        const { error: profileError } = await supabase
           .from("profiles")
-          .insert([profileData])
-          .select();
+          .insert([
+            {
+              id: data.user.id,
+              full_name: fullName,
+              role: "employee", // Always set to employee for public signups
+              email: email, // Explicitly store email
+              organization: organization || null,
+              time_zone: timeZone || null,
+            },
+          ]);
 
         if (profileError) {
           console.error("Error creating profile:", profileError);
-          // Don't throw here as the auth user was created successfully
-          // This allows the user to still sign in even if profile creation fails
-          toast({
-            title: "Account created with minor issue",
-            description: "Your account was created but some profile data may need to be updated later.",
-            variant: "default",
-          });
         } else {
-          console.log("Profile created successfully:", createdProfile);
-          toast({
-            title: "Account created successfully",
-            description: "Welcome! Your account has been created.",
-          });
+          console.log("Profile created successfully");
         }
       }
+
+      toast({
+        title: "Account created",
+        description: "You have successfully created an account.",
+      });
     } catch (error: any) {
       throw error;
     }
