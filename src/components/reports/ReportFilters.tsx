@@ -77,10 +77,10 @@ const ReportFilters = ({
     }
   }, [customersData, contractsData, projectsData, usersData, setCustomers, setContracts, setProjects, setUsers]);
 
-  // Helper function to properly handle null/empty values for UUID fields
-  const handleSelectChange = (value: string | undefined) => {
-    // Convert "all", empty string, "empty", or undefined to null
-    if (!value || value === "" || value === "empty" || value === "all") {
+  // Improved filter value normalization function
+  const normalizeSelectValue = (value: string | undefined): string | null => {
+    // Convert any "empty" values to null for proper filtering
+    if (!value || value === "" || value === "all" || value === "empty") {
       return null;
     }
     return value;
@@ -98,19 +98,24 @@ const ReportFilters = ({
     
     console.log("=== GENERATING REPORT ===");
     console.log("Current user:", user);
-    console.log("Filters:", filters);
+    console.log("Raw filters:", filters);
+    
+    // Normalize filters before sending to backend
+    const normalizedFilters = {
+      userId: normalizeSelectValue(filters.userId),
+      projectId: normalizeSelectValue(filters.projectId),
+      customerId: normalizeSelectValue(filters.customerId),
+      contractId: normalizeSelectValue(filters.contractId)
+    };
+    
+    console.log("Normalized filters for backend:", normalizedFilters);
     
     setIsGeneratingReport(true);
     setIsLoading(true);
     
     try {
-      // Call fetchReportData with all filters
-      const reportData = await fetchReportData(filters.startDate, filters.endDate, {
-        userId: filters.userId,
-        projectId: filters.projectId,
-        customerId: filters.customerId,
-        contractId: filters.contractId
-      });
+      // Call fetchReportData with normalized filters
+      const reportData = await fetchReportData(filters.startDate, filters.endDate, normalizedFilters);
       
       console.log("Report data received:", reportData);
       console.log("Number of entries:", reportData.length);
@@ -216,13 +221,13 @@ const ReportFilters = ({
               <label className="text-sm font-medium">Customer</label>
               <Select
                 value={filters.customerId || ""}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, customerId: handleSelectChange(value) }))}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, customerId: normalizeSelectValue(value) }))}
               >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="All Customers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Customers</SelectItem>
+                  <SelectItem value="">All Customers</SelectItem>
                   {customersData?.map((customer) => (
                     <SelectItem key={customer.id} value={customer.id}>
                       {customer.name}
@@ -236,13 +241,13 @@ const ReportFilters = ({
               <label className="text-sm font-medium">Project</label>
               <Select
                 value={filters.projectId || ""}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, projectId: handleSelectChange(value) }))}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, projectId: normalizeSelectValue(value) }))}
               >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="All Projects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Projects</SelectItem>
+                  <SelectItem value="">All Projects</SelectItem>
                   {projectsData?.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
@@ -256,13 +261,13 @@ const ReportFilters = ({
               <label className="text-sm font-medium">Contract</label>
               <Select
                 value={filters.contractId || ""}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, contractId: handleSelectChange(value) }))}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, contractId: normalizeSelectValue(value) }))}
               >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="All Contracts" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Contracts</SelectItem>
+                  <SelectItem value="">All Contracts</SelectItem>
                   {contractsData?.map((contract) => (
                     <SelectItem key={contract.id} value={contract.id}>
                       {contract.name}
@@ -276,13 +281,13 @@ const ReportFilters = ({
               <label className="text-sm font-medium">Employee</label>
               <Select
                 value={filters.userId || ""}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, userId: handleSelectChange(value) }))}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, userId: normalizeSelectValue(value) }))}
               >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="All Employees" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Employees</SelectItem>
+                  <SelectItem value="">All Employees</SelectItem>
                   {usersData?.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.full_name || "Unknown User"}

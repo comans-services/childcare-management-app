@@ -107,18 +107,37 @@ export const fetchReportData = async (
   console.log("=== FETCH REPORT DATA ===");
   console.log("User:", user.id);
   console.log("Date range:", formatDate(startDate), "to", formatDate(endDate));
-  console.log("Filters:", filters);
+  console.log("Filters before normalization:", filters);
+
+  // Helper function to normalize filter values
+  const normalizeFilterValue = (value: string | null | undefined): string | null => {
+    if (!value || value === "" || value === "all" || value === "empty") {
+      return null;
+    }
+    return value;
+  };
+
+  // Normalize all filter values
+  const normalizedFilters = {
+    userId: normalizeFilterValue(filters.userId),
+    projectId: normalizeFilterValue(filters.projectId),
+    customerId: normalizeFilterValue(filters.customerId),
+    contractId: normalizeFilterValue(filters.contractId)
+  };
+
+  console.log("Normalized filters:", normalizedFilters);
 
   if (await isAdmin(user)) {
     console.log("Admin user - calling RPC function");
     
-    // Prepare parameters for the RPC call - ensure all parameters are properly formatted
+    // Prepare parameters for the RPC call with normalized values
     const rpcParams = {
       p_start_date: formatDate(startDate),
       p_end_date: formatDate(endDate),
-      p_user_id: filters.userId || null,
-      p_project_id: filters.projectId || null,
-      p_customer_id: filters.customerId || null
+      p_user_id: normalizedFilters.userId,
+      p_project_id: normalizedFilters.projectId,
+      p_customer_id: normalizedFilters.customerId,
+      p_contract_id: normalizedFilters.contractId
     };
     
     console.log("RPC Parameters:", rpcParams);
@@ -164,6 +183,8 @@ export const fetchReportData = async (
       }));
       
       console.log("Transformed data sample:", transformedData[0]);
+      console.log("Final filter verification - applied filters:", normalizedFilters);
+      
       return transformedData;
     } catch (error) {
       console.error("Error calling RPC function:", error);
