@@ -316,8 +316,9 @@ export const useDashboardData = () => {
     deadlineMessage = "Deadline passed";
   }
 
-  const projectsChartData = Object.values(projectHours);
-  const customersChartData = Object.values(customerHours);
+  // Fix the type issue by properly typing the chart data arrays
+  const projectsChartData: Array<{ name: string; hours: number }> = Object.values(projectHours);
+  const customersChartData: Array<{ name: string; hours: number }> = Object.values(customerHours);
 
   return {
     // Data
