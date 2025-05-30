@@ -10,6 +10,7 @@ import AddEditUserDialog from "@/components/team/AddEditUserDialog";
 import { createUser } from "@/lib/user-service";
 import { toast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import ImportButton from "@/components/common/ImportButton";
 
 const TeamPage = () => {
   const { user, userRole } = useAuth();
@@ -75,6 +76,14 @@ const TeamPage = () => {
       });
   };
 
+  const handleImportComplete = () => {
+    // Force refetch users after import
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.refetchQueries({ queryKey: ["users"] });
+    }, 500);
+  };
+
   return (
     <div className="container mx-auto px-4">
       <div className="mb-6 flex justify-between items-center">
@@ -83,15 +92,23 @@ const TeamPage = () => {
           <p className="text-gray-600">Manage and view team members</p>
         </div>
         {isAdminRole && (
-          <Button 
-            onClick={handleAddUser}
-            size="lg" 
-            className="bg-primary hover:bg-primary/90"
-            disabled={isCreatingUser}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            {isCreatingUser ? "Adding..." : "Add Team Member"}
-          </Button>
+          <div className="flex gap-2">
+            <ImportButton
+              entityType="team-members"
+              onImportComplete={handleImportComplete}
+              variant="outline"
+            />
+            
+            <Button 
+              onClick={handleAddUser}
+              size="lg" 
+              className="bg-primary hover:bg-primary/90"
+              disabled={isCreatingUser}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              {isCreatingUser ? "Adding..." : "Add Team Member"}
+            </Button>
+          </div>
         )}
       </div>
 

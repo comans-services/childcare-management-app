@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import DeleteContractDialog from "@/components/contracts/DeleteContractDialog";
 import ContractFilters from "@/components/contracts/ContractFilters";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import ImportButton from "@/components/common/ImportButton";
 
 const ContractsPage = () => {
   const { user } = useAuth();
@@ -126,6 +128,12 @@ const ContractsPage = () => {
         </div>
         
         <div className="flex gap-2">
+          <ImportButton
+            entityType="contracts"
+            onImportComplete={refetch}
+            variant="outline"
+          />
+          
           <Button 
             onClick={() => refetch()}
             variant="outline"
@@ -271,6 +279,9 @@ const ContractsPage = () => {
                 >
                   Add Your First Contract
                 </Button>
+                <div className="text-sm text-muted-foreground">
+                  or <ImportButton entityType="contracts" onImportComplete={refetch} variant="ghost" size="sm" />
+                </div>
               </div>
             </div>
           )}

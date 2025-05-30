@@ -1,11 +1,13 @@
 
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Building2, Clock, Edit, Trash2, Phone, Mail } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { Customer, fetchCustomers, deleteCustomer } from "@/lib/customer-service";
+import { PlusCircle, Clock, Users, Building, Search, RefreshCw } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { Customer, fetchCustomers } from "@/lib/customer-service";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -14,107 +16,160 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import AddEditCustomerDialog from "@/components/customers/AddEditCustomerDialog";
-import { Input } from "@/components/ui/input";
+import ImportButton from "@/components/common/ImportButton";
 
 const CustomersPage = () => {
-  const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
+  const { user } = useAuth();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch all customers
-  const { data: customers = [], isLoading } = useQuery({
+  const { 
+    data: customers = [], 
+    isLoading, 
+    refetch,
+    error
+  } = useQuery({
     queryKey: ["customers"],
-    queryFn: fetchCustomers
+    queryFn: fetchCustomers,
+    enabled: !!user
   });
 
-  // Delete customer mutation
-  const deleteMutation = useMutation({
-    mutationFn: (customerId: string) => deleteCustomer(customerId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+  useEffect(() => {
+    if (error) {
+      console.error("Error fetching customers:", error);
       toast({
-        title: "Customer deleted",
-        description: "The customer has been removed successfully."
-      });
-      setCustomerToDelete(null);
-    },
-    onError: (error) => {
-      console.error("Error deleting customer:", error);
-      toast({
-        title: "Error",
-        description: "Could not delete the customer. It might be associated with projects.",
-        variant: "destructive"
+        title: "Error fetching customers",
+        description: "There was an issue loading your customers. Please try again.",
+        variant: "destructive",
       });
     }
-  });
+  }, [error]);
 
-  // Handle customer edit
+  const filteredCustomers = customers.filter(customer =>
+    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.company?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleEditCustomer = (customer: Customer) => {
     setEditingCustomer(customer);
     setIsAddCustomerOpen(true);
   };
-  
-  // Handle customer deletion
-  const handleDeleteCustomer = () => {
-    if (customerToDelete) {
-      deleteMutation.mutate(customerToDelete.id);
-    }
+
+  const closeAddEditDialog = () => {
+    setIsAddCustomerOpen(false);
+    setEditingCustomer(null);
+    refetch();
   };
-  
-  // Filter customers based on search term
-  const filteredCustomers = customers.filter(customer => 
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (customer.company && customer.company.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+
+  const calculateStats = () => {
+    const totalCustomers = customers.length;
+    const withEmail = customers.filter(c => c.email).length;
+    const withCompany = customers.filter(c => c.company).length;
+    
+    return {
+      totalCustomers,
+      withEmail,
+      withCompany
+    };
+  };
+
+  const stats = calculateStats();
 
   return (
     <div className="container mx-auto">
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Customers</h1>
-          <p className="text-gray-600">Manage customer information</p>
+          <p className="text-gray-600">Manage your customer information</p>
         </div>
         
-        <Button 
-          onClick={() => {
-            setEditingCustomer(null);
-            setIsAddCustomerOpen(true);
-          }} 
-          className="flex items-center gap-2"
-        >
-          <PlusCircle className="h-4 w-4" />
-          Add Customer
-        </Button>
+        <div className="flex gap-2">
+          <ImportButton
+            entityType="customers"
+            onImportComplete={refetch}
+            variant="outline"
+          />
+          
+          <Button 
+            onClick={() => refetch()}
+            variant="outline"
+            title="Refresh customers"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            onClick={() => setIsAddCustomerOpen(true)} 
+            className="flex items-center gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Add Customer
+          </Button>
+        </div>
       </div>
+
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search customers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+      </div>
+
+      {!isLoading && customers.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Total Customers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCustomers}</div>
+              <p className="text-sm text-muted-foreground">
+                In your database
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">With Email</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{stats.withEmail}</div>
+              <p className="text-sm text-muted-foreground">
+                {Math.round((stats.withEmail / stats.totalCustomers) * 100)}% of total
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">With Company</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{stats.withCompany}</div>
+              <p className="text-sm text-muted-foreground">
+                {Math.round((stats.withCompany / stats.totalCustomers) * 100)}% of total
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
           <CardTitle>All Customers</CardTitle>
-          <CardDescription>Manage your customer database</CardDescription>
-          <div className="mt-4">
-            <div className="relative">
-              <Input
-                placeholder="Search customers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full max-w-sm"
-              />
-            </div>
-          </div>
+          <CardDescription>
+            {filteredCustomers.length} of {customers.length} customers
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -127,116 +182,90 @@ const CustomersPage = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead>Company</TableHead>
-                    <TableHead className="hidden md:table-cell">Email</TableHead>
-                    <TableHead className="hidden md:table-cell">Phone</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCustomers.map((customer) => (
                     <TableRow key={customer.id}>
                       <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>{customer.company || "-"}</TableCell>
-                      <TableCell className="hidden md:table-cell">
+                      <TableCell>
                         {customer.email ? (
-                          <div className="flex items-center">
-                            <Mail className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                          <a 
+                            href={`mailto:${customer.email}`}
+                            className="text-blue-600 hover:underline"
+                          >
                             {customer.email}
-                          </div>
+                          </a>
                         ) : (
-                          "-"
+                          <span className="text-muted-foreground">No email</span>
                         )}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
+                      <TableCell>
                         {customer.phone ? (
-                          <div className="flex items-center">
-                            <Phone className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                          <a 
+                            href={`tel:${customer.phone}`}
+                            className="text-blue-600 hover:underline"
+                          >
                             {customer.phone}
-                          </div>
+                          </a>
                         ) : (
-                          "-"
+                          <span className="text-muted-foreground">No phone</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            onClick={() => handleEditCustomer(customer)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setCustomerToDelete(customer)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      <TableCell>
+                        {customer.company ? (
+                          <Badge variant="secondary">{customer.company}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">No company</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditCustomer(customer)}
+                        >
+                          Edit
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
+          ) : customers.length === 0 ? (
+            <div className="p-8 text-center">
+              <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-500 mb-4">No customers found</p>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsAddCustomerOpen(true)}
+                >
+                  Add Your First Customer
+                </Button>
+                <div className="text-sm text-muted-foreground">
+                  or <ImportButton entityType="customers" onImportComplete={refetch} variant="ghost" size="sm" />
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="p-8 text-center">
-              <Building2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <p className="text-gray-500 mb-4">No customers found</p>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setEditingCustomer(null);
-                  setIsAddCustomerOpen(true);
-                }}
-              >
-                Add Your First Customer
-              </Button>
+              <p className="text-gray-500">No customers match your search</p>
             </div>
           )}
         </CardContent>
       </Card>
       
-      {/* Customer add/edit dialog */}
       <AddEditCustomerDialog 
         isOpen={isAddCustomerOpen} 
-        onClose={() => {
-          setIsAddCustomerOpen(false);
-          setEditingCustomer(null);
-        }} 
+        onClose={closeAddEditDialog} 
         existingCustomer={editingCustomer}
       />
-      
-      {/* Customer delete confirmation dialog */}
-      <AlertDialog open={!!customerToDelete} onOpenChange={(open) => !open && setCustomerToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete customer</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the customer "{customerToDelete?.name}"? 
-              This action cannot be undone and will remove all customer information.
-              {customerToDelete?.company && (
-                <>
-                  <br />
-                  <span className="font-medium">Company: {customerToDelete.company}</span>
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteCustomer}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete Customer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
