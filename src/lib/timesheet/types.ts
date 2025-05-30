@@ -34,6 +34,28 @@ export interface TimesheetEntry {
   };
 }
 
+// Contract time entry interface (re-exported from contract-service)
+export interface ContractTimeEntry {
+  id?: string;
+  contract_id: string;
+  user_id: string;
+  entry_date: string;
+  hours_logged: number;
+  notes?: string;
+  jira_task_id?: string;
+  start_time?: string;
+  end_time?: string;
+  contract?: {
+    id: string;
+    name: string;
+    description?: string;
+    start_date: string;
+    end_date: string;
+    status: 'active' | 'expired' | 'pending_renewal' | 'renewed';
+    is_active?: boolean;
+  };
+}
+
 // Type for creating new entries - user_id is completely omitted since trigger handles it
 export interface CreateTimesheetEntry {
   project_id: string;
@@ -49,3 +71,6 @@ export interface CreateTimesheetEntry {
 export interface UpdateTimesheetEntry extends CreateTimesheetEntry {
   id: string;
 }
+
+// Union type for both entry types
+export type AnyTimeEntry = TimesheetEntry | ContractTimeEntry;

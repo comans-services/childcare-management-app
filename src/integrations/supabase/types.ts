@@ -38,6 +38,56 @@ export type Database = {
           },
         ]
       }
+      contract_time_entries: {
+        Row: {
+          contract_id: string
+          created_at: string
+          end_time: string | null
+          entry_date: string
+          hours_logged: number
+          id: string
+          jira_task_id: string | null
+          notes: string | null
+          start_time: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          end_time?: string | null
+          entry_date: string
+          hours_logged: number
+          id?: string
+          jira_task_id?: string | null
+          notes?: string | null
+          start_time?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          end_time?: string | null
+          entry_date?: string
+          hours_logged?: number
+          id?: string
+          jira_task_id?: string | null
+          notes?: string | null
+          start_time?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_contract_time_entries_contract_id"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           created_at: string
