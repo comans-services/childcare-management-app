@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer } from "@/components/ui/chart";
@@ -139,7 +138,6 @@ const ReportCharts = ({ reportData, projects, users, isLoading }: ReportChartsPr
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
               >
                 {projectDistribution.map((entry, index) => (
                   <Cell 
@@ -171,7 +169,6 @@ const ReportCharts = ({ reportData, projects, users, isLoading }: ReportChartsPr
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
               >
                 {employeeDistribution.map((entry, index) => (
                   <Cell 
