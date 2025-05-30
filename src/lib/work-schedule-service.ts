@@ -40,6 +40,30 @@ export const fetchWorkSchedule = async (userId?: string): Promise<WorkSchedule |
   }
 };
 
+export const getDefaultWorkingDays = async (userId: string): Promise<number> => {
+  try {
+    // Fetch user's employment type from profiles
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("employment_type")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching user profile:", error);
+      return 5; // Default fallback
+    }
+
+    // Return 3 days for part-time, 5 days for full-time or undefined
+    const defaultDays = profile?.employment_type === 'part-time' ? 3 : 5;
+    console.log(`Default working days for user ${userId} (${profile?.employment_type}): ${defaultDays}`);
+    return defaultDays;
+  } catch (error) {
+    console.error("Error getting default working days:", error);
+    return 5; // Default fallback
+  }
+};
+
 export const upsertWorkSchedule = async (userId: string, workingDays: number): Promise<WorkSchedule | null> => {
   try {
     console.log(`Upserting work schedule for user ${userId}: ${workingDays} days`);
@@ -98,8 +122,9 @@ export const migrateLocalStorageToDatabase = async (userId: string): Promise<voi
       localStorage.removeItem(localStorageKey);
       console.log(`Migration completed and localStorage cleaned for user ${userId}`);
     } else {
-      console.log(`No localStorage data found for user ${userId}, using default (5 days)`);
-      await upsertWorkSchedule(userId, 5);
+      console.log(`No localStorage data found for user ${userId}, using employment type default`);
+      const defaultDays = await getDefaultWorkingDays(userId);
+      await upsertWorkSchedule(userId, defaultDays);
     }
   } catch (error) {
     console.error(`Error migrating localStorage to database for user ${userId}:`, error);

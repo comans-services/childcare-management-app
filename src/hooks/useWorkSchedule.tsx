@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchWorkSchedule, upsertWorkSchedule, migrateLocalStorageToDatabase } from "@/lib/work-schedule-service";
+import { fetchWorkSchedule, upsertWorkSchedule, migrateLocalStorageToDatabase, getDefaultWorkingDays } from "@/lib/work-schedule-service";
 import { toast } from "@/hooks/use-toast";
 
 export const useWorkSchedule = (userId?: string) => {
@@ -35,16 +36,19 @@ export const useWorkSchedule = (userId?: string) => {
         setWorkingDays(schedule.working_days);
         console.log(`Loaded work schedule from database: ${schedule.working_days} days for user ${targetUserId}`);
       } else {
+        // Get default based on employment type
+        const defaultDays = await getDefaultWorkingDays(targetUserId);
+        
         // Fallback to localStorage for emergency backup
         const localStorageKey = targetUserId === user?.id 
           ? "timesheet-working-days" 
           : `timesheet-working-days-${targetUserId}`;
         
         const saved = localStorage.getItem(localStorageKey);
-        const fallbackDays = saved && !isNaN(parseInt(saved)) ? parseInt(saved) : 5;
+        const fallbackDays = saved && !isNaN(parseInt(saved)) ? parseInt(saved) : defaultDays;
         
         setWorkingDays(fallbackDays);
-        console.log(`Using fallback work schedule: ${fallbackDays} days for user ${targetUserId}`);
+        console.log(`Using ${saved ? 'localStorage' : 'employment type default'} work schedule: ${fallbackDays} days for user ${targetUserId}`);
         
         // Try to save the fallback to database
         try {
@@ -57,13 +61,18 @@ export const useWorkSchedule = (userId?: string) => {
       console.error("Error loading work schedule:", err);
       setError("Failed to load work schedule");
       
-      // Emergency fallback to localStorage
-      const localStorageKey = targetUserId === user?.id 
-        ? "timesheet-working-days" 
-        : `timesheet-working-days-${targetUserId}`;
-      
-      const saved = localStorage.getItem(localStorageKey);
-      setWorkingDays(saved && !isNaN(parseInt(saved)) ? parseInt(saved) : 5);
+      // Emergency fallback to employment type default or localStorage
+      try {
+        const defaultDays = await getDefaultWorkingDays(targetUserId);
+        const localStorageKey = targetUserId === user?.id 
+          ? "timesheet-working-days" 
+          : `timesheet-working-days-${targetUserId}`;
+        
+        const saved = localStorage.getItem(localStorageKey);
+        setWorkingDays(saved && !isNaN(parseInt(saved)) ? parseInt(saved) : defaultDays);
+      } catch {
+        setWorkingDays(5); // Final fallback
+      }
     } finally {
       setLoading(false);
     }
