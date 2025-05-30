@@ -99,7 +99,7 @@ const WeeklyView: React.FC = () => {
         const entriesData = await fetchTimesheetEntries(
           weekDates[0],
           weekDates[weekDates.length - 1],
-          { includeUserData: false, forceUserId: user.id }   // ← Fixed parameter name
+          { includeUserData: true, forceUserId: user.id }   // ← Changed to true to include user data
         );
         
         console.log("Successfully fetched entries via RLS:", entriesData.length);
