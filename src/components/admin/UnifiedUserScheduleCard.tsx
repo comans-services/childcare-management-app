@@ -8,10 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
-import { Calendar, Save, RotateCcw, Info, Target, Clock } from "lucide-react";
+import { Calendar, Save, RotateCcw, Settings, Target } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { formatDateDisplay } from "@/lib/date-utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import WorkScheduleSelector from "@/components/timesheet/weekly-view/WorkScheduleSelector";
 
 interface UnifiedUserScheduleCardProps {
   user: {
@@ -24,7 +23,7 @@ interface UnifiedUserScheduleCardProps {
 }
 
 const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({ user, weekStartDate }) => {
-  const { workingDays, loading: globalLoading, error: globalError } = useWorkSchedule(user.id);
+  const { workingDays, updateWorkingDays, loading: globalLoading, error: globalError } = useWorkSchedule(user.id);
   const { 
     weeklySchedule, 
     effectiveDailyHours, 
@@ -61,6 +60,11 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({ user,
     }
   }, [effectiveDailyHours, weeklySchedule]);
 
+  const handleGlobalWorkingDaysChange = async (days: number) => {
+    console.log(`Admin updating global work schedule for ${user.email}: ${days} days`);
+    await updateWorkingDays(days);
+  };
+
   const handleWeeklySave = async () => {
     console.log(`Admin updating weekly work schedule for ${user.email}:`, weeklyFormData);
     await updateWeeklySchedule(weeklyFormData);
@@ -83,26 +87,6 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({ user,
 
   const weeklyTotal = Object.values(effectiveDailyHours).reduce((sum, hours) => sum + hours, 0);
   const globalWeeklyTarget = workingDays * 8;
-
-  // Helper function to determine if a day should be working based on working days count
-  const getDefaultDayIndex = (day: string): number => {
-    const dayMap: { [key: string]: number } = {
-      monday: 1,
-      tuesday: 2,
-      wednesday: 3,
-      thursday: 4,
-      friday: 5,
-      saturday: 6,
-      sunday: 7
-    };
-    return dayMap[day] || 7;
-  };
-
-  const getWeekEndDate = () => {
-    const endDate = new Date(weekStartDate);
-    endDate.setDate(endDate.getDate() + 6);
-    return endDate;
-  };
 
   if (globalLoading || weeklyLoading) {
     return (
@@ -160,26 +144,34 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({ user,
         <p className="text-sm text-muted-foreground">{user.email}</p>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Week Schedule Section - Primary Interface */}
+        {/* Global Schedule Section */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Settings className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-sm font-medium">Default Schedule</Label>
+          </div>
+          <WorkScheduleSelector
+            workingDays={workingDays}
+            onWorkingDaysChange={handleGlobalWorkingDaysChange}
+          />
+          <div className="text-xs text-muted-foreground">
+            Global weekly target: {globalWeeklyTarget} hours
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Weekly Override Section */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-primary" />
-              <Label className="text-sm font-medium">
-                Week of {formatDateDisplay(weekStartDate)} - {formatDateDisplay(getWeekEndDate())}
-              </Label>
+              <Target className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-sm font-medium">This Week</Label>
             </div>
             <div className="text-xs text-muted-foreground">
               Total: {weeklyTotal}h
             </div>
           </div>
-
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              Changes here only affect this specific week. Default schedule shown below for reference.
-            </AlertDescription>
-          </Alert>
 
           {editingWeekly ? (
             <div className="space-y-3">
@@ -205,23 +197,10 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({ user,
                   </div>
                 ))}
               </div>
-              <div>
-                <Label htmlFor="notes" className="text-xs">Notes</Label>
-                <Input
-                  id="notes"
-                  placeholder="Week-specific notes..."
-                  value={weeklyFormData.notes}
-                  onChange={(e) => setWeeklyFormData(prev => ({
-                    ...prev,
-                    notes: e.target.value
-                  }))}
-                  className="h-7 text-xs"
-                />
-              </div>
               <div className="flex gap-2">
                 <Button onClick={handleWeeklySave} size="sm" className="flex-1 text-xs">
                   <Save className="h-3 w-3 mr-1" />
-                  Save Week Schedule
+                  Save
                 </Button>
                 <Button onClick={handleWeeklyReset} variant="outline" size="sm" className="flex-1 text-xs">
                   <RotateCcw className="h-3 w-3 mr-1" />
@@ -241,8 +220,8 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({ user,
                   </div>
                 ))}
               </div>
-              <Button onClick={() => setEditingWeekly(true)} className="w-full text-xs" size="sm">
-                {hasWeeklyOverride ? "Edit This Week" : "Customize This Week"}
+              <Button onClick={() => setEditingWeekly(true)} variant="outline" size="sm" className="w-full text-xs">
+                {hasWeeklyOverride ? "Edit Custom" : "Customize Week"}
               </Button>
               {weeklySchedule?.notes && (
                 <div className="text-xs">
@@ -253,26 +232,23 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({ user,
             </div>
           )}
         </div>
-
-        <Separator />
-
-        {/* Default Schedule Reference - Read Only */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <Label className="text-sm font-medium text-muted-foreground">Default Schedule (Reference)</Label>
-          </div>
-          <div className="text-xs text-muted-foreground space-y-1">
-            <div>Working Days: {workingDays} days/week</div>
-            <div>Weekly Target: {globalWeeklyTarget} hours</div>
-            <div className="text-xs opacity-75">
-              This shows the user's default schedule pattern. Week-specific changes above override this.
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
+};
+
+// Helper function to determine if a day should be working based on working days count
+const getDefaultDayIndex = (day: string): number => {
+  const dayMap: { [key: string]: number } = {
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+    sunday: 7
+  };
+  return dayMap[day] || 7;
 };
 
 export default UnifiedUserScheduleCard;
