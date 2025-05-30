@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Clock, AlertTriangle, CheckCircle, Search, FileText, Filter, RefreshCw, X } from "lucide-react";
+import { PlusCircle, Clock, AlertTriangle, CheckCircle, Search, FileText, Filter, RefreshCw } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Contract, fetchContracts } from "@/lib/contract-service";
@@ -13,7 +12,6 @@ import DeleteContractDialog from "@/components/contracts/DeleteContractDialog";
 import ContractFilters from "@/components/contracts/ContractFilters";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useDebounce } from "@/hooks/useDebounce";
 
 const ContractsPage = () => {
   const { user } = useAuth();
@@ -30,22 +28,18 @@ const ContractsPage = () => {
   });
   
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  
-  // Debounce search term to prevent excessive API calls
-  const debouncedSearchTerm = useDebounce(filters.searchTerm, 300);
 
   const { 
     data: contracts = [], 
     isLoading, 
     refetch,
-    error,
-    isFetching
+    error
   } = useQuery({
-    queryKey: ["contracts", { ...filters, searchTerm: debouncedSearchTerm }],
+    queryKey: ["contracts", filters],
     queryFn: () => fetchContracts({
       status: filters.status === 'all' ? '' : filters.status,
       customerId: filters.customerId === 'all' ? '' : filters.customerId,
-      searchTerm: debouncedSearchTerm,
+      searchTerm: filters.searchTerm,
       isActive: filters.isActive
     }),
     enabled: !!user
@@ -66,13 +60,6 @@ const ContractsPage = () => {
     setFilters(prev => ({ 
       ...prev, 
       searchTerm: e.target.value 
-    }));
-  };
-
-  const clearSearch = () => {
-    setFilters(prev => ({ 
-      ...prev, 
-      searchTerm: '' 
     }));
   };
 
@@ -130,10 +117,6 @@ const ContractsPage = () => {
 
   const stats = calculateContractStats();
 
-  // Check if we have active search or filters
-  const hasActiveFilters = filters.searchTerm !== '' || filters.status !== 'all' || filters.customerId !== 'all' || filters.isActive !== undefined;
-  const isSearching = isFetching && debouncedSearchTerm !== filters.searchTerm;
-
   return (
     <div className="container mx-auto">
       <div className="mb-6 flex justify-between items-center">
@@ -165,26 +148,11 @@ const ContractsPage = () => {
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search contracts, customers, descriptions..."
+            placeholder="Search contracts..."
             value={filters.searchTerm}
             onChange={handleSearchChange}
-            className="pl-8 pr-10"
+            className="pl-8"
           />
-          {filters.searchTerm && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearSearch}
-              className="absolute right-1 top-1 h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-          {isSearching && (
-            <div className="absolute right-8 top-2.5">
-              <Clock className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          )}
         </div>
 
         <Button 
@@ -196,13 +164,13 @@ const ContractsPage = () => {
           {isFilterOpen ? "Hide Filters" : "Show Filters"}
         </Button>
 
-        {hasActiveFilters && (
+        {(filters.status !== 'all' || filters.customerId !== 'all' || filters.isActive !== undefined) && (
           <Button 
             variant="ghost" 
             onClick={resetFilters}
             className="text-sm"
           >
-            Clear All
+            Clear Filters
           </Button>
         )}
       </div>
@@ -271,15 +239,12 @@ const ContractsPage = () => {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>All Contracts</CardTitle>
-            <CardDescription>
-              {hasActiveFilters ? "Filtered contracts" : "Manage your customer service contracts"}
-            </CardDescription>
+            <CardDescription>Manage your customer service contracts</CardDescription>
           </div>
           <div className="flex items-center space-x-2">
             {contracts.length > 0 && (
               <span className="text-sm text-muted-foreground">
                 {contracts.length} contract{contracts.length !== 1 ? 's' : ''}
-                {hasActiveFilters && " found"}
               </span>
             )}
           </div>
@@ -298,25 +263,14 @@ const ContractsPage = () => {
           ) : (
             <div className="p-8 text-center">
               <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500 mb-4">
-                {hasActiveFilters ? "No contracts match your search criteria" : "No contracts found"}
-              </p>
+              <p className="text-gray-500 mb-4">No contracts found</p>
               <div className="space-y-2">
-                {hasActiveFilters ? (
-                  <Button 
-                    variant="outline" 
-                    onClick={resetFilters}
-                  >
-                    Clear Search & Filters
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsAddContractOpen(true)}
-                  >
-                    Add Your First Contract
-                  </Button>
-                )}
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsAddContractOpen(true)}
+                >
+                  Add Your First Contract
+                </Button>
               </div>
             </div>
           )}

@@ -96,16 +96,10 @@ export const fetchContracts = async (filters?: {
   try {
     console.log("Fetching contracts with filters:", filters);
     
-    // Start building the query with customer join for enhanced search
+    // Start building the query
     let query = supabase
       .from("contracts")
-      .select(`
-        *,
-        customers!left (
-          id,
-          name
-        )
-      `);
+      .select("*");
     
     // Apply filters if provided
     if (filters) {
@@ -117,11 +111,9 @@ export const fetchContracts = async (filters?: {
         query = query.eq("customer_id", filters.customerId);
       }
       
-      // Enhanced search functionality
       if (filters.searchTerm && filters.searchTerm.trim() !== '') {
         const searchTerm = filters.searchTerm.trim().toLowerCase();
-        // Search across multiple fields using OR conditions
-        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,customers.name.ilike.%${searchTerm}%`);
+        query = query.ilike("name", `%${searchTerm}%`);
       }
       
       if (filters.isActive !== undefined) {
@@ -146,7 +138,7 @@ export const fetchContracts = async (filters?: {
       return [];
     }
 
-    // Process the enhanced contracts data
+    // Get customer details separately for each contract if needed
     const enhancedContracts = await Promise.all(data.map(async (contract) => {
       // Calculate days until expiry
       const today = new Date();
@@ -175,8 +167,19 @@ export const fetchContracts = async (filters?: {
         }
       }
 
-      // Extract customer name from the joined data
-      const customerName = contract.customers?.name || null;
+      let customerName = null;
+      // If there's a customer_id, try to fetch the customer name
+      if (contract.customer_id) {
+        const { data: customerData } = await supabase
+          .from("customers")
+          .select("name")
+          .eq("id", contract.customer_id)
+          .single();
+        
+        if (customerData) {
+          customerName = customerData.name;
+        }
+      }
 
       // Try to get services if available
       let services: Service[] = [];
