@@ -10,10 +10,20 @@ import TimesheetReminder from "@/components/dashboard/TimesheetReminder";
 import ChartSection from "@/components/dashboard/ChartSection";
 import CompanyNews from "@/components/dashboard/CompanyNews";
 import HelpSection from "@/components/dashboard/HelpSection";
+import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { getWeekStart } from "@/lib/date-utils";
 
 const Dashboard = () => {
   const { session, user } = useAuth();
   const navigate = useNavigate();
+  
+  // Get current week's schedule using the unified hook
+  const weekStartDate = getWeekStart(new Date());
+  const {
+    effectiveDays: workingDays,
+    effectiveHours: weeklyTarget,
+    isLoading: scheduleLoading
+  } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
   
   const {
     // Computed values
@@ -24,10 +34,6 @@ const Dashboard = () => {
     projectsChartData,
     customersChartData,
     deadlineMessage,
-    
-    // Work schedule
-    workingDays,
-    weeklyTarget,
     
     // States
     completeWeek,
@@ -56,6 +62,17 @@ const Dashboard = () => {
       <div className="container mx-auto p-4 space-y-6">
         <div className="text-center text-gray-500">
           <p>Please sign in to view your dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while schedule is loading
+  if (scheduleLoading) {
+    return (
+      <div className="container mx-auto p-4 space-y-6">
+        <div className="text-center text-gray-500">
+          <p>Loading your dashboard...</p>
         </div>
       </div>
     );

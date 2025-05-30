@@ -18,14 +18,12 @@ import WeeklyViewDialogs from "./weekly-view/WeeklyViewDialogs";
 import { useWeeklyViewState } from "./weekly-view/hooks/useWeeklyViewState";
 import { useWeeklyViewData } from "./weekly-view/hooks/useWeeklyViewData";
 import { useEntryOperations } from "./weekly-view/hooks/useEntryOperations";
-import { useWorkSchedule } from "@/hooks/useWorkSchedule";
+import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { getWeekStart } from "@/lib/date-utils";
 
 const WeeklyView: React.FC = () => {
   const { user, session } = useAuth();
   const [weekDates, setWeekDates] = useState<Date[]>([]);
-  
-  // Use the updated useWorkSchedule hook for the current user
-  const { workingDays, weeklyTarget, loading: scheduleLoading } = useWorkSchedule();
   
   const {
     currentDate,
@@ -42,6 +40,14 @@ const WeeklyView: React.FC = () => {
     setEditingEntry,
     clearDialogState,
   } = useWeeklyViewState();
+
+  // Get current week's schedule using the unified hook
+  const weekStartDate = getWeekStart(currentDate);
+  const {
+    effectiveDays: workingDays,
+    effectiveHours: weeklyTarget,
+    isLoading: scheduleLoading
+  } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
 
   const {
     projects,

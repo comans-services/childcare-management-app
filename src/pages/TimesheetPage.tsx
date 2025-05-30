@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useMediaQuery } from "@/hooks/use-mobile";
@@ -18,6 +19,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { getWeekStart } from "@/lib/date-utils";
+import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
 
 const TimesheetPage = () => {
   const { user } = useAuth();
@@ -25,6 +29,18 @@ const TimesheetPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Get current week's schedule
+  const weekStartDate = getWeekStart(new Date());
+  const {
+    effectiveDays,
+    effectiveHours,
+    hasOverride,
+    updateWeeklyDays,
+    revertToDefault,
+    isUpdating,
+    isReverting
+  } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
 
   // Redirect if no user is authenticated
   if (!user) {
@@ -66,7 +82,7 @@ const TimesheetPage = () => {
       <div className="mb-6 md:mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">My Timesheet</h1>
-          <p className="text-gray-600 text-sm md:text-base">Track and manage your working hours</p>
+          <p className="text-gray-600 text-sm md:text-base">Track and manage your working hours - {effectiveDays} days ({effectiveHours}h/week)</p>
         </div>
         
         <Button 
@@ -80,6 +96,27 @@ const TimesheetPage = () => {
           Reset All Entries
         </Button>
       </div>
+
+      {/* Weekly Schedule Control */}
+      <Card className="mb-6 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg md:text-xl font-semibold">This Week's Schedule</CardTitle>
+          <CardDescription className="text-sm">Adjust your working days for this week</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <DayCountSelector
+            currentDays={effectiveDays}
+            hasOverride={hasOverride}
+            onDaysChange={updateWeeklyDays}
+            onRevertToDefault={revertToDefault}
+            isUpdating={isUpdating}
+            isReverting={isReverting}
+          />
+          <p className="text-sm text-muted-foreground mt-2">
+            Target: {effectiveHours} hours this week
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Show timer prominently on mobile devices */}
       {isMobile && (
