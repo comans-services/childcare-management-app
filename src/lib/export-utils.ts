@@ -29,7 +29,8 @@ export const validateExportData = (
 const formatReportData = (
   reportData: TimesheetEntry[], 
   projects: Project[],
-  users: User[]
+  users: User[],
+  filters: ReportFiltersType
 ) => {
   const projectMap = new Map<string, Project>();
   projects.forEach(project => projectMap.set(project.id, project));
@@ -41,13 +42,27 @@ const formatReportData = (
     const project = projectMap.get(entry.project_id);
     const employee = userMap.get(entry.user_id);
     
-    return {
+    const baseData = {
       Date: formatDateDisplay(new Date(entry.entry_date)),
       Employee: employee?.full_name || 'Unknown Employee',
+    };
+
+    const employeeIdData = filters.includeEmployeeIds ? {
+      'User ID': entry.user_id || '-',
+      'Employee Card ID': employee?.employee_card_id || '-'
+    } : {};
+
+    const remainingData = {
       Project: project?.name || 'Unknown Project',
       Hours: entry.hours_logged,
       'Jira Task ID': entry.jira_task_id || '',
       Notes: entry.notes || ''
+    };
+
+    return {
+      ...baseData,
+      ...employeeIdData,
+      ...remainingData
     };
   });
 };
@@ -57,6 +72,7 @@ export const exportToCSV = (
   reportData: TimesheetEntry[], 
   projects: Project[],
   users: User[],
+  filters: ReportFiltersType,
   filename: string
 ) => {
   console.log("Starting CSV export...");
@@ -67,7 +83,7 @@ export const exportToCSV = (
     throw new Error(validation.error);
   }
 
-  const formattedData = formatReportData(reportData, projects, users);
+  const formattedData = formatReportData(reportData, projects, users, filters);
 
   // Convert data to CSV format
   const headers = Object.keys(formattedData[0] || {}).join(',');
@@ -98,6 +114,7 @@ export const exportToExcel = (
   reportData: TimesheetEntry[], 
   projects: Project[],
   users: User[],
+  filters: ReportFiltersType,
   filename: string
 ) => {
   console.log("Starting Excel export...");
@@ -108,20 +125,24 @@ export const exportToExcel = (
     throw new Error(validation.error);
   }
 
-  const formattedData = formatReportData(reportData, projects, users);
+  const formattedData = formatReportData(reportData, projects, users, filters);
   
   // Calculate total hours
   const totalHours = reportData.reduce((sum, entry) => sum + entry.hours_logged, 0);
   
+  // Create total row with proper structure
+  const totalRow: any = { Date: 'TOTAL', Employee: '' };
+  if (filters.includeEmployeeIds) {
+    totalRow['User ID'] = '';
+    totalRow['Employee Card ID'] = '';
+  }
+  totalRow.Project = '';
+  totalRow.Hours = totalHours;
+  totalRow['Jira Task ID'] = '';
+  totalRow.Notes = '';
+  
   // Add total row
-  formattedData.push({
-    Date: 'TOTAL',
-    Employee: '',
-    Project: '',
-    Hours: totalHours,
-    'Jira Task ID': '',
-    Notes: ''
-  });
+  formattedData.push(totalRow);
   
   // Create Excel-compatible CSV content with BOM for proper UTF-8 encoding
   const BOM = '\uFEFF';
@@ -166,7 +187,7 @@ export const exportToPDF = (
     throw new Error(validation.error);
   }
 
-  const formattedData = formatReportData(reportData, projects, users);
+  const formattedData = formatReportData(reportData, projects, users, filters);
   
   // Calculate total hours
   const totalHours = reportData.reduce((sum, entry) => sum + entry.hours_logged, 0);
@@ -176,6 +197,26 @@ export const exportToPDF = (
   if (!printWindow) {
     throw new Error('Please allow popups to export PDF. Check your browser settings and try again.');
   }
+  
+  // Generate table headers dynamically
+  const headerCells = ['Date', 'Employee'];
+  if (filters.includeEmployeeIds) {
+    headerCells.push('User ID', 'Employee Card ID');
+  }
+  headerCells.push('Project', 'Hours', 'Jira Task ID', 'Notes');
+  
+  // Generate data rows
+  const dataRows = formattedData.map(row => {
+    const cells = Object.values(row).map(value => `<td>${value}</td>`).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+  
+  // Generate total row
+  const totalCells = ['Total', ''];
+  if (filters.includeEmployeeIds) {
+    totalCells.push('', '');
+  }
+  totalCells.push('', totalHours.toFixed(1), '', '');
   
   // Style and content for the printable page
   printWindow.document.write(`
@@ -202,6 +243,7 @@ export const exportToPDF = (
             Date Range: ${formatDateDisplay(filters.startDate)} to ${formatDateDisplay(filters.endDate)} 
             ${filters.projectId ? `| Project: ${projects.find(p => p.id === filters.projectId)?.name || 'Unknown'}` : ''}
             ${filters.userId ? `| Employee: ${users.find(u => u.id === filters.userId)?.full_name || 'Unknown'}` : ''}
+            ${filters.includeEmployeeIds ? '| Employee IDs: Included' : ''}
           </p>
         </div>
       </div>
@@ -209,32 +251,13 @@ export const exportToPDF = (
       <table>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Employee</th>
-            <th>Project</th>
-            <th>Hours</th>
-            <th>Jira Task ID</th>
-            <th>Notes</th>
+            ${headerCells.map(header => `<th>${header}</th>`).join('')}
           </tr>
         </thead>
         <tbody>
-          ${formattedData.map(row => `
-            <tr>
-              <td>${row.Date}</td>
-              <td>${row.Employee}</td>
-              <td>${row.Project}</td>
-              <td>${row.Hours}</td>
-              <td>${row['Jira Task ID']}</td>
-              <td>${row.Notes}</td>
-            </tr>
-          `).join('')}
+          ${dataRows}
           <tr class="total-row">
-            <td>Total</td>
-            <td></td>
-            <td></td>
-            <td>${totalHours.toFixed(1)}</td>
-            <td></td>
-            <td></td>
+            ${totalCells.map(cell => `<td>${cell}</td>`).join('')}
           </tr>
         </tbody>
       </table>

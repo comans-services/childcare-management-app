@@ -2,6 +2,7 @@
 import React from "react";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
 import { User } from "@/lib/user-service";
+import { ReportFiltersType } from "@/pages/ReportsPage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,10 +12,11 @@ interface ReportDataTableProps {
   reportData: TimesheetEntry[];
   projects: Project[];
   users: User[];
+  filters: ReportFiltersType;
   isLoading: boolean;
 }
 
-const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataTableProps) => {
+const ReportDataTable = ({ reportData, projects, users, filters, isLoading }: ReportDataTableProps) => {
   // Create maps for quick lookups
   const projectMap = React.useMemo(() => {
     const map = new Map<string, Project>();
@@ -33,6 +35,11 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
     return reportData.reduce((sum, entry) => sum + entry.hours_logged, 0);
   }, [reportData]);
 
+  // Calculate column count for skeleton and totals row
+  const baseColumns = 5; // Date, Employee, Project, Hours, Jira Task ID, Notes
+  const employeeIdColumns = filters.includeEmployeeIds ? 2 : 0; // User ID, Employee Card ID
+  const totalColumns = baseColumns + employeeIdColumns + 1; // +1 for Notes
+
   if (isLoading) {
     return (
       <div className="rounded-md border">
@@ -41,6 +48,8 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead>Employee</TableHead>
+              {filters.includeEmployeeIds && <TableHead>User ID</TableHead>}
+              {filters.includeEmployeeIds && <TableHead>Employee Card ID</TableHead>}
               <TableHead>Project</TableHead>
               <TableHead>Hours</TableHead>
               <TableHead>Jira Task ID</TableHead>
@@ -52,6 +61,8 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
               <TableRow key={index}>
                 <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                {filters.includeEmployeeIds && <TableCell><Skeleton className="h-4 w-20" /></TableCell>}
+                {filters.includeEmployeeIds && <TableCell><Skeleton className="h-4 w-20" /></TableCell>}
                 <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-20" /></TableCell>
@@ -91,6 +102,8 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead>Employee</TableHead>
+              {filters.includeEmployeeIds && <TableHead>User ID</TableHead>}
+              {filters.includeEmployeeIds && <TableHead>Employee Card ID</TableHead>}
               <TableHead>Project</TableHead>
               <TableHead>Hours</TableHead>
               <TableHead>Jira Task ID</TableHead>
@@ -106,6 +119,8 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
                 <TableRow key={entry.id}>
                   <TableCell>{formatDateDisplay(new Date(entry.entry_date))}</TableCell>
                   <TableCell>{employee?.full_name || 'Unknown Employee'}</TableCell>
+                  {filters.includeEmployeeIds && <TableCell>{entry.user_id || '-'}</TableCell>}
+                  {filters.includeEmployeeIds && <TableCell>{employee?.employee_card_id || '-'}</TableCell>}
                   <TableCell>{project?.name || 'Unknown Project'}</TableCell>
                   <TableCell>{entry.hours_logged}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.jira_task_id || '-'}</TableCell>
@@ -116,6 +131,8 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
             <TableRow className="font-medium bg-muted/50">
               <TableCell>Total</TableCell>
               <TableCell></TableCell>
+              {filters.includeEmployeeIds && <TableCell></TableCell>}
+              {filters.includeEmployeeIds && <TableCell></TableCell>}
               <TableCell></TableCell>
               <TableCell>{totalHours.toFixed(1)}</TableCell>
               <TableCell></TableCell>

@@ -27,6 +27,7 @@ export type ReportFiltersType = {
   userId: string | null;
   includeProject: boolean;
   includeContract: boolean;
+  includeEmployeeIds: boolean;
 };
 
 const ReportsPage = () => {
@@ -63,7 +64,8 @@ const ReportsPage = () => {
     projectId: null,
     userId: null,
     includeProject: false,
-    includeContract: false
+    includeContract: false,
+    includeEmployeeIds: false
   });
 
   // Check if export is available (data has been generated)
@@ -71,7 +73,7 @@ const ReportsPage = () => {
 
   const handleExportCSV = () => {
     try {
-      exportToCSV(reportData, projects, users, `timesheet-report-${formatDate(new Date())}`);
+      exportToCSV(reportData, projects, users, filters, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to CSV"
@@ -88,7 +90,7 @@ const ReportsPage = () => {
 
   const handleExportExcel = () => {
     try {
-      exportToExcel(reportData, projects, users, `timesheet-report-${formatDate(new Date())}`);
+      exportToExcel(reportData, projects, users, filters, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to Excel"
@@ -189,7 +191,7 @@ const ReportsPage = () => {
               <ReportCharts reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
             </TabsContent>
             <TabsContent value="tabular" className="mt-4">
-              <ReportDataTable reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
+              <ReportDataTable reportData={reportData} projects={projects} users={users} filters={filters} isLoading={isLoading} />
             </TabsContent>
           </Tabs>
         </CardContent>

@@ -28,6 +28,13 @@ export const FilterToggles = ({ filters, setFilters }: FilterTogglesProps) => {
     }));
   };
 
+  const handleEmployeeIdsToggle = (checked: boolean) => {
+    setFilters(prev => ({
+      ...prev,
+      includeEmployeeIds: checked
+    }));
+  };
+
   return (
     <div className="flex flex-wrap gap-6">
       <div className="flex items-center space-x-2">
@@ -49,6 +56,17 @@ export const FilterToggles = ({ filters, setFilters }: FilterTogglesProps) => {
         />
         <Label htmlFor="include-contract" className="cursor-pointer text-sm font-medium">
           Filter by Contract
+        </Label>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="include-employee-ids"
+          checked={filters.includeEmployeeIds}
+          onCheckedChange={handleEmployeeIdsToggle}
+        />
+        <Label htmlFor="include-employee-ids" className="cursor-pointer text-sm font-medium">
+          Include Employee IDs
         </Label>
       </div>
     </div>
