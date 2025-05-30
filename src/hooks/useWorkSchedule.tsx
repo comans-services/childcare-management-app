@@ -8,7 +8,7 @@ export const useWorkSchedule = (userId?: string) => {
   const [workingDays, setWorkingDays] = useState<number>(() => {
     // Load from localStorage or default to 5 days
     const saved = localStorage.getItem(storageKey);
-    return saved ? parseInt(saved) : 5;
+    return saved && !isNaN(parseInt(saved)) ? parseInt(saved) : 5;
   });
 
   // Calculate weekly target based on working days
@@ -20,7 +20,10 @@ export const useWorkSchedule = (userId?: string) => {
   }, [workingDays, storageKey]);
 
   const updateWorkingDays = (days: number) => {
-    setWorkingDays(days);
+    // Validate the input to ensure it's a valid number between 0 and 7
+    if (days >= 0 && days <= 7 && !isNaN(days)) {
+      setWorkingDays(days);
+    }
   };
 
   return {
