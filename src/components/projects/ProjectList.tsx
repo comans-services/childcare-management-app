@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Table,
@@ -9,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2, Building2, Calendar } from "lucide-react";
+import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2, Building2, Calendar, RotateCcw } from "lucide-react";
 import { Project, updateProjectStatus } from "@/lib/timesheet-service";
 import {
   DropdownMenu,
@@ -55,6 +54,8 @@ const ProjectList: React.FC<ProjectListProps> = ({
   const [showInactive, setShowInactive] = useState(false);
   const [showOverBudget, setShowOverBudget] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
   const queryClient = useQueryClient();
 
   const [sortField, setSortField] = useState<SortField>('name');
@@ -107,6 +108,35 @@ const ProjectList: React.FC<ProjectListProps> = ({
     }
   });
 
+  const bulkStatusMutation = useMutation({
+    mutationFn: async ({ projectIds, isActive }: { projectIds: string[]; isActive: boolean }) => {
+      const promises = projectIds.map(id => updateProjectStatus(id, isActive));
+      await Promise.all(promises);
+      return projectIds;
+    },
+    onMutate: () => {
+      setBulkUpdating(true);
+    },
+    onSuccess: (projectIds, { isActive }) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast({
+        title: "Projects updated",
+        description: `${projectIds.length} project${projectIds.length > 1 ? 's' : ''} ${isActive ? 'reactivated' : 'deactivated'}`,
+      });
+      setBulkUpdating(false);
+      setSelectedProjects([]);
+    },
+    onError: (error) => {
+      console.error("Failed to bulk update status:", error);
+      toast({
+        title: "Bulk update failed",
+        description: "Could not update project statuses",
+        variant: "destructive",
+      });
+      setBulkUpdating(false);
+    }
+  });
+
   const fieldUpdateMutation = useMutation({
     mutationFn: async ({ projectId, field, value }: { projectId: string; field: string | Record<string, any>; value?: any }) => {
       const updateData = typeof field === 'string' ? { [field]: value } : field;
@@ -142,6 +172,44 @@ const ProjectList: React.FC<ProjectListProps> = ({
       projectId: project.id,
       isActive: newStatus
     });
+  };
+
+  const handleBulkReactivate = () => {
+    const inactiveSelectedProjects = selectedProjects.filter(id => {
+      const project = projects.find(p => p.id === id);
+      return project && !project.is_active;
+    });
+    
+    if (inactiveSelectedProjects.length === 0) {
+      toast({
+        title: "No inactive projects selected",
+        description: "Please select inactive projects to reactivate",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    bulkStatusMutation.mutate({
+      projectIds: inactiveSelectedProjects,
+      isActive: true
+    });
+  };
+
+  const handleProjectSelection = (projectId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedProjects(prev => [...prev, projectId]);
+    } else {
+      setSelectedProjects(prev => prev.filter(id => id !== projectId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const inactiveProjectIds = filteredProjects.filter(p => !p.is_active).map(p => p.id);
+      setSelectedProjects(inactiveProjectIds);
+    } else {
+      setSelectedProjects([]);
+    }
   };
 
   const startEditing = (projectId: string, field: EditableField, project: Project) => {
@@ -267,10 +335,11 @@ const ProjectList: React.FC<ProjectListProps> = ({
     }
   }, [editingField, queryClient]);
 
-  // This function is no longer needed as we're using preventClose prop
-  // const handleCustomerSelectorClick = (e: React.MouseEvent) => {
-  //   e.stopPropagation();
-  // };
+  const inactiveProjectsCount = filteredProjects.filter(p => !p.is_active).length;
+  const selectedInactiveCount = selectedProjects.filter(id => {
+    const project = projects.find(p => p.id === id);
+    return project && !project.is_active;
+  }).length;
 
   return (
     <div className="space-y-4">
@@ -341,14 +410,66 @@ const ProjectList: React.FC<ProjectListProps> = ({
         </div>
       </div>
 
+      {/* Bulk Actions Section */}
+      {showInactive && inactiveProjectsCount > 0 && (
+        <div className="bg-muted/50 rounded-lg p-4 border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={selectedProjects.length === inactiveProjectsCount && inactiveProjectsCount > 0}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm font-medium">
+                {selectedProjects.length > 0 
+                  ? `${selectedInactiveCount} inactive project${selectedInactiveCount !== 1 ? 's' : ''} selected`
+                  : `Select all ${inactiveProjectsCount} inactive project${inactiveProjectsCount !== 1 ? 's' : ''}`
+                }
+              </span>
+            </div>
+            
+            {selectedInactiveCount > 0 && (
+              <Button
+                onClick={handleBulkReactivate}
+                disabled={bulkUpdating}
+                className="flex items-center gap-2"
+              >
+                {bulkUpdating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                Reactivate Selected ({selectedInactiveCount})
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="text-sm text-muted-foreground mb-2">
         Showing {filteredProjects.length} of {projects.length} projects
+        {showInactive && inactiveProjectsCount > 0 && (
+          <span className="ml-2 text-orange-600">
+            • {inactiveProjectsCount} inactive project{inactiveProjectsCount !== 1 ? 's' : ''}
+          </span>
+        )}
       </div>
       
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              {showInactive && inactiveProjectsCount > 0 && (
+                <TableHead className="w-12">
+                  <input
+                    type="checkbox"
+                    checked={selectedProjects.length === inactiveProjectsCount && inactiveProjectsCount > 0}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                </TableHead>
+              )}
               <TableHead 
                 className="cursor-pointer"
                 onClick={() => toggleSort('name')}
@@ -371,7 +492,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
           <TableBody>
             {filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={showInactive && inactiveProjectsCount > 0 ? 8 : 7} className="h-24 text-center">
                   No projects found.
                 </TableCell>
               </TableRow>
@@ -387,12 +508,25 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 const isEditingThisProjectDescription = editingField?.projectId === project.id && editingField?.field === 'description';
                 const isEditingThisProjectCustomer = editingField?.projectId === project.id && editingField?.field === 'customer_id';
                 const isEditingThisProjectDates = editingField?.projectId === project.id && editingField?.field === 'dates';
+                const isSelected = selectedProjects.includes(project.id);
                 
                 return (
                   <TableRow 
                     key={project.id}
                     className={!project.is_active ? "opacity-60" : ""}
                   >
+                    {showInactive && inactiveProjectsCount > 0 && (
+                      <TableCell>
+                        {!project.is_active && (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => handleProjectSelection(project.id, e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell className="font-medium">
                       {isEditingThisProjectName ? (
                         <div className="flex gap-2" data-editing="true">
@@ -572,60 +706,34 @@ const ProjectList: React.FC<ProjectListProps> = ({
                           <Loader2 className="h-3 w-3 animate-spin" /> Updating...
                         </Badge>
                       ) : (
-                        <Popover 
-                          open={isStatusPopoverOpen} 
-                          onOpenChange={(open) => {
-                            setOpenStatusPopover(open ? project.id : null);
-                          }}
-                        >
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" className="h-auto p-0 hover:bg-transparent">
-                              {project.is_active ? (
-                                <Badge 
-                                  variant="outline" 
-                                  className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1 cursor-pointer hover:bg-green-100"
-                                >
-                                  <Check className="h-3 w-3" /> Active
-                                </Badge>
-                              ) : (
-                                <Badge 
-                                  variant="outline" 
-                                  className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1 cursor-pointer hover:bg-gray-100"
-                                >
-                                  <X className="h-3 w-3" /> Inactive
-                                </Badge>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-56 p-3">
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-sm">Change project status</h4>
-                              <p className="text-xs text-muted-foreground">
-                                Set the status of "{project.name}"
-                              </p>
-                              <div className="flex gap-2 pt-2">
-                                <Button
-                                  size="sm"
-                                  variant={project.is_active ? "outline" : "default"}
-                                  className="flex-1"
-                                  onClick={() => toggleProjectStatus(project, false)}
-                                  disabled={!project.is_active || isUpdating}
-                                >
-                                  <X className="h-3 w-3 mr-1" /> Inactive
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant={project.is_active ? "default" : "outline"}
-                                  className="flex-1"
-                                  onClick={() => toggleProjectStatus(project, true)}
-                                  disabled={project.is_active || isUpdating}
-                                >
-                                  <Check className="h-3 w-3 mr-1" /> Active
-                                </Button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
+                        <div className="flex items-center gap-2">
+                          {project.is_active ? (
+                            <Badge 
+                              variant="outline" 
+                              className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1"
+                            >
+                              <Check className="h-3 w-3" /> Active
+                            </Badge>
+                          ) : (
+                            <Badge 
+                              variant="outline" 
+                              className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1"
+                            >
+                              <X className="h-3 w-3" /> Inactive
+                            </Badge>
+                          )}
+                          
+                          {/* Quick Status Toggle Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleProjectStatus(project, !project.is_active)}
+                            disabled={isUpdating}
+                            className="h-6 px-2 text-xs"
+                          >
+                            {project.is_active ? "Deactivate" : "Reactivate"}
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -649,6 +757,18 @@ const ProjectList: React.FC<ProjectListProps> = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="hidden md:flex md:justify-end md:space-x-2">
+                        {!project.is_active && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => toggleProjectStatus(project, true)}
+                            disabled={isUpdating}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            title="Reactivate project"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button 
                           variant="outline" 
                           size="icon" 
@@ -672,6 +792,18 @@ const ProjectList: React.FC<ProjectListProps> = ({
                             <Button variant="outline" size="sm">Actions</Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            {!project.is_active && (
+                              <>
+                                <DropdownMenuItem 
+                                  onClick={() => toggleProjectStatus(project, true)}
+                                  disabled={isUpdating}
+                                  className="text-green-600"
+                                >
+                                  <RotateCcw className="h-4 w-4 mr-2" /> Reactivate
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
                             <DropdownMenuItem onClick={() => onEdit(project)}>
                               <Pencil className="h-4 w-4 mr-2" /> Edit
                             </DropdownMenuItem>
@@ -683,18 +815,18 @@ const ProjectList: React.FC<ProjectListProps> = ({
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
-                              onClick={() => setOpenStatusPopover(project.id)}
+                              onClick={() => toggleProjectStatus(project, !project.is_active)}
                               disabled={isUpdating}
                             >
                               {project.is_active ? (
                                 <>
                                   <X className="h-4 w-4 mr-2" /> 
-                                  Change Status
+                                  Deactivate
                                 </>
                               ) : (
                                 <>
                                   <Check className="h-4 w-4 mr-2" /> 
-                                  Change Status
+                                  Reactivate
                                 </>
                               )}
                             </DropdownMenuItem>
