@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { Project, fetchProjects } from "@/lib/timesheet/project-service";
+import { Project } from "@/lib/timesheet/types";
+import { fetchProjects } from "@/lib/timesheet/project-service";
 import ProjectList from "@/components/projects/ProjectList";
 import AddEditProjectDialog from "@/components/projects/AddEditProjectDialog";
 import DeleteProjectDialog from "@/components/projects/DeleteProjectDialog";
