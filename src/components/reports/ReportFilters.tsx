@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -6,18 +5,15 @@ import { fetchCustomers } from "@/lib/customer-service";
 import { fetchContracts } from "@/lib/contract-service";
 import { fetchUserProjects } from "@/lib/timesheet-service";
 import { fetchUsers } from "@/lib/user-service";
-import { ReportFiltersType, ReportColumnConfigType } from "@/pages/ReportsPage";
+import { ReportFiltersType } from "@/pages/ReportsPage";
 import { DateRangeFilterNew } from "./filters/DateRangeFilterNew";
 import { SelectFilters } from "./filters/SelectFilters";
 import { FilterActions } from "./filters/FilterActions";
-import { ColumnConfig } from "./filters/ColumnConfig";
 import { useReportGeneration } from "./filters/hooks/useReportGeneration";
 
 interface ReportFiltersProps {
   filters: ReportFiltersType;
   setFilters: React.Dispatch<React.SetStateAction<ReportFiltersType>>;
-  columnConfig: ReportColumnConfigType;
-  setColumnConfig: React.Dispatch<React.SetStateAction<ReportColumnConfigType>>;
   setReportData: React.Dispatch<React.SetStateAction<any[]>>;
   setProjects: React.Dispatch<React.SetStateAction<any[]>>;
   setContracts: React.Dispatch<React.SetStateAction<any[]>>;
@@ -29,8 +25,6 @@ interface ReportFiltersProps {
 const ReportFilters = ({ 
   filters, 
   setFilters, 
-  columnConfig,
-  setColumnConfig,
   setReportData, 
   setProjects, 
   setContracts, 
@@ -87,22 +81,15 @@ const ReportFilters = ({
         <DateRangeFilterNew filters={filters} setFilters={setFilters} />
 
         {isExpanded && (
-          <>
-            <SelectFilters
-              filters={filters}
-              setFilters={setFilters}
-              customersData={customersData}
-              projectsData={projectsData}
-              contractsData={contractsData}
-              usersData={usersData}
-              normalizeSelectValue={normalizeSelectValue}
-            />
-            
-            <ColumnConfig
-              columnConfig={columnConfig}
-              setColumnConfig={setColumnConfig}
-            />
-          </>
+          <SelectFilters
+            filters={filters}
+            setFilters={setFilters}
+            customersData={customersData}
+            projectsData={projectsData}
+            contractsData={contractsData}
+            usersData={usersData}
+            normalizeSelectValue={normalizeSelectValue}
+          />
         )}
 
         <FilterActions

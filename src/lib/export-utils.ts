@@ -2,7 +2,7 @@
 import { TimesheetEntry, Project } from "./timesheet-service";
 import { User } from "./user-service";
 import { formatDateDisplay } from "./date-utils";
-import { ReportFiltersType, ReportColumnConfigType } from "@/pages/ReportsPage";
+import { ReportFiltersType } from "@/pages/ReportsPage";
 
 // Data validation functions
 export const validateExportData = (
@@ -29,8 +29,7 @@ export const validateExportData = (
 const formatReportData = (
   reportData: TimesheetEntry[], 
   projects: Project[],
-  users: User[],
-  columnConfig: ReportColumnConfigType
+  users: User[]
 ) => {
   const projectMap = new Map<string, Project>();
   projects.forEach(project => projectMap.set(project.id, project));
@@ -42,37 +41,13 @@ const formatReportData = (
     const project = projectMap.get(entry.project_id);
     const employee = userMap.get(entry.user_id);
     
-    const baseData: any = {
+    return {
       Date: formatDateDisplay(new Date(entry.entry_date)),
-      Employee: employee?.full_name || entry.user?.full_name || 'Unknown Employee',
+      Employee: employee?.full_name || 'Unknown Employee',
+      Project: project?.name || 'Unknown Project',
+      Hours: entry.hours_logged,
+      Notes: entry.notes || ''
     };
-
-    // Add employee details if configured
-    if (columnConfig.includeEmployeeDetails) {
-      baseData['User ID'] = entry.user_id;
-      baseData['Employee Card ID'] = employee?.employee_card_id || entry.user?.employee_card_id || '';
-    }
-
-    // Add project name
-    baseData.Project = project?.name || entry.project?.name || 'Unknown Project';
-
-    // Add project details if configured
-    if (columnConfig.includeProjectDetails) {
-      baseData['Project Description'] = project?.description || entry.project?.description || '';
-    }
-
-    // Add hours
-    baseData.Hours = entry.hours_logged;
-
-    // Add Jira task ID if configured
-    if (columnConfig.includeJiraTaskId) {
-      baseData['Jira Task ID'] = entry.jira_task_id || '';
-    }
-
-    // Add notes
-    baseData.Notes = entry.notes || '';
-
-    return baseData;
   });
 };
 
@@ -81,7 +56,6 @@ export const exportToCSV = (
   reportData: TimesheetEntry[], 
   projects: Project[],
   users: User[],
-  columnConfig: ReportColumnConfigType,
   filename: string
 ) => {
   console.log("Starting CSV export...");
@@ -92,7 +66,7 @@ export const exportToCSV = (
     throw new Error(validation.error);
   }
 
-  const formattedData = formatReportData(reportData, projects, users, columnConfig);
+  const formattedData = formatReportData(reportData, projects, users);
 
   // Convert data to CSV format
   const headers = Object.keys(formattedData[0] || {}).join(',');
@@ -123,7 +97,6 @@ export const exportToExcel = (
   reportData: TimesheetEntry[], 
   projects: Project[],
   users: User[],
-  columnConfig: ReportColumnConfigType,
   filename: string
 ) => {
   console.log("Starting Excel export...");
@@ -134,24 +107,19 @@ export const exportToExcel = (
     throw new Error(validation.error);
   }
 
-  const formattedData = formatReportData(reportData, projects, users, columnConfig);
+  const formattedData = formatReportData(reportData, projects, users);
   
   // Calculate total hours
   const totalHours = reportData.reduce((sum, entry) => sum + entry.hours_logged, 0);
   
   // Add total row
-  const totalRow: any = {};
-  const firstRowKeys = Object.keys(formattedData[0] || {});
-  firstRowKeys.forEach((key, index) => {
-    if (index === 0) {
-      totalRow[key] = 'TOTAL';
-    } else if (key === 'Hours') {
-      totalRow[key] = totalHours;
-    } else {
-      totalRow[key] = '';
-    }
+  formattedData.push({
+    Date: 'TOTAL',
+    Employee: '',
+    Project: '',
+    Hours: totalHours,
+    Notes: ''
   });
-  formattedData.push(totalRow);
   
   // Create Excel-compatible CSV content with BOM for proper UTF-8 encoding
   const BOM = '\uFEFF';
@@ -186,7 +154,6 @@ export const exportToPDF = (
   projects: Project[],
   users: User[],
   filters: ReportFiltersType,
-  columnConfig: ReportColumnConfigType,
   filename: string
 ) => {
   console.log("Starting PDF export...");
@@ -197,7 +164,7 @@ export const exportToPDF = (
     throw new Error(validation.error);
   }
 
-  const formattedData = formatReportData(reportData, projects, users, columnConfig);
+  const formattedData = formatReportData(reportData, projects, users);
   
   // Calculate total hours
   const totalHours = reportData.reduce((sum, entry) => sum + entry.hours_logged, 0);
@@ -208,9 +175,6 @@ export const exportToPDF = (
     throw new Error('Please allow popups to export PDF. Check your browser settings and try again.');
   }
   
-  // Get headers for table
-  const headers = Object.keys(formattedData[0] || {});
-  
   // Style and content for the printable page
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -218,15 +182,14 @@ export const exportToPDF = (
     <head>
       <title>${filename}</title>
       <style>
-        body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+        body { font-family: Arial, sans-serif; margin: 20px; }
         h1 { color: #333; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 11px; }
-        th { background-color: #f2f2f2; font-weight: bold; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
         .report-header { margin-bottom: 20px; }
         .filters { margin-bottom: 20px; color: #666; font-size: 0.9em; }
         .total-row { font-weight: bold; background-color: #f2f2f2; }
-        .truncate { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       </style>
     </head>
     <body>
@@ -244,21 +207,29 @@ export const exportToPDF = (
       <table>
         <thead>
           <tr>
-            ${headers.map(header => `<th>${header}</th>`).join('')}
+            <th>Date</th>
+            <th>Employee</th>
+            <th>Project</th>
+            <th>Hours</th>
+            <th>Notes</th>
           </tr>
         </thead>
         <tbody>
           ${formattedData.map(row => `
             <tr>
-              ${headers.map(header => `<td class="truncate">${row[header]}</td>`).join('')}
+              <td>${row.Date}</td>
+              <td>${row.Employee}</td>
+              <td>${row.Project}</td>
+              <td>${row.Hours}</td>
+              <td>${row.Notes}</td>
             </tr>
           `).join('')}
           <tr class="total-row">
-            ${headers.map((header, index) => {
-              if (index === 0) return '<td>Total</td>';
-              if (header === 'Hours') return `<td>${totalHours.toFixed(1)}</td>`;
-              return '<td></td>';
-            }).join('')}
+            <td>Total</td>
+            <td></td>
+            <td></td>
+            <td>${totalHours.toFixed(1)}</td>
+            <td></td>
           </tr>
         </tbody>
       </table>

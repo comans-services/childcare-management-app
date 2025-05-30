@@ -178,8 +178,7 @@ export const fetchReportData = async (
           full_name: entry.user_full_name,
           email: entry.user_email,
           organization: entry.user_organization,
-          time_zone: entry.user_time_zone,
-          employee_card_id: entry.user_employee_card_id
+          time_zone: entry.user_time_zone
         }
       }));
       

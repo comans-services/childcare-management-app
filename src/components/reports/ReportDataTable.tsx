@@ -2,7 +2,6 @@
 import React from "react";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
 import { User } from "@/lib/user-service";
-import { ReportColumnConfigType } from "@/pages/ReportsPage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,11 +11,10 @@ interface ReportDataTableProps {
   reportData: TimesheetEntry[];
   projects: Project[];
   users: User[];
-  columnConfig: ReportColumnConfigType;
   isLoading: boolean;
 }
 
-const ReportDataTable = ({ reportData, projects, users, columnConfig, isLoading }: ReportDataTableProps) => {
+const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataTableProps) => {
   // Create maps for quick lookups
   const projectMap = React.useMemo(() => {
     const map = new Map<string, Project>();
@@ -35,47 +33,27 @@ const ReportDataTable = ({ reportData, projects, users, columnConfig, isLoading 
     return reportData.reduce((sum, entry) => sum + entry.hours_logged, 0);
   }, [reportData]);
 
-  // Dynamic header configuration
-  const getTableHeaders = () => {
-    const headers = ['Date', 'Employee', 'Project', 'Hours'];
-    
-    if (columnConfig.includeEmployeeDetails) {
-      headers.splice(2, 0, 'User ID', 'Employee Card ID');
-    }
-    
-    if (columnConfig.includeProjectDetails) {
-      headers.splice(-2, 0, 'Project Description');
-    }
-    
-    if (columnConfig.includeJiraTaskId) {
-      headers.splice(-1, 0, 'Jira Task ID');
-    }
-    
-    headers.push('Notes');
-    return headers;
-  };
-
-  const headers = getTableHeaders();
-
   if (isLoading) {
     return (
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              {headers.map((header, index) => (
-                <TableHead key={index}>{header}</TableHead>
-              ))}
+              <TableHead>Date</TableHead>
+              <TableHead>Employee</TableHead>
+              <TableHead>Project</TableHead>
+              <TableHead>Hours</TableHead>
+              <TableHead>Notes</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array(5).fill(0).map((_, index) => (
               <TableRow key={index}>
-                {headers.map((_, cellIndex) => (
-                  <TableCell key={cellIndex}>
-                    <Skeleton className="h-4 w-24" />
-                  </TableCell>
-                ))}
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-full" /></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -105,15 +83,15 @@ const ReportDataTable = ({ reportData, projects, users, columnConfig, isLoading 
 
   return (
     <div>
-      <div className="rounded-md border overflow-x-auto">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              {headers.map((header, index) => (
-                <TableHead key={index} className="whitespace-nowrap">
-                  {header}
-                </TableHead>
-              ))}
+              <TableHead>Date</TableHead>
+              <TableHead>Employee</TableHead>
+              <TableHead>Project</TableHead>
+              <TableHead>Hours</TableHead>
+              <TableHead>Notes</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -123,73 +101,19 @@ const ReportDataTable = ({ reportData, projects, users, columnConfig, isLoading 
               
               return (
                 <TableRow key={entry.id}>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDateDisplay(new Date(entry.entry_date))}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {employee?.full_name || entry.user?.full_name || 'Unknown Employee'}
-                  </TableCell>
-                  
-                  {columnConfig.includeEmployeeDetails && (
-                    <>
-                      <TableCell className="whitespace-nowrap">
-                        {entry.user_id}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {employee?.employee_card_id || entry.user?.employee_card_id || '-'}
-                      </TableCell>
-                    </>
-                  )}
-                  
-                  <TableCell className="whitespace-nowrap">
-                    {project?.name || entry.project?.name || 'Unknown Project'}
-                  </TableCell>
-                  
-                  {columnConfig.includeProjectDetails && (
-                    <TableCell className="max-w-xs truncate">
-                      {project?.description || entry.project?.description || '-'}
-                    </TableCell>
-                  )}
-                  
-                  <TableCell className="whitespace-nowrap">
-                    {entry.hours_logged}
-                  </TableCell>
-                  
-                  {columnConfig.includeJiraTaskId && (
-                    <TableCell className="whitespace-nowrap">
-                      {entry.jira_task_id || '-'}
-                    </TableCell>
-                  )}
-                  
-                  <TableCell className="max-w-xs truncate">
-                    {entry.notes || '-'}
-                  </TableCell>
+                  <TableCell>{formatDateDisplay(new Date(entry.entry_date))}</TableCell>
+                  <TableCell>{employee?.full_name || 'Unknown Employee'}</TableCell>
+                  <TableCell>{project?.name || 'Unknown Project'}</TableCell>
+                  <TableCell>{entry.hours_logged}</TableCell>
+                  <TableCell className="max-w-xs truncate">{entry.notes || '-'}</TableCell>
                 </TableRow>
               );
             })}
             <TableRow className="font-medium bg-muted/50">
               <TableCell>Total</TableCell>
               <TableCell></TableCell>
-              
-              {columnConfig.includeEmployeeDetails && (
-                <>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                </>
-              )}
-              
               <TableCell></TableCell>
-              
-              {columnConfig.includeProjectDetails && (
-                <TableCell></TableCell>
-              )}
-              
               <TableCell>{totalHours.toFixed(1)}</TableCell>
-              
-              {columnConfig.includeJiraTaskId && (
-                <TableCell></TableCell>
-              )}
-              
               <TableCell></TableCell>
             </TableRow>
           </TableBody>
