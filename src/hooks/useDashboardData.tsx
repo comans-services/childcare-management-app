@@ -1,13 +1,14 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { format, startOfWeek, addDays, getDay, isFriday, isSameDay } from "date-fns";
 import { fetchTimesheetEntries, fetchUserProjects } from "@/lib/timesheet-service";
 import { fetchCustomers } from "@/lib/customer-service";
+import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 
 export const useDashboardData = () => {
   const { session, user } = useAuth();
+  const { workingDays, weeklyTarget } = useWorkSchedule();
   const [completeWeek, setCompleteWeek] = useState(false);
 
   // Modified to ensure we're using Monday as the start of the week and Sunday as the end
@@ -140,16 +141,18 @@ export const useDashboardData = () => {
   
   const dailyEntries = getDailyEntries();
   
-  // Check for entries on all workdays (Monday to Friday)
+  // Check for entries on configured working days only
   const checkDailyEntries = () => {
+    if (workingDays === 0) return true; // If no working days configured, consider complete
+    
     return dailyEntries
-      .filter((day, index) => index < 5) // Monday to Friday (first 5 days)
+      .filter((day, index) => index < workingDays) // Only check the configured working days
       .every(day => day.hours > 0);
   };
   
   const hasWorkWeekEntries = checkDailyEntries();
   const isEndOfWeek = getDay(today) >= 5; // Friday, Saturday, Sunday
-  const isWeekComplete = isEndOfWeek && hasWorkWeekEntries && totalHours >= 40;
+  const isWeekComplete = isEndOfWeek && hasWorkWeekEntries && totalHours >= weeklyTarget;
   
   useEffect(() => {
     if (isWeekComplete) {
@@ -239,11 +242,13 @@ export const useDashboardData = () => {
     const today = new Date();
     const dayOfWeek = getDay(today);
     
+    // Weekend - expect full weekly target
     if (dayOfWeek === 0 || dayOfWeek === 6) {
-      return 40;
+      return weeklyTarget;
     }
     
-    const workDaysElapsed = Math.min(dayOfWeek, 5);
+    // Calculate based on configured working days
+    const workDaysElapsed = Math.min(dayOfWeek, workingDays);
     return workDaysElapsed * 8;
   };
   
@@ -268,8 +273,8 @@ export const useDashboardData = () => {
   
   const weekProgress = (timesheetEntries.length === 0) 
     ? 0
-    : (expectedHoursToDate > 0 
-      ? Math.min(100, (hoursLoggedToDate / expectedHoursToDate) * 100) 
+    : (weeklyTarget > 0 
+      ? Math.min(100, (totalHours / weeklyTarget) * 100) 
       : 0);
 
   const calculateHoursRemaining = () => {
@@ -277,7 +282,7 @@ export const useDashboardData = () => {
     const dayOfWeek = getDay(today);
     
     if (dayOfWeek === 0 || dayOfWeek === 6) {
-      return 40 - hoursLoggedToDate;
+      return weeklyTarget - hoursLoggedToDate;
     }
     
     return Math.max(0, expectedHoursToDate - hoursLoggedToDate);
@@ -336,6 +341,10 @@ export const useDashboardData = () => {
     projectsChartData,
     customersChartData,
     deadlineMessage,
+    
+    // Work schedule
+    workingDays,
+    weeklyTarget,
     
     // States
     completeWeek,

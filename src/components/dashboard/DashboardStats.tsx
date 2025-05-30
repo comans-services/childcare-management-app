@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { ChartContainer } from "@/components/ui/chart";
 import { ResponsiveContainer, RadialBarChart, RadialBar, Legend, Tooltip } from "recharts";
-import { CheckCircle2, Clock, ClipboardCheck, Calendar, TimerIcon } from "lucide-react";
+import { CheckCircle2, Clock, ClipboardCheck, Calendar, TimerIcon, Settings } from "lucide-react";
 
 interface DashboardStatsProps {
   hasEntries: boolean;
@@ -14,6 +14,8 @@ interface DashboardStatsProps {
   completeWeek: boolean;
   allDaysHaveEntries: boolean;
   isTodayComplete: boolean;
+  workingDays: number;
+  weeklyTarget: number;
 }
 
 const getColorByPercentage = (percentage: number): string => {
@@ -34,6 +36,8 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
   completeWeek,
   allDaysHaveEntries,
   isTodayComplete,
+  workingDays,
+  weeklyTarget,
 }) => {
   const statsData = [
     {
@@ -68,8 +72,12 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
         <CardTitle className="text-lg flex items-center gap-2">
           <TimerIcon className="h-5 w-5 text-blue-500" />
           Timesheet Status
+          <div className="ml-auto flex items-center gap-2 text-sm text-gray-600">
+            <Settings className="h-4 w-4" />
+            {workingDays} day schedule
+          </div>
         </CardTitle>
-        <CardDescription>Your weekly timesheet statistics at a glance</CardDescription>
+        <CardDescription>Your weekly timesheet statistics based on your {workingDays}-day work schedule</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -107,6 +115,13 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-orange-500" />
+                    Weekly target
+                  </TableCell>
+                  <TableCell>{weeklyTarget} hours ({workingDays} days)</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-amber-500" />
                     Week completion
                   </TableCell>
@@ -117,7 +132,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                 <TableRow>
                   <TableCell className="font-medium flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    All days have entries
+                    All working days have entries
                   </TableCell>
                   <TableCell className={allDaysHaveEntries ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>
                     {allDaysHaveEntries ? "Yes" : "No"}
