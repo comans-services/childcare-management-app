@@ -1,20 +1,29 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { format, startOfWeek, addDays, getDay, isFriday, isSameDay } from "date-fns";
 import { fetchTimesheetEntries, fetchUserProjects } from "@/lib/timesheet-service";
 import { fetchCustomers } from "@/lib/customer-service";
-import { useWorkSchedule } from "@/hooks/useWorkSchedule";
+import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { getWeekStart } from "@/lib/date-utils";
 
 export const useDashboardData = () => {
   const { session, user } = useAuth();
-  const { workingDays, weeklyTarget } = useWorkSchedule();
   const [completeWeek, setCompleteWeek] = useState(false);
 
   // Modified to ensure we're using Monday as the start of the week and Sunday as the end
   const today = new Date();
   const startDate = startOfWeek(today, { weekStartsOn: 1 }); // Start week on Monday
   const endDate = addDays(startDate, 6); // End on Sunday (6 days after Monday)
+  
+  // Get current week's schedule using the unified hook
+  const weekStartDate = getWeekStart(today);
+  const {
+    effectiveDays: workingDays,
+    effectiveHours: weeklyTarget,
+    isLoading: scheduleLoading
+  } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
   
   const isFridayToday = isFriday(today);
 
@@ -292,7 +301,7 @@ export const useDashboardData = () => {
   const caughtUp = hoursLoggedToDate >= expectedHoursToDate;
 
   const hasEntries = timesheetEntries && timesheetEntries.length > 0;
-  const isLoading = entriesLoading || projectsLoading || customersLoading;
+  const isLoading = entriesLoading || projectsLoading || customersLoading || scheduleLoading;
   const hasError = !!entriesError;
 
   const allDaysHaveEntries = checkDailyEntries();
