@@ -16,7 +16,6 @@ import { User } from "@/lib/user-service";
 import { toast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/date-utils";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export-utils";
-
 export type ReportFiltersType = {
   startDate: Date;
   endDate: Date;
@@ -25,11 +24,12 @@ export type ReportFiltersType = {
   projectId: string | null;
   userId: string | null;
 };
-
 const ReportsPage = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [userIsAdmin, setUserIsAdmin] = useState<boolean | null>(null);
-  
+
   // Defense-in-depth: Check admin status
   useEffect(() => {
     const checkAdmin = async () => {
@@ -45,26 +45,24 @@ const ReportsPage = () => {
   if (userIsAdmin === false) {
     return null;
   }
-
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState<TimesheetEntry[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  
   const [filters, setFilters] = useState<ReportFiltersType>({
-    startDate: new Date(new Date().setDate(1)), // First day of current month
+    startDate: new Date(new Date().setDate(1)),
+    // First day of current month
     endDate: new Date(),
     customerId: null,
     contractId: null,
     projectId: null,
-    userId: null,
+    userId: null
   });
 
   // Check if export is available (data has been generated)
   const isExportDisabled = reportData.length === 0 || projects.length === 0 || users.length === 0;
-
   const handleExportCSV = () => {
     try {
       exportToCSV(reportData, projects, users, `timesheet-report-${formatDate(new Date())}`);
@@ -81,7 +79,6 @@ const ReportsPage = () => {
       });
     }
   };
-
   const handleExportExcel = () => {
     try {
       exportToExcel(reportData, projects, users, `timesheet-report-${formatDate(new Date())}`);
@@ -98,7 +95,6 @@ const ReportsPage = () => {
       });
     }
   };
-
   const handleExportPDF = () => {
     try {
       exportToPDF(reportData, projects, users, filters, `timesheet-report-${formatDate(new Date())}`);
@@ -115,9 +111,7 @@ const ReportsPage = () => {
       });
     }
   };
-
-  return (
-    <div className="container mx-auto px-2 md:px-4">
+  return <div className="container mx-auto px-2 md:px-4">
       <div className="mb-4 md:mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-xl md:text-2xl font-bold">Reports</h1>
@@ -125,46 +119,23 @@ const ReportsPage = () => {
         </div>
         
         <div className="flex gap-2">
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleExportCSV}
-            disabled={isExportDisabled}
-            title={isExportDisabled ? "Generate a report first to enable export" : "Export to CSV"}
-          >
+          <Button size="sm" variant="outline" onClick={handleExportCSV} disabled={isExportDisabled} title={isExportDisabled ? "Generate a report first to enable export" : "Export to CSV"}>
             <Download className="h-4 w-4 mr-2" />
             CSV
           </Button>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleExportExcel}
-            disabled={isExportDisabled}
-            title={isExportDisabled ? "Generate a report first to enable export" : "Export to Excel"}
-          >
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Excel
-          </Button>
-          <Button 
-            size="sm" 
-            variant="default" 
-            onClick={handleExportPDF}
-            disabled={isExportDisabled}
-            title={isExportDisabled ? "Generate a report first to enable export" : "Export to PDF"}
-          >
+          
+          <Button size="sm" variant="default" onClick={handleExportPDF} disabled={isExportDisabled} title={isExportDisabled ? "Generate a report first to enable export" : "Export to PDF"}>
             <Download className="h-4 w-4 mr-2" />
             PDF
           </Button>
         </div>
       </div>
 
-      {isExportDisabled && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+      {isExportDisabled && <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <p className="text-sm text-blue-800">
             💡 Generate a report using the filters below to enable export options.
           </p>
-        </div>
-      )}
+        </div>}
 
       <Card>
         <CardHeader>
@@ -172,16 +143,7 @@ const ReportsPage = () => {
           <CardDescription>Create custom reports for your team</CardDescription>
         </CardHeader>
         <CardContent>
-          <ReportFilters 
-            filters={filters}
-            setFilters={setFilters}
-            setReportData={setReportData}
-            setProjects={setProjects}
-            setContracts={setContracts}
-            setCustomers={setCustomers}
-            setUsers={setUsers}
-            setIsLoading={setIsLoading}
-          />
+          <ReportFilters filters={filters} setFilters={setFilters} setReportData={setReportData} setProjects={setProjects} setContracts={setContracts} setCustomers={setCustomers} setUsers={setUsers} setIsLoading={setIsLoading} />
           
           <Separator className="my-6" />
           
@@ -191,26 +153,14 @@ const ReportsPage = () => {
               <TabsTrigger value="tabular">Tabular Data</TabsTrigger>
             </TabsList>
             <TabsContent value="visual" className="mt-4">
-              <ReportCharts 
-                reportData={reportData} 
-                projects={projects}
-                users={users}
-                isLoading={isLoading}
-              />
+              <ReportCharts reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
             </TabsContent>
             <TabsContent value="tabular" className="mt-4">
-              <ReportDataTable 
-                reportData={reportData}
-                projects={projects}
-                users={users}
-                isLoading={isLoading}
-              />
+              <ReportDataTable reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default ReportsPage;
