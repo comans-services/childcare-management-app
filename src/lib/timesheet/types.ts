@@ -30,6 +30,7 @@ export interface TimesheetEntry {
     email?: string;
     organization?: string;
     time_zone?: string;
+    employee_card_id?: string;
   };
 }
 

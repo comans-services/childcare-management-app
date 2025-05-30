@@ -430,6 +430,8 @@ export type Database = {
           jira_task_id: string
           created_at: string
           updated_at: string
+          start_time: string
+          end_time: string
           project_name: string
           project_description: string
           project_customer_id: string
@@ -437,6 +439,7 @@ export type Database = {
           user_email: string
           user_organization: string
           user_time_zone: string
+          user_employee_card_id: string
         }[]
       }
     }

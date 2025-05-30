@@ -43,6 +43,7 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
               <TableHead>Employee</TableHead>
               <TableHead>Project</TableHead>
               <TableHead>Hours</TableHead>
+              <TableHead>Jira Task ID</TableHead>
               <TableHead>Notes</TableHead>
             </TableRow>
           </TableHeader>
@@ -53,6 +54,7 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
                 <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-full" /></TableCell>
               </TableRow>
             ))}
@@ -91,6 +93,7 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
               <TableHead>Employee</TableHead>
               <TableHead>Project</TableHead>
               <TableHead>Hours</TableHead>
+              <TableHead>Jira Task ID</TableHead>
               <TableHead>Notes</TableHead>
             </TableRow>
           </TableHeader>
@@ -105,6 +108,7 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
                   <TableCell>{employee?.full_name || 'Unknown Employee'}</TableCell>
                   <TableCell>{project?.name || 'Unknown Project'}</TableCell>
                   <TableCell>{entry.hours_logged}</TableCell>
+                  <TableCell className="max-w-xs truncate">{entry.jira_task_id || '-'}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.notes || '-'}</TableCell>
                 </TableRow>
               );
@@ -114,6 +118,7 @@ const ReportDataTable = ({ reportData, projects, users, isLoading }: ReportDataT
               <TableCell></TableCell>
               <TableCell></TableCell>
               <TableCell>{totalHours.toFixed(1)}</TableCell>
+              <TableCell></TableCell>
               <TableCell></TableCell>
             </TableRow>
           </TableBody>

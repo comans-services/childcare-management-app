@@ -46,6 +46,7 @@ const formatReportData = (
       Employee: employee?.full_name || 'Unknown Employee',
       Project: project?.name || 'Unknown Project',
       Hours: entry.hours_logged,
+      'Jira Task ID': entry.jira_task_id || '',
       Notes: entry.notes || ''
     };
   });
@@ -118,6 +119,7 @@ export const exportToExcel = (
     Employee: '',
     Project: '',
     Hours: totalHours,
+    'Jira Task ID': '',
     Notes: ''
   });
   
@@ -211,6 +213,7 @@ export const exportToPDF = (
             <th>Employee</th>
             <th>Project</th>
             <th>Hours</th>
+            <th>Jira Task ID</th>
             <th>Notes</th>
           </tr>
         </thead>
@@ -221,6 +224,7 @@ export const exportToPDF = (
               <td>${row.Employee}</td>
               <td>${row.Project}</td>
               <td>${row.Hours}</td>
+              <td>${row['Jira Task ID']}</td>
               <td>${row.Notes}</td>
             </tr>
           `).join('')}
@@ -229,6 +233,7 @@ export const exportToPDF = (
             <td></td>
             <td></td>
             <td>${totalHours.toFixed(1)}</td>
+            <td></td>
             <td></td>
           </tr>
         </tbody>
