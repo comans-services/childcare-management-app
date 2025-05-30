@@ -22,12 +22,9 @@ import {
   RadialBarChart,
   RadialBar
 } from "recharts";
-import { AlertCircle, Clock, CalendarClock, Send, ClipboardCheck, Calendar, CheckCircle2, TimerIcon } from "lucide-react";
+import { AlertCircle, Clock, CalendarClock, Send, ClipboardCheck, Calendar, CheckCircle2, TimerIcon, Mail, Phone } from "lucide-react";
 import { fetchTimesheetEntries, fetchUserProjects } from "@/lib/timesheet-service";
 import { fetchCustomers } from "@/lib/customer-service";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
@@ -776,52 +773,70 @@ const Dashboard = () => {
       <Card>
         <CardHeader>
           <CardTitle>Need Help?</CardTitle>
-          <CardDescription>Contact HR with any issues regarding timesheets or project assignments</CardDescription>
+          <CardDescription>Contact our team for assistance with different types of issues</CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center">
-          <Button onClick={() => setIsHRDialogOpen(true)} className="w-full sm:w-auto">
-            <Send className="mr-2 h-4 w-4" />
-            Contact Human Resources
-          </Button>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <Send className="h-5 w-5 text-blue-600" />
+                App Function Issues
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium">Mia:</span>
+                  <a 
+                    href="mailto:Maria.Sudianto@comansservices.com.au" 
+                    className="text-blue-600 hover:underline"
+                  >
+                    Maria.Sudianto@comansservices.com.au
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium">Chinh:</span>
+                  <a 
+                    href="mailto:chinh@comansservices.com.au" 
+                    className="text-blue-600 hover:underline"
+                  >
+                    chinh@comansservices.com.au
+                  </a>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5 text-green-600" />
+                Billing Issues
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium">Jason:</span>
+                  <a 
+                    href="mailto:Jason.Comeau@comansservices.com.au" 
+                    className="text-blue-600 hover:underline"
+                  >
+                    Jason.Comeau@comansservices.com.au
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium">Belinda:</span>
+                  <a 
+                    href="mailto:Belinda.Comeau@comansservices.com.au" 
+                    className="text-blue-600 hover:underline"
+                  >
+                    Belinda.Comeau@comansservices.com.au
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
-      
-      <Dialog open={isHRDialogOpen} onOpenChange={setIsHRDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Contact Human Resources</DialogTitle>
-            <DialogDescription>
-              Describe your issue with timesheets or project assignments.
-              This will be sent to Belinda Comeau in HR.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Textarea
-              placeholder="Please describe your issue in detail..."
-              className="min-h-[150px]"
-              value={issueDescription}
-              onChange={(e) => setIssueDescription(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="secondary" 
-              onClick={() => setIsHRDialogOpen(false)}
-              disabled={isSendingEmail}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="button" 
-              onClick={handleHRIssueSubmit}
-              disabled={isSendingEmail}
-            >
-              {isSendingEmail ? "Sending..." : "Send Issue"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
