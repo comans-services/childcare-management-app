@@ -1,4 +1,3 @@
-
 import { startOfWeek, endOfWeek, addDays, subDays, startOfMonth, endOfMonth, subWeeks, subMonths, format, isAfter, isBefore, isSameDay } from "date-fns";
 
 export type DateRange = {
@@ -130,3 +129,5 @@ export const getNextMonth = (date: Date): Date => {
   return addDays(date, 32); // Simple way to get next month
 };
 
+// Add compatibility type for the new DateRangePicker
+export type { DateRange, DateRangePickerProps } from "@/components/ui/DateRangePicker";
