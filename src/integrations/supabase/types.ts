@@ -129,7 +129,7 @@ export type Database = {
         Row: {
           created_at: string
           email: string | null
-          employee_id: string | null
+          employee_card_id: string | null
           employment_type:
             | Database["public"]["Enums"]["employment_status"]
             | null
@@ -143,7 +143,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email?: string | null
-          employee_id?: string | null
+          employee_card_id?: string | null
           employment_type?:
             | Database["public"]["Enums"]["employment_status"]
             | null
@@ -157,7 +157,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string | null
-          employee_id?: string | null
+          employee_card_id?: string | null
           employment_type?:
             | Database["public"]["Enums"]["employment_status"]
             | null

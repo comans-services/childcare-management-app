@@ -21,7 +21,7 @@ const SettingsPage = () => {
     time_zone: "",
     preferred_name: "",
     employment_type: "full-time" as "full-time" | "part-time",
-    employee_id: "",
+    employee_card_id: "",
   });
   
   useEffect(() => {
@@ -39,7 +39,7 @@ const SettingsPage = () => {
             time_zone: userData.time_zone || "",
             preferred_name: localStorage.getItem(`preferred-name-${user.id}`) || "",
             employment_type: userData.employment_type || "full-time",
-            employee_id: userData.employee_id || "",
+            employee_card_id: userData.employee_card_id || "",
           });
         }
       } catch (error) {
@@ -95,7 +95,7 @@ const SettingsPage = () => {
         organization: formState.organization,
         time_zone: formState.time_zone,
         employment_type: formState.employment_type,
-        employee_id: formState.employee_id,
+        employee_card_id: formState.employee_card_id,
       });
       
       setProfile(updatedUser);
@@ -171,18 +171,18 @@ const SettingsPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="employee_id">Employee ID</Label>
+                  <Label htmlFor="employee_card_id">Employee Card ID</Label>
                   <Input
-                    id="employee_id"
-                    name="employee_id"
-                    value={formState.employee_id}
+                    id="employee_card_id"
+                    name="employee_card_id"
+                    value={formState.employee_card_id}
                     onChange={handleInputChange}
                     placeholder="EMP001"
                     disabled={userRole !== 'admin'}
                   />
                   {userRole !== 'admin' && (
                     <p className="text-sm text-muted-foreground">
-                      Employee ID can only be changed by administrators.
+                      Employee Card ID can only be changed by administrators.
                     </p>
                   )}
                 </div>

@@ -111,7 +111,7 @@ const TeamList = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Employee ID</TableHead>
+                <TableHead>Employee Card ID</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Employment</TableHead>
                 <TableHead>Email</TableHead>
@@ -157,7 +157,7 @@ const TeamList = () => {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Employee ID</TableHead>
+            <TableHead>Employee Card ID</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Employment</TableHead>
             <TableHead>Email</TableHead>
@@ -173,7 +173,7 @@ const TeamList = () => {
                 <TableCell className="font-medium">{user.full_name || "Not set"}</TableCell>
                 <TableCell>
                   <span className="text-sm text-gray-600 font-mono">
-                    {user.employee_id || "Not assigned"}
+                    {user.employee_card_id || "Not assigned"}
                   </span>
                 </TableCell>
                 <TableCell>

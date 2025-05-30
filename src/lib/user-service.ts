@@ -8,7 +8,7 @@ export interface User {
   time_zone?: string;
   email?: string;
   employment_type?: 'full-time' | 'part-time';
-  employee_id?: string;
+  employee_card_id?: string;
 }
 
 export interface NewUser extends Omit<User, "id"> {
@@ -46,7 +46,7 @@ export const fetchUsers = async (): Promise<User[]> => {
     // Get all profiles from the profiles table including new fields
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone, email, employment_type, employee_id");
+      .select("id, full_name, role, organization, time_zone, email, employment_type, employee_card_id");
     
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -68,7 +68,7 @@ export const fetchUsers = async (): Promise<User[]> => {
         time_zone: "Australia/Sydney",
         email: authData.user.email,
         employment_type: "full-time" as const,
-        employee_id: null,
+        employee_card_id: null,
       };
       
       // Insert the new profile
@@ -163,7 +163,7 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
     
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone, employment_type, employee_id")
+      .select("id, full_name, role, organization, time_zone, employment_type, employee_card_id")
       .eq("id", userId)
       .maybeSingle();
     
@@ -189,7 +189,7 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
         time_zone: "UTC",
         email: authData.user.email,
         employment_type: "full-time" as const,
-        employee_id: null,
+        employee_card_id: null,
       };
       
       const { data: createdProfile, error: createError } = await supabase
@@ -234,7 +234,7 @@ export const updateUser = async (user: User): Promise<User> => {
         time_zone: user.time_zone,
         email: user.email,
         employment_type: user.employment_type,
-        employee_id: user.employee_id,
+        employee_card_id: user.employee_card_id,
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id)
@@ -284,7 +284,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         time_zone: userData.time_zone,
         email: userData.email,
         employment_type: userData.employment_type || "full-time",
-        employee_id: userData.employee_id,
+        employee_card_id: userData.employee_card_id,
         updated_at: new Date().toISOString(),
       }])
       .select();
@@ -307,7 +307,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         time_zone: userData.time_zone,
         email: userData.email,
         employment_type: userData.employment_type || "full-time",
-        employee_id: userData.employee_id,
+        employee_card_id: userData.employee_card_id,
       };
       
       console.log("Returning new user:", newUser);

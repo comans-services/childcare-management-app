@@ -40,7 +40,7 @@ const userSchema = z.object({
   organization: z.string().optional().nullable(),
   time_zone: z.string().optional().nullable(),
   employment_type: z.enum(["full-time", "part-time"]),
-  employee_id: z.string().optional().nullable(),
+  employee_card_id: z.string().optional().nullable(),
 });
 
 // Extended schema for new users (with email/password)
@@ -52,7 +52,7 @@ const newUserSchema = z.object({
   organization: z.string().optional().nullable(),
   time_zone: z.string().optional().nullable(),
   employment_type: z.enum(["full-time", "part-time"]),
-  employee_id: z.string().optional().nullable(),
+  employee_card_id: z.string().optional().nullable(),
 });
 
 const AddEditUserDialog = ({
@@ -74,7 +74,7 @@ const AddEditUserDialog = ({
       organization: "",
       time_zone: "",
       employment_type: "full-time" as const,
-      employee_id: "",
+      employee_card_id: "",
     } : {
       id: user?.id || "",
       full_name: user?.full_name || "",
@@ -82,7 +82,7 @@ const AddEditUserDialog = ({
       organization: user?.organization || "",
       time_zone: user?.time_zone || "",
       employment_type: (user?.employment_type as "full-time" | "part-time") || "full-time",
-      employee_id: user?.employee_id || "",
+      employee_card_id: user?.employee_card_id || "",
     }
   });
 
@@ -96,7 +96,7 @@ const AddEditUserDialog = ({
         organization: "",
         time_zone: "",
         employment_type: "full-time",
-        employee_id: "",
+        employee_card_id: "",
       });
     } else if (user) {
       form.reset({
@@ -106,7 +106,7 @@ const AddEditUserDialog = ({
         organization: user.organization || "",
         time_zone: user.time_zone || "",
         employment_type: (user.employment_type as "full-time" | "part-time") || "full-time",
-        employee_id: user.employee_id || "",
+        employee_card_id: user.employee_card_id || "",
       });
     }
   }, [user, isNewUser, form]);
@@ -238,10 +238,10 @@ const AddEditUserDialog = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="employee_id"
+                name="employee_card_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Employee ID</FormLabel>
+                    <FormLabel>Employee Card ID</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
