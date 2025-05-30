@@ -24,8 +24,7 @@ export const DateRangePicker = ({
     handlePresetClick,
     handleApply,
     handleCancel,
-    handleDateClick,
-    handleCalendarSelect,
+    handleDateSelect,
     handleKeyDown,
     handlePreviousMonth,
     handleNextMonth,
@@ -75,8 +74,7 @@ export const DateRangePicker = ({
                   tempRange={tempRange}
                   currentMonth={currentMonth}
                   nextMonth={nextMonth}
-                  onDateClick={handleDateClick}
-                  onCalendarSelect={handleCalendarSelect}
+                  onDateSelect={handleDateSelect}
                   onPreviousMonth={handlePreviousMonth}
                   onNextMonth={handleNextMonth}
                 />
