@@ -42,52 +42,66 @@ export const useDateRangePicker = (value: DateRange, onChange: (range: DateRange
     close();
   };
 
-  // New improved date click handler that properly handles deselection
+  // Improved date click handler that supports both range selection and deselection
   const handleDateClick = (date: Date) => {
     setSelectedPreset(null); // Clear preset when manually selecting dates
     
     const isClickingFromDate = tempRange.from && isSameDay(date, tempRange.from);
     const isClickingToDate = tempRange.to && isSameDay(date, tempRange.to);
-    const isSameDateRange = tempRange.from && tempRange.to && isSameDay(tempRange.from, tempRange.to);
+    const hasBothDates = tempRange.from && tempRange.to;
+    const isSingleDateSelected = hasBothDates && isSameDay(tempRange.from, tempRange.to);
+    const isCompleteDateRange = hasBothDates && !isSameDay(tempRange.from, tempRange.to);
     
-    // Case 1: Clicking on a date when both from and to are the same (single date selected)
-    if (isSameDateRange && (isClickingFromDate || isClickingToDate)) {
-      // Clear both dates to deselect the single date
-      setTempRange({ from: new Date(), to: new Date() });
-      return;
-    }
-    
-    // Case 2: Clicking on the from date (when it's different from to date)
-    if (isClickingFromDate && tempRange.to && !isSameDay(tempRange.from, tempRange.to)) {
-      // Move the to date to from, effectively removing the from date
-      setTempRange({ from: tempRange.to, to: tempRange.to });
-      return;
-    }
-    
-    // Case 3: Clicking on the to date (when it's different from from date)
-    if (isClickingToDate && tempRange.from && !isSameDay(tempRange.from, tempRange.to)) {
-      // Keep only the from date, remove the to date
-      setTempRange({ from: tempRange.from, to: tempRange.from });
-      return;
-    }
-    
-    // Case 4: Normal date selection logic
-    if (!tempRange.from || (tempRange.from && tempRange.to)) {
-      // Start a new selection
-      setTempRange({ from: date, to: date });
-    } else if (tempRange.from && !tempRange.to) {
-      // Complete the range
-      if (date >= tempRange.from) {
-        setTempRange({ from: tempRange.from, to: date });
-      } else {
-        setTempRange({ from: date, to: tempRange.from });
+    // DESELECTION LOGIC: Only deselect if clicking on an already selected date
+    if (isClickingFromDate || isClickingToDate) {
+      // If it's a single date selection, clear everything
+      if (isSingleDateSelected) {
+        setTempRange({ from: new Date(), to: new Date() });
+        return;
+      }
+      
+      // If it's a complete range, handle specific date deselection
+      if (isCompleteDateRange) {
+        if (isClickingFromDate && !isClickingToDate) {
+          // Remove from date, keep to date as new single selection
+          setTempRange({ from: tempRange.to, to: tempRange.to });
+          return;
+        }
+        if (isClickingToDate && !isClickingFromDate) {
+          // Remove to date, keep from date as new single selection
+          setTempRange({ from: tempRange.from, to: tempRange.from });
+          return;
+        }
       }
     }
+    
+    // NORMAL RANGE SELECTION LOGIC
+    
+    // Case 1: No dates selected OR complete range exists - start new selection
+    if (!tempRange.from || !tempRange.to || isCompleteDateRange) {
+      setTempRange({ from: date, to: date });
+      return;
+    }
+    
+    // Case 2: Single date selected - complete the range
+    if (tempRange.from && tempRange.to && isSingleDateSelected) {
+      if (date >= tempRange.from) {
+        // Clicked date is after/same as from date
+        setTempRange({ from: tempRange.from, to: date });
+      } else {
+        // Clicked date is before from date
+        setTempRange({ from: date, to: tempRange.from });
+      }
+      return;
+    }
+    
+    // Case 3: Fallback - start new selection
+    setTempRange({ from: date, to: date });
   };
 
-  // Wrapper for calendar onSelect that uses our custom logic
+  // Wrapper for calendar onSelect that prevents default behavior
   const handleCalendarSelect = (range: any) => {
-    // We'll handle selection through handleDateClick instead
+    // We handle all selection through handleDateClick instead
     // This prevents the default calendar behavior from interfering
     return;
   };
