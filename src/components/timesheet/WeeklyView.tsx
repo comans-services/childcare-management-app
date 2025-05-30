@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -9,7 +10,6 @@ import {
 import { TimesheetEntry } from "@/lib/timesheet-service";
 import WeekNavigation from "./weekly-view/WeekNavigation";
 import WeeklyProgressBar from "./weekly-view/WeeklyProgressBar";
-import WorkScheduleSelector from "./weekly-view/WorkScheduleSelector";
 import LoadingState from "./weekly-view/LoadingState";
 import ErrorState from "./weekly-view/ErrorState";
 import WeekGrid from "./weekly-view/WeekGrid";
@@ -28,7 +28,6 @@ const WeeklyView: React.FC = () => {
     setCurrentDate,
     workingDays,
     weeklyTarget,
-    handleWorkingDaysChange,
     viewMode,
     toggleViewMode,
     lastUserId,
@@ -137,14 +136,6 @@ const WeeklyView: React.FC = () => {
         viewMode={viewMode}
         toggleViewMode={toggleViewMode}
       />
-
-      {/* Only show WorkScheduleSelector in Week view */}
-      {viewMode === "week" && (
-        <WorkScheduleSelector
-          workingDays={workingDays}
-          onWorkingDaysChange={handleWorkingDaysChange}
-        />
-      )}
 
       {loading ? (
         <LoadingState />

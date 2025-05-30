@@ -4,7 +4,7 @@ import { TimesheetEntry } from "@/lib/timesheet-service";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 
 export const useWeeklyViewState = () => {
-  const { workingDays, weeklyTarget, updateWorkingDays } = useWorkSchedule();
+  const { workingDays, weeklyTarget } = useWorkSchedule();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"today" | "week">("week");
   const [lastUserId, setLastUserId] = useState<string | null>(null);
@@ -25,16 +25,11 @@ export const useWeeklyViewState = () => {
     setViewMode(prevMode => prevMode === "today" ? "week" : "today");
   }, []);
 
-  const handleWorkingDaysChange = useCallback((days: number) => {
-    updateWorkingDays(days);
-  }, [updateWorkingDays]);
-
   return {
     currentDate,
     setCurrentDate,
     workingDays,
     weeklyTarget,
-    handleWorkingDaysChange,
     viewMode,
     setViewMode,
     toggleViewMode,

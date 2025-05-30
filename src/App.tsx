@@ -16,6 +16,7 @@ import ContractsPage from "@/pages/ContractsPage";
 import CustomersPage from "@/pages/CustomersPage";
 import ReportsPage from "@/pages/ReportsPage";
 import TeamPage from "@/pages/TeamPage";
+import WorkSchedulePage from "@/pages/WorkSchedulePage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
@@ -43,6 +44,7 @@ const App = () => (
                 <Route path="customers" element={<CustomersPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="team" element={<TeamPage />} />
+                <Route path="work-schedule" element={<WorkSchedulePage />} />
               </Route>
             </Route>
             
