@@ -1,15 +1,14 @@
-import React, { useState } from "react";
+
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
-import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
-import { Calendar, Save, RotateCcw, Settings, Target } from "lucide-react";
+import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { Calendar, Clock, Target } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import WorkScheduleSelector from "@/components/timesheet/weekly-view/WorkScheduleSelector";
+import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
+
 interface UnifiedUserScheduleCardProps {
   user: {
     id: string;
@@ -19,89 +18,48 @@ interface UnifiedUserScheduleCardProps {
   };
   weekStartDate: Date;
 }
+
 const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
   user,
   weekStartDate
 }) => {
   const {
     workingDays,
-    updateWorkingDays,
     loading: globalLoading,
     error: globalError
   } = useWorkSchedule(user.id);
+  
   const {
-    weeklySchedule,
-    effectiveDailyHours,
-    updateWeeklySchedule,
-    loading: weeklyLoading,
-    error: weeklyError,
-    hasWeeklyOverride
-  } = useWeeklyWorkSchedule(user.id, weekStartDate);
-  const [editingWeekly, setEditingWeekly] = useState(false);
-  const [weeklyFormData, setWeeklyFormData] = useState({
-    monday_hours: 8,
-    tuesday_hours: 8,
-    wednesday_hours: 8,
-    thursday_hours: 8,
-    friday_hours: 8,
-    saturday_hours: 0,
-    sunday_hours: 0,
-    notes: ""
-  });
-  React.useEffect(() => {
-    if (effectiveDailyHours) {
-      setWeeklyFormData({
-        monday_hours: effectiveDailyHours.monday,
-        tuesday_hours: effectiveDailyHours.tuesday,
-        wednesday_hours: effectiveDailyHours.wednesday,
-        thursday_hours: effectiveDailyHours.thursday,
-        friday_hours: effectiveDailyHours.friday,
-        saturday_hours: effectiveDailyHours.saturday,
-        sunday_hours: effectiveDailyHours.sunday,
-        notes: weeklySchedule?.notes || ""
-      });
-    }
-  }, [effectiveDailyHours, weeklySchedule]);
-  const handleGlobalWorkingDaysChange = async (days: number) => {
-    console.log(`Admin updating global work schedule for ${user.email}: ${days} days`);
-    await updateWorkingDays(days);
-  };
-  const handleWeeklySave = async () => {
-    console.log(`Admin updating weekly work schedule for ${user.email}:`, weeklyFormData);
-    await updateWeeklySchedule(weeklyFormData);
-    setEditingWeekly(false);
-  };
-  const handleWeeklyReset = () => {
-    setWeeklyFormData({
-      monday_hours: effectiveDailyHours.monday,
-      tuesday_hours: effectiveDailyHours.tuesday,
-      wednesday_hours: effectiveDailyHours.wednesday,
-      thursday_hours: effectiveDailyHours.thursday,
-      friday_hours: effectiveDailyHours.friday,
-      saturday_hours: effectiveDailyHours.saturday,
-      sunday_hours: effectiveDailyHours.sunday,
-      notes: weeklySchedule?.notes || ""
-    });
-    setEditingWeekly(false);
-  };
-  const weeklyTotal = Object.values(effectiveDailyHours).reduce((sum, hours) => sum + hours, 0);
-  const globalWeeklyTarget = workingDays * 8;
+    effectiveDays,
+    effectiveHours,
+    hasOverride,
+    isLoading: weeklyLoading,
+    updateWeeklyDays,
+    revertToDefault,
+    isUpdating,
+    isReverting
+  } = useSimpleWeeklySchedule(user.id, weekStartDate);
+
   if (globalLoading || weeklyLoading) {
-    return <Card className="hover:shadow-md transition-shadow">
+    return (
+      <Card className="hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-4 w-32" />
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-16 w-full" />
           </div>
         </CardContent>
-      </Card>;
+      </Card>
+    );
   }
-  if (globalError || weeklyError) {
-    return <Card className="hover:shadow-md transition-shadow">
+
+  if (globalError) {
+    return (
+      <Card className="hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">
             {user.full_name || user.email}
@@ -112,19 +70,24 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             Failed to load work schedule data
           </div>
         </CardContent>
-      </Card>;
+      </Card>
+    );
   }
-  return <Card className="hover:shadow-md transition-shadow">
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">
             {user.full_name || user.email}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {hasWeeklyOverride && <Badge variant="outline" className="text-xs">
+            {hasOverride && (
+              <Badge variant="outline" className="text-xs">
                 <Calendar className="h-3 w-3 mr-1" />
                 Custom
-              </Badge>}
+              </Badge>
+            )}
             <Badge variant={user.role === "admin" ? "default" : "secondary"}>
               {user.role || "employee"}
             </Badge>
@@ -132,38 +95,47 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
         </div>
         <p className="text-sm text-muted-foreground">{user.email}</p>
       </CardHeader>
+      
       <CardContent className="space-y-4">
-        {/* Global Schedule Section */}
+        {/* This Week Schedule */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Settings className="h-4 w-4 text-muted-foreground" />
-            <Label className="text-sm font-medium">Default Schedule</Label>
+            <Clock className="h-4 w-4 text-primary" />
+            <span className="font-medium text-sm">This Week</span>
+            {hasOverride && (
+              <div className="h-2 w-2 bg-blue-500 rounded-full" />
+            )}
           </div>
-          <WorkScheduleSelector workingDays={workingDays} onWorkingDaysChange={handleGlobalWorkingDaysChange} />
           
+          <DayCountSelector
+            currentDays={effectiveDays}
+            hasOverride={hasOverride}
+            onDaysChange={updateWeeklyDays}
+            onRevertToDefault={revertToDefault}
+            isUpdating={isUpdating}
+            isReverting={isReverting}
+          />
+          
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Target className="h-3 w-3" />
+            <span>{effectiveHours} hours target</span>
+          </div>
         </div>
 
         <Separator />
 
-        {/* Weekly Override Section */}
-        
+        {/* Default Schedule Reference */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Default Schedule</span>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {workingDays} days / {workingDays * 8} hours per week
+          </div>
+        </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };
 
-// Helper function to determine if a day should be working based on working days count
-const getDefaultDayIndex = (day: string): number => {
-  const dayMap: {
-    [key: string]: number;
-  } = {
-    monday: 1,
-    tuesday: 2,
-    wednesday: 3,
-    thursday: 4,
-    friday: 5,
-    saturday: 6,
-    sunday: 7
-  };
-  return dayMap[day] || 7;
-};
 export default UnifiedUserScheduleCard;

@@ -1,4 +1,3 @@
-
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay } from "date-fns";
 
 export const formatDate = (date: Date): string => {
@@ -51,4 +50,10 @@ export const getHoursDifference = (start: Date, end: Date): number => {
   const diffHours = diffMs / (1000 * 60 * 60);
   // Round to 2 decimal places
   return Math.round(diffHours * 100) / 100;
+};
+
+export const getWeekStart = (date: Date): Date => {
+  // Get ISO week Monday (week starts on Monday)
+  const monday = startOfWeek(date, { weekStartsOn: 1 });
+  return monday;
 };

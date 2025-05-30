@@ -170,7 +170,7 @@ const WorkSchedulePage = () => {
           Work Schedule Management
         </h1>
         <p className="text-gray-600 mt-2">
-          Manage working days and weekly targets for all team members. Set default schedules and week-specific overrides.
+          Set weekly work schedules for team members. Click day buttons (0-5) to override the default schedule for specific weeks.
         </p>
       </div>
 
@@ -178,9 +178,9 @@ const WorkSchedulePage = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Team Work Schedules</CardTitle>
+              <CardTitle>Weekly Work Schedules</CardTitle>
               <CardDescription>
-                Set default working day schedules and customize weekly targets for each team member.
+                Override default schedules for specific weeks. Changes only affect the selected week.
               </CardDescription>
             </div>
             <Button 
