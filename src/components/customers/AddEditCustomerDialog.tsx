@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { Customer, saveCustomer } from "@/lib/customer-service";
+import { Customer, saveCustomer, checkCustomerNameExists } from "@/lib/customer-service";
 
 interface AddEditCustomerDialogProps {
   isOpen: boolean;
@@ -42,6 +42,11 @@ const AddEditCustomerDialog: React.FC<AddEditCustomerDialogProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const isEditing = !!existingCustomer;
+  const [nameValidation, setNameValidation] = useState<{
+    isChecking: boolean;
+    isDuplicate: boolean;
+    message?: string;
+  }>({ isChecking: false, isDuplicate: false });
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -61,8 +66,48 @@ const AddEditCustomerDialog: React.FC<AddEditCustomerDialogProps> = ({
         phone: existingCustomer?.phone || "",
         company: existingCustomer?.company || "",
       });
+      setNameValidation({ isChecking: false, isDuplicate: false });
     }
   }, [form, isOpen, existingCustomer]);
+
+  // Real-time name validation
+  const validateCustomerName = async (name: string) => {
+    if (!name.trim() || name === existingCustomer?.name) {
+      setNameValidation({ isChecking: false, isDuplicate: false });
+      return;
+    }
+
+    setNameValidation({ isChecking: true, isDuplicate: false });
+
+    try {
+      const exists = await checkCustomerNameExists(name, existingCustomer?.id);
+      if (exists) {
+        setNameValidation({
+          isChecking: false,
+          isDuplicate: true,
+          message: `A customer with the name "${name}" already exists.`
+        });
+      } else {
+        setNameValidation({ isChecking: false, isDuplicate: false });
+      }
+    } catch (error) {
+      console.error("Error validating customer name:", error);
+      setNameValidation({ isChecking: false, isDuplicate: false });
+    }
+  };
+
+  // Debounced name validation
+  useEffect(() => {
+    const subscription = form.watch((value, { name: fieldName }) => {
+      if (fieldName === 'name' && value.name) {
+        const timeoutId = setTimeout(() => {
+          validateCustomerName(value.name || '');
+        }, 500);
+        return () => clearTimeout(timeoutId);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, existingCustomer]);
 
   // Create or update customer mutation
   const mutation = useMutation({
@@ -92,13 +137,23 @@ const AddEditCustomerDialog: React.FC<AddEditCustomerDialogProps> = ({
       console.error("Error saving customer:", error);
       toast({
         title: "Error",
-        description: `Failed to ${isEditing ? "update" : "create"} customer. Please try again.`,
+        description: error.message || `Failed to ${isEditing ? "update" : "create"} customer. Please try again.`,
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: FormValues) => {
+    // Don't submit if there's a duplicate name
+    if (nameValidation.isDuplicate) {
+      toast({
+        title: "Duplicate customer name",
+        description: nameValidation.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     mutation.mutate(data);
   };
 
@@ -123,9 +178,16 @@ const AddEditCustomerDialog: React.FC<AddEditCustomerDialogProps> = ({
                     <Input 
                       placeholder="Enter customer name" 
                       required 
-                      {...field} 
+                      {...field}
+                      className={nameValidation.isDuplicate ? "border-destructive" : ""}
                     />
                   </FormControl>
+                  {nameValidation.isChecking && (
+                    <p className="text-sm text-muted-foreground">Checking name availability...</p>
+                  )}
+                  {nameValidation.isDuplicate && (
+                    <p className="text-sm text-destructive">{nameValidation.message}</p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -194,7 +256,10 @@ const AddEditCustomerDialog: React.FC<AddEditCustomerDialogProps> = ({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={mutation.isPending}>
+              <Button 
+                type="submit" 
+                disabled={mutation.isPending || nameValidation.isDuplicate || nameValidation.isChecking}
+              >
                 {mutation.isPending ? "Saving..." : isEditing ? "Update Customer" : "Create Customer"}
               </Button>
             </DialogFooter>

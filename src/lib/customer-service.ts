@@ -57,9 +57,47 @@ export const fetchCustomerById = async (customerId: string): Promise<Customer | 
   }
 };
 
+export const checkCustomerNameExists = async (name: string, excludeId?: string): Promise<boolean> => {
+  try {
+    console.log(`Checking if customer name exists: ${name}`);
+    
+    let query = supabase
+      .from("customers")
+      .select("id")
+      .ilike("name", name.trim());
+    
+    // When editing, exclude the current customer from the check
+    if (excludeId) {
+      query = query.neq("id", excludeId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error checking customer name:", error);
+      throw error;
+    }
+
+    const exists = data && data.length > 0;
+    console.log(`Customer name exists: ${exists}`);
+    return exists;
+  } catch (error) {
+    console.error("Error in checkCustomerNameExists:", error);
+    throw error;
+  }
+};
+
 export const saveCustomer = async (customer: Partial<Customer>): Promise<Customer> => {
   try {
     console.log("Saving customer:", customer);
+    
+    // Check for duplicate names before saving (except when editing the same customer)
+    if (customer.name) {
+      const nameExists = await checkCustomerNameExists(customer.name, customer.id);
+      if (nameExists) {
+        throw new Error(`A customer with the name "${customer.name}" already exists. Please choose a different name.`);
+      }
+    }
     
     if (customer.id) {
       // Update existing customer
@@ -76,6 +114,10 @@ export const saveCustomer = async (customer: Partial<Customer>): Promise<Custome
         .select();
 
       if (error) {
+        // Handle database constraint violation
+        if (error.code === '23505' && error.message.includes('idx_customers_name_unique')) {
+          throw new Error(`A customer with the name "${customer.name}" already exists. Please choose a different name.`);
+        }
         console.error("Error updating customer:", error);
         throw error;
       }
@@ -95,6 +137,10 @@ export const saveCustomer = async (customer: Partial<Customer>): Promise<Custome
         .select();
 
       if (error) {
+        // Handle database constraint violation
+        if (error.code === '23505' && error.message.includes('idx_customers_name_unique')) {
+          throw new Error(`A customer with the name "${customer.name}" already exists. Please choose a different name.`);
+        }
         console.error("Error creating customer:", error);
         throw error;
       }
