@@ -14,6 +14,38 @@ interface DateRangeFilterProps {
 }
 
 export const DateRangeFilter = ({ filters, setFilters }: DateRangeFilterProps) => {
+  const handleStartDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    
+    setFilters(prev => {
+      const newFilters = { ...prev, startDate: date };
+      
+      // If the selected start date is after the current end date,
+      // automatically adjust the end date to match the start date
+      if (prev.endDate && date > prev.endDate) {
+        newFilters.endDate = date;
+      }
+      
+      return newFilters;
+    });
+  };
+
+  const handleEndDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    
+    setFilters(prev => {
+      const newFilters = { ...prev, endDate: date };
+      
+      // If the selected end date is before the current start date,
+      // automatically adjust the start date to match the end date
+      if (prev.startDate && date < prev.startDate) {
+        newFilters.startDate = date;
+      }
+      
+      return newFilters;
+    });
+  };
+
   return (
     <div className="flex flex-col gap-2 w-full md:w-auto">
       <label className="text-sm font-medium">Date Range</label>
@@ -35,7 +67,11 @@ export const DateRangeFilter = ({ filters, setFilters }: DateRangeFilterProps) =
             <Calendar
               mode="single"
               selected={filters.startDate}
-              onSelect={(date) => date && setFilters(prev => ({ ...prev, startDate: date }))}
+              onSelect={handleStartDateSelect}
+              disabled={(date) => {
+                // Disable dates after the end date (if end date is selected)
+                return filters.endDate ? date > filters.endDate : false;
+              }}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
             />
@@ -59,7 +95,11 @@ export const DateRangeFilter = ({ filters, setFilters }: DateRangeFilterProps) =
             <Calendar
               mode="single"
               selected={filters.endDate}
-              onSelect={(date) => date && setFilters(prev => ({ ...prev, endDate: date }))}
+              onSelect={handleEndDateSelect}
+              disabled={(date) => {
+                // Disable dates before the start date (if start date is selected)
+                return filters.startDate ? date < filters.startDate : false;
+              }}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
             />
