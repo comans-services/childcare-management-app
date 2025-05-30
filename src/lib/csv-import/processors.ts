@@ -1,8 +1,8 @@
-
 import { saveProject } from "@/lib/timesheet/project-service";
 import { saveCustomer } from "@/lib/customer-service";
 import { saveContract } from "@/lib/contract-service";
 import { createUser } from "@/lib/user-service";
+import { saveTimesheetEntry } from "@/lib/timesheet-service";
 import { EntityType } from "./config";
 
 export const processProjectRow = async (row: Record<string, string>, existingCustomers: any[]): Promise<void> => {
@@ -77,6 +77,34 @@ export const processTeamMemberRow = async (row: Record<string, string>): Promise
   await createUser(userData);
 };
 
+export const processTimesheetEntryRow = async (row: Record<string, string>, existingProjects: any[]): Promise<void> => {
+  let projectId = null;
+  
+  if (row.project_name?.trim()) {
+    const project = existingProjects.find(p => p.name.toLowerCase() === row.project_name.toLowerCase());
+    if (!project) {
+      throw new Error(`Project "${row.project_name}" not found`);
+    }
+    projectId = project.id;
+  }
+  
+  if (!projectId) {
+    throw new Error('Project is required for timesheet entry');
+  }
+  
+  const entryData = {
+    project_id: projectId,
+    entry_date: row.entry_date,
+    hours_logged: Number(row.hours_logged),
+    notes: row.notes || null,
+    jira_task_id: row.jira_task_id || null,
+    start_time: row.start_time || null,
+    end_time: row.end_time || null
+  };
+  
+  await saveTimesheetEntry(entryData);
+};
+
 export const processRow = async (
   row: Record<string, string>,
   entityType: EntityType,
@@ -95,6 +123,9 @@ export const processRow = async (
       break;
     case 'team-members':
       await processTeamMemberRow(row);
+      break;
+    case 'timesheet-entries':
+      await processTimesheetEntryRow(row, existingCustomers); // existingCustomers will be projects for timesheet entries
       break;
   }
 };

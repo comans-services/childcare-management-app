@@ -1,6 +1,6 @@
-
 import { parseCSV } from "@/lib/csv-parser";
 import { fetchCustomers } from "@/lib/customer-service";
+import { fetchUserProjects } from "@/lib/timesheet/project-service";
 import { ValidationError } from "@/lib/csv-validation";
 import { processRow } from "./processors";
 import { getRowIdentifier } from "./utils";
@@ -67,10 +67,12 @@ export const importCSV = async (
     };
   }
 
-  // Get existing customers if needed for reference resolution
-  let existingCustomers: any[] = [];
+  // Get existing data for reference resolution
+  let existingData: any[] = [];
   if (entityType === 'projects' || entityType === 'contracts') {
-    existingCustomers = await fetchCustomers();
+    existingData = await fetchCustomers();
+  } else if (entityType === 'timesheet-entries') {
+    existingData = await fetchUserProjects();
   }
 
   // Process rows in batches
@@ -91,7 +93,7 @@ export const importCSV = async (
       });
       
       try {
-        await processRow(row, entityType, existingCustomers, rowIndex);
+        await processRow(row, entityType, existingData, rowIndex);
         successCount++;
       } catch (error) {
         processingErrors.push(`Row ${rowIndex + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);

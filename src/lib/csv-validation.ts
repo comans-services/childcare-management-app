@@ -1,4 +1,3 @@
-
 export interface ValidationError {
   row: number;
   field: string;
@@ -104,6 +103,28 @@ export const validateTeamMemberRow = (row: Record<string, string>, rowIndex: num
   
   if (row.role?.trim() && !['admin', 'employee'].includes(row.role)) {
     errors.push({ row: rowIndex, field: 'role', message: 'Role must be: admin or employee' });
+  }
+  
+  return errors;
+};
+
+export const validateTimesheetEntryRow = (row: Record<string, string>, rowIndex: number): ValidationError[] => {
+  const errors: ValidationError[] = [];
+  
+  if (!row.project_name?.trim()) {
+    errors.push({ row: rowIndex, field: 'project_name', message: 'Project name is required' });
+  }
+  
+  if (!row.entry_date?.trim()) {
+    errors.push({ row: rowIndex, field: 'entry_date', message: 'Entry date is required' });
+  } else if (!isValidDate(row.entry_date)) {
+    errors.push({ row: rowIndex, field: 'entry_date', message: 'Entry date must be in YYYY-MM-DD format' });
+  }
+  
+  if (!row.hours_logged?.trim()) {
+    errors.push({ row: rowIndex, field: 'hours_logged', message: 'Hours logged is required' });
+  } else if (isNaN(Number(row.hours_logged)) || Number(row.hours_logged) <= 0) {
+    errors.push({ row: rowIndex, field: 'hours_logged', message: 'Hours logged must be a positive number' });
   }
   
   return errors;
