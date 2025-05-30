@@ -1,7 +1,7 @@
 
 import { startOfWeek, endOfWeek, addDays, subDays, startOfMonth, endOfMonth, subWeeks, subMonths, format, isAfter, isBefore, isSameDay } from "date-fns";
 
-export type DateRange = {
+export type DateRangeType = {
   from: Date;
   to: Date;
 };
@@ -9,11 +9,11 @@ export type DateRange = {
 export type DateRangePreset = {
   label: string;
   value: string;
-  range: () => DateRange;
+  range: () => DateRangeType;
 };
 
 // Get the current ISO week (Monday to Sunday)
-export const getCurrentISOWeek = (): DateRange => {
+export const getCurrentISOWeek = (): DateRangeType => {
   const now = new Date();
   const start = startOfWeek(now, { weekStartsOn: 1 }); // Monday
   const end = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
@@ -21,7 +21,7 @@ export const getCurrentISOWeek = (): DateRange => {
 };
 
 // Get the previous ISO week
-export const getPreviousISOWeek = (): DateRange => {
+export const getPreviousISOWeek = (): DateRangeType => {
   const now = new Date();
   const lastWeek = subWeeks(now, 1);
   const start = startOfWeek(lastWeek, { weekStartsOn: 1 });
@@ -30,7 +30,7 @@ export const getPreviousISOWeek = (): DateRange => {
 };
 
 // Get the last 2 weeks
-export const getLast2Weeks = (): DateRange => {
+export const getLast2Weeks = (): DateRangeType => {
   const now = new Date();
   const twoWeeksAgo = subWeeks(now, 2);
   const start = startOfWeek(twoWeeksAgo, { weekStartsOn: 1 });
@@ -39,19 +39,19 @@ export const getLast2Weeks = (): DateRange => {
 };
 
 // Get today's range
-export const getToday = (): DateRange => {
+export const getToday = (): DateRangeType => {
   const now = new Date();
   return { from: now, to: now };
 };
 
 // Get yesterday's range
-export const getYesterday = (): DateRange => {
+export const getYesterday = (): DateRangeType => {
   const yesterday = subDays(new Date(), 1);
   return { from: yesterday, to: yesterday };
 };
 
 // Get current month range
-export const getCurrentMonth = (): DateRange => {
+export const getCurrentMonth = (): DateRangeType => {
   const now = new Date();
   return { 
     from: startOfMonth(now), 
@@ -60,7 +60,7 @@ export const getCurrentMonth = (): DateRange => {
 };
 
 // Get last month range
-export const getLastMonth = (): DateRange => {
+export const getLastMonth = (): DateRangeType => {
   const lastMonth = subMonths(new Date(), 1);
   return { 
     from: startOfMonth(lastMonth), 
@@ -108,7 +108,7 @@ export const dateRangePresets: DateRangePreset[] = [
 ];
 
 // Format date range for display
-export const formatDateRangeDisplay = (range: DateRange): string => {
+export const formatDateRangeDisplay = (range: DateRangeType): string => {
   if (isSameDay(range.from, range.to)) {
     return format(range.from, "EEE, d MMM yyyy");
   }
@@ -121,7 +121,8 @@ export const isFutureDate = (date: Date): boolean => {
 };
 
 // Validate date range
-export const isValidDateRange = (range: DateRange): boolean => {
+export const isValidDateRange = (range: { from?: Date; to?: Date }): boolean => {
+  if (!range.from || !range.to) return true; // Allow partial ranges
   return !isAfter(range.from, range.to);
 };
 
@@ -130,3 +131,5 @@ export const getNextMonth = (date: Date): Date => {
   return addDays(date, 32); // Simple way to get next month
 };
 
+// For backward compatibility - export as DateRange
+export { DateRangeType as DateRange };
