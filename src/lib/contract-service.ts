@@ -96,10 +96,16 @@ export const fetchContracts = async (filters?: {
   try {
     console.log("Fetching contracts with filters:", filters);
     
-    // Start building the query
+    // Start building the query with customer join for enhanced search
     let query = supabase
       .from("contracts")
-      .select("*");
+      .select(`
+        *,
+        customers!left (
+          id,
+          name
+        )
+      `);
     
     // Apply filters if provided
     if (filters) {
@@ -111,9 +117,11 @@ export const fetchContracts = async (filters?: {
         query = query.eq("customer_id", filters.customerId);
       }
       
+      // Enhanced search functionality
       if (filters.searchTerm && filters.searchTerm.trim() !== '') {
         const searchTerm = filters.searchTerm.trim().toLowerCase();
-        query = query.ilike("name", `%${searchTerm}%`);
+        // Search across multiple fields using OR conditions
+        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,customers.name.ilike.%${searchTerm}%`);
       }
       
       if (filters.isActive !== undefined) {
@@ -138,7 +146,7 @@ export const fetchContracts = async (filters?: {
       return [];
     }
 
-    // Get customer details separately for each contract if needed
+    // Process the enhanced contracts data
     const enhancedContracts = await Promise.all(data.map(async (contract) => {
       // Calculate days until expiry
       const today = new Date();
@@ -167,19 +175,8 @@ export const fetchContracts = async (filters?: {
         }
       }
 
-      let customerName = null;
-      // If there's a customer_id, try to fetch the customer name
-      if (contract.customer_id) {
-        const { data: customerData } = await supabase
-          .from("customers")
-          .select("name")
-          .eq("id", contract.customer_id)
-          .single();
-        
-        if (customerData) {
-          customerName = customerData.name;
-        }
-      }
+      // Extract customer name from the joined data
+      const customerName = contract.customers?.name || null;
 
       // Try to get services if available
       let services: Service[] = [];
