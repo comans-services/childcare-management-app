@@ -19,6 +19,7 @@ const SettingsPage = () => {
     full_name: "",
     organization: "",
     time_zone: "",
+    preferred_name: "",
   });
   
   useEffect(() => {
@@ -34,6 +35,7 @@ const SettingsPage = () => {
             full_name: userData.full_name || "",
             organization: userData.organization || "",
             time_zone: userData.time_zone || "",
+            preferred_name: localStorage.getItem(`preferred-name-${user.id}`) || "",
           });
         }
       } catch (error) {
@@ -75,10 +77,17 @@ const SettingsPage = () => {
     setIsSaving(true);
     
     try {
+      // Save preferred name to localStorage
+      if (formState.preferred_name) {
+        localStorage.setItem(`preferred-name-${user.id}`, formState.preferred_name);
+      } else {
+        localStorage.removeItem(`preferred-name-${user.id}`);
+      }
+      
       // If no profile exists yet, create minimal data with user id
       const profileData: User = profile || { id: user.id };
       
-      // Merge form data with profile data
+      // Merge form data with profile data (excluding preferred_name from database)
       const updatedUser = await updateUser({
         ...profileData,
         full_name: formState.full_name,
@@ -158,16 +167,32 @@ const SettingsPage = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
+                <Label htmlFor="preferred_name">Preferred Name</Label>
                 <Input
-                  id="role"
-                  value={userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Employee"}
-                  disabled
+                  id="preferred_name"
+                  name="preferred_name"
+                  value={formState.preferred_name}
+                  onChange={handleInputChange}
+                  placeholder="How you'd like to be addressed"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Roles are managed by administrators.
+                  This will be used in the app interface greeting.
                 </p>
               </div>
+              
+              {userRole === 'admin' && (
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Input
+                    id="role"
+                    value={userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Employee"}
+                    disabled
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Roles are managed by administrators.
+                  </p>
+                </div>
+              )}
               
               <div className="space-y-2">
                 <Label htmlFor="organization">Organization</Label>

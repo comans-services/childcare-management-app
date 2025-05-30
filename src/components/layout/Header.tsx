@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +8,23 @@ import { Clock } from "lucide-react";
 const Header = () => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
+  const [displayName, setDisplayName] = useState<string>("");
+
+  useEffect(() => {
+    if (user?.id) {
+      // Get preferred name from localStorage
+      const preferredName = localStorage.getItem(`preferred-name-${user.id}`);
+      
+      // Set display name with fallback hierarchy: Preferred Name → Full Name → Email
+      if (preferredName) {
+        setDisplayName(preferredName);
+      } else if (user.user_metadata?.full_name) {
+        setDisplayName(user.user_metadata.full_name);
+      } else {
+        setDisplayName(user.email || "User");
+      }
+    }
+  }, [user]);
 
   return (
     <header className="bg-white border-b shadow-sm">
@@ -20,7 +37,7 @@ const Header = () => {
         <div className="flex items-center space-x-4">
           {user && (
             <span className="text-sm text-gray-600">
-              Hi, {user.user_metadata?.full_name || user.email}
+              Hi, {displayName}
             </span>
           )}
           <Button 
