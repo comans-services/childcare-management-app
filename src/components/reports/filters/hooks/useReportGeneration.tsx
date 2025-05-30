@@ -42,15 +42,16 @@ export const useReportGeneration = ({
     console.log("Current user:", user);
     console.log("Raw filters:", filters);
     
-    // Normalize filters before sending to backend
+    // Normalize filters before sending to backend, respecting toggle states
     const normalizedFilters = {
       userId: normalizeSelectValue(filters.userId),
-      projectId: normalizeSelectValue(filters.projectId),
+      projectId: filters.includeProject ? normalizeSelectValue(filters.projectId) : null,
       customerId: normalizeSelectValue(filters.customerId),
-      contractId: normalizeSelectValue(filters.contractId)
+      contractId: filters.includeContract ? normalizeSelectValue(filters.contractId) : null
     };
     
     console.log("Normalized filters for backend:", normalizedFilters);
+    console.log("Toggle states - includeProject:", filters.includeProject, "includeContract:", filters.includeContract);
     
     setIsGeneratingReport(true);
     setIsLoading(true);

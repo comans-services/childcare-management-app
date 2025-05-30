@@ -44,45 +44,49 @@ export const SelectFilters = ({
         </Select>
       </div>
 
-      <div className="w-full md:w-auto">
-        <label className="text-sm font-medium">Project</label>
-        <Select
-          value={filters.projectId || ""}
-          onValueChange={(value) => setFilters(prev => ({ ...prev, projectId: normalizeSelectValue(value) }))}
-        >
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="All Projects" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All Projects</SelectItem>
-            {projectsData?.map((project) => (
-              <SelectItem key={project.id} value={project.id}>
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {filters.includeProject && (
+        <div className="w-full md:w-auto">
+          <label className="text-sm font-medium">Project</label>
+          <Select
+            value={filters.projectId || ""}
+            onValueChange={(value) => setFilters(prev => ({ ...prev, projectId: normalizeSelectValue(value) }))}
+          >
+            <SelectTrigger className="w-full md:w-[200px]">
+              <SelectValue placeholder="All Projects" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Projects</SelectItem>
+              {projectsData?.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
-      <div className="w-full md:w-auto">
-        <label className="text-sm font-medium">Contract</label>
-        <Select
-          value={filters.contractId || ""}
-          onValueChange={(value) => setFilters(prev => ({ ...prev, contractId: normalizeSelectValue(value) }))}
-        >
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="All Contracts" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All Contracts</SelectItem>
-            {contractsData?.map((contract) => (
-              <SelectItem key={contract.id} value={contract.id}>
-                {contract.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {filters.includeContract && (
+        <div className="w-full md:w-auto">
+          <label className="text-sm font-medium">Contract</label>
+          <Select
+            value={filters.contractId || ""}
+            onValueChange={(value) => setFilters(prev => ({ ...prev, contractId: normalizeSelectValue(value) }))}
+          >
+            <SelectTrigger className="w-full md:w-[200px]">
+              <SelectValue placeholder="All Contracts" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Contracts</SelectItem>
+              {contractsData?.map((contract) => (
+                <SelectItem key={contract.id} value={contract.id}>
+                  {contract.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="w-full md:w-auto">
         <label className="text-sm font-medium">Employee</label>

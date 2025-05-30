@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +10,9 @@ import { ReportFiltersType } from "@/pages/ReportsPage";
 import { DateRangeFilterNew } from "./filters/DateRangeFilterNew";
 import { SelectFilters } from "./filters/SelectFilters";
 import { FilterActions } from "./filters/FilterActions";
+import { FilterToggles } from "./filters/FilterToggles";
 import { useReportGeneration } from "./filters/hooks/useReportGeneration";
+import { Separator } from "@/components/ui/separator";
 
 interface ReportFiltersProps {
   filters: ReportFiltersType;
@@ -77,27 +80,45 @@ const ReportFilters = ({
 
   return (
     <Card className="p-4">
-      <div className="flex flex-wrap gap-4">
-        <DateRangeFilterNew filters={filters} setFilters={setFilters} />
-
-        {isExpanded && (
-          <SelectFilters
-            filters={filters}
-            setFilters={setFilters}
-            customersData={customersData}
-            projectsData={projectsData}
-            contractsData={contractsData}
-            usersData={usersData}
-            normalizeSelectValue={normalizeSelectValue}
+      <div className="space-y-4">
+        {/* Primary filters - always visible */}
+        <div className="flex flex-wrap gap-4">
+          <DateRangeFilterNew filters={filters} setFilters={setFilters} />
+          
+          <FilterActions
+            isExpanded={isExpanded}
+            setIsExpanded={setIsExpanded}
+            onGenerateReport={generateReport}
+            isGeneratingReport={isGeneratingReport}
           />
-        )}
+        </div>
 
-        <FilterActions
-          isExpanded={isExpanded}
-          setIsExpanded={setIsExpanded}
-          onGenerateReport={generateReport}
-          isGeneratingReport={isGeneratingReport}
-        />
+        {/* Optional filter toggles */}
+        {isExpanded && (
+          <div className="space-y-4">
+            <Separator />
+            
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-gray-700">Optional Filters</h4>
+              <FilterToggles filters={filters} setFilters={setFilters} />
+            </div>
+
+            {/* Conditional filter dropdowns */}
+            {(filters.includeProject || filters.includeContract) && (
+              <div className="flex flex-wrap gap-4">
+                <SelectFilters
+                  filters={filters}
+                  setFilters={setFilters}
+                  customersData={customersData}
+                  projectsData={projectsData}
+                  contractsData={contractsData}
+                  usersData={usersData}
+                  normalizeSelectValue={normalizeSelectValue}
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );
