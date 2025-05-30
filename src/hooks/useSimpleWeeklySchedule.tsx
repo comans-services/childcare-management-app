@@ -37,11 +37,11 @@ export const useSimpleWeeklySchedule = (userId: string, weekStartDate: Date) => 
   // Mutation for updating weekly schedule
   const updateMutation = useMutation({
     mutationFn: ({ days }: { days: number }) => upsertWeeklySchedule(userId, weekStart, days),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['weeklySchedules'] });
       toast({
         title: "Schedule Updated",
-        description: `Weekly schedule updated to ${effectiveDays} days.`,
+        description: `Weekly schedule updated to ${variables.days} days.`,
       });
     },
     onError: (error) => {
