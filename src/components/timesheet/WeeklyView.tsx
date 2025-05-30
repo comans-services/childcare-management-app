@@ -18,16 +18,18 @@ import WeeklyViewDialogs from "./weekly-view/WeeklyViewDialogs";
 import { useWeeklyViewState } from "./weekly-view/hooks/useWeeklyViewState";
 import { useWeeklyViewData } from "./weekly-view/hooks/useWeeklyViewData";
 import { useEntryOperations } from "./weekly-view/hooks/useEntryOperations";
+import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 
 const WeeklyView: React.FC = () => {
   const { user, session } = useAuth();
   const [weekDates, setWeekDates] = useState<Date[]>([]);
   
+  // Use the updated useWorkSchedule hook for the current user
+  const { workingDays, weeklyTarget, loading: scheduleLoading } = useWorkSchedule();
+  
   const {
     currentDate,
     setCurrentDate,
-    workingDays,
-    weeklyTarget,
     viewMode,
     toggleViewMode,
     lastUserId,
@@ -122,6 +124,11 @@ const WeeklyView: React.FC = () => {
   // Security validation before rendering
   if (!user?.id || !session) {
     return <div className="text-center text-gray-500">Please sign in to view your timesheet.</div>;
+  }
+
+  // Show loading state while work schedule is loading
+  if (scheduleLoading) {
+    return <LoadingState />;
   }
 
   return (

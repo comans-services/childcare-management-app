@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import WorkScheduleSelector from "@/components/timesheet/weekly-view/WorkScheduleSelector";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 
@@ -15,7 +16,12 @@ interface UserWorkScheduleCardProps {
 }
 
 const UserWorkScheduleCard: React.FC<UserWorkScheduleCardProps> = ({ user }) => {
-  const { workingDays, updateWorkingDays } = useWorkSchedule(user.id);
+  const { workingDays, updateWorkingDays, loading, error } = useWorkSchedule(user.id);
+
+  const handleWorkingDaysChange = async (days: number) => {
+    console.log(`Admin updating work schedule for ${user.email}: ${days} days`);
+    await updateWorkingDays(days);
+  };
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -31,13 +37,27 @@ const UserWorkScheduleCard: React.FC<UserWorkScheduleCardProps> = ({ user }) => 
         <p className="text-sm text-muted-foreground">{user.email}</p>
       </CardHeader>
       <CardContent>
-        <WorkScheduleSelector
-          workingDays={workingDays}
-          onWorkingDaysChange={updateWorkingDays}
-        />
-        <div className="mt-3 text-sm text-muted-foreground">
-          Weekly target: {workingDays * 8} hours
-        </div>
+        {loading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        ) : error ? (
+          <div className="text-sm text-destructive">
+            Failed to load work schedule
+          </div>
+        ) : (
+          <>
+            <WorkScheduleSelector
+              workingDays={workingDays}
+              onWorkingDaysChange={handleWorkingDaysChange}
+            />
+            <div className="mt-3 text-sm text-muted-foreground">
+              Weekly target: {workingDays * 8} hours
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

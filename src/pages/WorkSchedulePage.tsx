@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Clock } from "lucide-react";
+import { Search, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import UserWorkScheduleCard from "@/components/admin/UserWorkScheduleCard";
+import { Button } from "@/components/ui/button";
 
 interface User {
   id: string;
@@ -20,6 +22,7 @@ const WorkSchedulePage = () => {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [migrating, setMigrating] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -59,6 +62,71 @@ const WorkSchedulePage = () => {
     }
   };
 
+  const migrateAllLocalStorageData = async () => {
+    setMigrating(true);
+    let migratedCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const userData of users) {
+        try {
+          // Check for localStorage data for this user
+          const localStorageKey = `timesheet-working-days-${userData.id}`;
+          const localData = localStorage.getItem(localStorageKey);
+          
+          if (localData && !isNaN(parseInt(localData))) {
+            // Check if user already has database record
+            const { data: existingSchedule } = await supabase
+              .from("work_schedules")
+              .select("id")
+              .eq("user_id", userData.id)
+              .maybeSingle();
+
+            if (!existingSchedule) {
+              const workingDays = parseInt(localData);
+              
+              const { error } = await supabase
+                .from("work_schedules")
+                .insert({
+                  user_id: userData.id,
+                  working_days: workingDays,
+                  created_by: user?.id
+                });
+
+              if (error) {
+                console.error(`Error migrating data for user ${userData.email}:`, error);
+                errorCount++;
+              } else {
+                console.log(`Migrated ${workingDays} days for user ${userData.email}`);
+                migratedCount++;
+                // Clean up localStorage
+                localStorage.removeItem(localStorageKey);
+              }
+            }
+          }
+        } catch (err) {
+          console.error(`Error processing user ${userData.email}:`, err);
+          errorCount++;
+        }
+      }
+
+      toast({
+        title: "Migration Complete",
+        description: `Migrated ${migratedCount} user schedules. ${errorCount} errors.`,
+        variant: errorCount > 0 ? "destructive" : "default",
+      });
+    } catch (error) {
+      console.error("Error during migration:", error);
+      toast({
+        title: "Migration Failed",
+        description: "Failed to migrate localStorage data.",
+        variant: "destructive",
+      });
+    } finally {
+      setMigrating(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-6">
@@ -83,10 +151,29 @@ const WorkSchedulePage = () => {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Team Work Schedules</CardTitle>
-          <CardDescription>
-            Set the number of working days per week for each team member. This affects their weekly targets and progress calculations.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Team Work Schedules</CardTitle>
+              <CardDescription>
+                Set the number of working days per week for each team member. Changes are automatically synced to their timesheets.
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={migrateAllLocalStorageData}
+              disabled={migrating}
+              variant="outline"
+              size="sm"
+            >
+              {migrating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Migrating...
+                </>
+              ) : (
+                "Migrate Old Data"
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="relative mb-6">
