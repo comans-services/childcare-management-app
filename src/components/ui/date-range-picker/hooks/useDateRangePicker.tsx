@@ -58,11 +58,11 @@ export const useDateRangePicker = (value: DateRange, onChange: (range: DateRange
         // If both from and to are the same date and we're clicking it, clear both
         setTempRange({ from: new Date(), to: new Date() });
       } else if (isClickingFromDate) {
-        // Clear the from date
-        setTempRange({ ...tempRange, from: tempRange.to || new Date() });
+        // Clear the from date - set it to a new date to effectively "clear" it
+        setTempRange({ ...tempRange, from: new Date() });
       } else if (isClickingToDate) {
-        // Clear the to date
-        setTempRange({ ...tempRange, to: tempRange.from || new Date() });
+        // Clear the to date - set it to a new date to effectively "clear" it
+        setTempRange({ ...tempRange, to: new Date() });
       }
       return;
     }
