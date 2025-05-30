@@ -4,7 +4,6 @@ import { useMediaQuery } from "@/hooks/use-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import WeeklyView from "@/components/timesheet/WeeklyView";
 import TimerComponent from "@/components/timesheet/TimerComponent";
-import ImportButton from "@/components/common/ImportButton";
 import { Button } from "@/components/ui/button";
 import { TrashIcon } from "lucide-react";
 import { deleteAllTimesheetEntries } from "@/lib/timesheet-service";
@@ -62,14 +61,6 @@ const TimesheetPage = () => {
     }
   };
 
-  const handleImportComplete = () => {
-    setRefreshKey(prev => prev + 1);
-    toast({
-      title: "Import completed",
-      description: "Timesheet entries have been imported successfully.",
-    });
-  };
-
   return (
     <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-[110%] w-full">
       <div className="mb-6 md:mb-8 flex justify-between items-center">
@@ -78,25 +69,16 @@ const TimesheetPage = () => {
           <p className="text-gray-600 text-sm md:text-base">Track and manage your working hours</p>
         </div>
         
-        <div className="flex gap-2">
-          <ImportButton
-            entityType="timesheet-entries"
-            onImportComplete={handleImportComplete}
-            variant="outline"
-            size="sm"
-          />
-          
-          <Button 
-            variant="destructive" 
-            size="sm"
-            onClick={() => setIsDeleteDialogOpen(true)}
-            disabled={isDeleting}
-            className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md"
-          >
-            <TrashIcon className="h-4 w-4 mr-2" />
-            Reset All Entries
-          </Button>
-        </div>
+        <Button 
+          variant="destructive" 
+          size="sm"
+          onClick={() => setIsDeleteDialogOpen(true)}
+          disabled={isDeleting}
+          className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md"
+        >
+          <TrashIcon className="h-4 w-4 mr-2" />
+          Reset All Entries
+        </Button>
       </div>
 
       {/* Show timer prominently on mobile devices */}
