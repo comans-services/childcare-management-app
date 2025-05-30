@@ -37,10 +37,11 @@ const WeeklyView: React.FC = () => {
     setEntryDialogOpen,
     selectedDate,
     setSelectedDate,
-    editingEntry,
-    setEditingEntry,
     clearDialogState,
   } = useWeeklyViewState();
+
+  // Update editingEntry to handle both types
+  const [editingEntry, setEditingEntry] = useState<TimesheetEntry | ContractTimeEntry | undefined>(undefined);
 
   // Get current week's schedule using the unified hook
   const weekStartDate = getWeekStart(currentDate);
@@ -69,6 +70,7 @@ const WeeklyView: React.FC = () => {
       console.log(`User changed from ${lastUserId} to ${currentUserId}`);
       clearComponentState();
       clearDialogState();
+      setEditingEntry(undefined); // Clear editing entry on user change
       setLastUserId(currentUserId);
     }
   }, [user?.id, lastUserId, clearComponentState, clearDialogState, setLastUserId]);
@@ -120,12 +122,13 @@ const WeeklyView: React.FC = () => {
     setSelectedDate(date);
     setEditingEntry(entry);
     setEntryDialogOpen(true);
-  }, [setSelectedDate, setEditingEntry, setEntryDialogOpen]);
+  }, [setSelectedDate, setEntryDialogOpen]);
 
   // Handler for saving an entry
   const handleSaveEntry = useCallback((savedEntry?: TimesheetEntry | ContractTimeEntry) => {
     fetchData(); // Refresh all data after saving
     clearDialogState();
+    setEditingEntry(undefined);
   }, [fetchData, clearDialogState]);
 
   // Security validation before rendering
