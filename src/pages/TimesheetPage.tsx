@@ -21,10 +21,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
 import { getWeekStart } from "@/lib/date-utils";
-import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
 
 const TimesheetPage = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -34,12 +33,7 @@ const TimesheetPage = () => {
   const weekStartDate = getWeekStart(new Date());
   const {
     effectiveDays,
-    effectiveHours,
-    hasOverride,
-    updateWeeklyDays,
-    revertToDefault,
-    isUpdating,
-    isReverting
+    effectiveHours
   } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
 
   // Redirect if no user is authenticated
@@ -96,27 +90,6 @@ const TimesheetPage = () => {
           Reset All Entries
         </Button>
       </div>
-
-      {/* Weekly Schedule Control */}
-      <Card className="mb-6 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg md:text-xl font-semibold">This Week's Schedule</CardTitle>
-          <CardDescription className="text-sm">Adjust your working days for this week</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <DayCountSelector
-            currentDays={effectiveDays}
-            hasOverride={hasOverride}
-            onDaysChange={updateWeeklyDays}
-            onRevertToDefault={revertToDefault}
-            isUpdating={isUpdating}
-            isReverting={isReverting}
-          />
-          <p className="text-sm text-muted-foreground mt-2">
-            Target: {effectiveHours} hours this week
-          </p>
-        </CardContent>
-      </Card>
 
       {/* Show timer prominently on mobile devices */}
       {isMobile && (

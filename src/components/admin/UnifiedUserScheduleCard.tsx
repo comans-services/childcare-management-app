@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { useAuth } from "@/context/AuthContext";
 import { Calendar, Clock, Target } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
@@ -23,6 +24,9 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
   user,
   weekStartDate
 }) => {
+  const { userRole } = useAuth();
+  const isAdmin = userRole === "admin";
+  
   const {
     workingDays,
     loading: globalLoading,
@@ -97,7 +101,7 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* This Week Schedule */}
+        {/* This Week Schedule - Only show controls to admins */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-primary" />
@@ -107,14 +111,20 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             )}
           </div>
           
-          <DayCountSelector
-            currentDays={effectiveDays}
-            hasOverride={hasOverride}
-            onDaysChange={updateWeeklyDays}
-            onRevertToDefault={revertToDefault}
-            isUpdating={isUpdating}
-            isReverting={isReverting}
-          />
+          {isAdmin ? (
+            <DayCountSelector
+              currentDays={effectiveDays}
+              hasOverride={hasOverride}
+              onDaysChange={updateWeeklyDays}
+              onRevertToDefault={revertToDefault}
+              isUpdating={isUpdating}
+              isReverting={isReverting}
+            />
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              {effectiveDays} working days this week
+            </div>
+          )}
           
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Target className="h-3 w-3" />
