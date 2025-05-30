@@ -1,6 +1,7 @@
 
 import React from "react";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { Contract } from "@/lib/contract-service";
 import { User } from "@/lib/user-service";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,18 +12,25 @@ import { FileX, Filter } from "lucide-react";
 interface ReportDataTableProps {
   reportData: TimesheetEntry[];
   projects: Project[];
+  contracts: Contract[];
   users: User[];
   filters: ReportFiltersType;
   isLoading: boolean;
 }
 
-const ReportDataTable = ({ reportData, projects, users, filters, isLoading }: ReportDataTableProps) => {
+const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLoading }: ReportDataTableProps) => {
   // Create maps for quick lookups
   const projectMap = React.useMemo(() => {
     const map = new Map<string, Project>();
     projects.forEach(project => map.set(project.id, project));
     return map;
   }, [projects]);
+
+  const contractMap = React.useMemo(() => {
+    const map = new Map<string, Contract>();
+    contracts.forEach(contract => map.set(contract.id, contract));
+    return map;
+  }, [contracts]);
   
   const userMap = React.useMemo(() => {
     const map = new Map<string, User>();
@@ -36,9 +44,12 @@ const ReportDataTable = ({ reportData, projects, users, filters, isLoading }: Re
   }, [reportData]);
 
   // Calculate column count for skeleton and totals row
-  const baseColumns = 5; // Date, Employee, Project, Hours, Jira Task ID, Notes
+  const baseColumns = 3; // Date, Employee, Hours
+  const projectColumns = filters.includeProject ? 1 : 0;
+  const contractColumns = filters.includeContract ? 1 : 0;
   const employeeIdColumns = filters.includeEmployeeIds ? 2 : 0; // User ID, Employee Card ID
-  const totalColumns = baseColumns + employeeIdColumns + 1; // +1 for Notes
+  const taskColumns = 2; // Jira Task ID, Notes
+  const totalColumns = baseColumns + projectColumns + contractColumns + employeeIdColumns + taskColumns;
 
   if (isLoading) {
     return (
@@ -50,7 +61,8 @@ const ReportDataTable = ({ reportData, projects, users, filters, isLoading }: Re
               <TableHead>Employee</TableHead>
               {filters.includeEmployeeIds && <TableHead>User ID</TableHead>}
               {filters.includeEmployeeIds && <TableHead>Employee Card ID</TableHead>}
-              <TableHead>Project</TableHead>
+              {filters.includeProject && <TableHead>Project</TableHead>}
+              {filters.includeContract && <TableHead>Contract</TableHead>}
               <TableHead>Hours</TableHead>
               <TableHead>Jira Task ID</TableHead>
               <TableHead>Notes</TableHead>
@@ -63,7 +75,8 @@ const ReportDataTable = ({ reportData, projects, users, filters, isLoading }: Re
                 <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                 {filters.includeEmployeeIds && <TableCell><Skeleton className="h-4 w-20" /></TableCell>}
                 {filters.includeEmployeeIds && <TableCell><Skeleton className="h-4 w-20" /></TableCell>}
-                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                {filters.includeProject && <TableCell><Skeleton className="h-4 w-32" /></TableCell>}
+                {filters.includeContract && <TableCell><Skeleton className="h-4 w-32" /></TableCell>}
                 <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-full" /></TableCell>
@@ -104,7 +117,8 @@ const ReportDataTable = ({ reportData, projects, users, filters, isLoading }: Re
               <TableHead>Employee</TableHead>
               {filters.includeEmployeeIds && <TableHead>User ID</TableHead>}
               {filters.includeEmployeeIds && <TableHead>Employee Card ID</TableHead>}
-              <TableHead>Project</TableHead>
+              {filters.includeProject && <TableHead>Project</TableHead>}
+              {filters.includeContract && <TableHead>Contract</TableHead>}
               <TableHead>Hours</TableHead>
               <TableHead>Jira Task ID</TableHead>
               <TableHead>Notes</TableHead>
@@ -121,7 +135,10 @@ const ReportDataTable = ({ reportData, projects, users, filters, isLoading }: Re
                   <TableCell>{employee?.full_name || 'Unknown Employee'}</TableCell>
                   {filters.includeEmployeeIds && <TableCell>{entry.user_id || '-'}</TableCell>}
                   {filters.includeEmployeeIds && <TableCell>{employee?.employee_card_id || '-'}</TableCell>}
-                  <TableCell>{project?.name || 'Unknown Project'}</TableCell>
+                  {filters.includeProject && <TableCell>{project?.name || 'Unknown Project'}</TableCell>}
+                  {filters.includeContract && <TableCell>
+                    {project?.customer_id ? contractMap.get(project.customer_id)?.name || 'No Contract' : 'No Contract'}
+                  </TableCell>}
                   <TableCell>{entry.hours_logged}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.jira_task_id || '-'}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.notes || '-'}</TableCell>
@@ -133,7 +150,8 @@ const ReportDataTable = ({ reportData, projects, users, filters, isLoading }: Re
               <TableCell></TableCell>
               {filters.includeEmployeeIds && <TableCell></TableCell>}
               {filters.includeEmployeeIds && <TableCell></TableCell>}
-              <TableCell></TableCell>
+              {filters.includeProject && <TableCell></TableCell>}
+              {filters.includeContract && <TableCell></TableCell>}
               <TableCell>{totalHours.toFixed(1)}</TableCell>
               <TableCell></TableCell>
               <TableCell></TableCell>

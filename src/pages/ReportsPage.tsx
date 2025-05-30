@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { isAdmin } from "@/utils/roles";
@@ -73,7 +72,7 @@ const ReportsPage = () => {
 
   const handleExportCSV = () => {
     try {
-      exportToCSV(reportData, projects, users, filters, `timesheet-report-${formatDate(new Date())}`);
+      exportToCSV(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to CSV"
@@ -90,7 +89,7 @@ const ReportsPage = () => {
 
   const handleExportExcel = () => {
     try {
-      exportToExcel(reportData, projects, users, filters, `timesheet-report-${formatDate(new Date())}`);
+      exportToExcel(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to Excel"
@@ -107,7 +106,7 @@ const ReportsPage = () => {
 
   const handleExportPDF = () => {
     try {
-      exportToPDF(reportData, projects, users, filters, `timesheet-report-${formatDate(new Date())}`);
+      exportToPDF(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to PDF"
@@ -191,7 +190,7 @@ const ReportsPage = () => {
               <ReportCharts reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
             </TabsContent>
             <TabsContent value="tabular" className="mt-4">
-              <ReportDataTable reportData={reportData} projects={projects} users={users} filters={filters} isLoading={isLoading} />
+              <ReportDataTable reportData={reportData} projects={projects} contracts={contracts} users={users} filters={filters} isLoading={isLoading} />
             </TabsContent>
           </Tabs>
         </CardContent>
