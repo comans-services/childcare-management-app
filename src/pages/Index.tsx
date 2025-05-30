@@ -800,7 +800,7 @@ const Dashboard = () => {
                     href="mailto:chinh@comansservices.com.au" 
                     className="text-blue-600 hover:underline"
                   >
-                    chinh@comansservices.com.au
+                    Chinh@comansservices.com.au
                   </a>
                 </div>
               </div>
