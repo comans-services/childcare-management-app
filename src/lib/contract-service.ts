@@ -39,9 +39,20 @@ export interface ContractTimeEntry {
   entry_date: string;
   hours_logged: number;
   notes?: string;
+  jira_task_id?: string;
+  start_time?: string;
+  end_time?: string;
   created_at?: string;
   updated_at?: string;
   contract?: Contract;
+  user?: {
+    id: string;
+    full_name?: string;
+    email?: string;
+    organization?: string;
+    time_zone?: string;
+    employee_card_id?: string;
+  };
 }
 
 export const fetchServices = async (): Promise<Service[]> => {
@@ -454,7 +465,10 @@ export const saveContractTimeEntry = async (entry: ContractTimeEntry): Promise<C
           contract_id: entry.contract_id,
           entry_date: entry.entry_date,
           hours_logged: entry.hours_logged,
-          notes: entry.notes
+          notes: entry.notes,
+          jira_task_id: entry.jira_task_id,
+          start_time: entry.start_time,
+          end_time: entry.end_time
         })
         .eq("id", entry.id)
         .select();
@@ -475,7 +489,10 @@ export const saveContractTimeEntry = async (entry: ContractTimeEntry): Promise<C
           user_id: entry.user_id,
           entry_date: entry.entry_date,
           hours_logged: entry.hours_logged,
-          notes: entry.notes
+          notes: entry.notes,
+          jira_task_id: entry.jira_task_id,
+          start_time: entry.start_time,
+          end_time: entry.end_time
         })
         .select();
 

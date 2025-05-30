@@ -55,15 +55,21 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     enabled: open,
   });
 
-  // Determine if existing entry is a contract entry
-  const isContractEntry = existingEntry && 'contract_id' in existingEntry;
+  // Type guard functions
+  const isContractEntry = (entry: TimesheetEntry | ContractTimeEntry): entry is ContractTimeEntry => {
+    return 'contract_id' in entry;
+  };
+
+  const isTimesheetEntry = (entry: TimesheetEntry | ContractTimeEntry): entry is TimesheetEntry => {
+    return 'project_id' in entry;
+  };
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
     defaultValues: {
-      entry_type: isContractEntry ? "contract" : "project",
-      project_id: !isContractEntry && existingEntry ? existingEntry.project_id : "",
-      contract_id: isContractEntry ? (existingEntry as ContractTimeEntry).contract_id : "",
+      entry_type: existingEntry && isContractEntry(existingEntry) ? "contract" : "project",
+      project_id: existingEntry && isTimesheetEntry(existingEntry) ? existingEntry.project_id : "",
+      contract_id: existingEntry && isContractEntry(existingEntry) ? existingEntry.contract_id : "",
       hours_logged: existingEntry?.hours_logged || 1,
       notes: existingEntry?.notes || "",
       jira_task_id: existingEntry?.jira_task_id || "",
@@ -82,10 +88,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (open) {
+      const isContract = existingEntry && isContractEntry(existingEntry);
       form.reset({
-        entry_type: isContractEntry ? "contract" : "project",
-        project_id: !isContractEntry && existingEntry ? existingEntry.project_id : "",
-        contract_id: isContractEntry ? (existingEntry as ContractTimeEntry).contract_id : "",
+        entry_type: isContract ? "contract" : "project",
+        project_id: existingEntry && isTimesheetEntry(existingEntry) ? existingEntry.project_id : "",
+        contract_id: isContract ? existingEntry.contract_id : "",
         hours_logged: existingEntry?.hours_logged || 1,
         notes: existingEntry?.notes || "",
         jira_task_id: existingEntry?.jira_task_id || "",
@@ -93,30 +100,31 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
         end_time: existingEntry?.end_time || "",
       });
     }
-  }, [open, existingEntry, isContractEntry, form]);
+  }, [open, existingEntry, form]);
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
     try {
       if (values.entry_type === "project") {
         // Handle project entry
         const entryData: TimesheetEntry = {
-          id: !isContractEntry && existingEntry ? existingEntry.id : undefined,
+          id: existingEntry && isTimesheetEntry(existingEntry) ? existingEntry.id : undefined,
           project_id: values.project_id!,
           entry_date: formatDate(date),
           hours_logged: values.hours_logged,
           notes: values.notes || "",
           jira_task_id: values.jira_task_id || "",
-          start_time: values.start_time || null,
-          end_time: values.end_time || null,
+          start_time: values.start_time || undefined,
+          end_time: values.end_time || undefined,
         };
 
         // Preserve project and user data from existing entry if available
-        if (!isContractEntry && existingEntry?.project) {
-          entryData.project = existingEntry.project;
-        }
-        
-        if (!isContractEntry && existingEntry?.user) {
-          entryData.user = existingEntry.user;
+        if (existingEntry && isTimesheetEntry(existingEntry)) {
+          if (existingEntry.project) {
+            entryData.project = existingEntry.project;
+          }
+          if (existingEntry.user) {
+            entryData.user = existingEntry.user;
+          }
         }
         
         const savedEntry = await saveTimesheetEntry(entryData);
@@ -132,7 +140,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
       } else {
         // Handle contract entry
         const entryData: ContractTimeEntry = {
-          id: isContractEntry ? existingEntry.id : undefined,
+          id: existingEntry && isContractEntry(existingEntry) ? existingEntry.id : undefined,
           contract_id: values.contract_id!,
           user_id: userId,
           entry_date: formatDate(date),

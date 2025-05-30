@@ -34,7 +34,7 @@ export interface TimesheetEntry {
   };
 }
 
-// Contract time entry interface (re-exported from contract-service)
+// Contract time entry interface with all required properties
 export interface ContractTimeEntry {
   id?: string;
   contract_id: string;
@@ -53,6 +53,14 @@ export interface ContractTimeEntry {
     end_date: string;
     status: 'active' | 'expired' | 'pending_renewal' | 'renewed';
     is_active?: boolean;
+  };
+  user?: {
+    id: string;
+    full_name?: string;
+    email?: string;
+    organization?: string;
+    time_zone?: string;
+    employee_card_id?: string;
   };
 }
 
