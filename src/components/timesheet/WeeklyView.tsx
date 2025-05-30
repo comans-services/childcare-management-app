@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -10,6 +9,7 @@ import {
 import { TimesheetEntry } from "@/lib/timesheet-service";
 import WeekNavigation from "./weekly-view/WeekNavigation";
 import WeeklyProgressBar from "./weekly-view/WeeklyProgressBar";
+import WorkScheduleSelector from "./weekly-view/WorkScheduleSelector";
 import LoadingState from "./weekly-view/LoadingState";
 import ErrorState from "./weekly-view/ErrorState";
 import WeekGrid from "./weekly-view/WeekGrid";
@@ -26,7 +26,9 @@ const WeeklyView: React.FC = () => {
   const {
     currentDate,
     setCurrentDate,
+    workingDays,
     weeklyTarget,
+    handleWorkingDaysChange,
     viewMode,
     toggleViewMode,
     lastUserId,
@@ -103,7 +105,7 @@ const WeeklyView: React.FC = () => {
   }, 0);
 
   // Calculate the target based on view mode
-  const progressTarget = viewMode === "today" ? 8 : weeklyTarget;
+  const progressTarget = viewMode === "today" ? (workingDays > 0 ? 8 : 0) : weeklyTarget;
 
   // Handler for opening the entry dialog
   const handleOpenEntryDialog = useCallback((date: Date, entry?: TimesheetEntry) => {
@@ -134,6 +136,11 @@ const WeeklyView: React.FC = () => {
         fetchData={fetchData}
         viewMode={viewMode}
         toggleViewMode={toggleViewMode}
+      />
+
+      <WorkScheduleSelector
+        workingDays={workingDays}
+        onWorkingDaysChange={handleWorkingDaysChange}
       />
 
       {loading ? (

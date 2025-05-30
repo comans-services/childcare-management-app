@@ -1,10 +1,14 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { TimesheetEntry } from "@/lib/timesheet-service";
 
 export const useWeeklyViewState = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [weeklyTarget] = useState(40); // Default weekly target of 40 hours
+  const [workingDays, setWorkingDays] = useState<number>(() => {
+    // Load from localStorage or default to 5 days
+    const saved = localStorage.getItem("timesheet-working-days");
+    return saved ? parseInt(saved) : 5;
+  });
   const [viewMode, setViewMode] = useState<"today" | "week">("week");
   const [lastUserId, setLastUserId] = useState<string | null>(null);
   
@@ -12,6 +16,14 @@ export const useWeeklyViewState = () => {
   const [entryDialogOpen, setEntryDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
+
+  // Calculate weekly target based on working days
+  const weeklyTarget = workingDays * 8;
+
+  // Save working days to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("timesheet-working-days", workingDays.toString());
+  }, [workingDays]);
 
   // Clear all dialog state
   const clearDialogState = useCallback(() => {
@@ -24,10 +36,16 @@ export const useWeeklyViewState = () => {
     setViewMode(prevMode => prevMode === "today" ? "week" : "today");
   }, []);
 
+  const handleWorkingDaysChange = useCallback((days: number) => {
+    setWorkingDays(days);
+  }, []);
+
   return {
     currentDate,
     setCurrentDate,
+    workingDays,
     weeklyTarget,
+    handleWorkingDaysChange,
     viewMode,
     setViewMode,
     toggleViewMode,
