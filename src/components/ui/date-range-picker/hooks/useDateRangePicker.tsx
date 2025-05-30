@@ -42,25 +42,50 @@ export const useDateRangePicker = (value: DateRange, onChange: (range: DateRange
     close();
   };
 
-  const handleDateSelect = (date: Date | undefined, type: 'from' | 'to') => {
-    if (!date) return;
-    
+  const handleDateClick = (day: Date) => {
     setSelectedPreset(null); // Clear preset when manually selecting dates
     
-    if (type === 'from') {
-      const newRange = { ...tempRange, from: date };
-      // If start date is after end date, adjust end date
-      if (tempRange.to && date > tempRange.to) {
-        newRange.to = date;
+    // Check if this is a single-day range and we're clicking the same day
+    if (tempRange.from && tempRange.to && isSameDay(tempRange.from, tempRange.to) && isSameDay(day, tempRange.from)) {
+      // Clear both dates for single-day toggle
+      setTempRange({ from: undefined, to: undefined });
+      return;
+    }
+
+    // Check if clicking on the from date
+    if (tempRange.from && isSameDay(day, tempRange.from)) {
+      // Clear from, keep to
+      setTempRange({ from: undefined, to: tempRange.to });
+      return;
+    }
+
+    // Check if clicking on the to date
+    if (tempRange.to && isSameDay(day, tempRange.to)) {
+      // Clear to, keep from
+      const newRange = { from: tempRange.from, to: undefined };
+      
+      // If clearing to leaves only a to date, promote it to from
+      if (!newRange.from && tempRange.to) {
+        newRange.from = tempRange.to;
       }
+      
       setTempRange(newRange);
-    } else {
-      const newRange = { ...tempRange, to: date };
-      // If end date is before start date, adjust start date
-      if (tempRange.from && date < tempRange.from) {
-        newRange.from = date;
+      return;
+    }
+
+    // Normal date selection logic
+    if (!tempRange.from || (tempRange.from && tempRange.to)) {
+      // Start new selection
+      setTempRange({ from: day, to: undefined });
+    } else if (tempRange.from && !tempRange.to) {
+      // Complete the range
+      if (isBefore(day, tempRange.from)) {
+        // If selected date is before from, swap them
+        setTempRange({ from: day, to: tempRange.from });
+      } else {
+        // Normal case: complete the range
+        setTempRange({ from: tempRange.from, to: day });
       }
-      setTempRange(newRange);
     }
   };
 
@@ -95,7 +120,7 @@ export const useDateRangePicker = (value: DateRange, onChange: (range: DateRange
     handlePresetClick,
     handleApply,
     handleCancel,
-    handleDateSelect,
+    handleDateClick,
     handleKeyDown,
     handlePreviousMonth,
     handleNextMonth,

@@ -1,15 +1,15 @@
 
-import { DateRangeType } from "@/lib/date-range-utils";
+import { DateRange } from "@/lib/date-range-utils";
 
 export interface DateRangePickerProps {
-  value: { from?: Date; to?: Date };
-  onChange: (range: { from?: Date; to?: Date }) => void;
+  value: DateRange;
+  onChange: (range: DateRange) => void;
   disabled?: boolean;
   className?: string;
 }
 
 export interface DateRangePickerState {
-  tempRange: { from?: Date; to?: Date };
+  tempRange: DateRange;
   selectedPreset: string | null;
   currentMonth: Date;
 }

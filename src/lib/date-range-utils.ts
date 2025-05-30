@@ -6,6 +6,12 @@ export type DateRangeType = {
   to: Date;
 };
 
+// Add a more flexible type for partial ranges
+export type DateRange = {
+  from?: Date;
+  to?: Date;
+};
+
 export type DateRangePreset = {
   label: string;
   value: string;
@@ -107,8 +113,17 @@ export const dateRangePresets: DateRangePreset[] = [
   },
 ];
 
-// Format date range for display
-export const formatDateRangeDisplay = (range: DateRangeType): string => {
+// Format date range for display - updated to handle optional dates
+export const formatDateRangeDisplay = (range: DateRange): string => {
+  if (!range.from && !range.to) {
+    return "Select date range";
+  }
+  if (!range.to) {
+    return format(range.from!, "EEE, d MMM yyyy");
+  }
+  if (!range.from) {
+    return format(range.to, "EEE, d MMM yyyy");
+  }
   if (isSameDay(range.from, range.to)) {
     return format(range.from, "EEE, d MMM yyyy");
   }
@@ -121,7 +136,7 @@ export const isFutureDate = (date: Date): boolean => {
 };
 
 // Validate date range
-export const isValidDateRange = (range: { from?: Date; to?: Date }): boolean => {
+export const isValidDateRange = (range: DateRange): boolean => {
   if (!range.from || !range.to) return true; // Allow partial ranges
   return !isAfter(range.from, range.to);
 };
@@ -130,6 +145,3 @@ export const isValidDateRange = (range: { from?: Date; to?: Date }): boolean => 
 export const getNextMonth = (date: Date): Date => {
   return addDays(date, 32); // Simple way to get next month
 };
-
-// For backward compatibility - export as DateRange
-export { DateRangeType as DateRange };

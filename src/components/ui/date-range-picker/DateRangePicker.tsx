@@ -3,7 +3,7 @@ import React from "react";
 import { Popover } from "@headlessui/react";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDateRangeDisplay } from "@/lib/date-range-utils";
+import { formatDateRangeDisplay, DateRange } from "@/lib/date-range-utils";
 import { DateRangePickerProps } from "./types";
 import { useDateRangePicker } from "./hooks/useDateRangePicker";
 import { PresetsList } from "./PresetsList";
@@ -24,7 +24,7 @@ export const DateRangePicker = ({
     handlePresetClick,
     handleApply,
     handleCancel,
-    handleDateSelect,
+    handleDateClick,
     handleKeyDown,
     handlePreviousMonth,
     handleNextMonth,
@@ -74,7 +74,7 @@ export const DateRangePicker = ({
                   tempRange={tempRange}
                   currentMonth={currentMonth}
                   nextMonth={nextMonth}
-                  onDateSelect={handleDateSelect}
+                  onDateSelect={handleDateClick}
                   onPreviousMonth={handlePreviousMonth}
                   onNextMonth={handleNextMonth}
                 />
