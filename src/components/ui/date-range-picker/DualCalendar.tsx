@@ -9,7 +9,8 @@ interface DualCalendarProps {
   tempRange: DateRange;
   currentMonth: Date;
   nextMonth: Date;
-  onDateSelect: (date: Date | undefined, type: 'from' | 'to') => void;
+  onDateClick: (date: Date) => void;
+  onCalendarSelect: (range: any) => void;
   onPreviousMonth: (event: React.MouseEvent) => void;
   onNextMonth: (event: React.MouseEvent) => void;
 }
@@ -18,15 +19,46 @@ export const DualCalendar = ({
   tempRange, 
   currentMonth, 
   nextMonth, 
-  onDateSelect, 
+  onDateClick,
+  onCalendarSelect,
   onPreviousMonth, 
   onNextMonth 
 }: DualCalendarProps) => {
-  // Custom components to hide Calendar navigation
+  // Custom Day component that handles our click logic
+  const CustomDay = ({ date, displayMonth }: { date: Date; displayMonth: Date }) => {
+    const isSelected = (tempRange.from && date.getTime() === tempRange.from.getTime()) || 
+                     (tempRange.to && date.getTime() === tempRange.to.getTime());
+    const isInRange = tempRange.from && tempRange.to && 
+                     date >= tempRange.from && date <= tempRange.to;
+    const isDisabled = isFutureDate(date);
+    const isOutsideMonth = date.getMonth() !== displayMonth.getMonth();
+
+    return (
+      <button
+        type="button"
+        onClick={() => !isDisabled && onDateClick(date)}
+        disabled={isDisabled}
+        className={`
+          h-9 w-9 p-0 font-normal rounded-md text-sm transition-colors
+          ${isSelected ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground' : ''}
+          ${isInRange && !isSelected ? 'bg-accent text-accent-foreground' : ''}
+          ${!isSelected && !isInRange ? 'hover:bg-accent hover:text-accent-foreground' : ''}
+          ${isDisabled ? 'text-muted-foreground opacity-50 cursor-not-allowed' : ''}
+          ${isOutsideMonth ? 'text-muted-foreground opacity-50' : ''}
+          ${date.toDateString() === new Date().toDateString() && !isSelected ? 'bg-accent text-accent-foreground' : ''}
+        `}
+      >
+        {date.getDate()}
+      </button>
+    );
+  };
+
+  // Custom components to hide Calendar navigation and override day rendering
   const customComponents = {
     IconLeft: () => null,
     IconRight: () => null,
     Caption: ({ displayMonth }: { displayMonth: Date }) => null,
+    Day: CustomDay,
   };
 
   return (
@@ -64,14 +96,7 @@ export const DualCalendar = ({
             from: tempRange.from,
             to: tempRange.to,
           }}
-          onSelect={(range) => {
-            if (range?.from) {
-              onDateSelect(range.from, 'from');
-            }
-            if (range?.to) {
-              onDateSelect(range.to, 'to');
-            }
-          }}
+          onSelect={onCalendarSelect}
           month={currentMonth}
           disabled={isFutureDate}
           weekStartsOn={1}
@@ -86,14 +111,7 @@ export const DualCalendar = ({
             from: tempRange.from,
             to: tempRange.to,
           }}
-          onSelect={(range) => {
-            if (range?.from) {
-              onDateSelect(range.from, 'from');
-            }
-            if (range?.to) {
-              onDateSelect(range.to, 'to');
-            }
-          }}
+          onSelect={onCalendarSelect}
           month={nextMonth}
           disabled={isFutureDate}
           weekStartsOn={1}

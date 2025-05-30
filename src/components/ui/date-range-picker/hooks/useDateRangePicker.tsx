@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { startOfMonth, addMonths, subMonths, isSameDay } from "date-fns";
 import { DateRange, getCurrentISOWeek, isValidDateRange } from "@/lib/date-range-utils";
@@ -43,44 +42,54 @@ export const useDateRangePicker = (value: DateRange, onChange: (range: DateRange
     close();
   };
 
-  const handleDateSelect = (date: Date | undefined, type: 'from' | 'to') => {
-    if (!date) return;
-    
+  // New improved date click handler that properly handles deselection
+  const handleDateClick = (date: Date) => {
     setSelectedPreset(null); // Clear preset when manually selecting dates
     
-    // Check if clicking on an already selected date to toggle it off
     const isClickingFromDate = tempRange.from && isSameDay(date, tempRange.from);
     const isClickingToDate = tempRange.to && isSameDay(date, tempRange.to);
+    const isSameDateRange = tempRange.from && tempRange.to && isSameDay(tempRange.from, tempRange.to);
     
-    if (type === 'from') {
-      if (isClickingFromDate) {
-        // Toggle off the from date
-        const newRange = { ...tempRange, from: tempRange.to || new Date() };
-        setTempRange(newRange);
-        return;
-      }
-      
-      const newRange = { ...tempRange, from: date };
-      // If start date is after end date, adjust end date
-      if (tempRange.to && date > tempRange.to) {
-        newRange.to = date;
-      }
-      setTempRange(newRange);
-    } else {
-      if (isClickingToDate) {
-        // Toggle off the to date
-        const newRange = { ...tempRange, to: tempRange.from || new Date() };
-        setTempRange(newRange);
-        return;
-      }
-      
-      const newRange = { ...tempRange, to: date };
-      // If end date is before start date, adjust start date
-      if (tempRange.from && date < tempRange.from) {
-        newRange.from = date;
-      }
-      setTempRange(newRange);
+    // Case 1: Clicking on a date when both from and to are the same (single date selected)
+    if (isSameDateRange && (isClickingFromDate || isClickingToDate)) {
+      // Clear both dates to deselect the single date
+      setTempRange({ from: new Date(), to: new Date() });
+      return;
     }
+    
+    // Case 2: Clicking on the from date (when it's different from to date)
+    if (isClickingFromDate && tempRange.to && !isSameDay(tempRange.from, tempRange.to)) {
+      // Move the to date to from, effectively removing the from date
+      setTempRange({ from: tempRange.to, to: tempRange.to });
+      return;
+    }
+    
+    // Case 3: Clicking on the to date (when it's different from from date)
+    if (isClickingToDate && tempRange.from && !isSameDay(tempRange.from, tempRange.to)) {
+      // Keep only the from date, remove the to date
+      setTempRange({ from: tempRange.from, to: tempRange.from });
+      return;
+    }
+    
+    // Case 4: Normal date selection logic
+    if (!tempRange.from || (tempRange.from && tempRange.to)) {
+      // Start a new selection
+      setTempRange({ from: date, to: date });
+    } else if (tempRange.from && !tempRange.to) {
+      // Complete the range
+      if (date >= tempRange.from) {
+        setTempRange({ from: tempRange.from, to: date });
+      } else {
+        setTempRange({ from: date, to: tempRange.from });
+      }
+    }
+  };
+
+  // Wrapper for calendar onSelect that uses our custom logic
+  const handleCalendarSelect = (range: any) => {
+    // We'll handle selection through handleDateClick instead
+    // This prevents the default calendar behavior from interfering
+    return;
   };
 
   const handleKeyDown = (event: React.KeyboardEvent, close: () => void) => {
@@ -114,7 +123,8 @@ export const useDateRangePicker = (value: DateRange, onChange: (range: DateRange
     handlePresetClick,
     handleApply,
     handleCancel,
-    handleDateSelect,
+    handleDateClick,
+    handleCalendarSelect,
     handleKeyDown,
     handlePreviousMonth,
     handleNextMonth,
