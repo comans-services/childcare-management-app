@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { isAdmin } from "@/utils/roles";
@@ -16,6 +17,7 @@ import { User } from "@/lib/user-service";
 import { toast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/date-utils";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export-utils";
+
 export type ReportFiltersType = {
   startDate: Date;
   endDate: Date;
@@ -24,6 +26,14 @@ export type ReportFiltersType = {
   projectId: string | null;
   userId: string | null;
 };
+
+export type ReportColumnConfigType = {
+  includeEmployeeDetails: boolean;
+  includeProjectDetails: boolean;
+  includeContractDetails: boolean;
+  includeJiraTaskId: boolean;
+};
+
 const ReportsPage = () => {
   const {
     user
@@ -61,11 +71,18 @@ const ReportsPage = () => {
     userId: null
   });
 
+  const [columnConfig, setColumnConfig] = useState<ReportColumnConfigType>({
+    includeEmployeeDetails: false,
+    includeProjectDetails: false,
+    includeContractDetails: false,
+    includeJiraTaskId: false
+  });
+
   // Check if export is available (data has been generated)
   const isExportDisabled = reportData.length === 0 || projects.length === 0 || users.length === 0;
   const handleExportCSV = () => {
     try {
-      exportToCSV(reportData, projects, users, `timesheet-report-${formatDate(new Date())}`);
+      exportToCSV(reportData, projects, users, columnConfig, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to CSV"
@@ -81,7 +98,7 @@ const ReportsPage = () => {
   };
   const handleExportExcel = () => {
     try {
-      exportToExcel(reportData, projects, users, `timesheet-report-${formatDate(new Date())}`);
+      exportToExcel(reportData, projects, users, columnConfig, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to Excel"
@@ -97,7 +114,7 @@ const ReportsPage = () => {
   };
   const handleExportPDF = () => {
     try {
-      exportToPDF(reportData, projects, users, filters, `timesheet-report-${formatDate(new Date())}`);
+      exportToPDF(reportData, projects, users, filters, columnConfig, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to PDF"
@@ -143,7 +160,18 @@ const ReportsPage = () => {
           <CardDescription>Create custom reports for your team</CardDescription>
         </CardHeader>
         <CardContent>
-          <ReportFilters filters={filters} setFilters={setFilters} setReportData={setReportData} setProjects={setProjects} setContracts={setContracts} setCustomers={setCustomers} setUsers={setUsers} setIsLoading={setIsLoading} />
+          <ReportFilters 
+            filters={filters} 
+            setFilters={setFilters} 
+            columnConfig={columnConfig}
+            setColumnConfig={setColumnConfig}
+            setReportData={setReportData} 
+            setProjects={setProjects} 
+            setContracts={setContracts} 
+            setCustomers={setCustomers} 
+            setUsers={setUsers} 
+            setIsLoading={setIsLoading} 
+          />
           
           <Separator className="my-6" />
           
@@ -156,7 +184,13 @@ const ReportsPage = () => {
               <ReportCharts reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
             </TabsContent>
             <TabsContent value="tabular" className="mt-4">
-              <ReportDataTable reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
+              <ReportDataTable 
+                reportData={reportData} 
+                projects={projects} 
+                users={users} 
+                columnConfig={columnConfig}
+                isLoading={isLoading} 
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
