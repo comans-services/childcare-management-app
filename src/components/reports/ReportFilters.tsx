@@ -7,7 +7,7 @@ import { fetchContracts } from "@/lib/contract-service";
 import { fetchUserProjects } from "@/lib/timesheet-service";
 import { fetchUsers } from "@/lib/user-service";
 import { ReportFiltersType } from "@/pages/ReportsPage";
-import { DateRangeFilter } from "./filters/DateRangeFilter";
+import { DateRangeFilterNew } from "./filters/DateRangeFilterNew";
 import { SelectFilters } from "./filters/SelectFilters";
 import { FilterActions } from "./filters/FilterActions";
 import { useReportGeneration } from "./filters/hooks/useReportGeneration";
@@ -79,7 +79,7 @@ const ReportFilters = ({
   return (
     <Card className="p-4">
       <div className="flex flex-wrap gap-4">
-        <DateRangeFilter filters={filters} setFilters={setFilters} />
+        <DateRangeFilterNew filters={filters} setFilters={setFilters} />
 
         {isExpanded && (
           <SelectFilters
@@ -105,3 +105,4 @@ const ReportFilters = ({
 };
 
 export default ReportFilters;
+
