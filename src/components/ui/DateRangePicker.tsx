@@ -29,7 +29,6 @@ export const DateRangePicker = ({
   disabled = false,
   className 
 }: DateRangePickerProps) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [tempRange, setTempRange] = useState<DateRange>(value);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
@@ -55,17 +54,17 @@ export const DateRangePicker = ({
     setSelectedPreset(preset.value);
   };
 
-  const handleApply = () => {
+  const handleApply = (close: () => void) => {
     if (isValidDateRange(tempRange)) {
       onChange(tempRange);
-      setIsOpen(false);
+      close();
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = (close: () => void) => {
     setTempRange(value);
     setSelectedPreset(null);
-    setIsOpen(false);
+    close();
   };
 
   const handleDateSelect = (date: Date | undefined, type: 'from' | 'to') => {
@@ -90,11 +89,11 @@ export const DateRangePicker = ({
     }
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
+  const handleKeyDown = (event: React.KeyboardEvent, close: () => void) => {
     if (event.key === 'Escape') {
-      handleCancel();
+      handleCancel(close);
     } else if (event.key === 'Enter' && isValidDateRange(tempRange)) {
-      handleApply();
+      handleApply(close);
     }
   };
 
@@ -122,7 +121,7 @@ export const DateRangePicker = ({
   return (
     <div className={cn("relative", className)}>
       <Popover>
-        {({ open }) => (
+        {({ open, close }) => (
           <>
             <Popover.Button
               disabled={disabled}
@@ -131,7 +130,7 @@ export const DateRangePicker = ({
                 disabled && "opacity-50 cursor-not-allowed",
                 open && "ring-2 ring-blue-500 border-blue-500"
               )}
-              onKeyDown={handleKeyDown}
+              onKeyDown={(e) => handleKeyDown(e, close)}
             >
               <div className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4 text-gray-500" />
@@ -142,7 +141,7 @@ export const DateRangePicker = ({
             </Popover.Button>
 
             <Popover.Panel className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg">
-              <div className="flex" onKeyDown={handleKeyDown}>
+              <div className="flex" onKeyDown={(e) => handleKeyDown(e, close)}>
                 {/* Left Sidebar with Presets */}
                 <div className="w-48 p-4 border-r border-gray-200">
                   <div className="space-y-1">
@@ -167,7 +166,7 @@ export const DateRangePicker = ({
                   <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
                     <Button
                       type="button"
-                      onClick={handleApply}
+                      onClick={() => handleApply(close)}
                       className="w-full"
                       size="sm"
                       disabled={!isValidDateRange(tempRange)}
@@ -176,7 +175,7 @@ export const DateRangePicker = ({
                     </Button>
                     <Button
                       type="button"
-                      onClick={handleCancel}
+                      onClick={() => handleCancel(close)}
                       variant="outline"
                       className="w-full"
                       size="sm"
