@@ -9,6 +9,7 @@ import {
   upsertWeeklySchedule, 
   deleteWeeklySchedule, 
   fetchWeeklySchedules,
+  getEffectiveSchedule,
   WeeklyScheduleRow 
 } from "@/lib/simple-work-schedule-service";
 
@@ -27,7 +28,10 @@ export const useSimpleWeeklySchedule = (userId: string, weekStartDate: Date) => 
 
   const weeklyOverride = weeklySchedules[userId]?.[0];
   const hasOverride = !!weeklyOverride;
-  const effectiveDays = hasOverride ? weeklyOverride.days_per_week : workingDays;
+  
+  // Get effective schedule - either from override or default
+  const effectiveSchedule = getEffectiveSchedule(weeklyOverride);
+  const effectiveDays = hasOverride ? effectiveSchedule.days : workingDays;
   const effectiveHours = effectiveDays * 8;
 
   // Mutation for updating weekly schedule

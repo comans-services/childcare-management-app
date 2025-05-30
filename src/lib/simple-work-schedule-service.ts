@@ -5,12 +5,43 @@ import { formatDate } from "@/lib/date-utils";
 export interface WeeklyScheduleRow {
   id: string;
   user_id: string;
-  week_start: string;
-  days_per_week: number;
-  target_hours: number;
+  week_start_date: string;
+  monday_hours: number;
+  tuesday_hours: number;
+  wednesday_hours: number;
+  thursday_hours: number;
+  friday_hours: number;
+  saturday_hours: number;
+  sunday_hours: number;
   created_at: string;
   updated_at: string;
 }
+
+// Convert days count (0-5) to individual daily hours
+const convertDaysToHours = (days: number) => {
+  return {
+    monday_hours: days >= 1 ? 8 : 0,
+    tuesday_hours: days >= 2 ? 8 : 0,
+    wednesday_hours: days >= 3 ? 8 : 0,
+    thursday_hours: days >= 4 ? 8 : 0,
+    friday_hours: days >= 5 ? 8 : 0,
+    saturday_hours: 0,
+    sunday_hours: 0,
+  };
+};
+
+// Convert individual daily hours back to days count
+const convertHoursToDays = (schedule: WeeklyScheduleRow): number => {
+  const workingDays = [
+    schedule.monday_hours > 0 ? 1 : 0,
+    schedule.tuesday_hours > 0 ? 1 : 0,
+    schedule.wednesday_hours > 0 ? 1 : 0,
+    schedule.thursday_hours > 0 ? 1 : 0,
+    schedule.friday_hours > 0 ? 1 : 0,
+  ].reduce((sum, day) => sum + day, 0);
+  
+  return workingDays;
+};
 
 export const upsertWeeklySchedule = async (
   userId: string, 
@@ -18,8 +49,8 @@ export const upsertWeeklySchedule = async (
   days: number
 ): Promise<WeeklyScheduleRow | null> => {
   try {
-    const targetHours = days * 8;
-    console.log(`Upserting weekly schedule: ${userId}, week ${weekStart}, ${days} days, ${targetHours} hours`);
+    const dailyHours = convertDaysToHours(days);
+    console.log(`Upserting weekly schedule: ${userId}, week ${weekStart}, ${days} days`);
     
     const currentUser = (await supabase.auth.getUser()).data.user;
     if (!currentUser) {
@@ -30,18 +61,10 @@ export const upsertWeeklySchedule = async (
       .from("weekly_work_schedules")
       .upsert({
         user_id: userId,
-        week_start: weekStart,
-        days_per_week: days,
-        target_hours: targetHours,
+        week_start_date: weekStart,
         updated_at: new Date().toISOString(),
-        // Set all daily hours based on days count (0-5 working days)
-        monday_hours: days >= 1 ? 8 : 0,
-        tuesday_hours: days >= 2 ? 8 : 0,
-        wednesday_hours: days >= 3 ? 8 : 0,
-        thursday_hours: days >= 4 ? 8 : 0,
-        friday_hours: days >= 5 ? 8 : 0,
-        saturday_hours: 0,
-        sunday_hours: 0,
+        created_by: currentUser.id,
+        ...dailyHours,
       }, {
         onConflict: "user_id,week_start_date"
       })
@@ -122,4 +145,16 @@ export const fetchWeeklySchedules = async (
     console.error("Error in fetchWeeklySchedules:", error);
     return {};
   }
+};
+
+// Helper function to convert schedule row to days and hours
+export const getEffectiveSchedule = (schedule: WeeklyScheduleRow | null) => {
+  if (!schedule) {
+    return { days: 0, hours: 0 };
+  }
+  
+  const days = convertHoursToDays(schedule);
+  const hours = days * 8;
+  
+  return { days, hours };
 };
