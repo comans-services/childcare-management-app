@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
-import { startOfMonth, addMonths, subMonths } from "date-fns";
+import { startOfMonth, addMonths, subMonths, isSameDay } from "date-fns";
 import { DateRange, getCurrentISOWeek, isValidDateRange } from "@/lib/date-range-utils";
 import { DateRangePickerState } from "../types";
 
@@ -48,7 +48,18 @@ export const useDateRangePicker = (value: DateRange, onChange: (range: DateRange
     
     setSelectedPreset(null); // Clear preset when manually selecting dates
     
+    // Check if clicking on an already selected date to toggle it off
+    const isClickingFromDate = tempRange.from && isSameDay(date, tempRange.from);
+    const isClickingToDate = tempRange.to && isSameDay(date, tempRange.to);
+    
     if (type === 'from') {
+      if (isClickingFromDate) {
+        // Toggle off the from date
+        const newRange = { ...tempRange, from: tempRange.to || new Date() };
+        setTempRange(newRange);
+        return;
+      }
+      
       const newRange = { ...tempRange, from: date };
       // If start date is after end date, adjust end date
       if (tempRange.to && date > tempRange.to) {
@@ -56,6 +67,13 @@ export const useDateRangePicker = (value: DateRange, onChange: (range: DateRange
       }
       setTempRange(newRange);
     } else {
+      if (isClickingToDate) {
+        // Toggle off the to date
+        const newRange = { ...tempRange, to: tempRange.from || new Date() };
+        setTempRange(newRange);
+        return;
+      }
+      
       const newRange = { ...tempRange, to: date };
       // If end date is before start date, adjust start date
       if (tempRange.from && date < tempRange.from) {
