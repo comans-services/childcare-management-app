@@ -294,6 +294,72 @@ export type Database = {
           },
         ]
       }
+      weekly_work_schedules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          friday_hours: number | null
+          id: string
+          monday_hours: number | null
+          notes: string | null
+          saturday_hours: number | null
+          sunday_hours: number | null
+          thursday_hours: number | null
+          tuesday_hours: number | null
+          updated_at: string
+          user_id: string
+          wednesday_hours: number | null
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          friday_hours?: number | null
+          id?: string
+          monday_hours?: number | null
+          notes?: string | null
+          saturday_hours?: number | null
+          sunday_hours?: number | null
+          thursday_hours?: number | null
+          tuesday_hours?: number | null
+          updated_at?: string
+          user_id: string
+          wednesday_hours?: number | null
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          friday_hours?: number | null
+          id?: string
+          monday_hours?: number | null
+          notes?: string | null
+          saturday_hours?: number | null
+          sunday_hours?: number | null
+          thursday_hours?: number | null
+          tuesday_hours?: number | null
+          updated_at?: string
+          user_id?: string
+          wednesday_hours?: number | null
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_work_schedules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_work_schedules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_schedules: {
         Row: {
           created_at: string

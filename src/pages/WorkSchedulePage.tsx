@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,11 @@ import { Search, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import UserWorkScheduleCard from "@/components/admin/UserWorkScheduleCard";
+import UserWeeklyWorkScheduleCard from "@/components/admin/UserWeeklyWorkScheduleCard";
+import WorkScheduleWeekNavigation from "@/components/admin/WorkScheduleWeekNavigation";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getCurrentWeekDates, getNextWeek, getPreviousWeek } from "@/lib/date-utils";
 
 interface User {
   id: string;
@@ -23,10 +26,20 @@ const WorkSchedulePage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [migrating, setMigrating] = useState(false);
+  
+  // Week navigation state
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [weekDates, setWeekDates] = useState<Date[]>([]);
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    // Update week dates when current date changes
+    const dates = getCurrentWeekDates(currentDate);
+    setWeekDates(dates);
+  }, [currentDate]);
 
   useEffect(() => {
     // Filter users based on search term with null safety checks
@@ -127,6 +140,19 @@ const WorkSchedulePage = () => {
     }
   };
 
+  // Week navigation functions
+  const navigateToPreviousWeek = () => {
+    setCurrentDate(prevDate => getPreviousWeek(prevDate));
+  };
+
+  const navigateToNextWeek = () => {
+    setCurrentDate(prevDate => getNextWeek(prevDate));
+  };
+
+  const navigateToCurrentWeek = () => {
+    setCurrentDate(new Date());
+  };
+
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-6">
@@ -155,7 +181,7 @@ const WorkSchedulePage = () => {
             <div>
               <CardTitle>Team Work Schedules</CardTitle>
               <CardDescription>
-                Set the number of working days per week for each team member. Changes are automatically synced to their timesheets.
+                Set working day schedules for each team member. Use the Global tab for default settings or Weekly tab for week-specific schedules.
               </CardDescription>
             </div>
             <Button 
@@ -176,33 +202,85 @@ const WorkSchedulePage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users by name or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <Tabs defaultValue="global" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="global">Global Settings</TabsTrigger>
+              <TabsTrigger value="weekly">Weekly Schedules</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="global">
+              <div className="relative mb-6">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
 
-          {loading ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Loading users...</p>
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                {searchTerm ? "No users found matching your search." : "No users found."}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredUsers.map((user) => (
-                <UserWorkScheduleCard key={user.id} user={user} />
-              ))}
-            </div>
-          )}
+              {loading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading users...</p>
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    {searchTerm ? "No users found matching your search." : "No users found."}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredUsers.map((user) => (
+                    <UserWorkScheduleCard key={user.id} user={user} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="weekly">
+              <WorkScheduleWeekNavigation
+                weekDates={weekDates}
+                navigateToPreviousWeek={navigateToPreviousWeek}
+                navigateToNextWeek={navigateToNextWeek}
+                navigateToCurrentWeek={navigateToCurrentWeek}
+                error={null}
+                fetchData={fetchUsers}
+              />
+              
+              <div className="relative mb-6">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              {loading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading users...</p>
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    {searchTerm ? "No users found matching your search." : "No users found."}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredUsers.map((user) => (
+                    <UserWeeklyWorkScheduleCard 
+                      key={`${user.id}-${weekDates[0]?.getTime()}`} 
+                      user={user} 
+                      weekStartDate={weekDates[0] || new Date()}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
