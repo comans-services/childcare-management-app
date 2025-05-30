@@ -31,4 +31,3 @@ export const DateRangeFilterNew = ({ filters, setFilters }: DateRangeFilterProps
     </div>
   );
 };
-

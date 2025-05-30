@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -105,4 +104,3 @@ const ReportFilters = ({
 };
 
 export default ReportFilters;
-
