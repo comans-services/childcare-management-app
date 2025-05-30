@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -8,6 +7,8 @@ export interface User {
   organization?: string;
   time_zone?: string;
   email?: string;
+  employment_type?: 'full-time' | 'part-time';
+  employee_id?: string;
 }
 
 export interface NewUser extends Omit<User, "id"> {
@@ -42,10 +43,10 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     console.log("Current authenticated user:", authData?.user?.email);
     
-    // Get all profiles from the profiles table
+    // Get all profiles from the profiles table including new fields
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone, email");
+      .select("id, full_name, role, organization, time_zone, email, employment_type, employee_id");
     
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -66,6 +67,8 @@ export const fetchUsers = async (): Promise<User[]> => {
         organization: "Comans Services",
         time_zone: "Australia/Sydney",
         email: authData.user.email,
+        employment_type: "full-time" as const,
+        employee_id: null,
       };
       
       // Insert the new profile
@@ -143,7 +146,7 @@ export const fetchUsers = async (): Promise<User[]> => {
         }
       }
       
-      console.log("Final profiles data with emails:", profilesData);
+      console.log("Final profiles data with employment fields:", profilesData);
       return profilesData as User[];
     }
     
@@ -158,37 +161,35 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
   try {
     console.log(`Fetching user with ID: ${userId}`);
     
-    // First check if the profile exists
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone")
+      .select("id, full_name, role, organization, time_zone, employment_type, employee_id")
       .eq("id", userId)
-      .maybeSingle(); // Using maybeSingle instead of single to avoid error when no profile found
+      .maybeSingle();
     
     if (error) {
       console.error("Error fetching user:", error);
       return null;
     }
     
-    // If no profile exists, we need to create one
     if (!data) {
       console.log("No profile found, creating default profile");
       
-      // Get current user's email to include in profile
       const { data: authData } = await supabase.auth.getUser();
       if (!authData.user) {
         console.error("No authenticated user found");
         return null;
       }
       
-      // Create default profile
       const newProfile = {
         id: userId,
         full_name: authData.user.user_metadata?.full_name || "",
         role: "employee",
         organization: "",
         time_zone: "UTC",
-        email: authData.user.email
+        email: authData.user.email,
+        employment_type: "full-time" as const,
+        employee_id: null,
       };
       
       const { data: createdProfile, error: createError } = await supabase
@@ -205,7 +206,6 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
       return createdProfile;
     }
     
-    // Try to get the email from auth
     const { data: authData } = await supabase.auth.getUser();
     if (authData.user && authData.user.id === userId) {
       return {
@@ -225,7 +225,6 @@ export const updateUser = async (user: User): Promise<User> => {
   try {
     console.log("Updating user:", user);
     
-    // Ensure the email is included in the update
     const { data, error } = await supabase
       .from("profiles")
       .update({
@@ -233,7 +232,9 @@ export const updateUser = async (user: User): Promise<User> => {
         role: user.role,
         organization: user.organization,
         time_zone: user.time_zone,
-        email: user.email, // Make sure email is updated
+        email: user.email,
+        employment_type: user.employment_type,
+        employee_id: user.employee_id,
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id)
@@ -256,7 +257,6 @@ export const createUser = async (userData: NewUser): Promise<User> => {
   try {
     console.log("Creating new user...");
     
-    // First create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
@@ -274,7 +274,6 @@ export const createUser = async (userData: NewUser): Promise<User> => {
     
     console.log("Auth user created successfully:", authData.user);
     
-    // Create profile record for the new user WITH email field
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .insert([{
@@ -283,7 +282,9 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         role: userData.role || "employee",
         organization: userData.organization,
         time_zone: userData.time_zone,
-        email: userData.email, // Explicitly store email in profile
+        email: userData.email,
+        employment_type: userData.employment_type || "full-time",
+        employee_id: userData.employee_id,
         updated_at: new Date().toISOString(),
       }])
       .select();
@@ -296,17 +297,17 @@ export const createUser = async (userData: NewUser): Promise<User> => {
     console.log("User profile created successfully:", profileData);
     
     if (profileData && profileData.length > 0) {
-      // Return the newly created user from the profile data
       return profileData[0] as User;
     } else {
-      // Create the User object manually if no profile data is returned
       const newUser: User = {
         id: authData.user.id,
         full_name: userData.full_name,
         role: userData.role || "employee",
         organization: userData.organization,
         time_zone: userData.time_zone,
-        email: userData.email
+        email: userData.email,
+        employment_type: userData.employment_type || "full-time",
+        employee_id: userData.employee_id,
       };
       
       console.log("Returning new user:", newUser);

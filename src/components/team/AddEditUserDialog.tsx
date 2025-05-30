@@ -23,8 +23,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User } from "@/lib/user-service";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 
 interface AddEditUserDialogProps {
   user?: User | null;
@@ -41,6 +39,8 @@ const userSchema = z.object({
   role: z.enum(["employee", "admin"]),
   organization: z.string().optional().nullable(),
   time_zone: z.string().optional().nullable(),
+  employment_type: z.enum(["full-time", "part-time"]),
+  employee_id: z.string().optional().nullable(),
 });
 
 // Extended schema for new users (with email/password)
@@ -51,6 +51,8 @@ const newUserSchema = z.object({
   role: z.enum(["employee", "admin"]),
   organization: z.string().optional().nullable(),
   time_zone: z.string().optional().nullable(),
+  employment_type: z.enum(["full-time", "part-time"]),
+  employee_id: z.string().optional().nullable(),
 });
 
 const AddEditUserDialog = ({
@@ -60,7 +62,6 @@ const AddEditUserDialog = ({
   onSave,
   isNewUser = false,
 }: AddEditUserDialogProps) => {
-  // Use the appropriate schema based on whether it's a new user
   const schema = isNewUser ? newUserSchema : userSchema;
   
   const form = useForm({
@@ -72,12 +73,16 @@ const AddEditUserDialog = ({
       role: "employee" as const,
       organization: "",
       time_zone: "",
+      employment_type: "full-time" as const,
+      employee_id: "",
     } : {
       id: user?.id || "",
       full_name: user?.full_name || "",
       role: (user?.role as "employee" | "admin") || "employee",
       organization: user?.organization || "",
       time_zone: user?.time_zone || "",
+      employment_type: (user?.employment_type as "full-time" | "part-time") || "full-time",
+      employee_id: user?.employee_id || "",
     }
   });
 
@@ -90,6 +95,8 @@ const AddEditUserDialog = ({
         role: "employee",
         organization: "",
         time_zone: "",
+        employment_type: "full-time",
+        employee_id: "",
       });
     } else if (user) {
       form.reset({
@@ -98,6 +105,8 @@ const AddEditUserDialog = ({
         role: (user.role as "employee" | "admin") || "employee",
         organization: user.organization || "",
         time_zone: user.time_zone || "",
+        employment_type: (user.employment_type as "full-time" | "part-time") || "full-time",
+        employee_id: user.employee_id || "",
       });
     }
   }, [user, isNewUser, form]);
@@ -108,7 +117,7 @@ const AddEditUserDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isNewUser ? "Add Team Member" : "Edit Team Member"}
@@ -195,6 +204,51 @@ const AddEditUserDialog = ({
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="employment_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Employment Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select employment type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="full-time">Full-time</SelectItem>
+                        <SelectItem value="part-time">Part-time</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="employee_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Employee ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value || ""}
+                        placeholder="EMP001"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

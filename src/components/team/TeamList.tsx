@@ -111,7 +111,9 @@ const TeamList = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Employee ID</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Employment</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Organization</TableHead>
                 <TableHead>Time Zone</TableHead>
@@ -122,7 +124,9 @@ const TeamList = () => {
               {Array(5).fill(null).map((_, index) => (
                 <TableRow key={index}>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
@@ -153,7 +157,9 @@ const TeamList = () => {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>Employee ID</TableHead>
             <TableHead>Role</TableHead>
+            <TableHead>Employment</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Organization</TableHead>
             <TableHead>Time Zone</TableHead>
@@ -166,11 +172,24 @@ const TeamList = () => {
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.full_name || "Not set"}</TableCell>
                 <TableCell>
+                  <span className="text-sm text-gray-600 font-mono">
+                    {user.employee_id || "Not assigned"}
+                  </span>
+                </TableCell>
+                <TableCell>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
                     user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
                     'bg-green-100 text-green-800'
                   }`}>
                     {user.role || "employee"}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    user.employment_type === 'full-time' ? 'bg-blue-100 text-blue-800' : 
+                    'bg-orange-100 text-orange-800'
+                  }`}>
+                    {user.employment_type === 'full-time' ? 'Full-time' : 'Part-time'}
                   </span>
                 </TableCell>
                 <TableCell>{user.email || "No email available"}</TableCell>
@@ -193,7 +212,7 @@ const TeamList = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={isAdmin ? 6 : 5} className="text-center py-8">
+              <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8">
                 No team members found. {!isAdmin && "Contact an administrator to add team members."}
               </TableCell>
             </TableRow>

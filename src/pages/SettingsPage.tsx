@@ -20,6 +20,8 @@ const SettingsPage = () => {
     organization: "",
     time_zone: "",
     preferred_name: "",
+    employment_type: "full-time" as "full-time" | "part-time",
+    employee_id: "",
   });
   
   useEffect(() => {
@@ -36,6 +38,8 @@ const SettingsPage = () => {
             organization: userData.organization || "",
             time_zone: userData.time_zone || "",
             preferred_name: localStorage.getItem(`preferred-name-${user.id}`) || "",
+            employment_type: userData.employment_type || "full-time",
+            employee_id: userData.employee_id || "",
           });
         }
       } catch (error) {
@@ -77,22 +81,21 @@ const SettingsPage = () => {
     setIsSaving(true);
     
     try {
-      // Save preferred name to localStorage
       if (formState.preferred_name) {
         localStorage.setItem(`preferred-name-${user.id}`, formState.preferred_name);
       } else {
         localStorage.removeItem(`preferred-name-${user.id}`);
       }
       
-      // If no profile exists yet, create minimal data with user id
       const profileData: User = profile || { id: user.id };
       
-      // Merge form data with profile data (excluding preferred_name from database)
       const updatedUser = await updateUser({
         ...profileData,
         full_name: formState.full_name,
         organization: formState.organization,
         time_zone: formState.time_zone,
+        employment_type: formState.employment_type,
+        employee_id: formState.employee_id,
       });
       
       setProfile(updatedUser);
@@ -155,15 +158,34 @@ const SettingsPage = () => {
                 </p>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Full Name</Label>
-                <Input
-                  id="full_name"
-                  name="full_name"
-                  value={formState.full_name}
-                  onChange={handleInputChange}
-                  placeholder="Your full name"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    name="full_name"
+                    value={formState.full_name}
+                    onChange={handleInputChange}
+                    placeholder="Your full name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="employee_id">Employee ID</Label>
+                  <Input
+                    id="employee_id"
+                    name="employee_id"
+                    value={formState.employee_id}
+                    onChange={handleInputChange}
+                    placeholder="EMP001"
+                    disabled={userRole !== 'admin'}
+                  />
+                  {userRole !== 'admin' && (
+                    <p className="text-sm text-muted-foreground">
+                      Employee ID can only be changed by administrators.
+                    </p>
+                  )}
+                </div>
               </div>
               
               <div className="space-y-2">
@@ -180,52 +202,78 @@ const SettingsPage = () => {
                 </p>
               </div>
               
-              {userRole === 'admin' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {userRole === 'admin' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Input
+                      id="role"
+                      value={userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Employee"}
+                      disabled
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Roles are managed by administrators.
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Input
-                    id="role"
-                    value={userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Employee"}
-                    disabled
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Roles are managed by administrators.
-                  </p>
+                  <Label htmlFor="employment_type">Employment Type</Label>
+                  <Select 
+                    value={formState.employment_type} 
+                    onValueChange={(value) => handleSelectChange("employment_type", value)}
+                    disabled={userRole !== 'admin'}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select employment type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full-time">Full-time</SelectItem>
+                      <SelectItem value="part-time">Part-time</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {userRole !== 'admin' && (
+                    <p className="text-sm text-muted-foreground">
+                      Employment type can only be changed by administrators.
+                    </p>
+                  )}
                 </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="organization">Organization</Label>
-                <Input
-                  id="organization"
-                  name="organization"
-                  value={formState.organization}
-                  onChange={handleInputChange}
-                  placeholder="Your organization"
-                />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="time_zone">Time Zone</Label>
-                <Select 
-                  value={formState.time_zone} 
-                  onValueChange={(value) => handleSelectChange("time_zone", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select time zone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                    <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                    <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                    <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                    <SelectItem value="Europe/Paris">Central European Time</SelectItem>
-                    <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                    <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="organization">Organization</Label>
+                  <Input
+                    id="organization"
+                    name="organization"
+                    value={formState.organization}
+                    onChange={handleInputChange}
+                    placeholder="Your organization"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="time_zone">Time Zone</Label>
+                  <Select 
+                    value={formState.time_zone} 
+                    onValueChange={(value) => handleSelectChange("time_zone", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select time zone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UTC">UTC</SelectItem>
+                      <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                      <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                      <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                      <SelectItem value="Europe/London">London (GMT)</SelectItem>
+                      <SelectItem value="Europe/Paris">Central European Time</SelectItem>
+                      <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
+                      <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
               <Button type="submit" disabled={isSaving}>
