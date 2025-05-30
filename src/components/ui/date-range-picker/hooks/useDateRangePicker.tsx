@@ -1,5 +1,6 @@
+
 import { useState, useRef, useEffect } from "react";
-import { startOfMonth, addMonths, subMonths, isSameDay } from "date-fns";
+import { startOfMonth, addMonths, subMonths } from "date-fns";
 import { DateRange, getCurrentISOWeek, isValidDateRange } from "@/lib/date-range-utils";
 import { DateRangePickerState } from "../types";
 
@@ -47,27 +48,6 @@ export const useDateRangePicker = (value: DateRange, onChange: (range: DateRange
     
     setSelectedPreset(null); // Clear preset when manually selecting dates
     
-    // Check for deselection - if clicking on an already selected date, deselect it
-    const isClickingFromDate = tempRange.from && isSameDay(date, tempRange.from);
-    const isClickingToDate = tempRange.to && isSameDay(date, tempRange.to);
-    const isSingleDateSelected = tempRange.from && tempRange.to && isSameDay(tempRange.from, tempRange.to);
-    
-    // If clicking on a selected date, deselect it
-    if (isClickingFromDate || isClickingToDate) {
-      if (isSingleDateSelected) {
-        // If both from and to are the same date and we're clicking it, clear both
-        setTempRange({ from: new Date(), to: new Date() });
-      } else if (isClickingFromDate) {
-        // Clear the from date - set it to a new date to effectively "clear" it
-        setTempRange({ ...tempRange, from: new Date() });
-      } else if (isClickingToDate) {
-        // Clear the to date - set it to a new date to effectively "clear" it
-        setTempRange({ ...tempRange, to: new Date() });
-      }
-      return;
-    }
-    
-    // Normal selection logic (unchanged)
     if (type === 'from') {
       const newRange = { ...tempRange, from: date };
       // If start date is after end date, adjust end date
