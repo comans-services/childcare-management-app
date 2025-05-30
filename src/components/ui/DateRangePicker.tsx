@@ -112,6 +112,13 @@ export const DateRangePicker = ({
 
   const nextMonth = addMonths(currentMonth, 1);
 
+  // Custom components to hide Calendar navigation
+  const customComponents = {
+    IconLeft: () => null,
+    IconRight: () => null,
+    Caption: ({ displayMonth }: { displayMonth: Date }) => null,
+  };
+
   return (
     <div className={cn("relative", className)}>
       <Popover>
@@ -226,6 +233,7 @@ export const DateRangePicker = ({
                       disabled={isFutureDate}
                       weekStartsOn={1}
                       className="p-0"
+                      components={customComponents}
                     />
 
                     {/* Next Month Calendar */}
@@ -247,6 +255,7 @@ export const DateRangePicker = ({
                       disabled={isFutureDate}
                       weekStartsOn={1}
                       className="p-0"
+                      components={customComponents}
                     />
                   </div>
                 </div>
