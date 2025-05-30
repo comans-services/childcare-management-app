@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +9,6 @@ interface AuthContextProps {
   user: User | null;
   userRole: "employee" | "admin" | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, organization?: string, timeZone?: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
 }
@@ -39,7 +37,6 @@ const AuthContext = createContext<AuthContextProps>({
   user: null,
   userRole: null,
   signIn: async () => {},
-  signUp: async () => {},
   signOut: async () => {},
   loading: true,
 });
@@ -211,115 +208,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, organization?: string, timeZone?: string) => {
-    try {
-      console.log(`Attempting sign up for: ${email}`);
-      
-      // Clean up any existing auth state first
-      cleanupAuthState();
-
-      // Step 1: Create the auth user using admin.createUser to bypass email confirmation
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true, // Skip email confirmation
-        user_metadata: {
-          full_name: fullName,
-        },
-      });
-
-      if (authError) {
-        console.error("Error creating auth user:", authError);
-        
-        // Fallback to regular signup if admin creation fails
-        console.log("Falling back to regular signup...");
-        const { data: fallbackData, error: fallbackError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-            },
-          },
-        });
-
-        if (fallbackError) {
-          console.error("Fallback sign up error:", fallbackError);
-          toast({
-            title: "Sign up failed",
-            description: fallbackError.message,
-            variant: "destructive",
-          });
-          throw fallbackError;
-        }
-
-        if (!fallbackData.user) {
-          throw new Error("Failed to create user");
-        }
-
-        authData.user = fallbackData.user;
-      }
-
-      if (!authData.user) {
-        throw new Error("Failed to create user");
-      }
-
-      console.log("Auth user created successfully:", authData.user.id);
-
-      // Step 2: Create profile record with explicit email storage
-      console.log(`Creating profile for new user: ${authData.user.id}`);
-      
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .insert([
-          {
-            id: authData.user.id,
-            full_name: fullName,
-            role: "employee", // Always set to employee for public signups
-            email: email, // Explicitly store email
-            organization: organization || null,
-            time_zone: timeZone || null,
-          },
-        ])
-        .select();
-
-      if (profileError) {
-        console.error("Error creating profile:", profileError);
-        // Don't throw here, profile might already exist from trigger
-        console.log("Profile creation failed, but continuing with signup");
-      } else {
-        console.log("Profile created successfully:", profileData);
-      }
-
-      // Step 3: Sign in the user automatically
-      console.log("Automatically signing in new user...");
-      
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        console.error("Auto sign-in error:", signInError);
-        toast({
-          title: "Account created but sign-in failed",
-          description: "Please try signing in manually.",
-          variant: "destructive",
-        });
-        throw signInError;
-      }
-
-      console.log("User automatically signed in:", signInData.user?.id);
-
-      toast({
-        title: "Account created successfully",
-        description: "Welcome! You are now signed in.",
-      });
-    } catch (error: any) {
-      throw error;
-    }
-  };
-
   const signOut = async () => {
     try {
       console.log(`Signing out user: ${user?.email}`);
@@ -362,7 +250,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         userRole,
         signIn,
-        signUp,
         signOut,
         loading,
       }}
