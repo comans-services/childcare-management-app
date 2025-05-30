@@ -98,6 +98,18 @@ export const DateRangePicker = ({
     }
   };
 
+  const handlePreviousMonth = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setCurrentMonth(prev => subMonths(prev, 1));
+  };
+
+  const handleNextMonth = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setCurrentMonth(prev => addMonths(prev, 1));
+  };
+
   const nextMonth = addMonths(currentMonth, 1);
 
   return (
@@ -130,6 +142,7 @@ export const DateRangePicker = ({
                     {dateRangePresets.map((preset) => (
                       <button
                         key={preset.value}
+                        type="button"
                         onClick={() => handlePresetClick(preset)}
                         className={cn(
                           "w-full text-left px-3 py-2 text-sm rounded-md transition-colors",
@@ -146,6 +159,7 @@ export const DateRangePicker = ({
                   {/* Footer Buttons */}
                   <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
                     <Button
+                      type="button"
                       onClick={handleApply}
                       className="w-full"
                       size="sm"
@@ -154,6 +168,7 @@ export const DateRangePicker = ({
                       Apply
                     </Button>
                     <Button
+                      type="button"
                       onClick={handleCancel}
                       variant="outline"
                       className="w-full"
@@ -169,8 +184,10 @@ export const DateRangePicker = ({
                   {/* Month Navigation */}
                   <div className="flex items-center justify-between mb-4">
                     <button
-                      onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                      className="p-1 hover:bg-gray-100 rounded"
+                      type="button"
+                      onClick={handlePreviousMonth}
+                      className="p-2 hover:bg-gray-100 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      aria-label="Previous month"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
@@ -179,8 +196,10 @@ export const DateRangePicker = ({
                       <span>{format(nextMonth, "MMMM yyyy")}</span>
                     </div>
                     <button
-                      onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                      className="p-1 hover:bg-gray-100 rounded"
+                      type="button"
+                      onClick={handleNextMonth}
+                      className="p-2 hover:bg-gray-100 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      aria-label="Next month"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
@@ -239,4 +258,3 @@ export const DateRangePicker = ({
     </div>
   );
 };
-
