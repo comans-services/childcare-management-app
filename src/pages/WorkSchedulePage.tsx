@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,10 +26,10 @@ const WorkSchedulePage = () => {
   }, []);
 
   useEffect(() => {
-    // Filter users based on search term
+    // Filter users based on search term with null safety checks
     const filtered = users.filter(
       (user) =>
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (user.full_name && user.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     setFilteredUsers(filtered);
