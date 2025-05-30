@@ -62,9 +62,12 @@ const ReportsPage = () => {
     userId: null,
   });
 
+  // Check if export is available (data has been generated)
+  const isExportDisabled = reportData.length === 0 || projects.length === 0 || users.length === 0;
+
   const handleExportCSV = () => {
     try {
-      exportToCSV(reportData, `timesheet-report-${formatDate(new Date())}`);
+      exportToCSV(reportData, projects, users, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to CSV"
@@ -73,7 +76,7 @@ const ReportsPage = () => {
       console.error("Error exporting to CSV:", error);
       toast({
         title: "Export failed",
-        description: "There was an error exporting the report",
+        description: error instanceof Error ? error.message : "There was an error exporting the report",
         variant: "destructive"
       });
     }
@@ -81,7 +84,7 @@ const ReportsPage = () => {
 
   const handleExportExcel = () => {
     try {
-      exportToExcel(reportData, projects, users, `timesheet-report-${formatDate(new Date())}`); // Added users parameter
+      exportToExcel(reportData, projects, users, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to Excel"
@@ -90,7 +93,7 @@ const ReportsPage = () => {
       console.error("Error exporting to Excel:", error);
       toast({
         title: "Export failed",
-        description: "There was an error exporting the report",
+        description: error instanceof Error ? error.message : "There was an error exporting the report",
         variant: "destructive"
       });
     }
@@ -98,7 +101,7 @@ const ReportsPage = () => {
 
   const handleExportPDF = () => {
     try {
-      exportToPDF(reportData, projects, users, filters, `timesheet-report-${formatDate(new Date())}`); // Added users parameter
+      exportToPDF(reportData, projects, users, filters, `timesheet-report-${formatDate(new Date())}`);
       toast({
         title: "Export successful",
         description: "The report has been exported to PDF"
@@ -107,7 +110,7 @@ const ReportsPage = () => {
       console.error("Error exporting to PDF:", error);
       toast({
         title: "Export failed",
-        description: "There was an error exporting the report",
+        description: error instanceof Error ? error.message : "There was an error exporting the report",
         variant: "destructive"
       });
     }
@@ -122,20 +125,46 @@ const ReportsPage = () => {
         </div>
         
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleExportCSV}>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleExportCSV}
+            disabled={isExportDisabled}
+            title={isExportDisabled ? "Generate a report first to enable export" : "Export to CSV"}
+          >
             <Download className="h-4 w-4 mr-2" />
             CSV
           </Button>
-          <Button size="sm" variant="outline" onClick={handleExportExcel}>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleExportExcel}
+            disabled={isExportDisabled}
+            title={isExportDisabled ? "Generate a report first to enable export" : "Export to Excel"}
+          >
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Excel
           </Button>
-          <Button size="sm" variant="default" onClick={handleExportPDF}>
+          <Button 
+            size="sm" 
+            variant="default" 
+            onClick={handleExportPDF}
+            disabled={isExportDisabled}
+            title={isExportDisabled ? "Generate a report first to enable export" : "Export to PDF"}
+          >
             <Download className="h-4 w-4 mr-2" />
             PDF
           </Button>
         </div>
       </div>
+
+      {isExportDisabled && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-800">
+            💡 Generate a report using the filters below to enable export options.
+          </p>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
