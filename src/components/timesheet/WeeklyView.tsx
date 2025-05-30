@@ -138,10 +138,13 @@ const WeeklyView: React.FC = () => {
         toggleViewMode={toggleViewMode}
       />
 
-      <WorkScheduleSelector
-        workingDays={workingDays}
-        onWorkingDaysChange={handleWorkingDaysChange}
-      />
+      {/* Only show WorkScheduleSelector in Week view */}
+      {viewMode === "week" && (
+        <WorkScheduleSelector
+          workingDays={workingDays}
+          onWorkingDaysChange={handleWorkingDaysChange}
+        />
+      )}
 
       {loading ? (
         <LoadingState />
