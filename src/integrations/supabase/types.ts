@@ -294,6 +294,54 @@ export type Database = {
           },
         ]
       }
+      weekly_work_schedules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          friday_hours: number | null
+          id: string
+          monday_hours: number | null
+          saturday_hours: number | null
+          sunday_hours: number | null
+          thursday_hours: number | null
+          tuesday_hours: number | null
+          updated_at: string
+          user_id: string
+          wednesday_hours: number | null
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          friday_hours?: number | null
+          id?: string
+          monday_hours?: number | null
+          saturday_hours?: number | null
+          sunday_hours?: number | null
+          thursday_hours?: number | null
+          tuesday_hours?: number | null
+          updated_at?: string
+          user_id: string
+          wednesday_hours?: number | null
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          friday_hours?: number | null
+          id?: string
+          monday_hours?: number | null
+          saturday_hours?: number | null
+          sunday_hours?: number | null
+          thursday_hours?: number | null
+          tuesday_hours?: number | null
+          updated_at?: string
+          user_id?: string
+          wednesday_hours?: number | null
+          week_start_date?: string
+        }
+        Relationships: []
+      }
       work_schedules: {
         Row: {
           created_at: string
