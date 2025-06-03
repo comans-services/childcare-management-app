@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchUserById, updateUser, User } from "@/lib/user-service";
@@ -9,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import PasswordChangeForm from "@/components/settings/PasswordChangeForm";
 
 const SettingsPage = () => {
   const { user, userRole } = useAuth();
@@ -122,167 +122,171 @@ const SettingsPage = () => {
         <p className="text-gray-600">Manage your account settings</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>User Profile</CardTitle>
-          <CardDescription>Update your personal information</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <Skeleton className="h-10 w-28" />
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  value={user?.email || ""}
-                  disabled
-                />
-                <p className="text-sm text-muted-foreground">
-                  Email cannot be changed.
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>User Profile</CardTitle>
+            <CardDescription>Update your personal information</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name</Label>
-                  <Input
-                    id="full_name"
-                    name="full_name"
-                    value={formState.full_name}
-                    onChange={handleInputChange}
-                    placeholder="Your full name"
-                  />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="employee_card_id">Employee Card ID</Label>
-                  <Input
-                    id="employee_card_id"
-                    name="employee_card_id"
-                    value={formState.employee_card_id}
-                    onChange={handleInputChange}
-                    placeholder="EMP001"
-                    disabled={userRole !== 'admin'}
-                  />
-                  {userRole !== 'admin' && (
-                    <p className="text-sm text-muted-foreground">
-                      Employee Card ID can only be changed by administrators.
-                    </p>
-                  )}
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-28" />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="preferred_name">Preferred Name</Label>
-                <Input
-                  id="preferred_name"
-                  name="preferred_name"
-                  value={formState.preferred_name}
-                  onChange={handleInputChange}
-                  placeholder="How you'd like to be addressed"
-                />
-                <p className="text-sm text-muted-foreground">
-                  This will be used in the app interface greeting.
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {userRole === 'admin' && (
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    value={user?.email || ""}
+                    disabled
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Email cannot be changed.
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
+                    <Label htmlFor="full_name">Full Name</Label>
                     <Input
-                      id="role"
-                      value={userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Employee"}
-                      disabled
+                      id="full_name"
+                      name="full_name"
+                      value={formState.full_name}
+                      onChange={handleInputChange}
+                      placeholder="Your full name"
                     />
-                    <p className="text-sm text-muted-foreground">
-                      Roles are managed by administrators.
-                    </p>
                   </div>
-                )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="employment_type">Employment Type</Label>
-                  <Select 
-                    value={formState.employment_type} 
-                    onValueChange={(value) => handleSelectChange("employment_type", value)}
-                    disabled={userRole !== 'admin'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employment type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="full-time">Full-time</SelectItem>
-                      <SelectItem value="part-time">Part-time</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {userRole !== 'admin' && (
-                    <p className="text-sm text-muted-foreground">
-                      Employment type can only be changed by administrators.
-                    </p>
-                  )}
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="organization">Organization</Label>
-                  <Input
-                    id="organization"
-                    name="organization"
-                    value={formState.organization}
-                    onChange={handleInputChange}
-                    placeholder="Your organization"
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="employee_card_id">Employee Card ID</Label>
+                    <Input
+                      id="employee_card_id"
+                      name="employee_card_id"
+                      value={formState.employee_card_id}
+                      onChange={handleInputChange}
+                      placeholder="EMP001"
+                      disabled={userRole !== 'admin'}
+                    />
+                    {userRole !== 'admin' && (
+                      <p className="text-sm text-muted-foreground">
+                        Employee Card ID can only be changed by administrators.
+                      </p>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="time_zone">Time Zone</Label>
-                  <Select 
-                    value={formState.time_zone} 
-                    onValueChange={(value) => handleSelectChange("time_zone", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select time zone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="UTC">UTC</SelectItem>
-                      <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                      <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                      <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                      <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                      <SelectItem value="Europe/Paris">Central European Time</SelectItem>
-                      <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                      <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="preferred_name">Preferred Name</Label>
+                  <Input
+                    id="preferred_name"
+                    name="preferred_name"
+                    value={formState.preferred_name}
+                    onChange={handleInputChange}
+                    placeholder="How you'd like to be addressed"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    This will be used in the app interface greeting.
+                  </p>
                 </div>
-              </div>
-              
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? "Saving..." : "Save Changes"}
-              </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {userRole === 'admin' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Role</Label>
+                      <Input
+                        id="role"
+                        value={userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Employee"}
+                        disabled
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Roles are managed by administrators.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="employment_type">Employment Type</Label>
+                    <Select 
+                      value={formState.employment_type} 
+                      onValueChange={(value) => handleSelectChange("employment_type", value)}
+                      disabled={userRole !== 'admin'}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select employment type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full-time">Full-time</SelectItem>
+                        <SelectItem value="part-time">Part-time</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {userRole !== 'admin' && (
+                      <p className="text-sm text-muted-foreground">
+                        Employment type can only be changed by administrators.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="organization">Organization</Label>
+                    <Input
+                      id="organization"
+                      name="organization"
+                      value={formState.organization}
+                      onChange={handleInputChange}
+                      placeholder="Your organization"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="time_zone">Time Zone</Label>
+                    <Select 
+                      value={formState.time_zone} 
+                      onValueChange={(value) => handleSelectChange("time_zone", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select time zone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UTC">UTC</SelectItem>
+                        <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                        <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                        <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                        <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                        <SelectItem value="Europe/London">London (GMT)</SelectItem>
+                        <SelectItem value="Europe/Paris">Central European Time</SelectItem>
+                        <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
+                        <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        <PasswordChangeForm />
+      </div>
     </div>
   );
 };

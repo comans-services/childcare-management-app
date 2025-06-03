@@ -10,6 +10,7 @@ interface AuthContextProps {
   userRole: "employee" | "admin" | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
   loading: boolean;
 }
 
@@ -38,6 +39,7 @@ const AuthContext = createContext<AuthContextProps>({
   userRole: null,
   signIn: async () => {},
   signOut: async () => {},
+  changePassword: async () => {},
   loading: true,
 });
 
@@ -243,6 +245,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const changePassword = async (newPassword: string) => {
+    try {
+      console.log("Attempting to change password");
+      
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        console.error("Password change error:", error);
+        toast({
+          title: "Password change failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      console.log("Password changed successfully");
+      toast({
+        title: "Password changed successfully",
+        description: "Your password has been updated",
+      });
+    } catch (error: any) {
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -251,6 +281,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userRole,
         signIn,
         signOut,
+        changePassword,
         loading,
       }}
     >
