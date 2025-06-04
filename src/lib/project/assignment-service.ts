@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectAssignment, CreateProjectAssignment } from "./assignment-types";
 
@@ -8,17 +7,14 @@ export const fetchProjectAssignments = async (projectId?: string): Promise<Proje
     
     let query = supabase
       .from("project_assignments")
-      .select(`
-        *,
-        user:profiles!inner(id, full_name, email),
-        project:projects!inner(id, name)
-      `);
+      .select("*")                                // only base columns, no joins
+      .order("assigned_at", { ascending: false });
 
     if (projectId) {
       query = query.eq("project_id", projectId);
     }
 
-    const { data, error } = await query.order("assigned_at", { ascending: false });
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching project assignments:", error);
@@ -44,11 +40,7 @@ export const createProjectAssignment = async (assignment: CreateProjectAssignmen
         user_id: assignment.user_id,
         assigned_by: (await supabase.auth.getUser()).data.user?.id
       })
-      .select(`
-        *,
-        user:profiles!inner(id, full_name, email),
-        project:projects!inner(id, name)
-      `)
+      .select("*")  // simplified to only return base columns
       .single();
 
     if (error) {
