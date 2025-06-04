@@ -1,7 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "./types";
-import { ProjectWithAssignees } from "./assignment-types";
+import { ProjectWithAssignees } from "../project/assignment-types";
 
 export const fetchUserProjects = async (): Promise<Project[]> => {
   try {
