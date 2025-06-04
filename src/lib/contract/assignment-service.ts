@@ -99,7 +99,9 @@ export const bulkAssignUsersToContract = async (contractId: string, userIds: str
 
     const { error } = await supabase
       .from("contract_assignments")
-      .insert(assignments);
+      .insert(assignments)
+      .select()
+      .throwOnError();
 
     if (error) {
       console.error("Error bulk assigning users:", error);

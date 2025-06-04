@@ -99,7 +99,9 @@ export const bulkAssignUsersToProject = async (projectId: string, userIds: strin
 
     const { error } = await supabase
       .from("project_assignments")
-      .insert(assignments);
+      .insert(assignments)
+      .select()
+      .throwOnError();
 
     if (error) {
       console.error("Error bulk assigning users:", error);

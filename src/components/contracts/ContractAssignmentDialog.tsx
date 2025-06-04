@@ -16,8 +16,8 @@ import {
   fetchContractAssignments,
   bulkAssignUsersToContract,
   removeUserFromContract,
-  ContractAssignment
-} from "@/lib/timesheet-service";
+} from "@/lib/contract/assignment-service";
+import { ContractAssignment } from "@/lib/contract/assignment-types";
 import ContractAssigneeSelector from "./ContractAssigneeSelector";
 
 interface ContractAssignmentDialogProps {
