@@ -88,8 +88,13 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
         title: "Success",
         description: "Project assignments updated successfully.",
       });
+
+    +  // ⬅️ NEW – force-refresh this project’s assignment list next time
+    +  queryClient.invalidateQueries({ queryKey: ["project-assignments", project?.id] });
+
       queryClient.invalidateQueries({ queryKey: ["project-assignments"] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+
       onOpenChange(false);
     },
     onError: (error) => {
