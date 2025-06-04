@@ -14,23 +14,24 @@ import { Button } from "@/components/ui/button";
 import { fetchCustomers } from "@/lib/customer-service";
 import { fetchProjectAssignments } from "@/lib/timesheet/assignment-service";
 import ProjectCard from "./ProjectCard";
+import ProjectAssignmentDialog from "./ProjectAssignmentDialog";
 
 interface ProjectListProps {
   projects: Project[];
   onEdit: (project: Project) => void;
   onDelete: (project: Project) => void;
-  onAssign: (project: Project) => void;
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({ 
   projects, 
   onEdit, 
-  onDelete,
-  onAssign
+  onDelete
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [showOverBudget, setShowOverBudget] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
 
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
@@ -83,6 +84,16 @@ const ProjectList: React.FC<ProjectListProps> = ({
       return true;
     });
   }, [projects, searchTerm, showInactive, showOverBudget]);
+
+  const handleManageAssignments = (project: Project) => {
+    setSelectedProject(project);
+    setIsAssignmentDialogOpen(true);
+  };
+
+  const handleCloseAssignmentDialog = () => {
+    setIsAssignmentDialogOpen(false);
+    setSelectedProject(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -137,13 +148,19 @@ const ProjectList: React.FC<ProjectListProps> = ({
               project={project}
               onEdit={onEdit}
               onDelete={onDelete}
-              onAssign={onAssign}
+              onAssign={handleManageAssignments}
               assignedUsers={assignmentsMap[project.id] || []}
               customer={project.customer_id ? customerMap[project.customer_id] : undefined}
             />
           ))}
         </div>
       )}
+
+      <ProjectAssignmentDialog
+        isOpen={isAssignmentDialogOpen}
+        onClose={handleCloseAssignmentDialog}
+        project={selectedProject}
+      />
     </div>
   );
 };

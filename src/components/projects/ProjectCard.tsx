@@ -137,7 +137,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             className="flex items-center gap-1"
           >
             <Users className="h-4 w-4" />
-            Assign Users
+            Assign
           </Button>
           
           <div className="flex gap-2">
