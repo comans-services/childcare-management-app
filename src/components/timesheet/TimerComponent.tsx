@@ -5,7 +5,10 @@ import { format } from "date-fns";
 import { Play, Pause, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { saveTimesheetEntry, Project, fetchUserProjects } from "@/lib/timesheet-service";
+import { fetchUserContracts, Contract } from "@/lib/contract-service";
 import { formatDate } from "@/lib/date-utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -16,14 +19,22 @@ const TimerComponent = () => {
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [entryType, setEntryType] = useState<'project' | 'contract'>('project');
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [selectedContract, setSelectedContract] = useState<string | null>(null);
   const [timerStartTime, setTimerStartTime] = useState<Date | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
     queryFn: fetchUserProjects,
-    enabled: !!user
+    enabled: !!user && entryType === 'project'
+  });
+
+  const { data: contracts = [] } = useQuery({
+    queryKey: ["user-contracts"],
+    queryFn: fetchUserContracts,
+    enabled: !!user && entryType === 'contract'
   });
 
   const formattedTime = () => {
@@ -34,11 +45,21 @@ const TimerComponent = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const handleEntryTypeChange = (value: string) => {
+    const newEntryType = value as 'project' | 'contract';
+    setEntryType(newEntryType);
+    // Clear selections when switching types
+    setSelectedProject(null);
+    setSelectedContract(null);
+  };
+
   const startTimer = () => {
-    if (!selectedProject) {
+    const hasSelection = entryType === 'project' ? selectedProject : selectedContract;
+    
+    if (!hasSelection) {
       toast({
-        title: "Project Required",
-        description: "Please select a project before starting the timer.",
+        title: "Selection Required",
+        description: `Please select a ${entryType} before starting the timer.`,
         variant: "destructive",
       });
       return;
@@ -62,24 +83,32 @@ const TimerComponent = () => {
   };
 
   const stopTimer = async () => {
-    if (!user || !selectedProject || !timerStartTime) return;
+    if (!user || !timerStartTime) return;
+    
+    const hasSelection = entryType === 'project' ? selectedProject : selectedContract;
+    if (!hasSelection) return;
     
     pauseTimer();
     const hoursLogged = parseFloat((elapsedTime / 3600).toFixed(2));
     const today = new Date();
     
     try {
-      await saveTimesheetEntry({
-        entry_type: 'project', // Add the required entry_type property
-        project_id: selectedProject,
+      const entryData = {
+        entry_type: entryType,
         entry_date: formatDate(today),
         hours_logged: hoursLogged,
-        notes: `Timer Entry - please change. Duration: ${formattedTime()}`
-      });
+        notes: `Timer Entry - please change. Duration: ${formattedTime()}`,
+        ...(entryType === 'project' 
+          ? { project_id: selectedProject } 
+          : { contract_id: selectedContract }
+        )
+      };
+
+      await saveTimesheetEntry(entryData);
       
       toast({
         title: "Time Saved",
-        description: `${formattedTime()} logged to the selected project.`
+        description: `${formattedTime()} logged to the selected ${entryType}.`
       });
       
       setElapsedTime(0);
@@ -102,6 +131,9 @@ const TimerComponent = () => {
     };
   }, []);
 
+  const currentSelection = entryType === 'project' ? selectedProject : selectedContract;
+  const hasItems = entryType === 'project' ? projects.length > 0 : contracts.length > 0;
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -112,22 +144,65 @@ const TimerComponent = () => {
       <CardContent>
         <div className="space-y-4">
           <div className="flex flex-col gap-4">
-            <Select
-              value={selectedProject || ""}
-              onValueChange={setSelectedProject}
-              disabled={isRunning}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a project" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((project: Project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Entry Type Selection */}
+            <div className="space-y-2">
+              <Label className="font-medium">Track Time For*</Label>
+              <RadioGroup
+                value={entryType}
+                onValueChange={handleEntryTypeChange}
+                className="flex flex-row space-x-6"
+                disabled={isRunning}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="project" id="timer-project" />
+                  <Label htmlFor="timer-project">Project</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="contract" id="timer-contract" />
+                  <Label htmlFor="timer-contract">Contract</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Project Selector */}
+            {entryType === 'project' && (
+              <Select
+                value={selectedProject || ""}
+                onValueChange={setSelectedProject}
+                disabled={isRunning}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project: Project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Contract Selector */}
+            {entryType === 'contract' && (
+              <Select
+                value={selectedContract || ""}
+                onValueChange={setSelectedContract}
+                disabled={isRunning}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a contract" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contracts.map((contract: Contract) => (
+                    <SelectItem key={contract.id} value={contract.id}>
+                      {contract.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             
             <div className="flex items-center justify-center">
               <div className="text-4xl font-mono font-bold">
@@ -140,7 +215,7 @@ const TimerComponent = () => {
                 <Button 
                   onClick={startTimer} 
                   className="bg-green-600 hover:bg-green-700"
-                  disabled={!selectedProject}
+                  disabled={!currentSelection || !hasItems}
                 >
                   <Play className="mr-2 h-4 w-4" /> Start Timer
                 </Button>
@@ -158,6 +233,12 @@ const TimerComponent = () => {
                 <StopCircle className="mr-2 h-4 w-4" /> Stop & Save
               </Button>
             </div>
+
+            {!hasItems && (
+              <p className="text-sm text-gray-500 text-center">
+                No {entryType}s available. You can only track time for {entryType}s you're assigned to.
+              </p>
+            )}
           </div>
         </div>
       </CardContent>
