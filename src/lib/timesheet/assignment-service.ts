@@ -97,9 +97,13 @@ export const bulkAssignUsersToProject = async (projectId: string, userIds: strin
       assigned_by: currentUser?.id
     }));
 
+    // Use upsert with onConflict to handle duplicates gracefully
     const { error } = await supabase
       .from("project_assignments")
-      .insert(assignments);
+      .upsert(assignments, { 
+        onConflict: 'project_id,user_id',
+        ignoreDuplicates: true 
+      });
 
     if (error) {
       console.error("Error bulk assigning users:", error);
