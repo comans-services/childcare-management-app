@@ -47,6 +47,26 @@ export const getProjectColor = (project?: { name?: string }) => {
   return PROJECT_COLORS.default;
 };
 
+// New function to get color for any entry type
+export const getEntryColor = (entry: TimesheetEntry) => {
+  if (entry.entry_type === 'project' && entry.project) {
+    return getProjectColor(entry.project);
+  } else if (entry.entry_type === 'contract' && entry.contract) {
+    return getProjectColor({ name: entry.contract.name });
+  }
+  return PROJECT_COLORS.default;
+};
+
+// New function to get display name for any entry type
+export const getEntryDisplayName = (entry: TimesheetEntry) => {
+  if (entry.entry_type === 'project' && entry.project) {
+    return entry.project.name;
+  } else if (entry.entry_type === 'contract' && entry.contract) {
+    return entry.contract.name;
+  }
+  return "Unknown Entry";
+};
+
 export const formatUserName = (user?: { full_name?: string; email?: string }) => {
   if (!user) {
     return "Unknown";
@@ -115,7 +135,7 @@ const EntryCard: React.FC<EntryCardProps> = ({
       <Card 
         className={cn(
           "overflow-hidden transition-all duration-200 hover:-translate-y-0.5 border rounded-xl",
-          getProjectColor(entry.project)
+          getEntryColor(entry)
         )}
       >
         <CardContent className="p-3 md:p-4">
@@ -136,7 +156,7 @@ const EntryCard: React.FC<EntryCardProps> = ({
               </Tooltip>
             </TooltipProvider>
             <h3 className="font-semibold text-xs md:text-sm break-words whitespace-normal w-full">
-              {entry.project?.name || "Unknown Project"}
+              {getEntryDisplayName(entry)}
             </h3>
           </div>
 
