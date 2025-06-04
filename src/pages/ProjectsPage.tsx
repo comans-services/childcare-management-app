@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { Project } from "@/lib/timesheet/types";
-import { fetchProjects } from "@/lib/timesheet/project-service";
+import { ProjectWithAssignees } from "@/lib/timesheet-service";
+import { fetchProjectsWithAssignees } from "@/lib/timesheet/project-service";
 import ProjectList from "@/components/projects/ProjectList";
 import AddEditProjectDialog from "@/components/projects/AddEditProjectDialog";
 import DeleteProjectDialog from "@/components/projects/DeleteProjectDialog";
+import ProjectAssignmentDialog from "@/components/projects/ProjectAssignmentDialog";
 import { Input } from "@/components/ui/input";
 import ImportButton from "@/components/common/ImportButton";
 
@@ -17,8 +19,10 @@ const ProjectsPage = () => {
   const { user } = useAuth();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isDeleteProjectOpen, setIsDeleteProjectOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectWithAssignees | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectWithAssignees | null>(null);
+  const [projectToAssign, setProjectToAssign] = useState<ProjectWithAssignees | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showActiveOnly, setShowActiveOnly] = useState(true);
 
@@ -29,7 +33,7 @@ const ProjectsPage = () => {
     error
   } = useQuery({
     queryKey: ["projects", searchTerm, showActiveOnly],
-    queryFn: () => fetchProjects({ 
+    queryFn: () => fetchProjectsWithAssignees({ 
       searchTerm: searchTerm.trim() || undefined,
       activeOnly: showActiveOnly 
     }),
@@ -47,14 +51,19 @@ const ProjectsPage = () => {
     }
   }, [error]);
 
-  const handleEditProject = (project: Project) => {
+  const handleEditProject = (project: ProjectWithAssignees) => {
     setEditingProject(project);
     setIsAddProjectOpen(true);
   };
   
-  const handleDeleteClick = (project: Project) => {
+  const handleDeleteClick = (project: ProjectWithAssignees) => {
     setProjectToDelete(project);
     setIsDeleteProjectOpen(true);
+  };
+
+  const handleAssignClick = (project: ProjectWithAssignees) => {
+    setProjectToAssign(project);
+    setIsAssignmentDialogOpen(true);
   };
 
   const closeAddEditDialog = () => {
@@ -66,6 +75,12 @@ const ProjectsPage = () => {
   const closeDeleteDialog = () => {
     setIsDeleteProjectOpen(false);
     setProjectToDelete(null);
+    refetch();
+  };
+
+  const closeAssignmentDialog = () => {
+    setIsAssignmentDialogOpen(false);
+    setProjectToAssign(null);
     refetch();
   };
 
@@ -214,7 +229,8 @@ const ProjectsPage = () => {
             <ProjectList 
               projects={projects} 
               onEdit={handleEditProject} 
-              onDelete={handleDeleteClick} 
+              onDelete={handleDeleteClick}
+              onAssign={handleAssignClick}
             />
           ) : (
             <div className="p-8 text-center">
@@ -247,6 +263,14 @@ const ProjectsPage = () => {
           isOpen={isDeleteProjectOpen}
           onClose={closeDeleteDialog}
           project={projectToDelete}
+        />
+      )}
+
+      {projectToAssign && (
+        <ProjectAssignmentDialog
+          isOpen={isAssignmentDialogOpen}
+          onClose={closeAssignmentDialog}
+          project={projectToAssign}
         />
       )}
     </div>

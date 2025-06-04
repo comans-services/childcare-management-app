@@ -8,8 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2, Building2, Calendar, RotateCcw } from "lucide-react";
-import { Project, updateProjectStatus } from "@/lib/timesheet-service";
+import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2, Building2, Calendar, RotateCcw, Users } from "lucide-react";
+import { ProjectWithAssignees, updateProjectStatus } from "@/lib/timesheet-service";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,9 +35,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ProjectListProps {
-  projects: Project[];
-  onEdit: (project: Project) => void;
-  onDelete: (project: Project) => void;
+  projects: ProjectWithAssignees[];
+  onEdit: (project: ProjectWithAssignees) => void;
+  onDelete: (project: ProjectWithAssignees) => void;
+  onAssign: (project: ProjectWithAssignees) => void;
 }
 
 type SortField = 'name' | 'budget_hours' | 'hours_used' | 'start_date';
@@ -48,7 +49,8 @@ type EditableField = 'name' | 'description' | 'customer_id' | 'dates';
 const ProjectList: React.FC<ProjectListProps> = ({ 
   projects, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onAssign
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
@@ -165,7 +167,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
     }
   });
 
-  const toggleProjectStatus = (project: Project, newStatus: boolean) => {
+  const toggleProjectStatus = (project: ProjectWithAssignees, newStatus: boolean) => {
     if (updatingStatusId === project.id) return;
     
     statusMutation.mutate({
@@ -212,7 +214,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
     }
   };
 
-  const startEditing = (projectId: string, field: EditableField, project: Project) => {
+  const startEditing = (projectId: string, field: EditableField, project: ProjectWithAssignees) => {
     setEditingField({ projectId, field });
     
     if (field === 'name') {
@@ -479,6 +481,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
               <TableHead>Description</TableHead>
               <TableHead className="hidden md:table-cell">Customer</TableHead>
               <TableHead className="hidden md:table-cell">Timeline</TableHead>
+              <TableHead className="hidden lg:table-cell">Assigned Users</TableHead>
               <TableHead className="hidden sm:table-cell">Status</TableHead>
               <TableHead 
                 className="cursor-pointer"
@@ -492,7 +495,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
           <TableBody>
             {filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={showInactive && inactiveProjectsCount > 0 ? 8 : 7} className="h-24 text-center">
+                <TableCell colSpan={showInactive && inactiveProjectsCount > 0 ? 9 : 8} className="h-24 text-center">
                   No projects found.
                 </TableCell>
               </TableRow>
@@ -509,6 +512,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 const isEditingThisProjectCustomer = editingField?.projectId === project.id && editingField?.field === 'customer_id';
                 const isEditingThisProjectDates = editingField?.projectId === project.id && editingField?.field === 'dates';
                 const isSelected = selectedProjects.includes(project.id);
+                const assignees = project.assignees || [];
                 
                 return (
                   <TableRow 
@@ -700,6 +704,24 @@ const ProjectList: React.FC<ProjectListProps> = ({
                         </div>
                       )}
                     </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <div className="flex flex-wrap gap-1">
+                        {assignees.length > 0 ? (
+                          assignees.slice(0, 3).map((assignee) => (
+                            <Badge key={assignee.id} variant="secondary" className="text-xs">
+                              {assignee.full_name || assignee.email || 'Unknown'}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">No users assigned</span>
+                        )}
+                        {assignees.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{assignees.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       {isUpdating ? (
                         <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1">
@@ -757,6 +779,15 @@ const ProjectList: React.FC<ProjectListProps> = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="hidden md:flex md:justify-end md:space-x-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => onAssign(project)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          title="Assign users to project"
+                        >
+                          <Users className="h-4 w-4" />
+                        </Button>
                         {!project.is_active && (
                           <Button
                             variant="outline"
@@ -792,6 +823,12 @@ const ProjectList: React.FC<ProjectListProps> = ({
                             <Button variant="outline" size="sm">Actions</Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => onAssign(project)}
+                              className="text-blue-600"
+                            >
+                              <Users className="h-4 w-4 mr-2" /> Assign Users
+                            </DropdownMenuItem>
                             {!project.is_active && (
                               <>
                                 <DropdownMenuItem 
@@ -801,9 +838,9 @@ const ProjectList: React.FC<ProjectListProps> = ({
                                 >
                                   <RotateCcw className="h-4 w-4 mr-2" /> Reactivate
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
                               </>
                             )}
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onEdit(project)}>
                               <Pencil className="h-4 w-4 mr-2" /> Edit
                             </DropdownMenuItem>
