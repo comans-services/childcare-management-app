@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw } from "lucide-react";
+import { PlusCircle, Clock, BarChart3, Users, RefreshCw } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Project } from "@/lib/timesheet/types";
@@ -12,7 +12,6 @@ import ProjectList from "@/components/projects/ProjectList";
 import AddEditProjectDialog from "@/components/projects/AddEditProjectDialog";
 import DeleteProjectDialog from "@/components/projects/DeleteProjectDialog";
 import ProjectAssignmentDialog from "@/components/projects/ProjectAssignmentDialog";
-import { Input } from "@/components/ui/input";
 import ImportButton from "@/components/common/ImportButton";
 
 const ProjectsPage = () => {
@@ -24,8 +23,6 @@ const ProjectsPage = () => {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [projectToAssign, setProjectToAssign] = useState<Project | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showActiveOnly, setShowActiveOnly] = useState(true);
 
   const { 
     data: projects = [], 
@@ -33,11 +30,8 @@ const ProjectsPage = () => {
     refetch,
     error
   } = useQuery({
-    queryKey: ["projects", searchTerm, showActiveOnly],
-    queryFn: () => fetchProjects({ 
-      searchTerm: searchTerm.trim() || undefined,
-      activeOnly: showActiveOnly 
-    }),
+    queryKey: ["projects"],
+    queryFn: () => fetchProjects(), // Remove filters - fetch ALL projects
     enabled: !!user
   });
 
@@ -163,27 +157,6 @@ const ProjectsPage = () => {
         </div>
       </div>
 
-      <div className="mb-6 flex flex-col sm:flex-row gap-2 items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search projects..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-
-        <Button 
-          variant={showActiveOnly ? "default" : "outline"} 
-          onClick={() => setShowActiveOnly(!showActiveOnly)}
-          className="flex items-center gap-2"
-        >
-          <Filter className="h-4 w-4" />
-          {showActiveOnly ? "Active Only" : "All Projects"}
-        </Button>
-      </div>
-
       {!isLoading && projects.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
@@ -241,13 +214,6 @@ const ProjectsPage = () => {
           <div>
             <CardTitle>All Projects</CardTitle>
             <CardDescription>Manage your project budgets and timelines</CardDescription>
-          </div>
-          <div className="flex items-center space-x-2">
-            {projects.length > 0 && (
-              <span className="text-sm text-muted-foreground">
-                {projects.length} project{projects.length !== 1 ? 's' : ''}
-              </span>
-            )}
           </div>
         </CardHeader>
         <CardContent>
