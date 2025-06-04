@@ -1,13 +1,41 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "./types";
+import { ProjectWithAssignees } from "./assignment-types";
 
 export const fetchUserProjects = async (): Promise<Project[]> => {
   try {
-    console.log("Fetching projects...");
-    const { data, error } = await supabase
+    console.log("Fetching projects for current user...");
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    // For regular users, only fetch projects they're assigned to
+    // For admins, fetch all projects
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    let query = supabase
       .from("projects")
-      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id")
+      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id");
+
+    if (profile?.role !== 'admin') {
+      // For non-admin users, only show projects they're assigned to
+      query = query
+        .in('id', 
+          supabase
+            .from('project_assignments')
+            .select('project_id')
+            .eq('user_id', user.id)
+        );
+    }
+
+    const { data, error } = await query
       .order("is_active", { ascending: false })
       .order("name", { ascending: true });
 
@@ -80,6 +108,72 @@ export const fetchProjects = async (filters?: { searchTerm?: string; activeOnly?
     return projectsWithHours;
   } catch (error) {
     console.error("Error in fetchProjects:", error);
+    throw error;
+  }
+};
+
+export const fetchProjectsWithAssignees = async (filters?: { searchTerm?: string; activeOnly?: boolean }): Promise<ProjectWithAssignees[]> => {
+  try {
+    console.log("Fetching projects with assignees, filters:", filters);
+    
+    let query = supabase
+      .from("projects")
+      .select(`
+        id, name, description, budget_hours, start_date, end_date, is_active, customer_id,
+        project_assignments!inner(
+          user:profiles!project_assignments_user_id_fkey(id, full_name, email)
+        )
+      `);
+
+    // Apply active filter
+    if (filters?.activeOnly) {
+      query = query.eq("is_active", true);
+    }
+
+    // Apply search filter
+    if (filters?.searchTerm) {
+      query = query.ilike("name", `%${filters.searchTerm}%`);
+    }
+
+    const { data, error } = await query
+      .order("is_active", { ascending: false })
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching projects with assignees:", error);
+      throw error;
+    }
+
+    console.log(`Fetched ${data?.length || 0} projects with assignees`);
+    
+    // Transform the data to include assignees properly
+    const projectsWithAssignees = await Promise.all(
+      (data || []).map(async (project: any) => {
+        const hours = await getProjectHoursUsed(project.id);
+        
+        // Extract unique assignees
+        const assignees = Array.isArray(project.project_assignments) 
+          ? project.project_assignments.map((assignment: any) => assignment.user).filter(Boolean)
+          : [];
+
+        return {
+          id: project.id,
+          name: project.name,
+          description: project.description,
+          budget_hours: project.budget_hours,
+          start_date: project.start_date,
+          end_date: project.end_date,
+          is_active: project.is_active,
+          customer_id: project.customer_id,
+          hours_used: hours,
+          assignees: assignees
+        };
+      })
+    );
+    
+    return projectsWithAssignees;
+  } catch (error) {
+    console.error("Error in fetchProjectsWithAssignees:", error);
     throw error;
   }
 };
