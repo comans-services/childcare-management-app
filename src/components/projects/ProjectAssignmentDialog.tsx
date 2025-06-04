@@ -16,8 +16,8 @@ import {
   fetchProjectAssignments, 
   bulkAssignUsersToProject,
   removeUserFromProject 
-} from "@/lib/timesheet/assignment-service";
-import { ProjectAssignment } from "@/lib/timesheet/assignment-types";
+} from "@/lib/project/assignment-service";
+import { ProjectAssignment } from "@/lib/project/assignment-types";
 import ProjectAssigneeSelector from "./ProjectAssigneeSelector";
 
 interface ProjectAssignmentDialogProps {

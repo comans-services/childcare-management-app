@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchCustomers } from "@/lib/customer-service";
-import { fetchProjectAssignments } from "@/lib/timesheet/assignment-service";
+import { fetchProjectAssignments } from "@/lib/project/assignment-service";
 import ProjectCard from "./ProjectCard";
 import ProjectAssignmentDialog from "./ProjectAssignmentDialog";
 
