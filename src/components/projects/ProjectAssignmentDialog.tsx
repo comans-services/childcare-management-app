@@ -35,7 +35,7 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   // Fetch current assignments for this project
-  const { data: assignments = [] } = useQuery({
+  const { data: assignments = [], isLoading, error } = useQuery({
     queryKey: ["project-assignments", project?.id],
     queryFn: () => project ? fetchProjectAssignments(project.id) : Promise.resolve([]),
     enabled: !!project && open,
@@ -99,6 +99,11 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
     onOpenChange(false);
   };
 
+  // Show error message if there's an issue loading assignments
+  if (error) {
+    console.error("Error loading project assignments:", error);
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -110,18 +115,31 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          <ProjectAssigneeSelector
-            selectedUserIds={selectedUserIds}
-            onSelectionChange={setSelectedUserIds}
-            disabled={assignUsersMutation.isPending}
-          />
+          {isLoading ? (
+            <div className="flex justify-center p-4">
+              <div className="text-sm text-muted-foreground">Loading assignments...</div>
+            </div>
+          ) : error ? (
+            <div className="text-sm text-red-600 p-4 bg-red-50 rounded">
+              Error loading assignments. Please try again.
+            </div>
+          ) : (
+            <ProjectAssigneeSelector
+              selectedUserIds={selectedUserIds}
+              onSelectionChange={setSelectedUserIds}
+              disabled={assignUsersMutation.isPending}
+            />
+          )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel} disabled={assignUsersMutation.isPending}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={assignUsersMutation.isPending}>
+          <Button 
+            onClick={handleSave} 
+            disabled={assignUsersMutation.isPending || isLoading || !!error}
+          >
             {assignUsersMutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
