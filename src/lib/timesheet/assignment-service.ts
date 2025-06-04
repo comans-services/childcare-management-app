@@ -10,8 +10,8 @@ export const fetchProjectAssignments = async (projectId?: string): Promise<Proje
       .from("project_assignments")
       .select(`
         *,
-        user:profiles!project_assignments_user_id_fkey(id, full_name, email),
-        project:projects!project_assignments_project_id_fkey(id, name)
+        user:profiles(id, full_name, email),
+        project:projects(id, name)
       `);
 
     if (projectId) {
@@ -46,8 +46,8 @@ export const createProjectAssignment = async (assignment: CreateProjectAssignmen
       })
       .select(`
         *,
-        user:profiles!project_assignments_user_id_fkey(id, full_name, email),
-        project:projects!project_assignments_project_id_fkey(id, name)
+        user:profiles(id, full_name, email),
+        project:projects(id, name)
       `)
       .single();
 
@@ -89,9 +89,31 @@ export const bulkAssignUsersToProject = async (projectId: string, userIds: strin
   try {
     console.log("Bulk assigning users to project:", { projectId, userIds });
     
+    // First check which users are already assigned to avoid duplicates
+    const { data: existingAssignments, error: checkError } = await supabase
+      .from("project_assignments")
+      .select("user_id")
+      .eq("project_id", projectId)
+      .in("user_id", userIds);
+
+    if (checkError) {
+      console.error("Error checking existing assignments:", checkError);
+      throw checkError;
+    }
+
+    const existingUserIds = existingAssignments?.map(a => a.user_id) || [];
+    const newUserIds = userIds.filter(userId => !existingUserIds.includes(userId));
+
+    if (newUserIds.length === 0) {
+      console.log("All users are already assigned to this project");
+      return;
+    }
+
+    console.log("Assigning new users:", newUserIds);
+    
     const currentUser = (await supabase.auth.getUser()).data.user;
     
-    const assignments = userIds.map(userId => ({
+    const assignments = newUserIds.map(userId => ({
       project_id: projectId,
       user_id: userId,
       assigned_by: currentUser?.id

@@ -117,7 +117,7 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
       console.error("Failed to assign user:", error);
       toast({
         title: "Error",
-        description: "Failed to assign user to project",
+        description: "Failed to assign user to project. Please try again.",
         variant: "destructive",
       });
     },
