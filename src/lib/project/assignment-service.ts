@@ -10,8 +10,8 @@ export const fetchProjectAssignments = async (projectId?: string): Promise<Proje
       .from("project_assignments")
       .select(`
         *,
-        user:profiles(id, full_name, email),
-        project:projects(id, name)
+        user:profiles!project_assignments_user_id_fkey(id, full_name, email),
+        project:projects!project_assignments_project_id_fkey(id, name)
       `);
 
     if (projectId) {
@@ -46,8 +46,8 @@ export const createProjectAssignment = async (assignment: CreateProjectAssignmen
       })
       .select(`
         *,
-        user:profiles(id, full_name, email),
-        project:projects(id, name)
+        user:profiles!project_assignments_user_id_fkey(id, full_name, email),
+        project:projects!project_assignments_project_id_fkey(id, name)
       `)
       .single();
 
@@ -99,11 +99,9 @@ export const bulkAssignUsersToProject = async (projectId: string, userIds: strin
 
     const { error } = await supabase
       .from("project_assignments")
-      .upsert(assignments, {
-        onConflict: 'project_id,user_id',
-        ignoreDuplicates: true
-      })
-      .select();
+      .insert(assignments)
+      .select()
+      .throwOnError();
 
     if (error) {
       console.error("Error bulk assigning users:", error);

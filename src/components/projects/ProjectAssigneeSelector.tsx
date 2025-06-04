@@ -41,8 +41,6 @@ const ProjectAssigneeSelector: React.FC<ProjectAssigneeSelectorProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
 
-  console.log("ProjectAssigneeSelector: Rendered with selectedUserIds:", selectedUserIds);
-
   // Fetch all users with proper error handling
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ["users"],
@@ -58,7 +56,6 @@ const ProjectAssigneeSelector: React.FC<ProjectAssigneeSelectorProps> = ({
           throw error;
         }
         
-        console.log("ProjectAssigneeSelector: Fetched users:", data?.length || 0);
         // Ensure we always return an array
         return (data || []) as User[];
       } catch (err) {
@@ -73,34 +70,20 @@ const ProjectAssigneeSelector: React.FC<ProjectAssigneeSelectorProps> = ({
     ? users.filter(user => user && selectedUserIds.includes(user.id))
     : [];
 
-  console.log("ProjectAssigneeSelector: Selected users:", selectedUsers.map(u => u?.full_name || u?.email));
-
   const handleSelect = (userId: string) => {
     if (!userId) return;
     
-    console.log("ProjectAssigneeSelector: handleSelect called for userId:", userId);
-    
     const isSelected = selectedUserIds.includes(userId);
-    console.log("ProjectAssigneeSelector: User is currently selected:", isSelected);
-    
-    let newSelectedIds;
     if (isSelected) {
-      newSelectedIds = selectedUserIds.filter(id => id !== userId);
-      console.log("ProjectAssigneeSelector: Removing user, new selection:", newSelectedIds);
+      onSelectionChange(selectedUserIds.filter(id => id !== userId));
     } else {
-      newSelectedIds = [...selectedUserIds, userId];
-      console.log("ProjectAssigneeSelector: Adding user, new selection:", newSelectedIds);
+      onSelectionChange([...selectedUserIds, userId]);
     }
-    
-    onSelectionChange(newSelectedIds);
   };
 
   const handleRemoveUser = (userId: string) => {
     if (!userId) return;
-    console.log("ProjectAssigneeSelector: handleRemoveUser called for userId:", userId);
-    const newSelectedIds = selectedUserIds.filter(id => id !== userId);
-    console.log("ProjectAssigneeSelector: After removal, new selection:", newSelectedIds);
-    onSelectionChange(newSelectedIds);
+    onSelectionChange(selectedUserIds.filter(id => id !== userId));
   };
 
   const formatUserName = (user: User) => {
@@ -110,7 +93,6 @@ const ProjectAssigneeSelector: React.FC<ProjectAssigneeSelectorProps> = ({
 
   // Handle error state
   if (error) {
-    console.error("ProjectAssigneeSelector: Error state:", error);
     return (
       <div className={cn("space-y-2", className)}>
         <Button
@@ -161,10 +143,7 @@ const ProjectAssigneeSelector: React.FC<ProjectAssigneeSelectorProps> = ({
                   user && user.id ? (
                     <CommandItem
                       key={user.id}
-                      onSelect={() => {
-                        console.log("ProjectAssigneeSelector: CommandItem onSelect triggered for:", user.id);
-                        handleSelect(user.id);
-                      }}
+                      onSelect={() => handleSelect(user.id)}
                     >
                       <Check
                         className={cn(
