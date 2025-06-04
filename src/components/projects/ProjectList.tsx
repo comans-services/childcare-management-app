@@ -20,13 +20,17 @@ interface ProjectListProps {
   onEdit: (project: Project) => void;
   onDelete: (project: Project) => void;
   onAssign: (project: Project) => void;
+  onToggleStatus: (project: Project) => void;
+  updatingStatusId?: string;
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({ 
   projects, 
   onEdit, 
   onDelete,
-  onAssign
+  onAssign,
+  onToggleStatus,
+  updatingStatusId
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
@@ -138,8 +142,10 @@ const ProjectList: React.FC<ProjectListProps> = ({
               onEdit={onEdit}
               onDelete={onDelete}
               onAssign={onAssign}
+              onToggleStatus={onToggleStatus}
               assignedUsers={assignmentsMap[project.id] || []}
               customer={project.customer_id ? customerMap[project.customer_id] : undefined}
+              isUpdatingStatus={updatingStatusId === project.id}
             />
           ))}
         </div>
