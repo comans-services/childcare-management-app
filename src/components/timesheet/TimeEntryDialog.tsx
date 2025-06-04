@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { TimesheetEntry, saveTimesheetEntry } from "@/lib/timesheet-service";
+import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDate } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
 import { Calendar } from "lucide-react";
@@ -30,6 +30,7 @@ interface TimeEntryDialogProps {
   onOpenChange: (open: boolean) => void;
   userId: string;
   date: Date;
+  projects: Project[];
   existingEntry?: TimesheetEntry;
   onSave: (entry?: TimesheetEntry) => void;
 }
@@ -39,6 +40,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   onOpenChange,
   userId,
   date,
+  projects,
   existingEntry,
   onSave
 }) => {
@@ -155,7 +157,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
             <EntryTypeSelector control={form.control} />
             
             {entryType === "project" ? (
-              <ProjectSelector control={form.control} />
+              <ProjectSelector control={form.control} projects={projects} />
             ) : (
               <ContractSelector control={form.control} />
             )}

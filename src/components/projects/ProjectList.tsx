@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2, Building2, Calendar, RotateCcw, Users } from "lucide-react";
+import { Pencil, Trash2, Filter, SortAsc, SortDesc, Search, Check, X, Loader2, Building2, Calendar, RotateCcw } from "lucide-react";
 import { Project, updateProjectStatus } from "@/lib/timesheet-service";
 import {
   DropdownMenu,
@@ -38,7 +38,6 @@ interface ProjectListProps {
   projects: Project[];
   onEdit: (project: Project) => void;
   onDelete: (project: Project) => void;
-  onAssign?: (project: Project) => void;
 }
 
 type SortField = 'name' | 'budget_hours' | 'hours_used' | 'start_date';
@@ -49,8 +48,7 @@ type EditableField = 'name' | 'description' | 'customer_id' | 'dates';
 const ProjectList: React.FC<ProjectListProps> = ({ 
   projects, 
   onEdit, 
-  onDelete,
-  onAssign
+  onDelete 
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
@@ -759,16 +757,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="hidden md:flex md:justify-end md:space-x-2">
-                        {onAssign && (
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => onAssign(project)}
-                            title="Assign users to project"
-                          >
-                            <Users className="h-4 w-4" />
-                          </Button>
-                        )}
                         {!project.is_active && (
                           <Button
                             variant="outline"
@@ -804,14 +792,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
                             <Button variant="outline" size="sm">Actions</Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {onAssign && (
-                              <>
-                                <DropdownMenuItem onClick={() => onAssign(project)}>
-                                  <Users className="h-4 w-4 mr-2" /> Assign Users
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                              </>
-                            )}
                             {!project.is_active && (
                               <>
                                 <DropdownMenuItem 

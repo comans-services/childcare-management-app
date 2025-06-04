@@ -1,7 +1,7 @@
 
 import React from "react";
-import TimeEntryDialog from "../TimeEntryDialog";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import TimeEntryDialog from "../TimeEntryDialog";
 
 interface WeeklyViewDialogsProps {
   userId: string;
@@ -9,7 +9,7 @@ interface WeeklyViewDialogsProps {
   entryDialogOpen: boolean;
   setEntryDialogOpen: (open: boolean) => void;
   projects: Project[];
-  editingEntry?: TimesheetEntry;
+  editingEntry: TimesheetEntry | undefined;
   onSave: (savedEntry?: TimesheetEntry) => void;
 }
 
@@ -18,22 +18,22 @@ const WeeklyViewDialogs: React.FC<WeeklyViewDialogsProps> = ({
   selectedDate,
   entryDialogOpen,
   setEntryDialogOpen,
+  projects,
   editingEntry,
   onSave,
 }) => {
+  if (!selectedDate) return null;
+
   return (
-    <>
-      {selectedDate && (
-        <TimeEntryDialog
-          open={entryDialogOpen}
-          onOpenChange={setEntryDialogOpen}
-          userId={userId}
-          date={selectedDate}
-          existingEntry={editingEntry}
-          onSave={onSave}
-        />
-      )}
-    </>
+    <TimeEntryDialog
+      open={entryDialogOpen}
+      onOpenChange={setEntryDialogOpen}
+      userId={userId}
+      date={selectedDate}
+      projects={projects}
+      existingEntry={editingEntry}
+      onSave={onSave}
+    />
   );
 };
 
