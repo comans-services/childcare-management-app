@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "./types";
 import { ProjectWithAssignees } from "./assignment-types";
@@ -72,15 +73,20 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
   }
 };
 
-export const fetchProjects = async (filters?: { searchTerm?: string }): Promise<Project[]> => {
+export const fetchProjects = async (filters?: { searchTerm?: string; activeOnly?: boolean }): Promise<Project[]> => {
   try {
-    console.log("Fetching all projects with filters:", filters);
+    console.log("Fetching projects with filters:", filters);
     
     let query = supabase
       .from("projects")
       .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id");
 
-    // Apply search filter only
+    // Apply active filter
+    if (filters?.activeOnly) {
+      query = query.eq("is_active", true);
+    }
+
+    // Apply search filter
     if (filters?.searchTerm) {
       query = query.ilike("name", `%${filters.searchTerm}%`);
     }
@@ -94,7 +100,7 @@ export const fetchProjects = async (filters?: { searchTerm?: string }): Promise<
       throw error;
     }
 
-    console.log(`Fetched ${data?.length || 0} projects (all active and inactive)`);
+    console.log(`Fetched ${data?.length || 0} projects`);
     
     // Fetch hours used for each project
     const projectsWithHours = await Promise.all(

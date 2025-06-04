@@ -16,8 +16,8 @@ import {
   fetchContractAssignments,
   bulkAssignUsersToContract,
   removeUserFromContract,
-} from "@/lib/contract/assignment-service";
-import { ContractAssignment } from "@/lib/contract/assignment-types";
+  ContractAssignment
+} from "@/lib/timesheet-service";
 import ContractAssigneeSelector from "./ContractAssigneeSelector";
 
 interface ContractAssignmentDialogProps {
@@ -43,13 +43,13 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
 
   // Initialize selected users when assignments load
   React.useEffect(() => {
-    if (open && assignments.length > 0) {
+    if (assignments.length > 0) {
       const userIds = assignments.map((assignment: ContractAssignment) => assignment.user_id);
       setSelectedUserIds(userIds);
-    } else if (open && assignments.length === 0) {
+    } else {
       setSelectedUserIds([]);
     }
-  }, [assignments, open]);
+  }, [assignments]);
 
   const assignUsersMutation = useMutation({
     mutationFn: async () => {
@@ -78,20 +78,11 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       console.error("Error updating contract assignments:", error);
-      
-      // Handle specific database errors
-      let errorMessage = "Failed to update contract assignments. Please try again.";
-      if (error?.message?.includes("duplicate key")) {
-        errorMessage = "One or more users are already assigned to this contract.";
-      } else if (error?.message?.includes("foreign key")) {
-        errorMessage = "Invalid user or contract reference. Please refresh and try again.";
-      }
-      
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "Failed to update contract assignments. Please try again.",
         variant: "destructive",
       });
     },
@@ -103,12 +94,8 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
 
   const handleCancel = () => {
     // Reset to original assignments
-    if (assignments.length > 0) {
-      const originalUserIds = assignments.map((assignment: ContractAssignment) => assignment.user_id);
-      setSelectedUserIds(originalUserIds);
-    } else {
-      setSelectedUserIds([]);
-    }
+    const originalUserIds = assignments.map((assignment: ContractAssignment) => assignment.user_id);
+    setSelectedUserIds(originalUserIds);
     onOpenChange(false);
   };
 

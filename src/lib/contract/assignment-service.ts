@@ -97,13 +97,9 @@ export const bulkAssignUsersToContract = async (contractId: string, userIds: str
       assigned_by: currentUser?.id
     }));
 
-    // Use upsert with onConflict to handle duplicates gracefully
     const { error } = await supabase
       .from("contract_assignments")
-      .upsert(assignments, { 
-        onConflict: 'contract_id,user_id',
-        ignoreDuplicates: true 
-      });
+      .insert(assignments);
 
     if (error) {
       console.error("Error bulk assigning users:", error);

@@ -12,12 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Project } from "@/lib/timesheet/types";
-import { 
-  fetchProjectAssignments, 
-  bulkAssignUsersToProject,
-  removeUserFromProject 
-} from "@/lib/timesheet/assignment-service";
-import { ProjectAssignment } from "@/lib/timesheet/assignment-types";
+import { fetchProjectAssignments, bulkAssignUsersToProject } from "@/lib/timesheet/assignment-service";
 import ProjectAssigneeSelector from "./ProjectAssigneeSelector";
 
 interface ProjectAssignmentDialogProps {
@@ -41,46 +36,22 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
   });
 
   const assignMutation = useMutation({
-    mutationFn: async () => {
-      if (!project) return;
-
-      const currentUserIds = assignments.map((assignment: ProjectAssignment) => assignment.user_id);
-      const usersToAdd = selectedUserIds.filter(id => !currentUserIds.includes(id));
-      const usersToRemove = currentUserIds.filter(id => !selectedUserIds.includes(id));
-
-      // Add new users
-      if (usersToAdd.length > 0) {
-        await bulkAssignUsersToProject(project.id, usersToAdd);
-      }
-
-      // Remove users that are no longer selected
-      for (const userId of usersToRemove) {
-        await removeUserFromProject(project.id, userId);
-      }
-    },
+    mutationFn: ({ projectId, userIds }: { projectId: string; userIds: string[] }) =>
+      bulkAssignUsersToProject(projectId, userIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-assignments"] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast({
         title: "Users assigned",
-        description: "Project assignments have been updated successfully.",
+        description: "Users have been successfully assigned to the project.",
       });
       onClose();
     },
-    onError: (error: any) => {
-      console.error("Failed to update project assignments:", error);
-      
-      // Handle specific database errors
-      let errorMessage = "Failed to update project assignments. Please try again.";
-      if (error?.message?.includes("duplicate key")) {
-        errorMessage = "One or more users are already assigned to this project.";
-      } else if (error?.message?.includes("foreign key")) {
-        errorMessage = "Invalid user or project reference. Please refresh and try again.";
-      }
-      
+    onError: (error) => {
+      console.error("Failed to assign users:", error);
       toast({
         title: "Assignment failed",
-        description: errorMessage,
+        description: "Failed to assign users to the project. Please try again.",
         variant: "destructive",
       });
     },
@@ -88,25 +59,33 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
 
   React.useEffect(() => {
     if (isOpen && assignments.length > 0) {
-      const currentUserIds = assignments.map((assignment: ProjectAssignment) => assignment.user_id);
+      const currentUserIds = assignments.map(assignment => assignment.user_id);
       setSelectedUserIds(currentUserIds);
-    } else if (isOpen && assignments.length === 0) {
-      setSelectedUserIds([]);
     }
   }, [isOpen, assignments]);
 
   const handleAssign = () => {
-    assignMutation.mutate();
+    if (!project) return;
+
+    const currentUserIds = assignments.map(assignment => assignment.user_id);
+    const newUserIds = selectedUserIds.filter(id => !currentUserIds.includes(id));
+
+    if (newUserIds.length === 0) {
+      toast({
+        title: "No new assignments",
+        description: "No new users selected for assignment.",
+      });
+      return;
+    }
+
+    assignMutation.mutate({
+      projectId: project.id,
+      userIds: newUserIds,
+    });
   };
 
   const handleClose = () => {
-    // Reset to original assignments
-    if (assignments.length > 0) {
-      const originalUserIds = assignments.map((assignment: ProjectAssignment) => assignment.user_id);
-      setSelectedUserIds(originalUserIds);
-    } else {
-      setSelectedUserIds([]);
-    }
+    setSelectedUserIds([]);
     onClose();
   };
 
@@ -136,9 +115,9 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
           </Button>
           <Button
             onClick={handleAssign}
-            disabled={assignMutation.isPending}
+            disabled={assignMutation.isPending || selectedUserIds.length === 0}
           >
-            {assignMutation.isPending ? "Saving..." : "Save Changes"}
+            {assignMutation.isPending ? "Assigning..." : "Assign Users"}
           </Button>
         </DialogFooter>
       </DialogContent>
