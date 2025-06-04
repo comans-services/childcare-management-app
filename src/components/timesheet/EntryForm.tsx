@@ -192,6 +192,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
       
       const entry: TimesheetEntry = {
         id: existingEntry?.id,
+        entry_type: 'project', // Add the required entry_type property
         project_id: values.project_id,
         entry_date: formattedDate,
         hours_logged: hours,

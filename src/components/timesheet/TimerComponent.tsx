@@ -70,6 +70,7 @@ const TimerComponent = () => {
     
     try {
       await saveTimesheetEntry({
+        entry_type: 'project', // Add the required entry_type property
         project_id: selectedProject,
         entry_date: formatDate(today),
         hours_logged: hoursLogged,
