@@ -124,60 +124,45 @@ export const fetchProjectsWithAssignees = async (filters?: { searchTerm?: string
   try {
     console.log("Fetching projects with assignees, filters:", filters);
     
-    // First, fetch projects with basic filters
-    let projectQuery = supabase
+    let query = supabase
       .from("projects")
-      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id");
+      .select(`
+        id, name, description, budget_hours, start_date, end_date, is_active, customer_id,
+        project_assignments!inner(
+          user:profiles!project_assignments_user_id_fkey(id, full_name, email)
+        )
+      `);
 
     // Apply active filter
     if (filters?.activeOnly) {
-      projectQuery = projectQuery.eq("is_active", true);
+      query = query.eq("is_active", true);
     }
 
     // Apply search filter
     if (filters?.searchTerm) {
-      projectQuery = projectQuery.ilike("name", `%${filters.searchTerm}%`);
+      query = query.ilike("name", `%${filters.searchTerm}%`);
     }
 
-    const { data: projects, error: projectsError } = await projectQuery
+    const { data, error } = await query
       .order("is_active", { ascending: false })
       .order("name", { ascending: true });
 
-    if (projectsError) {
-      console.error("Error fetching projects:", projectsError);
-      throw projectsError;
+    if (error) {
+      console.error("Error fetching projects with assignees:", error);
+      throw error;
     }
 
-    console.log(`Fetched ${projects?.length || 0} projects`);
+    console.log(`Fetched ${data?.length || 0} projects with assignees`);
     
-    // Now fetch assignments and profiles separately
-    const { data: assignments, error: assignmentsError } = await supabase
-      .from("project_assignments")
-      .select(`
-        project_id,
-        user_id,
-        profiles!inner(id, full_name, email)
-      `);
-
-    if (assignmentsError) {
-      console.error("Error fetching assignments:", assignmentsError);
-      // Don't throw error, just continue with empty assignments
-    }
-
     // Transform the data to include assignees properly
     const projectsWithAssignees = await Promise.all(
-      (projects || []).map(async (project: any) => {
+      (data || []).map(async (project: any) => {
         const hours = await getProjectHoursUsed(project.id);
         
-        // Find assignees for this project and extract the profile data correctly
-        const projectAssignments = assignments?.filter(a => a.project_id === project.id) || [];
-        const assignees = projectAssignments
-          .filter(assignment => assignment.profiles) // Ensure profile exists
-          .map(assignment => ({
-            id: assignment.profiles.id,
-            full_name: assignment.profiles.full_name,
-            email: assignment.profiles.email
-          }));
+        // Extract unique assignees
+        const assignees = Array.isArray(project.project_assignments) 
+          ? project.project_assignments.map((assignment: any) => assignment.user).filter(Boolean)
+          : [];
 
         return {
           id: project.id,

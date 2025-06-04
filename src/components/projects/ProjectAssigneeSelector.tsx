@@ -56,6 +56,7 @@ const ProjectAssigneeSelector: React.FC<ProjectAssigneeSelectorProps> = ({
           throw error;
         }
         
+        // Ensure we always return an array
         return (data || []) as User[];
       } catch (err) {
         console.error("Failed to fetch users:", err);
