@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Pencil, Trash2, Building2, Calendar, Users, Clock } from "lucide-react";
+import { Pencil, Trash2, Building2, Calendar, Users, Clock, Power } from "lucide-react";
 import { Project } from "@/lib/timesheet/types";
 import { formatDateDisplay } from "@/lib/date-utils";
 
@@ -13,8 +13,10 @@ interface ProjectCardProps {
   onEdit: (project: Project) => void;
   onDelete: (project: Project) => void;
   onAssign: (project: Project) => void;
+  onToggleStatus: (project: Project) => void;
   assignedUsers?: Array<{ id: string; full_name?: string; email?: string }>;
   customer?: { name: string; company?: string };
+  isUpdatingStatus?: boolean;
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -22,8 +24,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   onEdit,
   onDelete,
   onAssign,
+  onToggleStatus,
   assignedUsers = [],
-  customer
+  customer,
+  isUpdatingStatus = false
 }) => {
   const hoursUsed = project.hours_used || 0;
   const budgetPercentage = project.budget_hours > 0 
@@ -130,15 +134,32 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
       <CardFooter className="pt-4 border-t">
         <div className="flex justify-between items-center w-full">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onAssign(project)}
-            className="flex items-center gap-1"
-          >
-            <Users className="h-4 w-4" />
-            Assign Users
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAssign(project)}
+              className="flex items-center gap-1"
+            >
+              <Users className="h-4 w-4" />
+              Assign Users
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onToggleStatus(project)}
+              disabled={isUpdatingStatus}
+              className={`flex items-center gap-1 ${
+                project.is_active 
+                  ? "text-orange-600 hover:text-orange-700" 
+                  : "text-green-600 hover:text-green-700"
+              }`}
+            >
+              <Power className="h-4 w-4" />
+              {isUpdatingStatus ? "..." : project.is_active ? "Deactivate" : "Activate"}
+            </Button>
+          </div>
           
           <div className="flex gap-2">
             <Button

@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Clock, BarChart3, RefreshCw } from "lucide-react";
+import { PlusCircle, Clock, BarChart3, Users, RefreshCw } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Project } from "@/lib/timesheet/types";
-import { fetchProjects } from "@/lib/timesheet/project-service";
+import { fetchProjects, updateProjectStatus } from "@/lib/timesheet/project-service";
 import ProjectList from "@/components/projects/ProjectList";
 import AddEditProjectDialog from "@/components/projects/AddEditProjectDialog";
 import DeleteProjectDialog from "@/components/projects/DeleteProjectDialog";
@@ -16,6 +16,7 @@ import ImportButton from "@/components/common/ImportButton";
 
 const ProjectsPage = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isDeleteProjectOpen, setIsDeleteProjectOpen] = useState(false);
   const [isAssignmentOpen, setIsAssignmentOpen] = useState(false);
@@ -30,8 +31,29 @@ const ProjectsPage = () => {
     error
   } = useQuery({
     queryKey: ["projects"],
-    queryFn: () => fetchProjects(),
+    queryFn: () => fetchProjects(), // Remove filters - fetch ALL projects
     enabled: !!user
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ projectId, newStatus }: { projectId: string; newStatus: boolean }) => {
+      await updateProjectStatus(projectId, newStatus);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast({
+        title: "Project status updated",
+        description: `Project has been ${variables.newStatus ? 'activated' : 'deactivated'} successfully.`,
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating project status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update project status. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   useEffect(() => {
@@ -58,6 +80,14 @@ const ProjectsPage = () => {
   const handleAssignClick = (project: Project) => {
     setProjectToAssign(project);
     setIsAssignmentOpen(true);
+  };
+
+  const handleToggleStatus = (project: Project) => {
+    const newStatus = !project.is_active;
+    toggleStatusMutation.mutate({ 
+      projectId: project.id, 
+      newStatus 
+    });
   };
 
   const closeAddEditDialog = () => {
@@ -185,13 +215,6 @@ const ProjectsPage = () => {
             <CardTitle>All Projects</CardTitle>
             <CardDescription>Manage your project budgets and timelines</CardDescription>
           </div>
-          <div className="flex items-center space-x-2">
-            {projects.length > 0 && (
-              <span className="text-sm text-muted-foreground">
-                {projects.length} project{projects.length !== 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -204,6 +227,9 @@ const ProjectsPage = () => {
               onEdit={handleEditProject} 
               onDelete={handleDeleteClick}
               onAssign={handleAssignClick}
+              onToggleStatus={handleToggleStatus}
+              updatingStatusId={toggleStatusMutation.isPending ? 
+                (toggleStatusMutation.variables?.projectId) : undefined}
             />
           ) : (
             <div className="p-8 text-center">
