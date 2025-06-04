@@ -7,12 +7,13 @@ import {
   Project,
   TimesheetEntry,
 } from "@/lib/timesheet-service";
+import { ContractTimeEntry } from "@/lib/contract-service";
 import { toast } from "@/hooks/use-toast";
 
 export const useWeeklyViewData = (weekDates: Date[]) => {
   const { user, session } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [entries, setEntries] = useState<TimesheetEntry[]>([]);
+  const [entries, setEntries] = useState<(TimesheetEntry | ContractTimeEntry)[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
