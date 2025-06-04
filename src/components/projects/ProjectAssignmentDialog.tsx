@@ -43,13 +43,13 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
 
   // Initialize selected users when assignments load
   React.useEffect(() => {
-    if (assignments.length > 0) {
-      const userIds = assignments.map((assignment: ProjectAssignment) => assignment.user_id);
-      setSelectedUserIds(userIds);
-    } else {
-      setSelectedUserIds([]);
-    }
-  }, [assignments]);
+   if (assignments.length > 0) {
+     const userIds = assignments.map((a: ProjectAssignment) => a.user_id);
+     setSelectedUserIds(userIds);
+   } else {
+     setSelectedUserIds([]);
+   }
+ }, [assignments]);
 
   const assignUsersMutation = useMutation({
     mutationFn: async () => {
