@@ -106,11 +106,43 @@ export const fetchContracts = async (filters?: {
 }): Promise<Contract[]> => {
   try {
     console.log("Fetching contracts with filters:", filters);
+    const { data: { user } } = await supabase.auth.getUser();
     
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    // Check if user is admin
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
     // Start building the query
     let query = supabase
       .from("contracts")
       .select("*");
+    
+    // For non-admin users, only show contracts they're assigned to
+    if (profile?.role !== 'admin') {
+      // First, get the contract IDs the user is assigned to
+      const { data: assignments } = await supabase
+        .from('contract_assignments')
+        .select('contract_id')
+        .eq('user_id', user.id);
+
+      const contractIds = assignments?.map(a => a.contract_id) || [];
+      
+      // If user has no assignments, return empty array
+      if (contractIds.length === 0) {
+        console.log("User has no contract assignments");
+        return [];
+      }
+
+      // Filter contracts by the assigned contract IDs
+      query = query.in('id', contractIds);
+    }
     
     // Apply filters if provided
     if (filters) {
@@ -232,6 +264,124 @@ export const fetchContracts = async (filters?: {
   } catch (error) {
     console.error("Error in fetchContracts:", error);
     return []; // Return empty array to prevent UI from breaking
+  }
+};
+
+export const fetchContractsWithAssignees = async (filters?: { searchTerm?: string; activeOnly?: boolean }): Promise<Contract[]> => {
+  try {
+    console.log("Fetching contracts with assignees, filters:", filters);
+    
+    let query = supabase
+      .from("contracts")
+      .select(`
+        *,
+        contract_assignments!inner(
+          user:profiles!contract_assignments_user_id_fkey(id, full_name, email)
+        )
+      `);
+
+    // Apply active filter
+    if (filters?.activeOnly) {
+      query = query.eq("is_active", true);
+    }
+
+    // Apply search filter
+    if (filters?.searchTerm) {
+      query = query.ilike("name", `%${filters.searchTerm}%`);
+    }
+
+    const { data, error } = await query
+      .order("is_active", { ascending: false })
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching contracts with assignees:", error);
+      throw error;
+    }
+
+    console.log(`Fetched ${data?.length || 0} contracts with assignees`);
+    
+    // Transform the data to include assignees properly
+    const contractsWithAssignees = await Promise.all(
+      (data || []).map(async (contract: any) => {
+        const today = new Date();
+        const endDate = new Date(contract.end_date);
+        const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Extract unique assignees
+        const assignees = Array.isArray(contract.contract_assignments) 
+          ? contract.contract_assignments.map((assignment: any) => assignment.user).filter(Boolean)
+          : [];
+
+        // Get customer name if available
+        let customerName = null;
+        if (contract.customer_id) {
+          const { data: customerData } = await supabase
+            .from("customers")
+            .select("name")
+            .eq("id", contract.customer_id)
+            .single();
+          
+          if (customerData) {
+            customerName = customerData.name;
+          }
+        }
+
+        // Get services
+        let services: Service[] = [];
+        try {
+          const { data: serviceData } = await supabase
+            .from("contract_services")
+            .select(`
+              service_id
+            `)
+            .eq("contract_id", contract.id);
+
+          if (serviceData && serviceData.length > 0) {
+            const serviceIds = serviceData.map((item: any) => item.service_id);
+            
+            const { data: servicesData } = await supabase
+              .from("services")
+              .select("*")
+              .in("id", serviceIds);
+              
+            if (servicesData) {
+              services = servicesData;
+            }
+          }
+        } catch (err) {
+          console.log("Error fetching services for contract, skipping:", err);
+        }
+
+        return {
+          id: contract.id,
+          name: contract.name,
+          description: contract.description,
+          start_date: contract.start_date,
+          end_date: contract.end_date,
+          status: contract.status,
+          is_active: contract.is_active,
+          customer_id: contract.customer_id,
+          customer_name: customerName,
+          days_until_expiry: daysUntilExpiry,
+          services: services,
+          assignees: assignees,
+          file_id: contract.file_id,
+          file_name: contract.file_name,
+          file_type: contract.file_type,
+          file_size: contract.file_size,
+          file_url: contract.file_url,
+          uploaded_at: contract.uploaded_at,
+          created_at: contract.created_at,
+          updated_at: contract.updated_at
+        };
+      })
+    );
+    
+    return contractsWithAssignees;
+  } catch (error) {
+    console.error("Error in fetchContractsWithAssignees:", error);
+    throw error;
   }
 };
 

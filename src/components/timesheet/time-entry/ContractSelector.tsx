@@ -1,17 +1,23 @@
 
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Control } from "react-hook-form";
-import { Contract } from "@/lib/contract-service";
+import { fetchContracts } from "@/lib/contract-service";
 import { TimeEntryFormValues } from "./schema";
 
 interface ContractSelectorProps {
   control: Control<TimeEntryFormValues>;
-  contracts: Contract[];
 }
 
-export const ContractSelector: React.FC<ContractSelectorProps> = ({ control, contracts }) => {
+export const ContractSelector: React.FC<ContractSelectorProps> = ({ control }) => {
+  // Fetch contracts that the user is assigned to
+  const { data: contracts = [], isLoading } = useQuery({
+    queryKey: ["user-contracts"],
+    queryFn: () => fetchContracts({ isActive: true }),
+  });
+
   return (
     <FormField
       control={control}
@@ -22,10 +28,11 @@ export const ContractSelector: React.FC<ContractSelectorProps> = ({ control, con
           <Select 
             onValueChange={field.onChange} 
             defaultValue={field.value}
+            disabled={isLoading}
           >
             <FormControl>
               <SelectTrigger>
-                <SelectValue placeholder="Select a contract" />
+                <SelectValue placeholder={isLoading ? "Loading contracts..." : "Select a contract"} />
               </SelectTrigger>
             </FormControl>
             <SelectContent>

@@ -2,6 +2,7 @@
 // Main export file that re-exports all timesheet functionality
 import { Project, TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry, Contract } from "./timesheet/types";
 import { ProjectAssignment, CreateProjectAssignment, ProjectWithAssignees } from "./timesheet/assignment-types";
+import { ContractAssignment, CreateContractAssignment, ContractWithAssignees } from "./contract/assignment-types";
 import { ContractTimeEntry } from "./contract-service";
 import { 
   fetchUserProjects, 
@@ -26,6 +27,13 @@ import {
   bulkAssignUsersToProject,
   removeUserFromProject
 } from "./timesheet/assignment-service";
+import {
+  fetchContractAssignments,
+  createContractAssignment,
+  deleteContractAssignment,
+  bulkAssignUsersToContract,
+  removeUserFromContract
+} from "./contract/assignment-service";
 
 // Re-export all types and functions
 export type { 
@@ -37,7 +45,10 @@ export type {
   ContractTimeEntry,
   ProjectAssignment,
   CreateProjectAssignment,
-  ProjectWithAssignees
+  ProjectWithAssignees,
+  ContractAssignment,
+  CreateContractAssignment,
+  ContractWithAssignees
 };
 
 export {
@@ -57,10 +68,17 @@ export {
   deleteTimesheetEntry,
   deleteAllTimesheetEntries,
   
-  // Assignment related functions
+  // Project assignment related functions
   fetchProjectAssignments,
   createProjectAssignment,
   deleteProjectAssignment,
   bulkAssignUsersToProject,
-  removeUserFromProject
+  removeUserFromProject,
+  
+  // Contract assignment related functions
+  fetchContractAssignments,
+  createContractAssignment,
+  deleteContractAssignment,
+  bulkAssignUsersToContract,
+  removeUserFromContract
 };
