@@ -19,7 +19,9 @@ import {
   Clock,
   Users,
   Building,
-  BarChart3
+  BarChart3,
+  Power,
+  PowerOff
 } from "lucide-react";
 import { Project } from "@/lib/timesheet/types";
 import { formatDate } from "@/lib/date-utils";
@@ -29,12 +31,14 @@ interface ProjectListProps {
   projects: Project[];
   onEdit: (project: Project) => void;
   onDelete: (project: Project) => void;
+  onToggleStatus: (project: Project) => void;
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({ 
   projects, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onToggleStatus
 }) => {
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -120,7 +124,29 @@ const ProjectList: React.FC<ProjectListProps> = ({
               )}
             </CardContent>
             
-            <CardFooter className="pt-3 flex gap-2">
+            <CardFooter className="pt-3 flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onToggleStatus(project)}
+                className={`flex items-center gap-1 ${
+                  project.is_active 
+                    ? 'text-orange-600 hover:text-orange-700' 
+                    : 'text-green-600 hover:text-green-700'
+                }`}
+              >
+                {project.is_active ? (
+                  <>
+                    <PowerOff className="h-4 w-4" />
+                    Deactivate
+                  </>
+                ) : (
+                  <>
+                    <Power className="h-4 w-4" />
+                    Activate
+                  </>
+                )}
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

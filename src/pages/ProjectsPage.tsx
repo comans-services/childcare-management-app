@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw } from "
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Project } from "@/lib/timesheet/types";
-import { fetchProjects } from "@/lib/timesheet/project-service";
+import { fetchProjects, updateProjectStatus } from "@/lib/timesheet/project-service";
 import ProjectList from "@/components/projects/ProjectList";
 import AddEditProjectDialog from "@/components/projects/AddEditProjectDialog";
 import DeleteProjectDialog from "@/components/projects/DeleteProjectDialog";
@@ -56,6 +55,27 @@ const ProjectsPage = () => {
   const handleDeleteClick = (project: Project) => {
     setProjectToDelete(project);
     setIsDeleteProjectOpen(true);
+  };
+
+  const handleToggleStatus = async (project: Project) => {
+    try {
+      const newStatus = !project.is_active;
+      await updateProjectStatus(project.id, newStatus);
+      
+      toast({
+        title: "Project Status Updated",
+        description: `Project "${project.name}" has been ${newStatus ? 'activated' : 'deactivated'}.`,
+      });
+      
+      refetch();
+    } catch (error) {
+      console.error("Error updating project status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update project status. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const closeAddEditDialog = () => {
@@ -216,6 +236,7 @@ const ProjectsPage = () => {
               projects={projects} 
               onEdit={handleEditProject} 
               onDelete={handleDeleteClick}
+              onToggleStatus={handleToggleStatus}
             />
           ) : (
             <div className="p-8 text-center">
