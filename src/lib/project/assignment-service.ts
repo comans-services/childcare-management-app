@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectAssignment, CreateProjectAssignment } from "./assignment-types";
 
@@ -10,8 +9,8 @@ export const fetchProjectAssignments = async (projectId?: string): Promise<Proje
       .from("project_assignments")
       .select(`
         *,
-        user:profiles!project_assignments_user_id_fkey(id, full_name, email),
-        project:projects!project_assignments_project_id_fkey(id, name)
+        profiles!inner(id, full_name, email),
+        projects!inner(id, name)
       `);
 
     if (projectId) {
@@ -25,8 +24,15 @@ export const fetchProjectAssignments = async (projectId?: string): Promise<Proje
       throw error;
     }
 
-    console.log(`Fetched ${data?.length || 0} project assignments`);
-    return data || [];
+    // Transform the data to match the expected structure
+    const transformedData = (data || []).map((assignment: any) => ({
+      ...assignment,
+      user: assignment.profiles,
+      project: assignment.projects
+    }));
+
+    console.log(`Fetched ${transformedData.length} project assignments`);
+    return transformedData;
   } catch (error) {
     console.error("Error in fetchProjectAssignments:", error);
     throw error;
@@ -46,8 +52,8 @@ export const createProjectAssignment = async (assignment: CreateProjectAssignmen
       })
       .select(`
         *,
-        user:profiles!project_assignments_user_id_fkey(id, full_name, email),
-        project:projects!project_assignments_project_id_fkey(id, name)
+        profiles!inner(id, full_name, email),
+        projects!inner(id, name)
       `)
       .single();
 
@@ -56,8 +62,15 @@ export const createProjectAssignment = async (assignment: CreateProjectAssignmen
       throw error;
     }
 
-    console.log("Project assignment created successfully:", data);
-    return data;
+    // Transform the data to match the expected structure
+    const transformedData = {
+      ...data,
+      user: data.profiles,
+      project: data.projects
+    };
+
+    console.log("Project assignment created successfully:", transformedData);
+    return transformedData;
   } catch (error) {
     console.error("Error in createProjectAssignment:", error);
     throw error;
