@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -8,7 +7,6 @@ import {
   isToday,
 } from "@/lib/date-utils";
 import { TimesheetEntry } from "@/lib/timesheet-service";
-import { ContractTimeEntry } from "@/lib/contract-service";
 import WeekNavigation from "./weekly-view/WeekNavigation";
 import WeeklyProgressBar from "./weekly-view/WeeklyProgressBar";
 import LoadingState from "./weekly-view/LoadingState";
@@ -40,8 +38,8 @@ const WeeklyView: React.FC = () => {
     clearDialogState,
   } = useWeeklyViewState();
 
-  // Update editingEntry to handle both types
-  const [editingEntry, setEditingEntry] = useState<TimesheetEntry | ContractTimeEntry | undefined>(undefined);
+  // Update editingEntry to handle unified entry type
+  const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
 
   // Get current week's schedule using the unified hook
   const weekStartDate = getWeekStart(currentDate);
@@ -118,14 +116,14 @@ const WeeklyView: React.FC = () => {
   const progressTarget = viewMode === "today" ? (workingDays > 0 ? 8 : 0) : weeklyTarget;
 
   // Handler for opening the entry dialog
-  const handleOpenEntryDialog = useCallback((date: Date, entry?: TimesheetEntry | ContractTimeEntry) => {
+  const handleOpenEntryDialog = useCallback((date: Date, entry?: TimesheetEntry) => {
     setSelectedDate(date);
     setEditingEntry(entry);
     setEntryDialogOpen(true);
   }, [setSelectedDate, setEntryDialogOpen]);
 
   // Handler for saving an entry
-  const handleSaveEntry = useCallback((savedEntry?: TimesheetEntry | ContractTimeEntry) => {
+  const handleSaveEntry = useCallback((savedEntry?: TimesheetEntry) => {
     fetchData(); // Refresh all data after saving
     clearDialogState();
     setEditingEntry(undefined);

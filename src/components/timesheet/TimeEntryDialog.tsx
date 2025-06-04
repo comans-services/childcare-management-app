@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { TimesheetEntry, Project, saveTimesheetEntry, Contract } from "@/lib/timesheet-service";
-import { fetchContracts, saveContractTimeEntry, ContractTimeEntry } from "@/lib/contract-service";
+import { fetchContracts } from "@/lib/contract-service";
 import { formatDate } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
 import { Calendar } from "lucide-react";
@@ -33,8 +33,8 @@ interface TimeEntryDialogProps {
   userId: string;
   date: Date;
   projects: Project[];
-  existingEntry?: TimesheetEntry | ContractTimeEntry;
-  onSave: (entry?: TimesheetEntry | ContractTimeEntry) => void;
+  existingEntry?: TimesheetEntry;
+  onSave: (entry?: TimesheetEntry) => void;
 }
 
 const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
@@ -55,21 +55,12 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     enabled: open,
   });
 
-  // Type guard functions
-  const isContractEntry = (entry: TimesheetEntry | ContractTimeEntry): entry is ContractTimeEntry => {
-    return 'contract_id' in entry;
-  };
-
-  const isTimesheetEntry = (entry: TimesheetEntry | ContractTimeEntry): entry is TimesheetEntry => {
-    return 'project_id' in entry;
-  };
-
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
     defaultValues: {
-      entry_type: existingEntry && isContractEntry(existingEntry) ? "contract" : "project",
-      project_id: existingEntry && isTimesheetEntry(existingEntry) ? existingEntry.project_id : "",
-      contract_id: existingEntry && isContractEntry(existingEntry) ? existingEntry.contract_id : "",
+      entry_type: existingEntry?.entry_type || "project",
+      project_id: existingEntry?.entry_type === "project" ? existingEntry.project_id : "",
+      contract_id: existingEntry?.entry_type === "contract" ? existingEntry.contract_id : "",
       hours_logged: existingEntry?.hours_logged || 1,
       notes: existingEntry?.notes || "",
       jira_task_id: existingEntry?.jira_task_id || "",
@@ -88,11 +79,10 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (open) {
-      const isContract = existingEntry && isContractEntry(existingEntry);
       form.reset({
-        entry_type: isContract ? "contract" : "project",
-        project_id: existingEntry && isTimesheetEntry(existingEntry) ? existingEntry.project_id : "",
-        contract_id: isContract ? existingEntry.contract_id : "",
+        entry_type: existingEntry?.entry_type || "project",
+        project_id: existingEntry?.entry_type === "project" ? existingEntry.project_id : "",
+        contract_id: existingEntry?.entry_type === "contract" ? existingEntry.contract_id : "",
         hours_logged: existingEntry?.hours_logged || 1,
         notes: existingEntry?.notes || "",
         jira_task_id: existingEntry?.jira_task_id || "",
@@ -104,65 +94,43 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
     try {
-      if (values.entry_type === "project") {
-        // Handle project entry
-        const entryData: TimesheetEntry = {
-          id: existingEntry && isTimesheetEntry(existingEntry) ? existingEntry.id : undefined,
-          project_id: values.project_id!,
-          entry_date: formatDate(date),
-          hours_logged: values.hours_logged,
-          notes: values.notes || "",
-          jira_task_id: values.jira_task_id || "",
-          start_time: values.start_time || undefined,
-          end_time: values.end_time || undefined,
-        };
+      // Create unified entry data
+      const entryData: TimesheetEntry = {
+        id: existingEntry?.id,
+        entry_type: values.entry_type,
+        project_id: values.entry_type === 'project' ? values.project_id : undefined,
+        contract_id: values.entry_type === 'contract' ? values.contract_id : undefined,
+        entry_date: formatDate(date),
+        hours_logged: values.hours_logged,
+        notes: values.notes || "",
+        jira_task_id: values.jira_task_id || "",
+        start_time: values.start_time || undefined,
+        end_time: values.end_time || undefined,
+      };
 
-        // Preserve project and user data from existing entry if available
-        if (existingEntry && isTimesheetEntry(existingEntry)) {
-          if (existingEntry.project) {
-            entryData.project = existingEntry.project;
-          }
-          if (existingEntry.user) {
-            entryData.user = existingEntry.user;
-          }
+      // Preserve related data from existing entry if available
+      if (existingEntry) {
+        if (existingEntry.project) {
+          entryData.project = existingEntry.project;
         }
-        
-        const savedEntry = await saveTimesheetEntry(entryData);
-        
-        toast({
-          title: existingEntry ? "Entry updated" : "Entry created",
-          description: existingEntry 
-            ? "Your timesheet entry has been updated." 
-            : "Your timesheet entry has been created.",
-        });
-        
-        onSave(savedEntry);
-      } else {
-        // Handle contract entry
-        const entryData: ContractTimeEntry = {
-          id: existingEntry && isContractEntry(existingEntry) ? existingEntry.id : undefined,
-          contract_id: values.contract_id!,
-          user_id: userId,
-          entry_date: formatDate(date),
-          hours_logged: values.hours_logged,
-          notes: values.notes || "",
-          jira_task_id: values.jira_task_id || "",
-          start_time: values.start_time || "",
-          end_time: values.end_time || "",
-        };
-
-        const savedEntry = await saveContractTimeEntry(entryData);
-        
-        toast({
-          title: existingEntry ? "Entry updated" : "Entry created",
-          description: existingEntry 
-            ? "Your contract entry has been updated." 
-            : "Your contract entry has been created.",
-        });
-        
-        onSave(savedEntry);
+        if (existingEntry.contract) {
+          entryData.contract = existingEntry.contract;
+        }
+        if (existingEntry.user) {
+          entryData.user = existingEntry.user;
+        }
       }
       
+      const savedEntry = await saveTimesheetEntry(entryData);
+      
+      toast({
+        title: existingEntry ? "Entry updated" : "Entry created",
+        description: existingEntry 
+          ? "Your timesheet entry has been updated." 
+          : "Your timesheet entry has been created.",
+      });
+      
+      onSave(savedEntry);
       onOpenChange(false);
     } catch (error) {
       console.error("Error saving entry:", error);

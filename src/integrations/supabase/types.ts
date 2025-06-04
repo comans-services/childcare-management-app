@@ -38,56 +38,6 @@ export type Database = {
           },
         ]
       }
-      contract_time_entries: {
-        Row: {
-          contract_id: string
-          created_at: string
-          end_time: string | null
-          entry_date: string
-          hours_logged: number
-          id: string
-          jira_task_id: string | null
-          notes: string | null
-          start_time: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          contract_id: string
-          created_at?: string
-          end_time?: string | null
-          entry_date: string
-          hours_logged: number
-          id?: string
-          jira_task_id?: string | null
-          notes?: string | null
-          start_time?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          contract_id?: string
-          created_at?: string
-          end_time?: string | null
-          entry_date?: string
-          hours_logged?: number
-          id?: string
-          jira_task_id?: string | null
-          notes?: string | null
-          start_time?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_contract_time_entries_contract_id"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       contracts: {
         Row: {
           created_at: string
@@ -296,45 +246,58 @@ export type Database = {
       }
       timesheet_entries: {
         Row: {
+          contract_id: string | null
           created_at: string
           end_time: string | null
           entry_date: string
+          entry_type: string | null
           hours_logged: number
           id: string
           jira_task_id: string | null
           notes: string | null
-          project_id: string
+          project_id: string | null
           start_time: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          contract_id?: string | null
           created_at?: string
           end_time?: string | null
           entry_date: string
+          entry_type?: string | null
           hours_logged: number
           id?: string
           jira_task_id?: string | null
           notes?: string | null
-          project_id: string
+          project_id?: string | null
           start_time?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          contract_id?: string | null
           created_at?: string
           end_time?: string | null
           entry_date?: string
+          entry_type?: string | null
           hours_logged?: number
           id?: string
           jira_task_id?: string | null
           notes?: string | null
-          project_id?: string
+          project_id?: string | null
           start_time?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_timesheet_entries_contract"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "timesheet_entries_project_id_fkey"
             columns: ["project_id"]

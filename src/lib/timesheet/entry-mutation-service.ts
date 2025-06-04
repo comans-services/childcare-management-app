@@ -7,10 +7,19 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     console.log("=== SAVING TIMESHEET ENTRY ===");
     console.log("Entry data:", entry);
     
+    // Validate entry type and corresponding ID
+    if (entry.entry_type === 'project' && !entry.project_id) {
+      throw new Error("Project ID is required for project entries");
+    }
+    if (entry.entry_type === 'contract' && !entry.contract_id) {
+      throw new Error("Contract ID is required for contract entries");
+    }
+    
     // Create a clean data object for the database operation
-    // Note: user_id is automatically set by the database trigger
     const dbEntry: CreateTimesheetEntry = {
-      project_id: entry.project_id,
+      entry_type: entry.entry_type,
+      project_id: entry.project_id || null,
+      contract_id: entry.contract_id || null,
       entry_date: entry.entry_date,
       hours_logged: entry.hours_logged,
       notes: entry.notes || "",
@@ -38,10 +47,13 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       
       console.log("Entry updated successfully:", data?.[0]);
       
-      // Return entry with preserved project data
+      // Return entry with preserved related data
       const updatedEntry = data?.[0] as TimesheetEntry;
       if (entry.project) {
         updatedEntry.project = entry.project;
+      }
+      if (entry.contract) {
+        updatedEntry.contract = entry.contract;
       }
       
       return updatedEntry;
@@ -61,10 +73,13 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       
       console.log("Entry created successfully:", data?.[0]);
       
-      // Return entry with preserved project data
+      // Return entry with preserved related data
       const newEntry = data?.[0] as TimesheetEntry;
       if (entry.project) {
         newEntry.project = entry.project;
+      }
+      if (entry.contract) {
+        newEntry.contract = entry.contract;
       }
       
       return newEntry;
@@ -97,7 +112,9 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
     
     // Create a new entry with the same data but no user_id (trigger will set it)
     const newEntryData = {
+      entry_type: originalEntry.entry_type,
       project_id: originalEntry.project_id,
+      contract_id: originalEntry.contract_id,
       entry_date: originalEntry.entry_date,
       hours_logged: originalEntry.hours_logged,
       notes: originalEntry.notes ? `${originalEntry.notes} (copy)` : "(copy)",

@@ -69,23 +69,52 @@ export const fetchTimesheetEntries = async (
     }));
   }
 
-  /* Optionally join projects (kept from your original logic) */
-  const projectIds = [...new Set(entriesWithUserData.map(e => e.project_id))];
+  /* Join projects for project entries */
+  const projectIds = [...new Set(
+    entriesWithUserData
+      .filter(e => e.entry_type === 'project' && e.project_id)
+      .map(e => e.project_id)
+  )];
+  
+  let projectMap = {} as Record<string, any>;
   if (projectIds.length > 0) {
     const { data: projects } = await supabase
       .from("projects")
       .select("id, name, description, budget_hours, is_active")
       .in("id", projectIds);
 
-    const projectMap = (projects ?? []).reduce((acc, p) => {
+    projectMap = (projects ?? []).reduce((acc, p) => {
       acc[p.id] = p;
       return acc;
     }, {} as Record<string, any>);
-
-    return entriesWithUserData.map(e => ({ ...e, project: projectMap[e.project_id] }));
   }
 
-  return entriesWithUserData;
+  /* Join contracts for contract entries */
+  const contractIds = [...new Set(
+    entriesWithUserData
+      .filter(e => e.entry_type === 'contract' && e.contract_id)
+      .map(e => e.contract_id)
+  )];
+  
+  let contractMap = {} as Record<string, any>;
+  if (contractIds.length > 0) {
+    const { data: contracts } = await supabase
+      .from("contracts")
+      .select("id, name, description, start_date, end_date, status, is_active")
+      .in("id", contractIds);
+
+    contractMap = (contracts ?? []).reduce((acc, c) => {
+      acc[c.id] = c;
+      return acc;
+    }, {} as Record<string, any>);
+  }
+
+  // Add related data to entries
+  return entriesWithUserData.map(e => ({
+    ...e,
+    project: e.entry_type === 'project' && e.project_id ? projectMap[e.project_id] : undefined,
+    contract: e.entry_type === 'contract' && e.contract_id ? contractMap[e.contract_id] : undefined
+  }));
 };
 
 /*-------------------------------------------------------------
@@ -165,6 +194,7 @@ export const fetchReportData = async (
         jira_task_id: entry.jira_task_id,
         start_time: entry.start_time,
         end_time: entry.end_time,
+        entry_type: 'project', // Legacy RPC only handles projects
         // Transform flattened project data into nested format
         project: {
           id: entry.project_id,

@@ -13,17 +13,33 @@ export interface Project {
   customer_id?: string; 
 }
 
+export interface Contract {
+  id: string;
+  name: string;
+  description?: string;
+  start_date: string;
+  end_date: string;
+  status: 'active' | 'expired' | 'pending_renewal' | 'renewed';
+  is_active?: boolean;
+  customer_id?: string;
+}
+
 export interface TimesheetEntry {
   id?: string;
-  project_id: string;
-  user_id?: string; // Made optional since DB trigger will set this
+  user_id?: string;
   entry_date: string;
   hours_logged: number;
   notes?: string;
   jira_task_id?: string;
   start_time?: string;
   end_time?: string;
+  entry_type: 'project' | 'contract';
+  // Either project_id OR contract_id will be set, never both
+  project_id?: string;
+  contract_id?: string;
+  // Related data that gets joined
   project?: Project;
+  contract?: Contract;
   user?: {
     id: string;
     full_name?: string;
@@ -34,45 +50,23 @@ export interface TimesheetEntry {
   };
 }
 
-// Contract time entry interface with all required properties
-export interface ContractTimeEntry {
-  id?: string;
+// Legacy interface for backwards compatibility
+export interface ContractTimeEntry extends Omit<TimesheetEntry, 'entry_type' | 'project_id'> {
   contract_id: string;
   user_id: string;
-  entry_date: string;
-  hours_logged: number;
-  notes?: string;
-  jira_task_id?: string;
-  start_time?: string;
-  end_time?: string;
-  contract?: {
-    id: string;
-    name: string;
-    description?: string;
-    start_date: string;
-    end_date: string;
-    status: 'active' | 'expired' | 'pending_renewal' | 'renewed';
-    is_active?: boolean;
-  };
-  user?: {
-    id: string;
-    full_name?: string;
-    email?: string;
-    organization?: string;
-    time_zone?: string;
-    employee_card_id?: string;
-  };
 }
 
-// Type for creating new entries - user_id is completely omitted since trigger handles it
+// Type for creating new entries - user_id is omitted since trigger handles it
 export interface CreateTimesheetEntry {
-  project_id: string;
   entry_date: string;
   hours_logged: number;
   notes?: string;
   jira_task_id?: string;
   start_time?: string;
   end_time?: string;
+  entry_type: 'project' | 'contract';
+  project_id?: string;
+  contract_id?: string;
 }
 
 // Type for updating entries - user_id should not be changed
