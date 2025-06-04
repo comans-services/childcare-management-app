@@ -11,38 +11,26 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
       throw new Error("User not authenticated");
     }
 
-    // For regular users, only fetch projects they're assigned to
-    // For admins, fetch all projects
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    // For ALL users (including admins), only fetch projects they're assigned to
+    // First, get the project IDs the user is assigned to
+    const { data: assignments } = await supabase
+      .from('project_assignments')
+      .select('project_id')
+      .eq('user_id', user.id);
 
-    let query = supabase
-      .from("projects")
-      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id");
-
-    if (profile?.role !== 'admin') {
-      // First, get the project IDs the user is assigned to
-      const { data: assignments } = await supabase
-        .from('project_assignments')
-        .select('project_id')
-        .eq('user_id', user.id);
-
-      const projectIds = assignments?.map(a => a.project_id) || [];
-      
-      // If user has no assignments, return empty array
-      if (projectIds.length === 0) {
-        console.log("User has no project assignments");
-        return [];
-      }
-
-      // Filter projects by the assigned project IDs
-      query = query.in('id', projectIds);
+    const projectIds = assignments?.map(a => a.project_id) || [];
+    
+    // If user has no assignments, return empty array
+    if (projectIds.length === 0) {
+      console.log("User has no project assignments");
+      return [];
     }
 
-    const { data, error } = await query
+    // Filter projects by the assigned project IDs
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id")
+      .in('id', projectIds)
       .order("is_active", { ascending: false })
       .order("name", { ascending: true });
 
@@ -51,7 +39,7 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
       throw error;
     }
 
-    console.log(`Fetched ${data?.length || 0} projects`);
+    console.log(`Fetched ${data?.length || 0} assigned projects for user`);
     console.log("Projects data:", data);
     
     // Fetch hours used for each project
