@@ -25,14 +25,22 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
       .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id");
 
     if (profile?.role !== 'admin') {
-      // For non-admin users, only show projects they're assigned to
-      query = query
-        .in('id', 
-          supabase
-            .from('project_assignments')
-            .select('project_id')
-            .eq('user_id', user.id)
-        );
+      // First, get the project IDs the user is assigned to
+      const { data: assignments } = await supabase
+        .from('project_assignments')
+        .select('project_id')
+        .eq('user_id', user.id);
+
+      const projectIds = assignments?.map(a => a.project_id) || [];
+      
+      // If user has no assignments, return empty array
+      if (projectIds.length === 0) {
+        console.log("User has no project assignments");
+        return [];
+      }
+
+      // Filter projects by the assigned project IDs
+      query = query.in('id', projectIds);
     }
 
     const { data, error } = await query
