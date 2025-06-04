@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -41,15 +41,19 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
     enabled: !!project && open,
   });
 
-  // Initialize selected users when assignments load
-  React.useEffect(() => {
-   if (assignments.length > 0) {
-     const userIds = assignments.map((a: ProjectAssignment) => a.user_id);
-     setSelectedUserIds(userIds);
-   } else {
-     setSelectedUserIds([]);
-   }
- }, [assignments]);
+  // Initialize selected users when assignments load - use useCallback to prevent infinite loops
+  const initializeSelectedUsers = useCallback(() => {
+    if (assignments.length > 0) {
+      const userIds = assignments.map((a: ProjectAssignment) => a.user_id);
+      setSelectedUserIds(userIds);
+    } else {
+      setSelectedUserIds([]);
+    }
+  }, [assignments]);
+
+  useEffect(() => {
+    initializeSelectedUsers();
+  }, [initializeSelectedUsers]);
 
   const assignUsersMutation = useMutation({
     mutationFn: async () => {
@@ -89,9 +93,8 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
         description: "Project assignments updated successfully.",
       });
 
-    +  // ⬅️ NEW – force-refresh this project’s assignment list next time
-    +  queryClient.invalidateQueries({ queryKey: ["project-assignments", project?.id] });
-
+      // Force-refresh this project's assignment list next time
+      queryClient.invalidateQueries({ queryKey: ["project-assignments", project?.id] });
       queryClient.invalidateQueries({ queryKey: ["project-assignments"] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
 
