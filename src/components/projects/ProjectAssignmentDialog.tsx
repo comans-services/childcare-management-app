@@ -55,18 +55,32 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
     mutationFn: async () => {
       if (!project) return;
 
-      const currentUserIds = assignments.map((a: ProjectAssignment) => a.user_id);
+      // Refetch current assignments to get the most up-to-date data
+      const currentAssignments = await fetchProjectAssignments(project.id);
+      const currentUserIds = currentAssignments.map((a: ProjectAssignment) => a.user_id);
+      
       const usersToAdd = selectedUserIds.filter(id => !currentUserIds.includes(id));
       const usersToRemove = currentUserIds.filter(id => !selectedUserIds.includes(id));
 
+      console.log("Assignment operation:", {
+        currentUserIds,
+        selectedUserIds,
+        usersToAdd,
+        usersToRemove
+      });
+
       // Add new users
       if (usersToAdd.length > 0) {
+        console.log("Adding users:", usersToAdd);
         await bulkAssignUsersToProject(project.id, usersToAdd);
       }
 
-      // Remove users
-      for (const userId of usersToRemove) {
-        await removeUserFromProject(project.id, userId);
+      // Remove users only if explicitly deselected
+      if (usersToRemove.length > 0) {
+        console.log("Removing users:", usersToRemove);
+        for (const userId of usersToRemove) {
+          await removeUserFromProject(project.id, userId);
+        }
       }
     },
     onSuccess: () => {
