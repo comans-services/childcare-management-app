@@ -680,3 +680,5 @@ export const deleteContractTimeEntry = async (entryId: string): Promise<void> =>
     throw error;
   }
 };
+
+export { fetchUserContracts } from "./contract/user-contract-service";

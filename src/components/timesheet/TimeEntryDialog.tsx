@@ -9,15 +9,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { TimesheetEntry, Project, saveTimesheetEntry, Contract } from "@/lib/timesheet-service";
-import { fetchContracts } from "@/lib/contract-service";
+import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDate } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
 import { Calendar } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useQuery } from "@tanstack/react-query";
 
 // Import the components we've created
 import { timeEntryFormSchema, TimeEntryFormValues } from "./time-entry/schema";
@@ -47,13 +45,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   onSave
 }) => {
   const [entryType, setEntryType] = useState<"project" | "contract">("project");
-
-  // Fetch contracts
-  const { data: contracts = [] } = useQuery({
-    queryKey: ["contracts"],
-    queryFn: () => fetchContracts({ isActive: true }),
-    enabled: open,
-  });
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
