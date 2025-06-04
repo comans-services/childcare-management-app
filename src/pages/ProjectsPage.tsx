@@ -10,6 +10,7 @@ import { fetchProjects } from "@/lib/timesheet/project-service";
 import ProjectList from "@/components/projects/ProjectList";
 import AddEditProjectDialog from "@/components/projects/AddEditProjectDialog";
 import DeleteProjectDialog from "@/components/projects/DeleteProjectDialog";
+import ProjectAssignmentDialog from "@/components/projects/ProjectAssignmentDialog";
 import { Input } from "@/components/ui/input";
 import ImportButton from "@/components/common/ImportButton";
 
@@ -17,8 +18,10 @@ const ProjectsPage = () => {
   const { user } = useAuth();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isDeleteProjectOpen, setIsDeleteProjectOpen] = useState(false);
+  const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [projectToAssign, setProjectToAssign] = useState<Project | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showActiveOnly, setShowActiveOnly] = useState(true);
 
@@ -57,6 +60,11 @@ const ProjectsPage = () => {
     setIsDeleteProjectOpen(true);
   };
 
+  const handleAssignClick = (project: Project) => {
+    setProjectToAssign(project);
+    setIsAssignmentDialogOpen(true);
+  };
+
   const closeAddEditDialog = () => {
     setIsAddProjectOpen(false);
     setEditingProject(null);
@@ -67,6 +75,11 @@ const ProjectsPage = () => {
     setIsDeleteProjectOpen(false);
     setProjectToDelete(null);
     refetch();
+  };
+
+  const closeAssignmentDialog = () => {
+    setIsAssignmentDialogOpen(false);
+    setProjectToAssign(null);
   };
 
   const calculateProjectStats = () => {
@@ -214,7 +227,8 @@ const ProjectsPage = () => {
             <ProjectList 
               projects={projects} 
               onEdit={handleEditProject} 
-              onDelete={handleDeleteClick} 
+              onDelete={handleDeleteClick}
+              onAssign={handleAssignClick}
             />
           ) : (
             <div className="p-8 text-center">
@@ -247,6 +261,15 @@ const ProjectsPage = () => {
           isOpen={isDeleteProjectOpen}
           onClose={closeDeleteDialog}
           project={projectToDelete}
+        />
+      )}
+
+      {projectToAssign && (
+        <ProjectAssignmentDialog
+          open={isAssignmentDialogOpen}
+          onOpenChange={setIsAssignmentDialogOpen}
+          projectId={projectToAssign.id}
+          projectName={projectToAssign.name}
         />
       )}
     </div>
