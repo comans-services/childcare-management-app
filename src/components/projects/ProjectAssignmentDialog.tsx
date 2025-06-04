@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -69,12 +68,17 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project-assignments"] });
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast({
         title: "Success",
         description: "Project assignments updated successfully.",
       });
+      
+      // NEW: invalidate the per-project cache so the dialog shows fresh data
+      queryClient.invalidateQueries({ queryKey: ["project-assignments", project?.id] });
+      
+      // existing invalidations
+      queryClient.invalidateQueries({ queryKey: ["project-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
       onClose();
     },
     onError: (error) => {
