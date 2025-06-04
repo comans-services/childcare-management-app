@@ -1,14 +1,14 @@
 
 import { useCallback } from "react";
 import { DropResult } from "react-beautiful-dnd";
-import { TimesheetEntry, saveTimesheetEntry } from "@/lib/timesheet-service";
+import { TimesheetEntry, saveTimesheetEntry, AnyTimeEntry } from "@/lib/timesheet-service";
 import { formatDate } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
 
 export const useEntryOperations = (
   weekDates: Date[],
-  entries: TimesheetEntry[],
-  setEntries: React.Dispatch<React.SetStateAction<TimesheetEntry[]>>,
+  entries: AnyTimeEntry[],
+  refetchData: () => void,
   userId: string | undefined
 ) => {
   const handleDragEnd = useCallback(async (result: DropResult) => {
@@ -19,6 +19,16 @@ export const useEntryOperations = (
     const draggedEntry = entries.find(entry => entry.id === draggableId);
     if (!draggedEntry) return;
     
+    // Only allow dragging timesheet entries (not contract entries)
+    if ('contract_id' in draggedEntry) {
+      toast({
+        title: "Cannot move contract entry",
+        description: "Contract time entries cannot be moved between days.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const sourceDate = weekDates[parseInt(source.droppableId)];
     const destDate = weekDates[parseInt(destination.droppableId)];
     
@@ -26,7 +36,7 @@ export const useEntryOperations = (
     
     try {
       const updatedEntry: TimesheetEntry = {
-        ...draggedEntry,
+        ...draggedEntry as TimesheetEntry,
         entry_date: formatDate(destDate)
       };
       
@@ -39,15 +49,7 @@ export const useEntryOperations = (
       
       console.log("Entry saved in database:", savedEntry);
       
-      setEntries(prevEntries => 
-        prevEntries.map(entry => 
-          entry.id === savedEntry.id ? {
-            ...savedEntry,
-            project: draggedEntry.project,
-            user: draggedEntry.user
-          } : entry
-        )
-      );
+      refetchData();
       
       toast({
         title: "Entry moved",
@@ -61,7 +63,7 @@ export const useEntryOperations = (
         variant: "destructive",
       });
     }
-  }, [weekDates, entries, setEntries, userId]);
+  }, [weekDates, entries, refetchData, userId]);
 
   return {
     handleDragEnd,

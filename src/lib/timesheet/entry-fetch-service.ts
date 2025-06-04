@@ -1,4 +1,3 @@
-
 /* ──────────────────────────────────────────────────────────────
  * entry-fetch-service.ts
  * All read-only queries for timesheets and reports
@@ -7,7 +6,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "../date-utils";
 import { isAdmin } from "@/utils/roles";
-import { TimesheetEntry } from "./types";
+import { TimesheetEntry, ContractTimeEntry, AnyTimeEntry } from "./types";
 
 /*-------------------------------------------------------------
   1 · Daily / weekly fetch   (Timesheet & Dashboard)
@@ -21,56 +20,86 @@ export const fetchTimesheetEntries = async (
     /** always restrict to this user_id (Timesheet view forces self) */
     forceUserId?: string;
   } = {}
-): Promise<TimesheetEntry[]> => {
+): Promise<AnyTimeEntry[]> => {
   const { includeUserData = false, forceUserId } = options;
 
   // Session user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Authentication required");
 
-  let q = supabase
+  // Fetch timesheet entries
+  let timesheetQuery = supabase
     .from("timesheet_entries")
     .select("*")
     .gte("entry_date", formatDate(startDate))
     .lte("entry_date", formatDate(endDate));
 
-  /* Row filter logic
-     ──────────────────────────────────────── */
+  // Fetch contract time entries
+  let contractQuery = supabase
+    .from("contract_time_entries")
+    .select("*")
+    .gte("entry_date", formatDate(startDate))
+    .lte("entry_date", formatDate(endDate));
+
+  /* Row filter logic for both queries */
   if (forceUserId) {
     // Timesheet screen passes its own ID – always self-only
-    q = q.eq("user_id", forceUserId);
+    timesheetQuery = timesheetQuery.eq("user_id", forceUserId);
+    contractQuery = contractQuery.eq("user_id", forceUserId);
   } else if (!(await isAdmin(user))) {
     // Employees default to self-only
-    q = q.eq("user_id", user.id);
+    timesheetQuery = timesheetQuery.eq("user_id", user.id);
+    contractQuery = contractQuery.eq("user_id", user.id);
   }
   // Admins with no forceUserId → no extra filter; RLS decides
 
-  const { data, error } = await q.order("entry_date", { ascending: true });
-  if (error) throw error;
+  // Execute both queries
+  const [timesheetResult, contractResult] = await Promise.all([
+    timesheetQuery.order("entry_date", { ascending: true }),
+    contractQuery.order("entry_date", { ascending: true })
+  ]);
+
+  if (timesheetResult.error) throw timesheetResult.error;
+  if (contractResult.error) throw contractResult.error;
+
+  const timesheetEntries = timesheetResult.data as TimesheetEntry[];
+  const contractEntries = contractResult.data as ContractTimeEntry[];
 
   // If we need user data, fetch it separately to avoid join issues
-  let entriesWithUserData = data as TimesheetEntry[];
+  let enrichedTimesheetEntries = timesheetEntries;
+  let enrichedContractEntries = contractEntries;
   
-  if (includeUserData && data.length > 0) {
-    const userIds = [...new Set(data.map(e => e.user_id))];
+  if (includeUserData && (timesheetEntries.length > 0 || contractEntries.length > 0)) {
+    const allUserIds = [
+      ...new Set([
+        ...timesheetEntries.map(e => e.user_id),
+        ...contractEntries.map(e => e.user_id)
+      ])
+    ];
+    
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, full_name, email, organization, time_zone")
-      .in("id", userIds);
+      .in("id", allUserIds);
 
     const profileMap = (profiles ?? []).reduce((acc, p) => {
       acc[p.id] = p;
       return acc;
     }, {} as Record<string, any>);
 
-    entriesWithUserData = data.map(e => ({
+    enrichedTimesheetEntries = timesheetEntries.map(e => ({
+      ...e,
+      user: profileMap[e.user_id]
+    }));
+
+    enrichedContractEntries = contractEntries.map(e => ({
       ...e,
       user: profileMap[e.user_id]
     }));
   }
 
-  /* Optionally join projects (kept from your original logic) */
-  const projectIds = [...new Set(entriesWithUserData.map(e => e.project_id))];
+  // Enrich timesheet entries with project data
+  const projectIds = [...new Set(enrichedTimesheetEntries.map(e => e.project_id))];
   if (projectIds.length > 0) {
     const { data: projects } = await supabase
       .from("projects")
@@ -82,10 +111,41 @@ export const fetchTimesheetEntries = async (
       return acc;
     }, {} as Record<string, any>);
 
-    return entriesWithUserData.map(e => ({ ...e, project: projectMap[e.project_id] }));
+    enrichedTimesheetEntries = enrichedTimesheetEntries.map(e => ({ 
+      ...e, 
+      project: projectMap[e.project_id] 
+    }));
   }
 
-  return entriesWithUserData;
+  // Enrich contract entries with contract data
+  const contractIds = [...new Set(enrichedContractEntries.map(e => e.contract_id))];
+  if (contractIds.length > 0) {
+    const { data: contracts } = await supabase
+      .from("contracts")
+      .select("id, name, description, start_date, end_date, status, is_active")
+      .in("id", contractIds);
+
+    const contractMap = (contracts ?? []).reduce((acc, c) => {
+      acc[c.id] = c;
+      return acc;
+    }, {} as Record<string, any>);
+
+    enrichedContractEntries = enrichedContractEntries.map(e => ({ 
+      ...e, 
+      contract: contractMap[e.contract_id] 
+    }));
+  }
+
+  // Combine and return all entries
+  const allEntries: AnyTimeEntry[] = [
+    ...enrichedTimesheetEntries,
+    ...enrichedContractEntries
+  ];
+
+  // Sort by date
+  return allEntries.sort((a, b) => 
+    new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime()
+  );
 };
 
 /*-------------------------------------------------------------
@@ -197,5 +257,5 @@ export const fetchReportData = async (
   return fetchTimesheetEntries(startDate, endDate, {
     includeUserData: true,
     forceUserId: user.id
-  });
+  }) as Promise<TimesheetEntry[]>;
 };

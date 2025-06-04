@@ -1,7 +1,6 @@
 
 import React from "react";
-import { TimesheetEntry, Project } from "@/lib/timesheet-service";
-import { ContractTimeEntry } from "@/lib/contract-service";
+import { Project, AnyTimeEntry } from "@/lib/timesheet-service";
 import TimeEntryDialog from "../TimeEntryDialog";
 
 interface WeeklyViewDialogsProps {
@@ -10,8 +9,8 @@ interface WeeklyViewDialogsProps {
   entryDialogOpen: boolean;
   setEntryDialogOpen: (open: boolean) => void;
   projects: Project[];
-  editingEntry: TimesheetEntry | ContractTimeEntry | undefined;
-  onSave: (savedEntry?: TimesheetEntry | ContractTimeEntry) => void;
+  editingEntry: AnyTimeEntry | undefined;
+  onSave: (savedEntry?: AnyTimeEntry) => void;
 }
 
 const WeeklyViewDialogs: React.FC<WeeklyViewDialogsProps> = ({
