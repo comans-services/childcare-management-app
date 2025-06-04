@@ -10,8 +10,8 @@ export const fetchContractAssignments = async (contractId?: string): Promise<Con
       .from("contract_assignments")
       .select(`
         *,
-        user:profiles(id, full_name, email),
-        contract:contracts(id, name)
+        user:profiles!contract_assignments_user_id_fkey(id, full_name, email),
+        contract:contracts!contract_assignments_contract_id_fkey(id, name)
       `);
 
     if (contractId) {
@@ -46,8 +46,8 @@ export const createContractAssignment = async (assignment: CreateContractAssignm
       })
       .select(`
         *,
-        user:profiles(id, full_name, email),
-        contract:contracts(id, name)
+        user:profiles!contract_assignments_user_id_fkey(id, full_name, email),
+        contract:contracts!contract_assignments_contract_id_fkey(id, name)
       `)
       .single();
 
