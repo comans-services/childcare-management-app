@@ -10,8 +10,8 @@ export const fetchProjectAssignments = async (projectId?: string): Promise<Proje
       .from("project_assignments")
       .select(`
         *,
-        profiles!project_assignments_user_id_fkey(id, full_name, email),
-        projects!project_assignments_project_id_fkey(id, name)
+        user:profiles!inner(id, full_name, email),
+        project:projects!inner(id, name)
       `);
 
     if (projectId) {
@@ -46,8 +46,8 @@ export const createProjectAssignment = async (assignment: CreateProjectAssignmen
       })
       .select(`
         *,
-        profiles!project_assignments_user_id_fkey(id, full_name, email),
-        projects!project_assignments_project_id_fkey(id, name)
+        user:profiles!inner(id, full_name, email),
+        project:projects!inner(id, name)
       `)
       .single();
 
