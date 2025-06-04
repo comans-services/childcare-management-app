@@ -168,7 +168,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
             {entryType === "project" ? (
               <ProjectSelector control={form.control} projects={projects} />
             ) : (
-              <ContractSelector control={form.control} contracts={contracts} />
+              <ContractSelector control={form.control} />
             )}
             
             <TimeInput control={form.control} />
