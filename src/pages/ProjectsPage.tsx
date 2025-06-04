@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { fetchProjects } from "@/lib/timesheet/project-service";
 import ProjectList from "@/components/projects/ProjectList";
 import AddEditProjectDialog from "@/components/projects/AddEditProjectDialog";
 import DeleteProjectDialog from "@/components/projects/DeleteProjectDialog";
+import ProjectAssignmentDialog from "@/components/projects/ProjectAssignmentDialog";
 import { Input } from "@/components/ui/input";
 import ImportButton from "@/components/common/ImportButton";
 
@@ -17,8 +19,10 @@ const ProjectsPage = () => {
   const { user } = useAuth();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isDeleteProjectOpen, setIsDeleteProjectOpen] = useState(false);
+  const [isAssignmentOpen, setIsAssignmentOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [projectToAssign, setProjectToAssign] = useState<Project | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showActiveOnly, setShowActiveOnly] = useState(true);
 
@@ -57,6 +61,11 @@ const ProjectsPage = () => {
     setIsDeleteProjectOpen(true);
   };
 
+  const handleAssignClick = (project: Project) => {
+    setProjectToAssign(project);
+    setIsAssignmentOpen(true);
+  };
+
   const closeAddEditDialog = () => {
     setIsAddProjectOpen(false);
     setEditingProject(null);
@@ -66,6 +75,12 @@ const ProjectsPage = () => {
   const closeDeleteDialog = () => {
     setIsDeleteProjectOpen(false);
     setProjectToDelete(null);
+    refetch();
+  };
+
+  const closeAssignmentDialog = () => {
+    setIsAssignmentOpen(false);
+    setProjectToAssign(null);
     refetch();
   };
 
@@ -214,7 +229,8 @@ const ProjectsPage = () => {
             <ProjectList 
               projects={projects} 
               onEdit={handleEditProject} 
-              onDelete={handleDeleteClick} 
+              onDelete={handleDeleteClick}
+              onAssign={handleAssignClick}
             />
           ) : (
             <div className="p-8 text-center">
@@ -249,6 +265,12 @@ const ProjectsPage = () => {
           project={projectToDelete}
         />
       )}
+
+      <ProjectAssignmentDialog
+        isOpen={isAssignmentOpen}
+        onClose={closeAssignmentDialog}
+        project={projectToAssign}
+      />
     </div>
   );
 };
