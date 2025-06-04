@@ -4,6 +4,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import DayColumn from "../DayColumn";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { ContractTimeEntry } from "@/lib/contract-service";
 import { isToday } from "@/lib/date-utils";
 import {
   Carousel,
@@ -16,12 +17,12 @@ import {
 interface WeekGridProps {
   weekDates: Date[];
   userId: string;
-  entries: TimesheetEntry[];
+  entries: (TimesheetEntry | ContractTimeEntry)[];
   projects: Project[];
   onEntryChange: () => void;
   onDragEnd: (result: DropResult) => void;
   onAddEntry: (date: Date) => void;
-  onEditEntry: (date: Date, entry: TimesheetEntry) => void;
+  onEditEntry: (date: Date, entry: TimesheetEntry | ContractTimeEntry) => void;
   viewMode: "today" | "week";
 }
 
