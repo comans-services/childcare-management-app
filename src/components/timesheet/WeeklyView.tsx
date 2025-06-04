@@ -60,15 +60,7 @@ const WeeklyView: React.FC = () => {
     clearComponentState,
   } = useWeeklyViewData(weekDates);
 
-  // Type guard to check if entry is a timesheet entry
-  const isTimesheetEntry = (entry: TimesheetEntry | ContractTimeEntry): entry is TimesheetEntry => {
-    return 'project_id' in entry;
-  };
-
-  // Filter only timesheet entries for drag operations (contracts can't be dragged between days)
-  const timesheetEntries = entries.filter(isTimesheetEntry);
-
-  const { handleDragEnd } = useEntryOperations(weekDates, timesheetEntries, () => fetchData(), user?.id);
+  const { handleDragEnd } = useEntryOperations(weekDates, entries, () => fetchData(), user?.id);
 
   // Track user changes to force state cleanup
   useEffect(() => {
