@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "./types";
 import { ProjectWithAssignees } from "./assignment-types";
@@ -171,12 +172,11 @@ export const fetchProjectsWithAssignees = async (filters?: { searchTerm?: string
         // Find assignees for this project and extract the profile data correctly
         const projectAssignments = assignments?.filter(a => a.project_id === project.id) || [];
         const assignees = projectAssignments
-          .map(assignment => assignment.profiles)
-          .filter(Boolean)
-          .map(profile => ({
-            id: profile.id,
-            full_name: profile.full_name,
-            email: profile.email
+          .filter(assignment => assignment.profiles) // Ensure profile exists
+          .map(assignment => ({
+            id: assignment.profiles.id,
+            full_name: assignment.profiles.full_name,
+            email: assignment.profiles.email
           }));
 
         return {
