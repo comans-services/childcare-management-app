@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,11 +21,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Project, bulkAssignUsersToProject, fetchProjectAssignments } from "@/lib/timesheet-service";
+import { Project } from "@/lib/timesheet/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import CustomerSelector from "@/components/customers/CustomerSelector";
-import ProjectAssigneeSelector from "./ProjectAssigneeSelector";
 
 interface AddEditProjectDialogProps {
   isOpen: boolean;
@@ -51,24 +49,6 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isEditing = !!existingProject;
-  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
-
-  // Load existing assignees when editing
-  useEffect(() => {
-    if (isEditing && existingProject && isOpen) {
-      const loadAssignees = async () => {
-        try {
-          const assignments = await fetchProjectAssignments(existingProject.id);
-          setSelectedAssigneeIds(assignments.map(a => a.user_id));
-        } catch (error) {
-          console.error("Error loading project assignees:", error);
-        }
-      };
-      loadAssignees();
-    } else if (!isEditing) {
-      setSelectedAssigneeIds([]);
-    }
-  }, [isEditing, existingProject, isOpen]);
 
   // Log the existing project info for debugging
   useEffect(() => {
@@ -121,8 +101,6 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
 
       console.log('Saving project with customer_id:', formData.customer_id);
       
-      let projectId: string;
-      
       // If editing, update existing project
       if (isEditing && existingProject) {
         const { error } = await supabase
@@ -131,7 +109,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
           .eq("id", existingProject.id);
         
         if (error) throw error;
-        projectId = existingProject.id;
+        return existingProject.id;
       } 
       // Otherwise create a new project
       else {
@@ -155,24 +133,8 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
         
         if (!data || data.length === 0) throw new Error("No data returned after project creation");
         
-        projectId = data[0].id;
+        return data[0].id;
       }
-
-      // Handle assignee updates
-      if (selectedAssigneeIds.length > 0) {
-        if (isEditing) {
-          // For editing, clear existing assignments and add new ones
-          await supabase
-            .from("project_assignments")
-            .delete()
-            .eq("project_id", projectId);
-        }
-        
-        // Add new assignments
-        await bulkAssignUsersToProject(projectId, selectedAssigneeIds);
-      }
-      
-      return projectId;
     },
     onSuccess: () => {
       // Invalidate projects query to refresh the list
@@ -197,7 +159,6 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
 
   const onSubmit = (data: FormValues) => {
     console.log('Form submitted with data:', data);
-    console.log('Selected assignee IDs:', selectedAssigneeIds);
     mutation.mutate(data);
   };
 
@@ -271,20 +232,6 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
                 </FormItem>
               )}
             />
-
-            <FormItem>
-              <FormLabel>Project Assignees</FormLabel>
-              <FormControl>
-                <ProjectAssigneeSelector
-                  selectedUserIds={selectedAssigneeIds}
-                  onSelectionChange={setSelectedAssigneeIds}
-                  disabled={mutation.isPending}
-                />
-              </FormControl>
-              <FormDescription>
-                Select users who can log time to this project
-              </FormDescription>
-            </FormItem>
             
             <FormField
               control={form.control}
