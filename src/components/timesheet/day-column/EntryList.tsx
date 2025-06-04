@@ -1,15 +1,15 @@
 
 import React from "react";
 import { Droppable, Draggable } from "react-beautiful-dnd";
-import { AnyTimeEntry } from "@/lib/timesheet-service";
+import { TimesheetEntry } from "@/lib/timesheet-service";
 import { cn } from "@/lib/utils";
 import EntryCard from "../entry-card/EntryCard";
 
 interface EntryListProps {
   droppableId: string;
-  entries: AnyTimeEntry[];
-  onEditEntry: (entry: AnyTimeEntry) => void;
-  onDeleteEntry: (entry: AnyTimeEntry) => void;
+  entries: TimesheetEntry[];
+  onEditEntry: (entry: TimesheetEntry) => void;
+  onDeleteEntry: (entry: TimesheetEntry) => void;
   onEntryChange: () => void;
 }
 
@@ -42,7 +42,7 @@ const EntryList: React.FC<EntryListProps> = ({
                   key={entry.id || `temp-${Date.now()}-${Math.random()}`} 
                   draggableId={entry.id || `temp-${Date.now()}-${Math.random()}`} 
                   index={index}
-                  isDragDisabled={!entry.id || ('contract_id' in entry)}
+                  isDragDisabled={!entry.id}
                 >
                   {(provided, snapshot) => (
                     <EntryCard 

@@ -1,6 +1,6 @@
 
 // Main export file that re-exports all timesheet functionality
-import { Project, TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry, AnyTimeEntry } from "./timesheet/types";
+import { Project, TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry } from "./timesheet/types";
 import { Contract, ContractTimeEntry } from "./contract-service";
 import { 
   fetchUserProjects, 
@@ -17,7 +17,7 @@ import {
 } from "./timesheet/entry-service";
 
 // Re-export all types and functions
-export type { Project, TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry, Contract, ContractTimeEntry, AnyTimeEntry };
+export type { Project, TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry, Contract, ContractTimeEntry };
 
 export {
   // Project related functions

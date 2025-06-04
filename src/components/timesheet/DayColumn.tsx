@@ -1,25 +1,26 @@
 
 import React, { useState } from "react";
 import { formatDate } from "@/lib/date-utils";
-import { AnyTimeEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
-import { deleteContractTimeEntry } from "@/lib/contract-service";
+import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import DayHeader from "./day-column/DayHeader";
 import EntryList from "./day-column/EntryList";
 import DeleteConfirmDialog from "./day-column/DeleteConfirmDialog";
 import AddEntryButton from "./day-column/AddEntryButton";
 import DayTotalHours from "./day-column/DayTotalHours";
+import ProgressIndicator from "./day-column/ProgressIndicator";
 
 interface DayColumnProps {
   date: Date;
   userId: string;
-  entries: AnyTimeEntry[];
+  entries: TimesheetEntry[];
   projects: Project[];
   onEntryChange: () => void;
   droppableId: string;
   onAddEntry: () => void;
-  onEditEntry: (entry: AnyTimeEntry) => void;
+  onEditEntry: (entry: TimesheetEntry) => void;
 }
 
 const DayColumn: React.FC<DayColumnProps> = ({
@@ -33,7 +34,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
   onEditEntry,
 }) => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [entryToDelete, setEntryToDelete] = useState<AnyTimeEntry | null>(null);
+  const [entryToDelete, setEntryToDelete] = useState<TimesheetEntry | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const dailyTarget = 8;
 
@@ -53,7 +54,16 @@ const DayColumn: React.FC<DayColumnProps> = ({
     0
   );
 
-  const handleDeleteClick = (entry: AnyTimeEntry) => {
+  const dayProgress = Math.min((totalHours / dailyTarget) * 100, 100);
+
+  const getProgressColor = () => {
+    if (dayProgress < 30) return "bg-amber-500";
+    if (dayProgress < 70) return "bg-blue-500";
+    if (dayProgress < 100) return "bg-emerald-500";
+    return "bg-violet-500";
+  };
+
+  const handleDeleteClick = (entry: TimesheetEntry) => {
     setEntryToDelete(entry);
     setDeleteConfirmOpen(true);
   };
@@ -63,14 +73,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
     
     try {
       setIsDeleting(true);
-      
-      // Check if it's a contract entry or timesheet entry
-      if ('contract_id' in entryToDelete) {
-        await deleteContractTimeEntry(entryToDelete.id);
-      } else {
-        await deleteTimesheetEntry(entryToDelete.id);
-      }
-      
+      await deleteTimesheetEntry(entryToDelete.id);
       toast({
         title: "Entry deleted",
         description: "Time entry deleted successfully.",
