@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +8,10 @@ interface WeekendLockData {
   canLogWeekendHours: boolean;
   isWeekendEntry: (date: Date) => boolean;
   validateWeekendEntry: (date: Date) => { isValid: boolean; message?: string };
+  updateWeekendPermission: (enabled: boolean) => Promise<boolean>;
   loading: boolean;
   error: string | null;
+  refreshPermissions: () => void;
 }
 
 export const useWeekendLock = (userId?: string): WeekendLockData => {
@@ -56,6 +57,64 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
     }
   };
 
+  // Manual refresh function
+  const refreshPermissions = () => {
+    console.log("Manually refreshing weekend permissions");
+    fetchWeekendPermissions();
+  };
+
+  // Update weekend permission function
+  const updateWeekendPermission = async (enabled: boolean): Promise<boolean> => {
+    if (!isAdmin || !targetUserId) {
+      console.error("Unauthorized attempt to update weekend permissions");
+      return false;
+    }
+
+    try {
+      console.log(`Updating weekend permission for user ${targetUserId} to: ${enabled}`);
+      
+      const { error } = await supabase
+        .from("work_schedules")
+        .upsert({
+          user_id: targetUserId,
+          allow_weekend_entries: enabled,
+          // Keep existing working_days if it exists
+          working_days: 5,
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) {
+        console.error("Database error updating weekend permissions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update weekend permissions. Please try again.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Immediately update local state
+      console.log(`Successfully updated weekend permission, updating local state to: ${enabled}`);
+      setAllowWeekendEntries(enabled);
+
+      toast({
+        title: "Weekend Permissions Updated",
+        description: `Weekend entries ${enabled ? 'enabled' : 'disabled'}.`,
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error updating weekend permissions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update weekend permissions. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   // Load permissions on mount and when targetUserId changes
   useEffect(() => {
     fetchWeekendPermissions();
@@ -68,7 +127,7 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
     console.log(`Setting up realtime subscription for user ${targetUserId} weekend permissions`);
     
     const channel = supabase
-      .channel('weekend-permission-changes')
+      .channel(`weekend-permission-${targetUserId}`)
       .on(
         'postgres_changes',
         {
@@ -78,15 +137,15 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
           filter: `user_id=eq.${targetUserId}`
         },
         (payload) => {
-          console.log('Weekend permission realtime update:', payload);
+          console.log('Weekend permission realtime update received:', payload);
           
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
             const newData = payload.new as any;
             if (newData.allow_weekend_entries !== undefined) {
-              console.log(`Weekend permission updated to: ${newData.allow_weekend_entries}`);
+              console.log(`Realtime update: Weekend permission changed to: ${newData.allow_weekend_entries}`);
               setAllowWeekendEntries(newData.allow_weekend_entries);
               
-              // Show real-time update notification only for current user
+              // Show real-time update notification only for current user and only if it's not the user making the change
               if (targetUserId === user?.id) {
                 toast({
                   title: "Weekend Permission Updated",
@@ -97,7 +156,9 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Realtime subscription status for user ${targetUserId}:`, status);
+      });
 
     return () => {
       console.log(`Cleaning up realtime subscription for user ${targetUserId} weekend permissions`);
@@ -146,7 +207,9 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
     canLogWeekendHours,
     isWeekendEntry,
     validateWeekendEntry,
+    updateWeekendPermission,
     loading,
     error,
+    refreshPermissions,
   };
 };

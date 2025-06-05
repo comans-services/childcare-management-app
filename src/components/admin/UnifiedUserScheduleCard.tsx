@@ -4,14 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useAuth } from "@/context/AuthContext";
-import { Calendar, Clock, Target, Calendar as CalendarWeekend, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, Clock, Target, Calendar as CalendarWeekend, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
 
 interface UnifiedUserScheduleCardProps {
@@ -52,48 +51,32 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
   const {
     canLogWeekendHours,
     loading: weekendLoading,
-    error: weekendError
+    error: weekendError,
+    updateWeekendPermission,
+    refreshPermissions
   } = useWeekendLock(user.id);
 
   const handleWeekendToggle = async (enabled: boolean) => {
     if (!isAdmin) return;
     
+    console.log(`Admin toggling weekend permission for user ${user.email} to: ${enabled}`);
     setUpdatingWeekend(true);
+    
     try {
-      const { error } = await supabase
-        .from("work_schedules")
-        .upsert({
-          user_id: user.id,
-          allow_weekend_entries: enabled,
-          working_days: workingDays,
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (error) {
-        console.error("Error updating weekend permissions:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update weekend permissions. Please try again.",
-          variant: "destructive",
-        });
-        return;
+      const success = await updateWeekendPermission(enabled);
+      if (!success) {
+        console.error("Failed to update weekend permission");
       }
-
-      toast({
-        title: "Weekend Permissions Updated",
-        description: `Weekend entries ${enabled ? 'enabled' : 'disabled'} for ${user.full_name || user.email}.`,
-      });
     } catch (error) {
-      console.error("Error updating weekend permissions:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update weekend permissions. Please try again.",
-        variant: "destructive",
-      });
+      console.error("Error in handleWeekendToggle:", error);
     } finally {
       setUpdatingWeekend(false);
     }
+  };
+
+  const handleRefreshPermissions = () => {
+    console.log(`Manually refreshing permissions for user ${user.email}`);
+    refreshPermissions();
   };
 
   if (globalLoading || weeklyLoading || weekendLoading) {
@@ -119,8 +102,19 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-destructive">
-            Failed to load work schedule data
+          <div className="space-y-2">
+            <div className="text-sm text-destructive">
+              Failed to load work schedule data
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefreshPermissions}
+              className="w-full"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
           </div>
         </CardContent>
       </Card>;
@@ -169,14 +163,27 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
 
         {/* Enhanced Weekend Permissions Section */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <CalendarWeekend className="h-4 w-4 text-primary" />
-            <span className="font-medium text-sm">Weekend Entries</span>
-            {/* Visual status indicator */}
-            {canLogWeekendHours ? (
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            ) : (
-              <XCircle className="h-4 w-4 text-red-500" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarWeekend className="h-4 w-4 text-primary" />
+              <span className="font-medium text-sm">Weekend Entries</span>
+              {/* Visual status indicator */}
+              {canLogWeekendHours ? (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-500" />
+              )}
+            </div>
+            
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefreshPermissions}
+                className="h-6 w-6 p-0"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
             )}
           </div>
           
@@ -192,6 +199,12 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
                   disabled={updatingWeekend}
                 />
               </div>
+              
+              {updatingWeekend && (
+                <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                  Updating weekend permissions...
+                </div>
+              )}
               
               {/* Enhanced status display */}
               <div className={`text-xs p-2 rounded border ${
