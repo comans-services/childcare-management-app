@@ -100,17 +100,17 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const isWeekendBlocked = isWeekendLocked(date);
   const isNewEntry = !existingEntry;
   
-  // Show validation warning for new entries that are blocked
+  // Show validation warning for ANY entry that is blocked (both new and existing)
   const showWorkingDaysWarning = isNewEntry && !canAddToThisDate;
-  const showWeekendWarning = isNewEntry && isWeekendBlocked;
+  const showWeekendWarning = isWeekendBlocked; // Remove isNewEntry condition - block all weekend operations
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
-    // Check weekend validation for new entries
-    if (isNewEntry && isWeekendBlocked) {
+    // Check weekend validation for ALL entries (both new and existing)
+    if (isWeekendBlocked) {
       toast({
-        title: "Admin Approval Required",
+        title: "Weekend Entry Blocked",
         description: getWeekendMessage(date),
-        variant: "default",
+        variant: "destructive",
       });
       return;
     }
@@ -166,11 +166,21 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
       onOpenChange(false);
     } catch (error) {
       console.error("Error saving entry:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save your entry.",
-        variant: "destructive",
-      });
+      
+      // Check if it's a weekend validation error
+      if (error instanceof Error && error.message.includes("Weekend time entries require admin approval")) {
+        toast({
+          title: "Weekend Entry Blocked",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save your entry.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -197,11 +207,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
             </div>
 
-            {/* Weekend Approval Alert */}
+            {/* Weekend Approval Alert - now shows for ALL weekend operations */}
             {showWeekendWarning && (
-              <Alert className="mb-4 border-orange-200 bg-orange-50">
-                <Shield className="h-4 w-4 text-orange-600" />
-                <AlertDescription className="text-orange-700">
+              <Alert className="mb-4 border-red-200 bg-red-50">
+                <Lock className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-700">
                   {getWeekendMessage(date)}
                 </AlertDescription>
               </Alert>
