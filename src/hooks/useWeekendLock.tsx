@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +7,7 @@ import { isWeekend } from "@/lib/date-utils";
 
 interface WeekendLockData {
   canLogWeekendHours: boolean;
+  allowWeekendEntries: boolean; // Raw permission setting
   isWeekendEntry: (date: Date) => boolean;
   validateWeekendEntry: (date: Date) => { isValid: boolean; message?: string };
   updateWeekendPermission: (enabled: boolean) => Promise<boolean>;
@@ -60,6 +62,7 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
   // Manual refresh function
   const refreshPermissions = () => {
     console.log("Manually refreshing weekend permissions");
+    setLoading(true);
     fetchWeekendPermissions();
   };
 
@@ -71,14 +74,13 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
     }
 
     try {
-      console.log(`Updating weekend permission for user ${targetUserId} to: ${enabled}`);
+      console.log(`Admin updating weekend permission for user ${targetUserId} to: ${enabled}`);
       
       const { error } = await supabase
         .from("work_schedules")
         .upsert({
           user_id: targetUserId,
           allow_weekend_entries: enabled,
-          // Keep existing working_days if it exists
           working_days: 5,
         }, {
           onConflict: 'user_id'
@@ -94,13 +96,13 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
         return false;
       }
 
-      // Immediately update local state
-      console.log(`Successfully updated weekend permission, updating local state to: ${enabled}`);
+      // Immediately update local state for responsive UI
+      console.log(`Successfully updated weekend permission in database, updating local state to: ${enabled}`);
       setAllowWeekendEntries(enabled);
 
       toast({
         title: "Weekend Permissions Updated",
-        description: `Weekend entries ${enabled ? 'enabled' : 'disabled'}.`,
+        description: `Weekend entries ${enabled ? 'enabled' : 'disabled'} for user.`,
       });
 
       return true;
@@ -127,7 +129,7 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
     console.log(`Setting up realtime subscription for user ${targetUserId} weekend permissions`);
     
     const channel = supabase
-      .channel(`weekend-permission-${targetUserId}`)
+      .channel(`weekend-permission-realtime-${targetUserId}`)
       .on(
         'postgres_changes',
         {
@@ -144,14 +146,6 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
             if (newData.allow_weekend_entries !== undefined) {
               console.log(`Realtime update: Weekend permission changed to: ${newData.allow_weekend_entries}`);
               setAllowWeekendEntries(newData.allow_weekend_entries);
-              
-              // Show real-time update notification only for current user and only if it's not the user making the change
-              if (targetUserId === user?.id) {
-                toast({
-                  title: "Weekend Permission Updated",
-                  description: `Weekend entries ${newData.allow_weekend_entries ? 'enabled' : 'disabled'}.`,
-                });
-              }
             }
           }
         }
@@ -205,6 +199,7 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
 
   return {
     canLogWeekendHours,
+    allowWeekendEntries, // Raw permission setting for toggle display
     isWeekendEntry,
     validateWeekendEntry,
     updateWeekendPermission,

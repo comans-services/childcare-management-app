@@ -50,6 +50,7 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
 
   const {
     canLogWeekendHours,
+    allowWeekendEntries, // Use this for toggle state instead of canLogWeekendHours
     loading: weekendLoading,
     error: weekendError,
     updateWeekendPermission,
@@ -66,6 +67,8 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
       const success = await updateWeekendPermission(enabled);
       if (!success) {
         console.error("Failed to update weekend permission");
+      } else {
+        console.log(`Successfully toggled weekend permission to: ${enabled}`);
       }
     } catch (error) {
       console.error("Error in handleWeekendToggle:", error);
@@ -167,7 +170,7 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             <div className="flex items-center gap-2">
               <CalendarWeekend className="h-4 w-4 text-primary" />
               <span className="font-medium text-sm">Weekend Entries</span>
-              {/* Visual status indicator */}
+              {/* Visual status indicator based on effective permission */}
               {canLogWeekendHours ? (
                 <CheckCircle className="h-4 w-4 text-green-500" />
               ) : (
@@ -194,7 +197,7 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
                   Allow weekend hour logging
                 </div>
                 <Switch
-                  checked={canLogWeekendHours}
+                  checked={allowWeekendEntries} // Use raw permission, not effective permission
                   onCheckedChange={handleWeekendToggle}
                   disabled={updatingWeekend}
                 />
@@ -206,20 +209,32 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
                 </div>
               )}
               
-              {/* Enhanced status display */}
-              <div className={`text-xs p-2 rounded border ${
-                canLogWeekendHours 
-                  ? "text-green-700 bg-green-50 border-green-200" 
-                  : "text-red-700 bg-red-50 border-red-200"
-              }`}>
-                Status: Weekend entries {canLogWeekendHours ? "enabled" : "disabled"}
-              </div>
-              
-              {user.role === "admin" && (
-                <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
-                  Note: Admins can always log weekend hours regardless of this setting
+              {/* Enhanced status display showing both raw and effective permissions */}
+              <div className="space-y-1">
+                <div className={`text-xs p-2 rounded border ${
+                  allowWeekendEntries 
+                    ? "text-green-700 bg-green-50 border-green-200" 
+                    : "text-red-700 bg-red-50 border-red-200"
+                }`}>
+                  Permission Setting: Weekend entries {allowWeekendEntries ? "enabled" : "disabled"}
                 </div>
-              )}
+                
+                {user.role === "admin" && (
+                  <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                    Effective Permission: Can log weekend hours (admin override active)
+                  </div>
+                )}
+                
+                {user.role !== "admin" && (
+                  <div className={`text-xs p-2 rounded border ${
+                    canLogWeekendHours 
+                      ? "text-green-700 bg-green-50 border-green-200" 
+                      : "text-red-700 bg-red-50 border-red-200"
+                  }`}>
+                    Effective Permission: {canLogWeekendHours ? "Can log weekend hours" : "Cannot log weekend hours"}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
