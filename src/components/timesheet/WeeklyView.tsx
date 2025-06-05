@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   getCurrentWeekDates,
@@ -10,6 +10,7 @@ import {
 import { TimesheetEntry } from "@/lib/timesheet-service";
 import WeekNavigation from "./weekly-view/WeekNavigation";
 import WeeklyProgressBar from "./weekly-view/WeeklyProgressBar";
+import WeeklyHoursSummary from "./weekly-view/WeeklyHoursSummary";
 import LoadingState from "./weekly-view/LoadingState";
 import ErrorState from "./weekly-view/ErrorState";
 import WeekGrid from "./weekly-view/WeekGrid";
@@ -105,6 +106,14 @@ const WeeklyView: React.FC = () => {
       })
     : entries;
 
+  // Calculate total hours for the current week view
+  const totalHours = useMemo(() => {
+    return filteredEntries.reduce((sum, entry) => {
+      const hoursLogged = Number(entry.hours_logged) || 0;
+      return sum + hoursLogged;
+    }, 0);
+  }, [filteredEntries]);
+
   // Calculate unique days worked (any entry on a day counts as 1 day)
   const uniqueDatesWorked = new Set(
     filteredEntries.map(entry => {
@@ -155,6 +164,14 @@ const WeeklyView: React.FC = () => {
         viewMode={viewMode}
         toggleViewMode={toggleViewMode}
       />
+
+      {/* Show hours summary when we have entries */}
+      {!loading && !error && filteredEntries.length > 0 && (
+        <WeeklyHoursSummary 
+          totalHours={totalHours}
+          weeklyTarget={weeklyTarget}
+        />
+      )}
 
       {loading ? (
         <LoadingState />
