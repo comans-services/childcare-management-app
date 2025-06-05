@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -170,6 +169,7 @@ const WeeklyView: React.FC = () => {
         <WeeklyHoursSummary 
           totalHours={totalHours}
           weeklyTarget={weeklyTarget}
+          entries={entries}
         />
       )}
 
@@ -212,6 +212,7 @@ const WeeklyView: React.FC = () => {
         projects={projects}
         editingEntry={editingEntry}
         onSave={handleSaveEntry}
+        entries={entries}
       />
     </div>
   );

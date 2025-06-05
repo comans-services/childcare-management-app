@@ -1,10 +1,11 @@
 
 import React, { useState } from "react";
-import { formatDate } from "@/lib/date-utils";
+import { formatDate, getWeekStart } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
 import DayHeader from "./day-column/DayHeader";
 import EntryList from "./day-column/EntryList";
 import DeleteConfirmDialog from "./day-column/DeleteConfirmDialog";
@@ -38,6 +39,10 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const dailyTarget = 8;
 
+  // Get working days validation
+  const weekStart = getWeekStart(date);
+  const validation = useWorkingDaysValidation(userId, entries, weekStart);
+
   const formattedColumnDate = formatDate(date);
 
   const dayEntries = entries.filter(entry => {
@@ -62,6 +67,10 @@ const DayColumn: React.FC<DayColumnProps> = ({
     if (dayProgress < 100) return "bg-emerald-500";
     return "bg-violet-500";
   };
+
+  // Check if this day can accept new entries
+  const canAddToThisDay = validation.canAddToDate(date);
+  const hasEntries = dayEntries.length > 0;
 
   const handleDeleteClick = (entry: TimesheetEntry) => {
     setEntryToDelete(entry);
@@ -94,14 +103,44 @@ const DayColumn: React.FC<DayColumnProps> = ({
     }
   };
 
+  // Enhanced add entry handler with validation
+  const handleAddEntry = () => {
+    if (!canAddToThisDay) {
+      toast({
+        title: "Cannot add entry",
+        description: validation.getValidationMessage(),
+        variant: "destructive",
+      });
+      return;
+    }
+    onAddEntry();
+  };
+
   return (
     <div className="flex flex-col h-full min-w-0 w-full max-w-full">
       <DayHeader date={date} />
       
-      <div className="h-full flex-grow overflow-hidden bg-background border border-t-0 rounded-b-md shadow-sm">
+      <div className={cn(
+        "h-full flex-grow overflow-hidden bg-background border border-t-0 rounded-b-md shadow-sm",
+        // Add visual indication for blocked days
+        !canAddToThisDay && !hasEntries && "bg-gray-50 border-dashed opacity-75"
+      )}>
         <ScrollArea className="h-[50vh] md:h-[60vh]">
           <div className="flex flex-col p-2 space-y-2 min-w-0">
-            <AddEntryButton onClick={onAddEntry} />
+            <AddEntryButton 
+              onClick={handleAddEntry}
+              disabled={!canAddToThisDay}
+              className={cn(
+                !canAddToThisDay && !hasEntries && "opacity-50 cursor-not-allowed"
+              )}
+            />
+
+            {/* Show working days limit info for blocked days */}
+            {!canAddToThisDay && !hasEntries && (
+              <div className="text-xs text-muted-foreground text-center p-2 bg-amber-50 rounded border">
+                Day limit reached
+              </div>
+            )}
 
             <EntryList
               droppableId={droppableId}

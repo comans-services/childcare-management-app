@@ -10,12 +10,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
-import { formatDate } from "@/lib/date-utils";
+import { formatDate, getWeekStart } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
-import { Calendar } from "lucide-react";
+import { Calendar, AlertTriangle } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Import the components we've created
 import { timeEntryFormSchema, TimeEntryFormValues } from "./time-entry/schema";
@@ -33,6 +35,7 @@ interface TimeEntryDialogProps {
   projects: Project[];
   existingEntry?: TimesheetEntry;
   onSave: (entry?: TimesheetEntry) => void;
+  entries: TimesheetEntry[]; // Add entries prop for validation
 }
 
 const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
@@ -42,9 +45,14 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   date,
   projects,
   existingEntry,
-  onSave
+  onSave,
+  entries = [], // Default to empty array
 }) => {
   const [entryType, setEntryType] = useState<"project" | "contract">("project");
+
+  // Get working days validation
+  const weekStart = getWeekStart(date);
+  const validation = useWorkingDaysValidation(userId, entries, weekStart);
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
@@ -83,7 +91,22 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     }
   }, [open, existingEntry, form]);
 
+  // Check if this date can accept new entries
+  const canAddToThisDate = validation.canAddToDate(date);
+  const isNewEntry = !existingEntry;
+  const showValidationWarning = isNewEntry && !canAddToThisDate;
+
   const handleSubmit = async (values: TimeEntryFormValues) => {
+    // Check validation for new entries
+    if (isNewEntry && !canAddToThisDate) {
+      toast({
+        title: "Cannot add entry",
+        description: validation.getValidationMessage(),
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Create unified entry data
       const entryData: TimesheetEntry = {
@@ -153,6 +176,26 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               </div>
               <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
             </div>
+
+            {/* Working Days Validation Alert */}
+            {showValidationWarning && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  {validation.getValidationMessage()}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Show validation info for allowed entries */}
+            {!showValidationWarning && validation.daysRemaining > 0 && isNewEntry && (
+              <Alert className="mb-4">
+                <Calendar className="h-4 w-4" />
+                <AlertDescription>
+                  {validation.getValidationMessage()}
+                </AlertDescription>
+              </Alert>
+            )}
             
             <EntryTypeSelector control={form.control} />
             
@@ -170,7 +213,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button type="submit" className="px-6">
+              <Button 
+                type="submit" 
+                className="px-6"
+                disabled={showValidationWarning}
+              >
                 Save
               </Button>
             </DialogFooter>
