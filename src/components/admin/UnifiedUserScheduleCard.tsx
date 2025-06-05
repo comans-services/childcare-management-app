@@ -1,11 +1,14 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
 import { useAuth } from "@/context/AuthContext";
-import { Calendar, Clock, Target } from "lucide-react";
+import { Calendar, Clock, Target, Shield } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
 
@@ -29,6 +32,8 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
   const isAdmin = userRole === "admin";
   const {
     workingDays,
+    allowWeekendEntries,
+    updateWeekendPermission,
     loading: globalLoading,
     error: globalError
   } = useWorkSchedule(user.id);
@@ -42,6 +47,10 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
     isUpdating,
     isReverting
   } = useSimpleWeeklySchedule(user.id, weekStartDate);
+
+  const handleWeekendToggle = async (enabled: boolean) => {
+    await updateWeekendPermission(enabled);
+  };
 
   if (globalLoading || weeklyLoading) {
     return <Card className="hover:shadow-md transition-shadow">
@@ -82,6 +91,10 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
                 <Calendar className="h-3 w-3 mr-1" />
                 Custom
               </Badge>}
+            {allowWeekendEntries && <Badge variant="outline" className="text-xs bg-green-50 border-green-200">
+                <Shield className="h-3 w-3 mr-1" />
+                Weekend Access
+              </Badge>}
             <Badge variant={user.role === "admin" ? "default" : "secondary"}>
               {user.role || "employee"}
             </Badge>
@@ -105,6 +118,31 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
         </div>
 
         <Separator />
+
+        {/* Weekend Entry Permission - Only show to admins */}
+        {isAdmin && (
+          <>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                <span className="font-medium text-sm">Weekend Access</span>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor={`weekend-toggle-${user.id}`} className="text-sm text-muted-foreground">
+                  Allow weekend time entries
+                </Label>
+                <Switch
+                  id={`weekend-toggle-${user.id}`}
+                  checked={allowWeekendEntries}
+                  onCheckedChange={handleWeekendToggle}
+                />
+              </div>
+            </div>
+
+            <Separator />
+          </>
+        )}
 
         {/* Default Schedule Reference */}
         <div className="space-y-2">

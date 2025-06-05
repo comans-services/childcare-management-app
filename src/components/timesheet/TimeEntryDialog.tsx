@@ -55,8 +55,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const weekStart = getWeekStart(date);
   const validation = useWorkingDaysValidation(userId, entries, weekStart);
 
-  // Get weekend lock status
-  const { isWeekendLocked, getWeekendMessage } = useWeekendLock();
+  // Get weekend lock status - now includes per-user permission checking
+  const { isWeekendLocked, getWeekendMessage } = useWeekendLock(userId);
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),

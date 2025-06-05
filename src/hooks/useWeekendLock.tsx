@@ -2,6 +2,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { isWeekend } from "@/lib/date-utils";
 import { isAdmin } from "@/utils/roles";
+import { fetchWorkSchedule } from "@/lib/work-schedule-service";
 import { useState, useEffect } from "react";
 
 interface WeekendLockState {
@@ -10,39 +11,54 @@ interface WeekendLockState {
   isLoading: boolean;
 }
 
-export const useWeekendLock = (): WeekendLockState => {
+export const useWeekendLock = (targetUserId?: string): WeekendLockState => {
   const { user } = useAuth();
+  const userId = targetUserId || user?.id;
   const [isAdminUser, setIsAdminUser] = useState<boolean>(false);
+  const [allowWeekendEntries, setAllowWeekendEntries] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) {
+    const checkPermissions = async () => {
+      if (!user || !userId) {
         setIsAdminUser(false);
+        setAllowWeekendEntries(false);
         setIsLoading(false);
         return;
       }
 
       try {
+        // Check if current user is admin
         const adminStatus = await isAdmin(user);
         setIsAdminUser(adminStatus);
+
+        // Fetch the target user's work schedule to check weekend entry permission
+        const workSchedule = await fetchWorkSchedule(userId);
+        setAllowWeekendEntries(workSchedule?.allow_weekend_entries || false);
       } catch (error) {
-        console.error("Error checking admin status:", error);
+        console.error("Error checking permissions:", error);
         setIsAdminUser(false);
+        setAllowWeekendEntries(false);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkAdminStatus();
-  }, [user]);
+    checkPermissions();
+  }, [user, userId]);
 
   const isWeekendLocked = (date: Date): boolean => {
+    // Not a weekend, so not locked
+    if (!isWeekend(date)) return false;
+    
     // Admins can always add entries
     if (isAdminUser) return false;
     
-    // Employees cannot add new entries on weekends
-    return isWeekend(date);
+    // Check if the target user has weekend entry permission
+    if (allowWeekendEntries) return false;
+    
+    // Default: weekends are locked for regular employees
+    return true;
   };
 
   const getWeekendMessage = (date: Date): string => {
@@ -52,7 +68,11 @@ export const useWeekendLock = (): WeekendLockState => {
       return "Weekend entry (Admin access)";
     }
     
-    return "Weekend entries are restricted for employees";
+    if (allowWeekendEntries) {
+      return "Weekend entry (Permitted)";
+    }
+    
+    return "Weekend entries are restricted for this user";
   };
 
   return {
