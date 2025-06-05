@@ -1,13 +1,15 @@
+
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { ChartContainer } from "@/components/ui/chart";
 import { ResponsiveContainer, RadialBarChart, RadialBar, Legend, Tooltip } from "recharts";
 import { CheckCircle2, Clock, ClipboardCheck, Calendar, TimerIcon, Settings } from "lucide-react";
+
 interface DashboardStatsProps {
   hasEntries: boolean;
-  expectedHoursToDate: number;
-  hoursLoggedToDate: number;
+  expectedDaysToDate: number;
+  daysLoggedToDate: number;
   weekProgress: number;
   completeWeek: boolean;
   allDaysHaveEntries: boolean;
@@ -15,6 +17,7 @@ interface DashboardStatsProps {
   workingDays: number;
   weeklyTarget: number;
 }
+
 const getColorByPercentage = (percentage: number): string => {
   if (percentage <= 25) {
     return "#ea384c"; // Red for 25% or lower
@@ -24,10 +27,11 @@ const getColorByPercentage = (percentage: number): string => {
     return "#00C49F"; // Green for 100%
   }
 };
+
 const DashboardStats: React.FC<DashboardStatsProps> = ({
   hasEntries,
-  expectedHoursToDate,
-  hoursLoggedToDate,
+  expectedDaysToDate,
+  daysLoggedToDate,
   weekProgress,
   completeWeek,
   allDaysHaveEntries,
@@ -48,15 +52,19 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
     description: completeWeek && allDaysHaveEntries ? "Complete" : isTodayComplete ? "In Progress" : "Pending",
     color: getColorByPercentage(completeWeek ? 100 : Math.round(weekProgress))
   }];
+
   const radialData = statsData.map(item => ({
     name: item.name,
     value: item.value,
     fill: item.color
   }));
+
   if (process.env.NODE_ENV !== 'development') {
     return null;
   }
-  return <Card className="mb-4">
+
+  return (
+    <Card className="mb-4">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <TimerIcon className="h-5 w-5 text-blue-500" />
@@ -89,19 +97,25 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  
-                  
+                  <TableCell className="font-medium flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-blue-500" />
+                    Expected days to date
+                  </TableCell>
+                  <TableCell>{expectedDaysToDate} days</TableCell>
                 </TableRow>
                 <TableRow>
-                  
-                  
+                  <TableCell className="font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-purple-500" />
+                    Days worked to date
+                  </TableCell>
+                  <TableCell>{daysLoggedToDate} days</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium flex items-center gap-2">
                     <Settings className="h-4 w-4 text-orange-500" />
                     Weekly target
                   </TableCell>
-                  <TableCell>{weeklyTarget} hours ({workingDays} days)</TableCell>
+                  <TableCell>{workingDays} days ({weeklyTarget}h total)</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium flex items-center gap-2">
@@ -144,6 +158,8 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
           </div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };
+
 export default DashboardStats;

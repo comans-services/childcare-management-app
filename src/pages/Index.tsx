@@ -26,11 +26,11 @@ const Dashboard = () => {
   } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
   
   const {
-    // Computed values
-    expectedHoursToDate,
-    hoursLoggedToDate,
+    // Computed values - now days-based
+    expectedDaysToDate,
+    daysLoggedToDate,
     weekProgress,
-    hoursRemaining,
+    daysRemaining,
     projectsChartData,
     customersChartData,
     deadlineMessage,
@@ -102,7 +102,7 @@ const Dashboard = () => {
         allDaysHaveEntries={allDaysHaveEntries}
         isLate={isLate}
         weekProgress={weekProgress}
-        hoursRemaining={hoursRemaining}
+        daysRemaining={daysRemaining}
         caughtUp={caughtUp}
         deadlineMessage={deadlineMessage}
         workingDays={workingDays}
@@ -121,8 +121,8 @@ const Dashboard = () => {
       
       <DashboardStats
         hasEntries={hasEntries}
-        expectedHoursToDate={expectedHoursToDate}
-        hoursLoggedToDate={hoursLoggedToDate}
+        expectedDaysToDate={expectedDaysToDate}
+        daysLoggedToDate={daysLoggedToDate}
         weekProgress={weekProgress}
         completeWeek={completeWeek}
         allDaysHaveEntries={allDaysHaveEntries}

@@ -12,7 +12,7 @@ interface TimesheetReminderProps {
   allDaysHaveEntries: boolean;
   isLate: boolean;
   weekProgress: number;
-  hoursRemaining: number;
+  daysRemaining: number;
   caughtUp: boolean;
   deadlineMessage: string;
   workingDays: number;
@@ -25,7 +25,7 @@ const TimesheetReminder: React.FC<TimesheetReminderProps> = ({
   allDaysHaveEntries,
   isLate,
   weekProgress,
-  hoursRemaining,
+  daysRemaining,
   caughtUp,
   deadlineMessage,
   workingDays,
@@ -99,8 +99,8 @@ const TimesheetReminder: React.FC<TimesheetReminderProps> = ({
           <span className={cardStyle.text}>
             {hasEntries && !completeWeek 
               ? caughtUp
-                ? "Congratulations! You have caught up to your expected hours."
-                : `${hoursRemaining.toFixed(1)} hours remaining to reach your weekly target of ${weeklyTarget} hours`
+                ? "Congratulations! You have caught up to your expected working days."
+                : `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining to reach your weekly target of ${workingDays} days`
               : deadlineMessage}
           </span>
         </div>
@@ -108,7 +108,7 @@ const TimesheetReminder: React.FC<TimesheetReminderProps> = ({
           <div className="flex justify-between text-sm mb-1">
             <span className={cardStyle.text}>This Week's Progress</span>
             <span className={cardStyle.text}>
-              {hasEntries ? `${Math.round(weekProgress)}% Complete (${weeklyTarget}h target)` : "No entries yet"}
+              {hasEntries ? `${Math.round(weekProgress)}% Complete (${workingDays} days target)` : "No entries yet"}
             </span>
           </div>
           <Progress 
