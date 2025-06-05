@@ -1,29 +1,44 @@
+
 import { validateProjectRow, validateCustomerRow, validateContractRow, validateTeamMemberRow } from "@/lib/csv-validation";
 
-export type EntityType = 'projects' | 'customers' | 'contracts' | 'team-members';
+export type EntityType = 'projects' | 'customers' | 'contracts' | 'team-members' | 'internal-projects';
 
 export const ENTITY_LABELS = {
   projects: 'Projects',
   customers: 'Customers', 
   contracts: 'Contracts',
-  'team-members': 'Team Members'
+  'team-members': 'Team Members',
+  'internal-projects': 'Internal Projects'
 };
 
 export const REQUIRED_HEADERS = {
   projects: ['name', 'budget_hours'],
   customers: ['name'],
   contracts: ['name', 'start_date', 'end_date', 'status'],
-  'team-members': ['email', 'password']
+  'team-members': ['email', 'password'],
+  'internal-projects': ['name']
 };
 
 export const VALIDATORS = {
   projects: validateProjectRow,
   customers: validateCustomerRow,
   contracts: validateContractRow,
-  'team-members': validateTeamMemberRow
+  'team-members': validateTeamMemberRow,
+  'internal-projects': validateInternalProjectRow
 };
 
 export const BATCH_SIZE = 50;
+
+// Add validation function for internal projects
+const validateInternalProjectRow = (row: Record<string, string>, rowIndex: number) => {
+  const errors: any[] = [];
+  
+  if (!row.name?.trim()) {
+    errors.push({ row: rowIndex, field: 'name', message: 'Internal project name is required' });
+  }
+  
+  return errors;
+};
 
 export const csvImportConfig = {
   users: {
@@ -202,6 +217,32 @@ export const csvImportConfig = {
       status: 'Optional. Valid values: active, expired, pending_renewal, renewed. Defaults to "active".',
       is_active: 'Optional. Use "true" or "false". Defaults to "true".',
       description: 'Optional. Brief description of the contract.'
+    }
+  },
+  'internal-projects': {
+    requiredColumns: ['name'],
+    optionalColumns: ['description', 'is_active'],
+    columnMappings: {
+      'project_name': 'name',
+      'project_description': 'description',
+      'active': 'is_active'
+    },
+    sampleData: [
+      {
+        name: 'Team Building Initiative',
+        description: 'Quarterly team building activities and events',
+        is_active: 'true'
+      },
+      {
+        name: 'Internal Training Program',
+        description: 'Employee skill development and training sessions',
+        is_active: 'true'
+      }
+    ],
+    validationRules: {
+      name: 'Required. Internal project name must be provided.',
+      description: 'Optional. Brief description of the internal project.',
+      is_active: 'Optional. Use "true" or "false". Defaults to "true".'
     }
   }
 };
