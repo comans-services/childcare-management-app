@@ -207,7 +207,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
             {/* Show pending status for existing weekend entries */}
             {isPendingWeekendEntry && (
-              <Alert variant="secondary" className="mb-4">
+              <Alert className="mb-4">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
                   This weekend entry is currently pending approval.

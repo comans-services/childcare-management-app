@@ -1,13 +1,15 @@
+
 import React from "react";
-import { DashboardStats } from "@/components/dashboard/DashboardStats";
+import DashboardStats from "@/components/dashboard/DashboardStats";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { TimesheetReminder } from "@/components/dashboard/TimesheetReminder";
-import { CompanyNews } from "@/components/dashboard/CompanyNews";
-import { HelpAndSupport } from "@/components/dashboard/HelpAndSupport";
+import TimesheetReminder from "@/components/dashboard/TimesheetReminder";
+import CompanyNews from "@/components/dashboard/CompanyNews";
+import HelpAndSupport from "@/components/dashboard/HelpAndSupport";
 import PendingApprovalsCard from "@/components/admin/PendingApprovalsCard";
 
 const Index = () => {
-  const { dashboardData, isLoading, error } = useDashboardData();
+  const dashboardData = useDashboardData();
+  const { isLoading, hasError } = dashboardData;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -24,9 +26,15 @@ const Index = () => {
 
         {/* Dashboard Stats */}
         <DashboardStats 
-          totalHours={dashboardData.totalHours}
-          totalProjects={dashboardData.totalProjects}
-          daysWorked={dashboardData.daysWorked}
+          hasEntries={dashboardData.hasEntries}
+          expectedDaysToDate={dashboardData.expectedDaysToDate}
+          daysLoggedToDate={dashboardData.daysLoggedToDate}
+          weekProgress={dashboardData.weekProgress}
+          completeWeek={dashboardData.completeWeek}
+          allDaysHaveEntries={dashboardData.allDaysHaveEntries}
+          isTodayComplete={dashboardData.isTodayComplete}
+          workingDays={dashboardData.workingDays}
+          weeklyTarget={dashboardData.weeklyTarget}
           isLoading={isLoading}
         />
 
@@ -49,7 +57,18 @@ const Index = () => {
 
           {/* Timesheet Reminder */}
           <div>
-            <TimesheetReminder />
+            <TimesheetReminder 
+              hasEntries={dashboardData.hasEntries}
+              completeWeek={dashboardData.completeWeek}
+              allDaysHaveEntries={dashboardData.allDaysHaveEntries}
+              isLate={dashboardData.isLate}
+              weekProgress={dashboardData.weekProgress}
+              daysRemaining={dashboardData.daysRemaining}
+              caughtUp={dashboardData.caughtUp}
+              deadlineMessage={dashboardData.deadlineMessage}
+              workingDays={dashboardData.workingDays}
+              weeklyTarget={dashboardData.weeklyTarget}
+            />
           </div>
         </div>
 
