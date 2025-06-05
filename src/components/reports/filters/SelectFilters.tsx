@@ -101,7 +101,7 @@ export const SelectFilters = ({
             <SelectItem value="">All Employees</SelectItem>
             {usersData?.map((user) => (
               <SelectItem key={user.id} value={user.id}>
-                {user.full_name || "Unknown User"}
+                {user.employee_id ? `${user.employee_id} - ${user.full_name || "Unknown User"}` : user.full_name || "Unknown User"}
               </SelectItem>
             ))}
           </SelectContent>

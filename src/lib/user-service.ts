@@ -9,6 +9,7 @@ export interface User {
   email?: string;
   employment_type?: 'full-time' | 'part-time';
   employee_card_id?: string;
+  employee_id?: string;
 }
 
 export interface NewUser extends Omit<User, "id"> {
@@ -43,10 +44,10 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     console.log("Current authenticated user:", authData?.user?.email);
     
-    // Get all profiles from the profiles table including new fields
+    // Get all profiles from the profiles table including new employee_id field
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone, email, employment_type, employee_card_id");
+      .select("id, full_name, role, organization, time_zone, email, employment_type, employee_card_id, employee_id");
     
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -69,6 +70,7 @@ export const fetchUsers = async (): Promise<User[]> => {
         email: authData.user.email,
         employment_type: "full-time" as const,
         employee_card_id: null,
+        employee_id: null,
       };
       
       // Insert the new profile
@@ -146,7 +148,7 @@ export const fetchUsers = async (): Promise<User[]> => {
         }
       }
       
-      console.log("Final profiles data with employment fields:", profilesData);
+      console.log("Final profiles data with employment and employee_id fields:", profilesData);
       return profilesData as User[];
     }
     
@@ -163,7 +165,7 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
     
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone, employment_type, employee_card_id")
+      .select("id, full_name, role, organization, time_zone, employment_type, employee_card_id, employee_id")
       .eq("id", userId)
       .maybeSingle();
     
@@ -190,6 +192,7 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
         email: authData.user.email,
         employment_type: "full-time" as const,
         employee_card_id: null,
+        employee_id: null,
       };
       
       const { data: createdProfile, error: createError } = await supabase
@@ -235,6 +238,7 @@ export const updateUser = async (user: User): Promise<User> => {
         email: user.email,
         employment_type: user.employment_type,
         employee_card_id: user.employee_card_id,
+        employee_id: user.employee_id,
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id)
@@ -285,6 +289,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         email: userData.email,
         employment_type: userData.employment_type || "full-time",
         employee_card_id: userData.employee_card_id,
+        employee_id: userData.employee_id,
         updated_at: new Date().toISOString(),
       }])
       .select();
@@ -308,6 +313,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         email: userData.email,
         employment_type: userData.employment_type || "full-time",
         employee_card_id: userData.employee_card_id,
+        employee_id: userData.employee_id,
       };
       
       console.log("Returning new user:", newUser);

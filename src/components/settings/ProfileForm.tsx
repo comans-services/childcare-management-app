@@ -16,6 +16,7 @@ export interface ProfileFormData {
   preferred_name: string;
   employment_type: "full-time" | "part-time";
   employee_card_id: string;
+  employee_id: string;
 }
 
 interface ProfileFormProps {
@@ -33,6 +34,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
     preferred_name: localStorage.getItem(`preferred-name-${user?.id}`) || "",
     employment_type: profile?.employment_type || "full-time",
     employee_card_id: profile?.employee_card_id || "",
+    employee_id: profile?.employee_id || "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,6 +76,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
         time_zone: formState.time_zone,
         employment_type: formState.employment_type,
         employee_card_id: formState.employee_card_id,
+        employee_id: formState.employee_id,
       });
 
       onProfileUpdate(updatedUser);
@@ -142,19 +145,42 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
               )}
             </div>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="preferred_name">Preferred Name</Label>
-            <Input
-              id="preferred_name"
-              name="preferred_name"
-              value={formState.preferred_name}
-              onChange={handleInputChange}
-              placeholder="How you'd like to be addressed"
-            />
-            <p className="text-sm text-muted-foreground">
-              This will be used in the app interface greeting.
-            </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="employee_id">Employee ID</Label>
+              <Input
+                id="employee_id"
+                name="employee_id"
+                value={formState.employee_id}
+                onChange={handleInputChange}
+                placeholder="e.g., FIN001, EMP-2024-001"
+                disabled={userRole !== 'admin'}
+              />
+              {userRole !== 'admin' ? (
+                <p className="text-sm text-muted-foreground">
+                  Employee ID can only be changed by administrators.
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Employee ID for finance reporting and external systems.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="preferred_name">Preferred Name</Label>
+              <Input
+                id="preferred_name"
+                name="preferred_name"
+                value={formState.preferred_name}
+                onChange={handleInputChange}
+                placeholder="How you'd like to be addressed"
+              />
+              <p className="text-sm text-muted-foreground">
+                This will be used in the app interface greeting.
+              </p>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

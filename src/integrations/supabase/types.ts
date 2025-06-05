@@ -179,6 +179,7 @@ export type Database = {
           created_at: string
           email: string | null
           employee_card_id: string | null
+          employee_id: string | null
           employment_type:
             | Database["public"]["Enums"]["employment_status"]
             | null
@@ -193,6 +194,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           employee_card_id?: string | null
+          employee_id?: string | null
           employment_type?:
             | Database["public"]["Enums"]["employment_status"]
             | null
@@ -207,6 +209,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           employee_card_id?: string | null
+          employee_id?: string | null
           employment_type?:
             | Database["public"]["Enums"]["employment_status"]
             | null
