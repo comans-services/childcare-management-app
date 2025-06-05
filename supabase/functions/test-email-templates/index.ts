@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { Resend } from "npm:resend@2.0.0";
@@ -26,7 +25,10 @@ const serve_handler = async (req: Request): Promise<Response> => {
       { type: 'monthly', subject: 'Monthly Timesheet Review Required' }
     ];
     
-    const emailPromises = templates.map(async (template) => {
+    const results = [];
+    
+    // Send emails sequentially with delays to avoid rate limiting
+    for (const template of templates) {
       try {
         const emailContent = getEmailTemplate(template.type as any);
         
@@ -38,14 +40,16 @@ const serve_handler = async (req: Request): Promise<Response> => {
         });
 
         console.log(`${template.type} template sent successfully:`, emailResponse);
-        return { template: template.type, success: true, id: emailResponse.id };
+        results.push({ template: template.type, success: true, id: emailResponse.id });
+        
+        // Add 1 second delay between emails to respect rate limits
+        await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (emailError: any) {
         console.error(`Failed to send ${template.type} template:`, emailError);
-        return { template: template.type, success: false, error: emailError.message };
+        results.push({ template: template.type, success: false, error: emailError.message });
       }
-    });
+    }
 
-    const results = await Promise.all(emailPromises);
     const successCount = results.filter(result => result.success).length;
     const failureCount = results.filter(result => !result.success).length;
 
