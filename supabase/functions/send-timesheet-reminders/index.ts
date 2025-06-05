@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 interface ReminderRequest {
-  templateType: 'friday' | 'monday' | 'monthly';
+  templateType: 'friday' | 'monday' | 'monthly' | 'monthly-morning' | 'monthly-evening';
   recipientEmails?: string[]; // Optional: specific emails to send to
   weekStartDate?: string; // Optional: specific week (defaults to current week)
 }
@@ -31,6 +31,31 @@ const serve_handler = async (req: Request): Promise<Response> => {
     const { templateType, recipientEmails, weekStartDate }: ReminderRequest = await req.json();
 
     console.log(`Processing ${templateType} timesheet reminder request`);
+
+    // Check if this is a monthly reminder and if it's actually the last day of the month
+    if (templateType.startsWith('monthly')) {
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      
+      // Check if tomorrow is the first day of next month (meaning today is last day of current month)
+      const isLastDayOfMonth = tomorrow.getDate() === 1;
+      
+      if (!isLastDayOfMonth) {
+        console.log('Not the last day of the month, skipping monthly reminder');
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Skipped - not the last day of the month',
+            emailsSent: 0
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          }
+        );
+      }
+    }
 
     let usersToRemind;
 
@@ -61,6 +86,22 @@ const serve_handler = async (req: Request): Promise<Response> => {
 
       usersToRemind = missingUsers || [];
       console.log(`Found ${usersToRemind.length} users with missing timesheet entries`);
+
+      // For evening monthly reminders, only send if users still have missing entries
+      if (templateType === 'monthly-evening' && usersToRemind.length === 0) {
+        console.log('No users with missing entries for evening reminder, skipping');
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'No users require evening timesheet reminders - all timesheets complete',
+            emailsSent: 0
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          }
+        );
+      }
     }
 
     if (usersToRemind.length === 0) {
@@ -133,7 +174,7 @@ const serve_handler = async (req: Request): Promise<Response> => {
   }
 };
 
-function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly') {
+function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly' | 'monthly-morning' | 'monthly-evening') {
   const templates = {
     friday: {
       subject: "Weekend Reminder: Complete Your Timesheet",
@@ -235,7 +276,7 @@ function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly') {
         </html>
       `
     },
-    monthly: {
+    'monthly': {
       subject: "Monthly Timesheet Review Required",
       html: `
         <!DOCTYPE html>
@@ -291,10 +332,124 @@ function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly') {
         </body>
         </html>
       `
+    },
+    'monthly-morning': {
+      subject: "Monthly Timesheet Review Required - Morning Reminder",
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Monthly Timesheet Review - Morning</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="color: #7c3aed; margin-bottom: 20px;">🌅 Monthly Timesheet Review - Morning Reminder</h1>
+            
+            <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 20px 0; text-align: left;">
+              <p style="font-size: 16px; margin-bottom: 15px;">Good morning!</p>
+              
+              <p style="font-size: 16px; margin-bottom: 15px;">
+                Today is the last day of the month, and it's time for our comprehensive timesheet review to ensure all entries are accurate and complete.
+              </p>
+              
+              <div style="background-color: #ede9fe; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #7c3aed;">
+                <p style="margin: 0; font-weight: bold; color: #5b21b6;">
+                  📅 Please review your entire month's timesheet entries for accuracy and completeness before the end of today.
+                </p>
+              </div>
+              
+              <p style="font-size: 16px; margin-bottom: 15px;">
+                This monthly review helps ensure:
+              </p>
+              
+              <ul style="font-size: 16px; margin-bottom: 15px; padding-left: 20px;">
+                <li>Accurate project time allocation</li>
+                <li>Proper billing and payroll processing</li>
+                <li>Compliance with company policies</li>
+                <li>Better project planning for the upcoming month</li>
+              </ul>
+              
+              <div style="text-align: center; margin: 25px 0;">
+                <a href="#" style="background-color: #7c3aed; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                  Review Monthly Timesheet
+                </a>
+              </div>
+              
+              <p style="font-size: 14px; color: #6b7280; margin-top: 20px;">
+                Complete your review today to avoid any delays in processing. Thank you! 🎯
+              </p>
+            </div>
+            
+            <div style="text-align: center; font-size: 12px; color: #9ca3af; margin-top: 20px;">
+              <p>This is an automated monthly reminder from your Timesheet System</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    },
+    'monthly-evening': {
+      subject: "URGENT: Monthly Timesheet Review - Final Reminder",
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Monthly Timesheet Review - Final Reminder</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="color: #dc2626; margin-bottom: 20px;">⚠️ URGENT: Monthly Timesheet Review - Final Reminder</h1>
+            
+            <div style="background-color: white; padding: 25px; border-radius: 8px; margin: 20px 0; text-align: left;">
+              <p style="font-size: 16px; margin-bottom: 15px;">URGENT REMINDER</p>
+              
+              <p style="font-size: 16px; margin-bottom: 15px;">
+                This is the <strong>final reminder</strong> for your monthly timesheet review. Today is the last day of the month, and your timesheet entries are still incomplete.
+              </p>
+              
+              <div style="background-color: #fee2e2; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #dc2626;">
+                <p style="margin: 0; font-weight: bold; color: #991b1b;">
+                  🚨 ACTION REQUIRED: Please complete your monthly timesheet review immediately to avoid processing delays.
+                </p>
+              </div>
+              
+              <p style="font-size: 16px; margin-bottom: 15px;">
+                Incomplete timesheets can affect:
+              </p>
+              
+              <ul style="font-size: 16px; margin-bottom: 15px; padding-left: 20px;">
+                <li><strong>Payroll processing</strong> - Delays in payment</li>
+                <li><strong>Project billing</strong> - Inaccurate client invoicing</li>
+                <li><strong>Compliance</strong> - Company policy violations</li>
+                <li><strong>Team planning</strong> - Resource allocation issues</li>
+              </ul>
+              
+              <div style="text-align: center; margin: 25px 0;">
+                <a href="#" style="background-color: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                  COMPLETE TIMESHEET NOW
+                </a>
+              </div>
+              
+              <p style="font-size: 14px; color: #6b7280; margin-top: 20px;">
+                If you need assistance, please contact your manager or HR immediately. ⏰
+              </p>
+            </div>
+            
+            <div style="text-align: center; font-size: 12px; color: #9ca3af; margin-top: 20px;">
+              <p>This is an automated final reminder from your Timesheet System</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
     }
   };
 
-  return templates[templateType];
+  return templates[templateType] || templates.monthly;
 }
 
 serve(serve_handler);
