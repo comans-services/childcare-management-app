@@ -149,3 +149,6 @@ verify_jwt = false
 
 [functions.send-timesheet-reminders]
 verify_jwt = false
+
+[functions.test-email-templates]
+verify_jwt = false
