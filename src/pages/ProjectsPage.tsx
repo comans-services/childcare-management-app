@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw } from "lucide-react";
+import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw, Building } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Project } from "@/lib/timesheet/types";
@@ -21,6 +22,7 @@ const ProjectsPage = () => {
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showActiveOnly, setShowActiveOnly] = useState(true);
+  const [showInternalOnly, setShowInternalOnly] = useState(false);
 
   const { 
     data: projects = [], 
@@ -28,10 +30,11 @@ const ProjectsPage = () => {
     refetch,
     error
   } = useQuery({
-    queryKey: ["projects", searchTerm, showActiveOnly],
+    queryKey: ["projects", searchTerm, showActiveOnly, showInternalOnly],
     queryFn: () => fetchProjects({ 
       searchTerm: searchTerm.trim() || undefined,
-      activeOnly: showActiveOnly 
+      activeOnly: showActiveOnly,
+      internalOnly: showInternalOnly 
     }),
     enabled: !!user
   });
@@ -93,12 +96,16 @@ const ProjectsPage = () => {
   const calculateProjectStats = () => {
     const totalProjects = projects.length;
     const activeProjects = projects.filter(p => p.is_active).length;
+    const internalProjects = projects.filter(p => p.is_internal).length;
+    const clientProjects = projects.filter(p => !p.is_internal).length;
     const totalBudgetHours = projects.reduce((sum, p) => sum + (p.budget_hours || 0), 0);
     const avgBudgetHours = totalProjects > 0 ? totalBudgetHours / totalProjects : 0;
     
     return {
       totalProjects,
       activeProjects,
+      internalProjects,
+      clientProjects,
       totalBudgetHours,
       avgBudgetHours: Math.round(avgBudgetHours)
     };
@@ -150,14 +157,25 @@ const ProjectsPage = () => {
           />
         </div>
 
-        <Button 
-          variant={showActiveOnly ? "default" : "outline"} 
-          onClick={() => setShowActiveOnly(!showActiveOnly)}
-          className="flex items-center gap-2"
-        >
-          <Filter className="h-4 w-4" />
-          {showActiveOnly ? "Active Only" : "All Projects"}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant={showActiveOnly ? "default" : "outline"} 
+            onClick={() => setShowActiveOnly(!showActiveOnly)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            {showActiveOnly ? "Active Only" : "All Status"}
+          </Button>
+
+          <Button 
+            variant={showInternalOnly ? "default" : "outline"} 
+            onClick={() => setShowInternalOnly(!showInternalOnly)}
+            className="flex items-center gap-2"
+          >
+            <Building className="h-4 w-4" />
+            {showInternalOnly ? "Internal Only" : "All Types"}
+          </Button>
+        </div>
       </div>
 
       {!isLoading && projects.length > 0 && (
@@ -176,12 +194,24 @@ const ProjectsPage = () => {
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Active Projects</CardTitle>
+              <CardTitle className="text-lg">Internal Projects</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.activeProjects}</div>
+              <div className="text-2xl font-bold text-blue-600">{stats.internalProjects}</div>
               <p className="text-sm text-muted-foreground">
-                Currently running
+                Company projects
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Client Projects</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{stats.clientProjects}</div>
+              <p className="text-sm text-muted-foreground">
+                Customer projects
               </p>
             </CardContent>
           </Card>
@@ -194,18 +224,6 @@ const ProjectsPage = () => {
               <div className="text-2xl font-bold">{stats.totalBudgetHours}h</div>
               <p className="text-sm text-muted-foreground">
                 Across all projects
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Avg Budget</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.avgBudgetHours}h</div>
-              <p className="text-sm text-muted-foreground">
-                Per project
               </p>
             </CardContent>
           </Card>

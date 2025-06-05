@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { Project } from "@/lib/timesheet/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +41,7 @@ type FormValues = {
   start_date: string;
   end_date: string;
   customer_id: string;
+  is_internal: boolean;
 };
 
 const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({ 
@@ -55,6 +58,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
     if (existingProject) {
       console.log('Editing project with data:', existingProject);
       console.log('Customer ID from existing project:', existingProject.customer_id);
+      console.log('Is internal from existing project:', existingProject.is_internal);
     }
   }, [existingProject]);
 
@@ -66,6 +70,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
       start_date: existingProject?.start_date || "",
       end_date: existingProject?.end_date || "",
       customer_id: existingProject?.customer_id || "",
+      is_internal: existingProject?.is_internal || false,
     }
   });
 
@@ -73,6 +78,7 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
   useEffect(() => {
     if (isOpen) {
       console.log('Resetting form with customer_id:', existingProject?.customer_id || "");
+      console.log('Resetting form with is_internal:', existingProject?.is_internal || false);
       form.reset({
         name: existingProject?.name || "",
         description: existingProject?.description || "",
@@ -80,9 +86,13 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
         start_date: existingProject?.start_date || "",
         end_date: existingProject?.end_date || "",
         customer_id: existingProject?.customer_id || "",
+        is_internal: existingProject?.is_internal || false,
       });
     }
   }, [form, isOpen, existingProject]);
+
+  // Watch the is_internal field to conditionally show customer selector
+  const isInternal = form.watch("is_internal");
 
   // Create or update project mutation
   const mutation = useMutation({
@@ -95,11 +105,13 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
         budget_hours: formData.budget_hours,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
-        customer_id: formData.customer_id || null,
+        customer_id: formData.is_internal ? null : (formData.customer_id || null),
+        is_internal: formData.is_internal,
         updated_at: new Date().toISOString(),
       };
 
-      console.log('Saving project with customer_id:', formData.customer_id);
+      console.log('Saving project with customer_id:', projectData.customer_id);
+      console.log('Saving project with is_internal:', projectData.is_internal);
       
       // If editing, update existing project
       if (isEditing && existingProject) {
@@ -207,31 +219,56 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
-              name="customer_id"
+              name="is_internal"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer</FormLabel>
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">
+                      Internal Project
+                    </FormLabel>
+                    <FormDescription>
+                      Mark this as an internal company project (no customer assignment required)
+                    </FormDescription>
+                  </div>
                   <FormControl>
-                    <CustomerSelector
-                      selectedCustomerId={field.value}
-                      onSelectCustomer={(customerId) => {
-                        console.log('Customer selected:', customerId);
-                        field.onChange(customerId);
-                      }}
-                      disabled={mutation.isPending}
-                      preventClose={true}
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Assign this project to a customer or create a new one
-                  </FormDescription>
-                  <FormMessage />
                 </FormItem>
               )}
             />
+            
+            {!isInternal && (
+              <FormField
+                control={form.control}
+                name="customer_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer</FormLabel>
+                    <FormControl>
+                      <CustomerSelector
+                        selectedCustomerId={field.value}
+                        onSelectCustomer={(customerId) => {
+                          console.log('Customer selected:', customerId);
+                          field.onChange(customerId);
+                        }}
+                        disabled={mutation.isPending}
+                        preventClose={true}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Assign this project to a customer or create a new one
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             
             <FormField
               control={form.control}

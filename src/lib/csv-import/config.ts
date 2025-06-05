@@ -1,3 +1,4 @@
+
 import { validateProjectRow, validateCustomerRow, validateContractRow, validateTeamMemberRow } from "@/lib/csv-validation";
 
 export type EntityType = 'projects' | 'customers' | 'contracts' | 'team-members';
@@ -132,12 +133,13 @@ export const csvImportConfig = {
   },
   projects: {
     requiredColumns: ['name', 'budget_hours'],
-    optionalColumns: ['description', 'status', 'is_active'],
+    optionalColumns: ['description', 'customer_name', 'is_internal', 'is_active'],
     columnMappings: {
       'project_name': 'name',
       'project_description': 'description',
       'budget': 'budget_hours',
-      'status': 'status',
+      'customer': 'customer_name',
+      'internal': 'is_internal',
       'active': 'is_active'
     },
     sampleData: [
@@ -145,21 +147,24 @@ export const csvImportConfig = {
         name: 'Website Maintenance Project',
         description: 'Monthly website maintenance and updates',
         budget_hours: '100',
-        status: 'active',
+        customer_name: 'Acme Corp',
+        is_internal: 'false',
         is_active: 'true'
       },
       {
-        name: 'IT Support Project',
-        description: 'Technical support services',
+        name: 'Internal Tool Development',
+        description: 'Developing internal productivity tools',
         budget_hours: '200',
-        status: 'active',
+        customer_name: '',
+        is_internal: 'true',
         is_active: 'true'
       }
     ],
     validationRules: {
       name: 'Required. Project name must be provided.',
       budget_hours: 'Required. Budget hours must be provided.',
-      status: 'Optional. Valid values: active, expired, pending_renewal, renewed. Defaults to "active".',
+      customer_name: 'Optional. Customer name for client projects (leave empty for internal projects).',
+      is_internal: 'Optional. Use "true" for internal projects, "false" for client projects. Defaults to "false".',
       is_active: 'Optional. Use "true" or "false". Defaults to "true".',
       description: 'Optional. Brief description of the project.'
     }

@@ -1,4 +1,3 @@
-
 // Define all the shared types for the timesheet functionality
 
 export interface Project {
@@ -10,7 +9,8 @@ export interface Project {
   end_date?: string;
   is_active?: boolean;
   hours_used?: number;  
-  customer_id?: string; 
+  customer_id?: string;
+  is_internal?: boolean;
 }
 
 export interface Contract {

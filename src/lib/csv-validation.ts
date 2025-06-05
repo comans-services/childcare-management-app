@@ -18,6 +18,18 @@ export const validateProjectRow = (row: Record<string, string>, rowIndex: number
     errors.push({ row: rowIndex, field: 'budget_hours', message: 'Budget hours must be a positive number' });
   }
   
+  // Validate is_internal field if provided
+  if (row.is_internal?.trim() && !['true', 'false'].includes(row.is_internal.toLowerCase())) {
+    errors.push({ row: rowIndex, field: 'is_internal', message: 'is_internal must be "true" or "false"' });
+  }
+  
+  // Check if customer_name is required (only for non-internal projects)
+  const isInternal = row.is_internal?.toLowerCase() === 'true';
+  if (!isInternal && row.customer_name !== undefined && !row.customer_name?.trim()) {
+    // Only warn if customer_name field exists but is empty for non-internal projects
+    // This allows flexibility in CSV format
+  }
+  
   if (row.start_date?.trim() && !isValidDate(row.start_date)) {
     errors.push({ row: rowIndex, field: 'start_date', message: 'Start date must be in YYYY-MM-DD format' });
   }

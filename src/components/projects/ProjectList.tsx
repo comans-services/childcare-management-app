@@ -21,7 +21,8 @@ import {
   Building,
   BarChart3,
   Power,
-  PowerOff
+  PowerOff,
+  Home
 } from "lucide-react";
 import { Project } from "@/lib/timesheet/types";
 import { formatDate } from "@/lib/date-utils";
@@ -81,13 +82,24 @@ const ProjectList: React.FC<ProjectListProps> = ({
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg font-semibold">{project.name}</CardTitle>
-                <Badge 
-                  variant="outline" 
-                  className={`${getStatusColor(project.is_active)} flex items-center gap-1`}
-                >
-                  {getStatusIcon(project.is_active)}
-                  {project.is_active ? 'Active' : 'Inactive'}
-                </Badge>
+                <div className="flex flex-col gap-1">
+                  <Badge 
+                    variant="outline" 
+                    className={`${getStatusColor(project.is_active)} flex items-center gap-1`}
+                  >
+                    {getStatusIcon(project.is_active)}
+                    {project.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                  {project.is_internal && (
+                    <Badge 
+                      variant="outline" 
+                      className="bg-blue-100 text-blue-800 border-blue-300 flex items-center gap-1"
+                    >
+                      <Home className="h-3 w-3" />
+                      Internal
+                    </Badge>
+                  )}
+                </div>
               </div>
               {project.description && (
                 <CardDescription className="text-sm">{project.description}</CardDescription>
@@ -116,7 +128,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 </div>
               )}
 
-              {project.customer_id && (
+              {project.customer_id && !project.is_internal && (
                 <div className="flex items-center text-sm text-gray-600">
                   <Building className="h-4 w-4 mr-2" />
                   <span>Customer ID: {project.customer_id}</span>

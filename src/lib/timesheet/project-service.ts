@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "./types";
 import { ProjectWithAssignees } from "../project/assignment-types";
@@ -29,7 +30,7 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
     // Filter projects by the assigned project IDs
     const { data, error } = await supabase
       .from("projects")
-      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id")
+      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id, is_internal")
       .in('id', projectIds)
       .order("is_active", { ascending: false })
       .order("name", { ascending: true });
@@ -60,17 +61,26 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
   }
 };
 
-export const fetchProjects = async (filters?: { searchTerm?: string; activeOnly?: boolean }): Promise<Project[]> => {
+export const fetchProjects = async (filters?: { 
+  searchTerm?: string; 
+  activeOnly?: boolean; 
+  internalOnly?: boolean;
+}): Promise<Project[]> => {
   try {
     console.log("Fetching projects with filters:", filters);
     
     let query = supabase
       .from("projects")
-      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id");
+      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id, is_internal");
 
     // Apply active filter
     if (filters?.activeOnly) {
       query = query.eq("is_active", true);
+    }
+
+    // Apply internal filter
+    if (filters?.internalOnly) {
+      query = query.eq("is_internal", true);
     }
 
     // Apply search filter
@@ -107,14 +117,18 @@ export const fetchProjects = async (filters?: { searchTerm?: string; activeOnly?
   }
 };
 
-export const fetchProjectsWithAssignees = async (filters?: { searchTerm?: string; activeOnly?: boolean }): Promise<ProjectWithAssignees[]> => {
+export const fetchProjectsWithAssignees = async (filters?: { 
+  searchTerm?: string; 
+  activeOnly?: boolean;
+  internalOnly?: boolean;
+}): Promise<ProjectWithAssignees[]> => {
   try {
     console.log("Fetching projects with assignees, filters:", filters);
     
     let query = supabase
       .from("projects")
       .select(`
-        id, name, description, budget_hours, start_date, end_date, is_active, customer_id,
+        id, name, description, budget_hours, start_date, end_date, is_active, customer_id, is_internal,
         project_assignments!inner(
           user:profiles!project_assignments_user_id_fkey(id, full_name, email)
         )
@@ -123,6 +137,11 @@ export const fetchProjectsWithAssignees = async (filters?: { searchTerm?: string
     // Apply active filter
     if (filters?.activeOnly) {
       query = query.eq("is_active", true);
+    }
+
+    // Apply internal filter
+    if (filters?.internalOnly) {
+      query = query.eq("is_internal", true);
     }
 
     // Apply search filter
@@ -160,6 +179,7 @@ export const fetchProjectsWithAssignees = async (filters?: { searchTerm?: string
           end_date: project.end_date,
           is_active: project.is_active,
           customer_id: project.customer_id,
+          is_internal: project.is_internal,
           hours_used: hours,
           assignees: assignees
         };
@@ -186,7 +206,8 @@ export const saveProject = async (projectData: Omit<Project, 'id' | 'hours_used'
         start_date: projectData.start_date,
         end_date: projectData.end_date,
         customer_id: projectData.customer_id,
-        is_active: projectData.is_active ?? true
+        is_active: projectData.is_active ?? true,
+        is_internal: projectData.is_internal ?? false
       }])
       .select()
       .single();

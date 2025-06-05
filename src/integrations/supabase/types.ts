@@ -267,6 +267,7 @@ export type Database = {
           end_date: string | null
           id: string
           is_active: boolean | null
+          is_internal: boolean | null
           name: string
           start_date: string | null
           updated_at: string
@@ -280,6 +281,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          is_internal?: boolean | null
           name: string
           start_date?: string | null
           updated_at?: string
@@ -293,6 +295,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          is_internal?: boolean | null
           name?: string
           start_date?: string | null
           updated_at?: string
