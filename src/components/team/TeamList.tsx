@@ -111,6 +111,7 @@ const TeamList = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Employee ID</TableHead>
                 <TableHead>Employee Card ID</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Employment</TableHead>
@@ -124,6 +125,7 @@ const TeamList = () => {
               {Array(5).fill(null).map((_, index) => (
                 <TableRow key={index}>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
@@ -157,6 +159,7 @@ const TeamList = () => {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>Employee ID</TableHead>
             <TableHead>Employee Card ID</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Employment</TableHead>
@@ -171,6 +174,11 @@ const TeamList = () => {
             users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.full_name || "Not set"}</TableCell>
+                <TableCell>
+                  <span className="text-sm text-gray-600 font-mono">
+                    {user.employee_id || "Not assigned"}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <span className="text-sm text-gray-600 font-mono">
                     {user.employee_card_id || "Not assigned"}
@@ -212,7 +220,7 @@ const TeamList = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8">
+              <TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-8">
                 No team members found. {!isAdmin && "Contact an administrator to add team members."}
               </TableCell>
             </TableRow>
