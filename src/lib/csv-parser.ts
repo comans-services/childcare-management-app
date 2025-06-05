@@ -81,7 +81,7 @@ export const generateCSVTemplate = (entityType: 'projects' | 'customers' | 'cont
     projects: 'name,description,budget_hours,customer_name,is_internal,is_active\n"Website Development","Client website project",120,"Acme Corp",false,true\n"Internal Tool Development","Internal productivity tools",200,"",true,true',
     customers: 'name,email,phone,company\n"John Doe","john@example.com","+1234567890","Acme Corp"',
     contracts: 'name,description,start_date,end_date,status,customer_name\n"Annual Support","24/7 support service",01/01/2024,31/12/2024,"active","Sample Customer"',
-    'team-members': 'full_name,email,employee_card_id,employment_type,role,organization,time_zone,password\n"Jane Smith","jane@company.com","EMP001","full-time","employee","Engineering","America/New_York","TempPass123"'
+    'team-members': 'full_name,email,employee_card_id,employee_id,employment_type,role,organization,time_zone,password\n"Jane Smith","jane@company.com","EMP001","EMP001","full-time","employee","Engineering","America/New_York","TempPass123"\n"John Doe","john@company.com","EMP002","EMP002","part-time","admin","Management","America/Los_Angeles","TempPass456"'
   };
   
   return templates[entityType];

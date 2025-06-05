@@ -1,4 +1,3 @@
-
 import { validateProjectRow, validateCustomerRow, validateContractRow, validateTeamMemberRow } from "@/lib/csv-validation";
 
 export type EntityType = 'projects' | 'customers' | 'contracts' | 'team-members';
@@ -29,7 +28,7 @@ export const BATCH_SIZE = 50;
 export const csvImportConfig = {
   users: {
     requiredColumns: ['email', 'password'],
-    optionalColumns: ['first_name', 'last_name', 'phone_number', 'address', 'city', 'state', 'zip_code', 'country', 'is_active'],
+    optionalColumns: ['first_name', 'last_name', 'phone_number', 'address', 'city', 'state', 'zip_code', 'country', 'is_active', 'employee_id'],
     columnMappings: {
       'user_email': 'email',
       'user_password': 'password',
@@ -41,7 +40,8 @@ export const csvImportConfig = {
       'state': 'state',
       'zip_code': 'zip_code',
       'country': 'country',
-      'active': 'is_active'
+      'active': 'is_active',
+      'employee_id': 'employee_id'
     },
     sampleData: [
       {
@@ -55,7 +55,8 @@ export const csvImportConfig = {
         state: 'CA',
         zip_code: '12345',
         country: 'USA',
-        is_active: 'true'
+        is_active: 'true',
+        employee_id: 'EMP001'
       },
       {
         email: 'jane.smith@example.com',
@@ -68,7 +69,8 @@ export const csvImportConfig = {
         state: 'NY',
         zip_code: '67890',
         country: 'USA',
-        is_active: 'false'
+        is_active: 'false',
+        employee_id: 'EMP002'
       }
     ],
     validationRules: {
@@ -82,7 +84,8 @@ export const csvImportConfig = {
       state: 'Optional. State.',
       zip_code: 'Optional. Zip code.',
       country: 'Optional. Country.',
-      active: 'Optional. Use "true" or "false". Defaults to "true".'
+      active: 'Optional. Use "true" or "false". Defaults to "true".',
+      employee_id: 'Optional. Unique employee identifier.'
     }
   },
   customers: {

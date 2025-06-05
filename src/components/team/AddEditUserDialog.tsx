@@ -41,6 +41,7 @@ const userSchema = z.object({
   time_zone: z.string().optional().nullable(),
   employment_type: z.enum(["full-time", "part-time"]),
   employee_card_id: z.string().optional().nullable(),
+  employee_id: z.string().optional().nullable(),
 });
 
 // Extended schema for new users (with email/password)
@@ -53,6 +54,7 @@ const newUserSchema = z.object({
   time_zone: z.string().optional().nullable(),
   employment_type: z.enum(["full-time", "part-time"]),
   employee_card_id: z.string().optional().nullable(),
+  employee_id: z.string().optional().nullable(),
 });
 
 const AddEditUserDialog = ({
@@ -75,6 +77,7 @@ const AddEditUserDialog = ({
       time_zone: "",
       employment_type: "full-time" as const,
       employee_card_id: "",
+      employee_id: "",
     } : {
       id: user?.id || "",
       full_name: user?.full_name || "",
@@ -83,6 +86,7 @@ const AddEditUserDialog = ({
       time_zone: user?.time_zone || "",
       employment_type: (user?.employment_type as "full-time" | "part-time") || "full-time",
       employee_card_id: user?.employee_card_id || "",
+      employee_id: user?.employee_id || "",
     }
   });
 
@@ -97,6 +101,7 @@ const AddEditUserDialog = ({
         time_zone: "",
         employment_type: "full-time",
         employee_card_id: "",
+        employee_id: "",
       });
     } else if (user) {
       form.reset({
@@ -107,6 +112,7 @@ const AddEditUserDialog = ({
         time_zone: user.time_zone || "",
         employment_type: (user.employment_type as "full-time" | "part-time") || "full-time",
         employee_card_id: user.employee_card_id || "",
+        employee_id: user.employee_id || "",
       });
     }
   }, [user, isNewUser, form]);
@@ -256,6 +262,26 @@ const AddEditUserDialog = ({
 
               <FormField
                 control={form.control}
+                name="employee_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Employee ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value || ""}
+                        placeholder="EMP001"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="time_zone"
                 render={({ field }) => (
                   <FormItem>
@@ -285,25 +311,25 @@ const AddEditUserDialog = ({
                   </FormItem>
                 )}
               />
-            </div>
 
-            <FormField
-              control={form.control}
-              name="organization"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Organization</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value || ""}
-                      placeholder="Organization name"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="organization"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Organization</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value || ""}
+                        placeholder="Organization name"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
