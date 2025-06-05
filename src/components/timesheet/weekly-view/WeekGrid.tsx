@@ -4,7 +4,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import DayColumn from "../DayColumn";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
-import { isToday } from "@/lib/date-utils";
+import { isToday, isWeekend } from "@/lib/date-utils";
+import { useWeekendLock } from "@/hooks/useWeekendLock";
+import { useAuth } from "@/context/AuthContext";
 import {
   Carousel,
   CarouselContent,
@@ -37,6 +39,8 @@ const WeekGrid: React.FC<WeekGridProps> = ({
   viewMode,
 }) => {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { validateWeekendEntry } = useWeekendLock(user?.id);
   
   // If in today mode, only show today's date
   const displayDates = viewMode === "today" 
@@ -45,28 +49,18 @@ const WeekGrid: React.FC<WeekGridProps> = ({
 
   const renderDesktopView = () => (
     <div className={`grid gap-2 w-full overflow-hidden animate-in fade-in-50 ${viewMode === "today" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-7"}`}>
-      {displayDates.map((date, index) => (
-        <div key={date.toISOString()} className="w-full min-w-0 max-w-full">
-          <DayColumn
-            date={date}
-            userId={userId}
-            entries={entries}
-            projects={projects}
-            onEntryChange={onEntryChange}
-            droppableId={index.toString()}
-            onAddEntry={() => onAddEntry(date)}
-            onEditEntry={(entry) => onEditEntry(date, entry)}
-          />
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderMobileView = () => (
-    <Carousel className="w-full max-w-full animate-in fade-in-50">
-      <CarouselContent>
-        {displayDates.map((date, index) => (
-          <CarouselItem key={date.toISOString()} className="basis-full min-w-0">
+      {displayDates.map((date, index) => {
+        const isWeekendDay = isWeekend(date);
+        const weekendValidation = validateWeekendEntry(date);
+        const isWeekendBlocked = isWeekendDay && !weekendValidation.isValid;
+        
+        return (
+          <div 
+            key={date.toISOString()} 
+            className={`w-full min-w-0 max-w-full transition-all duration-200 ${
+              isWeekendBlocked ? 'opacity-75 scale-[0.98]' : ''
+            }`}
+          >
             <DayColumn
               date={date}
               userId={userId}
@@ -77,8 +71,40 @@ const WeekGrid: React.FC<WeekGridProps> = ({
               onAddEntry={() => onAddEntry(date)}
               onEditEntry={(entry) => onEditEntry(date, entry)}
             />
-          </CarouselItem>
-        ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderMobileView = () => (
+    <Carousel className="w-full max-w-full animate-in fade-in-50">
+      <CarouselContent>
+        {displayDates.map((date, index) => {
+          const isWeekendDay = isWeekend(date);
+          const weekendValidation = validateWeekendEntry(date);
+          const isWeekendBlocked = isWeekendDay && !weekendValidation.isValid;
+          
+          return (
+            <CarouselItem 
+              key={date.toISOString()} 
+              className={`basis-full min-w-0 transition-all duration-200 ${
+                isWeekendBlocked ? 'opacity-75' : ''
+              }`}
+            >
+              <DayColumn
+                date={date}
+                userId={userId}
+                entries={entries}
+                projects={projects}
+                onEntryChange={onEntryChange}
+                droppableId={index.toString()}
+                onAddEntry={() => onAddEntry(date)}
+                onEditEntry={(entry) => onEditEntry(date, entry)}
+              />
+            </CarouselItem>
+          );
+        })}
       </CarouselContent>
       <div className="flex justify-center mt-2">
         <CarouselPrevious className="relative static mr-2 translate-y-0 translate-x-0 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />

@@ -8,7 +8,7 @@ import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useAuth } from "@/context/AuthContext";
-import { Calendar, Clock, Target, Calendar as CalendarWeekend } from "lucide-react";
+import { Calendar, Clock, Target, Calendar as CalendarWeekend, CheckCircle, XCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -167,11 +167,17 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
 
         <Separator />
 
-        {/* Weekend Permissions - Only show controls to admins */}
+        {/* Enhanced Weekend Permissions Section */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <CalendarWeekend className="h-4 w-4 text-primary" />
             <span className="font-medium text-sm">Weekend Entries</span>
+            {/* Visual status indicator */}
+            {canLogWeekendHours ? (
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            ) : (
+              <XCircle className="h-4 w-4 text-red-500" />
+            )}
           </div>
           
           {isAdmin ? (
@@ -186,15 +192,31 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
                   disabled={updatingWeekend}
                 />
               </div>
+              
+              {/* Enhanced status display */}
+              <div className={`text-xs p-2 rounded border ${
+                canLogWeekendHours 
+                  ? "text-green-700 bg-green-50 border-green-200" 
+                  : "text-red-700 bg-red-50 border-red-200"
+              }`}>
+                Status: Weekend entries {canLogWeekendHours ? "enabled" : "disabled"}
+              </div>
+              
               {user.role === "admin" && (
-                <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
                   Note: Admins can always log weekend hours regardless of this setting
                 </div>
               )}
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">
-              Weekend entries: {canLogWeekendHours ? "Enabled" : "Disabled"}
+            <div className="space-y-2">
+              <div className={`text-sm p-2 rounded border ${
+                canLogWeekendHours 
+                  ? "text-green-700 bg-green-50 border-green-200" 
+                  : "text-red-700 bg-red-50 border-red-200"
+              }`}>
+                Weekend entries: {canLogWeekendHours ? "Enabled" : "Disabled"}
+              </div>
             </div>
           )}
         </div>

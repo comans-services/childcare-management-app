@@ -6,6 +6,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
+import { useWeekendLock } from "@/hooks/useWeekendLock";
+import { isWeekend } from "@/lib/date-utils";
 import DayHeader from "./day-column/DayHeader";
 import EntryList from "./day-column/EntryList";
 import DeleteConfirmDialog from "./day-column/DeleteConfirmDialog";
@@ -43,6 +45,9 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const weekStart = getWeekStart(date);
   const validation = useWorkingDaysValidation(userId, entries, weekStart);
 
+  // Get weekend lock validation
+  const { validateWeekendEntry } = useWeekendLock(userId);
+
   const formattedColumnDate = formatDate(date);
 
   const dayEntries = entries.filter(entry => {
@@ -68,9 +73,14 @@ const DayColumn: React.FC<DayColumnProps> = ({
     return "bg-violet-500";
   };
 
-  // Check if this day can accept new entries
+  // Check if this day can accept new entries (working days + weekend validation)
   const canAddToThisDay = validation.canAddToDate(date);
   const hasEntries = dayEntries.length > 0;
+  
+  // Weekend-specific validation
+  const isWeekendDay = isWeekend(date);
+  const weekendValidation = validateWeekendEntry(date);
+  const isWeekendBlocked = isWeekendDay && !weekendValidation.isValid;
 
   const handleDeleteClick = (entry: TimesheetEntry) => {
     setEntryToDelete(entry);
@@ -103,7 +113,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
     }
   };
 
-  // Enhanced add entry handler with validation
+  // Enhanced add entry handler with both working days and weekend validation
   const handleAddEntry = () => {
     if (!canAddToThisDay) {
       toast({
@@ -113,8 +123,21 @@ const DayColumn: React.FC<DayColumnProps> = ({
       });
       return;
     }
+
+    if (isWeekendBlocked) {
+      toast({
+        title: "Weekend Entry Blocked",
+        description: weekendValidation.message || "Weekend entries are not allowed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     onAddEntry();
   };
+
+  // Determine if day should be visually blocked
+  const isDayBlocked = (!canAddToThisDay && !hasEntries) || (isWeekendBlocked && !hasEntries);
 
   return (
     <div className="flex flex-col h-full min-w-0 w-full max-w-full">
@@ -122,23 +145,39 @@ const DayColumn: React.FC<DayColumnProps> = ({
       
       <div className={cn(
         "h-full flex-grow overflow-hidden bg-background border border-t-0 rounded-b-md shadow-sm",
-        // Add visual indication for blocked days
-        !canAddToThisDay && !hasEntries && "bg-gray-50 border-dashed opacity-75"
+        // Enhanced visual styling for blocked days
+        isDayBlocked && "bg-gray-50 border-dashed opacity-75",
+        // Special weekend styling when blocked
+        isWeekendBlocked && !hasEntries && "bg-red-50 border-red-200 border-dashed",
+        // Weekend day indicator (subtle for allowed weekend days)
+        isWeekendDay && !isWeekendBlocked && "bg-blue-50"
       )}>
         <ScrollArea className="h-[50vh] md:h-[60vh]">
           <div className="flex flex-col p-2 space-y-2 min-w-0">
             <AddEntryButton 
               onClick={handleAddEntry}
-              disabled={!canAddToThisDay}
+              disabled={isDayBlocked}
               className={cn(
-                !canAddToThisDay && !hasEntries && "opacity-50 cursor-not-allowed"
+                isDayBlocked && "opacity-50 cursor-not-allowed"
               )}
             />
 
-            {/* Show working days limit info for blocked days */}
+            {/* Enhanced status messages for blocked days */}
             {!canAddToThisDay && !hasEntries && (
               <div className="text-xs text-muted-foreground text-center p-2 bg-amber-50 rounded border">
                 Day limit reached
+              </div>
+            )}
+
+            {isWeekendBlocked && !hasEntries && (
+              <div className="text-xs text-red-600 text-center p-2 bg-red-50 rounded border border-red-200">
+                Weekend entries disabled
+              </div>
+            )}
+
+            {isWeekendDay && !isWeekendBlocked && !hasEntries && (
+              <div className="text-xs text-blue-600 text-center p-2 bg-blue-50 rounded border border-blue-200">
+                Weekend day
               </div>
             )}
 
