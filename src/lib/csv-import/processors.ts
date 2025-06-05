@@ -1,5 +1,6 @@
 
 import { parse } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 import { EntityType } from './config';
 
 export const processUsers = (data: any[]): any[] => {
@@ -171,7 +172,7 @@ export const processContracts = (data: any[]): any[] => {
   });
 };
 
-// Main processRow function that routes to appropriate processor
+// Main processRow function that routes to appropriate processor and saves to database
 export const processRow = async (
   row: any, 
   entityType: EntityType, 
@@ -200,10 +201,72 @@ export const processRow = async (
         throw new Error(`Unsupported entity type: ${entityType}`);
     }
 
-    // Here you would typically save the processed data to the database
-    // For now, we'll just return the processed data
-    console.log(`Successfully processed ${entityType} row ${rowIndex}:`, processedData);
-    return processedData;
+    // Save the processed data to the database
+    let savedData;
+    
+    switch (entityType) {
+      case 'contracts':
+        console.log('Saving contract to database:', processedData);
+        const { data: contractData, error: contractError } = await supabase
+          .from('contracts')
+          .insert(processedData)
+          .select()
+          .single();
+        
+        if (contractError) {
+          console.error('Error saving contract:', contractError);
+          throw new Error(`Failed to save contract: ${contractError.message}`);
+        }
+        
+        savedData = contractData;
+        console.log('Contract saved successfully:', savedData);
+        break;
+        
+      case 'customers':
+        console.log('Saving customer to database:', processedData);
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .insert(processedData)
+          .select()
+          .single();
+        
+        if (customerError) {
+          console.error('Error saving customer:', customerError);
+          throw new Error(`Failed to save customer: ${customerError.message}`);
+        }
+        
+        savedData = customerData;
+        console.log('Customer saved successfully:', savedData);
+        break;
+        
+      case 'projects':
+        console.log('Saving project to database:', processedData);
+        const { data: projectData, error: projectError } = await supabase
+          .from('projects')
+          .insert(processedData)
+          .select()
+          .single();
+        
+        if (projectError) {
+          console.error('Error saving project:', projectError);
+          throw new Error(`Failed to save project: ${projectError.message}`);
+        }
+        
+        savedData = projectData;
+        console.log('Project saved successfully:', savedData);
+        break;
+        
+      case 'team-members':
+        // For team members, we would need to handle user creation differently
+        // This is more complex as it involves authentication
+        throw new Error('Team member import not implemented yet');
+        
+      default:
+        throw new Error(`Unsupported entity type for database save: ${entityType}`);
+    }
+
+    console.log(`Successfully processed and saved ${entityType} row ${rowIndex}:`, savedData);
+    return savedData;
     
   } catch (error) {
     console.error(`Error processing ${entityType} row ${rowIndex}:`, error);
