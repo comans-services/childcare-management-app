@@ -1,11 +1,9 @@
-
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from "@/components/ui/table";
 import { ChartContainer } from "@/components/ui/chart";
 import { ResponsiveContainer, RadialBarChart, RadialBar, Legend, Tooltip } from "recharts";
 import { CheckCircle2, Clock, ClipboardCheck, Calendar, TimerIcon, Settings } from "lucide-react";
-
 interface DashboardStatsProps {
   hasEntries: boolean;
   expectedHoursToDate: number;
@@ -17,7 +15,6 @@ interface DashboardStatsProps {
   workingDays: number;
   weeklyTarget: number;
 }
-
 const getColorByPercentage = (percentage: number): string => {
   if (percentage <= 25) {
     return "#ea384c"; // Red for 25% or lower
@@ -27,7 +24,6 @@ const getColorByPercentage = (percentage: number): string => {
     return "#00C49F"; // Green for 100%
   }
 };
-
 const DashboardStats: React.FC<DashboardStatsProps> = ({
   hasEntries,
   expectedHoursToDate,
@@ -37,37 +33,30 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
   allDaysHaveEntries,
   isTodayComplete,
   workingDays,
-  weeklyTarget,
+  weeklyTarget
 }) => {
-  const statsData = [
-    {
-      name: "Week Progress",
-      value: Math.round(weekProgress),
-      icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
-      description: `${Math.round(weekProgress)}% Complete`,
-      color: getColorByPercentage(Math.round(weekProgress))
-    },
-    {
-      name: "Status",
-      value: Math.round(completeWeek ? 100 : weekProgress),
-      icon: <Calendar className="h-5 w-5 text-amber-500" />,
-      description: completeWeek && allDaysHaveEntries ? "Complete" : isTodayComplete ? "In Progress" : "Pending",
-      color: getColorByPercentage(completeWeek ? 100 : Math.round(weekProgress))
-    }
-  ];
-
-  const radialData = statsData.map((item) => ({
+  const statsData = [{
+    name: "Week Progress",
+    value: Math.round(weekProgress),
+    icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
+    description: `${Math.round(weekProgress)}% Complete`,
+    color: getColorByPercentage(Math.round(weekProgress))
+  }, {
+    name: "Status",
+    value: Math.round(completeWeek ? 100 : weekProgress),
+    icon: <Calendar className="h-5 w-5 text-amber-500" />,
+    description: completeWeek && allDaysHaveEntries ? "Complete" : isTodayComplete ? "In Progress" : "Pending",
+    color: getColorByPercentage(completeWeek ? 100 : Math.round(weekProgress))
+  }];
+  const radialData = statsData.map(item => ({
     name: item.name,
     value: item.value,
     fill: item.color
   }));
-
   if (process.env.NODE_ENV !== 'development') {
     return null;
   }
-
-  return (
-    <Card className="mb-4">
+  return <Card className="mb-4">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <TimerIcon className="h-5 w-5 text-blue-500" />
@@ -100,18 +89,12 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-500" />
-                    Expected hours
-                  </TableCell>
-                  <TableCell>{expectedHoursToDate} hours</TableCell>
+                  
+                  
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium flex items-center gap-2">
-                    <ClipboardCheck className="h-4 w-4 text-purple-500" />
-                    Hours logged
-                  </TableCell>
-                  <TableCell>{hoursLoggedToDate} hours</TableCell>
+                  
+                  
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium flex items-center gap-2">
@@ -144,45 +127,23 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
           
           <div className="h-[250px] flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
-              <RadialBarChart 
-                cx="50%" 
-                cy="50%" 
-                innerRadius="30%" 
-                outerRadius="90%" 
-                data={radialData} 
-                startAngle={90} 
-                endAngle={-270}
-                barSize={15}
-              >
-                <RadialBar
-                  background={{fill: "#f5f5f5"}}
-                  dataKey="value"
-                  cornerRadius={15}
-                  label={{
-                    position: 'insideStart',
-                    fill: '#fff',
-                    formatter: (value) => `${value}%`,
-                  }}
-                />
-                <Legend 
-                  iconSize={10}
-                  layout="vertical" 
-                  verticalAlign="middle"
-                  align="right"
-                  wrapperStyle={{
-                    paddingLeft: '10px'
-                  }}
-                />
-                <Tooltip 
-                  formatter={(value) => [`${value}%`, 'Completion']}
-                />
+              <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" data={radialData} startAngle={90} endAngle={-270} barSize={15}>
+                <RadialBar background={{
+                fill: "#f5f5f5"
+              }} dataKey="value" cornerRadius={15} label={{
+                position: 'insideStart',
+                fill: '#fff',
+                formatter: value => `${value}%`
+              }} />
+                <Legend iconSize={10} layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{
+                paddingLeft: '10px'
+              }} />
+                <Tooltip formatter={value => [`${value}%`, 'Completion']} />
               </RadialBarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default DashboardStats;
