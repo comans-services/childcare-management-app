@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isWeekend } from "@/lib/date-utils";
 
-// Server-side weekend validation
+// Server-side weekend validation with admin override
 export const validateWeekendEntry = async (entryDate: string): Promise<{ isValid: boolean; message?: string }> => {
   try {
     const date = new Date(entryDate);
@@ -20,7 +20,7 @@ export const validateWeekendEntry = async (entryDate: string): Promise<{ isValid
       return { isValid: false, message: "Authentication required" };
     }
 
-    // Check if user is admin
+    // Check if user is admin - admins can ALWAYS log weekend entries
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
@@ -32,13 +32,13 @@ export const validateWeekendEntry = async (entryDate: string): Promise<{ isValid
       return { isValid: false, message: "Error validating permissions" };
     }
 
-    // Admins can always log weekend entries
+    // Admin override: admins can always log weekend entries regardless of settings
     if (profile?.role === 'admin') {
       console.log("Admin override: allowing weekend entry");
       return { isValid: true };
     }
 
-    // Check user's weekend permissions
+    // For non-admin users, check their weekend permissions
     const { data: workSchedule, error: scheduleError } = await supabase
       .from("work_schedules")
       .select("allow_weekend_entries")

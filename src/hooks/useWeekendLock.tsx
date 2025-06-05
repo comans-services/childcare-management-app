@@ -85,6 +85,14 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
             if (newData.allow_weekend_entries !== undefined) {
               console.log(`Weekend permission updated to: ${newData.allow_weekend_entries}`);
               setAllowWeekendEntries(newData.allow_weekend_entries);
+              
+              // Show real-time update notification only for current user
+              if (targetUserId === user?.id) {
+                toast({
+                  title: "Weekend Permission Updated",
+                  description: `Weekend entries ${newData.allow_weekend_entries ? 'enabled' : 'disabled'}.`,
+                });
+              }
             }
           }
         }
@@ -95,14 +103,14 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
       console.log(`Cleaning up realtime subscription for user ${targetUserId} weekend permissions`);
       supabase.removeChannel(channel);
     };
-  }, [targetUserId]);
+  }, [targetUserId, user?.id]);
 
   // Check if a date is a weekend entry
   const isWeekendEntry = (date: Date): boolean => {
     return isWeekend(date);
   };
 
-  // Validate if a weekend entry is allowed
+  // Validate if a weekend entry is allowed with admin override
   const validateWeekendEntry = (date: Date): { isValid: boolean; message?: string } => {
     console.log(`Validating weekend entry for date: ${date.toDateString()}`);
     console.log(`Is admin: ${isAdmin}, Allow weekend entries: ${allowWeekendEntries}, Is weekend: ${isWeekend(date)}`);
@@ -112,7 +120,7 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
       return { isValid: true };
     }
 
-    // Admins can always log weekend entries
+    // Admin override: admins can ALWAYS log weekend entries regardless of their settings
     if (isAdmin) {
       console.log("Admin override: allowing weekend entry");
       return { isValid: true };

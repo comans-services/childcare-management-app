@@ -140,6 +140,12 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             <Badge variant={user.role === "admin" ? "default" : "secondary"}>
               {user.role || "employee"}
             </Badge>
+            {/* Admin override indicator */}
+            {user.role === "admin" && (
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                Weekend Override
+              </Badge>
+            )}
           </div>
         </div>
         <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -169,15 +175,22 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
           </div>
           
           {isAdmin ? (
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Allow weekend hour logging
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Allow weekend hour logging
+                </div>
+                <Switch
+                  checked={canLogWeekendHours}
+                  onCheckedChange={handleWeekendToggle}
+                  disabled={updatingWeekend}
+                />
               </div>
-              <Switch
-                checked={canLogWeekendHours}
-                onCheckedChange={handleWeekendToggle}
-                disabled={updatingWeekend}
-              />
+              {user.role === "admin" && (
+                <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                  Note: Admins can always log weekend hours regardless of this setting
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">
