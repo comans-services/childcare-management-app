@@ -72,7 +72,7 @@ export const useWeekendLock = (targetUserId?: string): WeekendLockState => {
       return "Weekend entry (Permitted)";
     }
     
-    return "Weekend entries are restricted for this user";
+    return "Weekend time entries require admin approval. Contact your administrator to enable weekend entries for your account.";
   };
 
   return {

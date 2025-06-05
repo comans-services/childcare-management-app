@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDate, getWeekStart } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
-import { Calendar, AlertTriangle, Lock } from "lucide-react";
+import { Calendar, AlertTriangle, Lock, Shield } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -108,9 +108,9 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     // Check weekend validation for new entries
     if (isNewEntry && isWeekendBlocked) {
       toast({
-        title: "Weekend restriction",
+        title: "Admin Approval Required",
         description: getWeekendMessage(date),
-        variant: "destructive",
+        variant: "default",
       });
       return;
     }
@@ -197,11 +197,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
             </div>
 
-            {/* Weekend Lock Alert */}
+            {/* Weekend Approval Alert */}
             {showWeekendWarning && (
-              <Alert variant="destructive" className="mb-4">
-                <Lock className="h-4 w-4" />
-                <AlertDescription>
+              <Alert className="mb-4 border-orange-200 bg-orange-50">
+                <Shield className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-700">
                   {getWeekendMessage(date)}
                 </AlertDescription>
               </Alert>
