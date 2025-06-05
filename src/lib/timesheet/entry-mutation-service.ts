@@ -1,9 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry } from "./types";
-import { isWeekend } from "@/lib/date-utils";
-import { fetchWorkSchedule } from "@/lib/work-schedule-service";
-import { isAdmin } from "@/utils/roles";
 
 export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
   try {
@@ -16,30 +13,6 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     }
     if (entry.entry_type === 'contract' && !entry.contract_id) {
       throw new Error("Contract ID is required for contract entries");
-    }
-    
-    // Weekend validation for new entries only
-    const entryDate = new Date(entry.entry_date);
-    if (!entry.id && isWeekend(entryDate)) {
-      console.log("Weekend entry detected, checking permissions...");
-      
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error("Authentication required");
-      }
-      
-      // Check if user is admin (admins can always add weekend entries)
-      const isUserAdmin = await isAdmin(user);
-      if (!isUserAdmin) {
-        // Check user's weekend entry permission
-        const workSchedule = await fetchWorkSchedule(user.id);
-        if (!workSchedule?.allow_weekend_entries) {
-          throw new Error("Weekend time entries require admin approval. Contact your administrator to enable weekend entries for your account.");
-        }
-      }
-      
-      console.log("Weekend entry permission granted");
     }
     
     // Create a clean data object for the database operation
