@@ -514,6 +514,21 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_users_missing_timesheet_entries: {
+        Args: { p_week_start_date?: string }
+        Returns: {
+          user_id: string
+          email: string
+          full_name: string
+          organization: string
+          time_zone: string
+          expected_days: number
+          logged_days: number
+          missing_days: number
+          week_start_date: string
+          week_end_date: string
+        }[]
+      }
       is_user_assigned_to_contract: {
         Args: { p_user_id: string; p_contract_id: string }
         Returns: boolean
