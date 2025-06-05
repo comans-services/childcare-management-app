@@ -1,12 +1,17 @@
-import React from "react";
+
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useAuth } from "@/context/AuthContext";
-import { Calendar, Clock, Target } from "lucide-react";
+import { Calendar, Clock, Target, Calendar as CalendarWeekend } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
 
 interface UnifiedUserScheduleCardProps {
@@ -23,15 +28,16 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
   user,
   weekStartDate
 }) => {
-  const {
-    userRole
-  } = useAuth();
+  const { userRole } = useAuth();
   const isAdmin = userRole === "admin";
+  const [updatingWeekend, setUpdatingWeekend] = useState(false);
+
   const {
     workingDays,
     loading: globalLoading,
     error: globalError
   } = useWorkSchedule(user.id);
+
   const {
     effectiveDays,
     effectiveHours,
@@ -43,7 +49,54 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
     isReverting
   } = useSimpleWeeklySchedule(user.id, weekStartDate);
 
-  if (globalLoading || weeklyLoading) {
+  const {
+    canLogWeekendHours,
+    loading: weekendLoading,
+    error: weekendError
+  } = useWeekendLock(user.id);
+
+  const handleWeekendToggle = async (enabled: boolean) => {
+    if (!isAdmin) return;
+    
+    setUpdatingWeekend(true);
+    try {
+      const { error } = await supabase
+        .from("work_schedules")
+        .upsert({
+          user_id: user.id,
+          allow_weekend_entries: enabled,
+          working_days: workingDays,
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) {
+        console.error("Error updating weekend permissions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update weekend permissions. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Weekend Permissions Updated",
+        description: `Weekend entries ${enabled ? 'enabled' : 'disabled'} for ${user.full_name || user.email}.`,
+      });
+    } catch (error) {
+      console.error("Error updating weekend permissions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update weekend permissions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingWeekend(false);
+    }
+  };
+
+  if (globalLoading || weeklyLoading || weekendLoading) {
     return <Card className="hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
           <Skeleton className="h-6 w-48" />
@@ -57,7 +110,8 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
         </CardContent>
       </Card>;
   }
-  if (globalError) {
+
+  if (globalError || weekendError) {
     return <Card className="hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">
@@ -71,6 +125,7 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
         </CardContent>
       </Card>;
   }
+
   return <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
@@ -102,6 +157,33 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
           {isAdmin ? <DayCountSelector currentDays={effectiveDays} hasOverride={hasOverride} onDaysChange={updateWeeklyDays} onRevertToDefault={revertToDefault} isUpdating={isUpdating} isReverting={isReverting} /> : <div className="text-sm text-muted-foreground">
               {effectiveDays} working days this week
             </div>}
+        </div>
+
+        <Separator />
+
+        {/* Weekend Permissions - Only show controls to admins */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <CalendarWeekend className="h-4 w-4 text-primary" />
+            <span className="font-medium text-sm">Weekend Entries</span>
+          </div>
+          
+          {isAdmin ? (
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Allow weekend hour logging
+              </div>
+              <Switch
+                checked={canLogWeekendHours}
+                onCheckedChange={handleWeekendToggle}
+                disabled={updatingWeekend}
+              />
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              Weekend entries: {canLogWeekendHours ? "Enabled" : "Disabled"}
+            </div>
+          )}
         </div>
 
         <Separator />

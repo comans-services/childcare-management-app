@@ -10,14 +10,17 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
-import { formatDate, getWeekStart } from "@/lib/date-utils";
+import { formatDate, getWeekStart, isWeekend } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
 import { Calendar, AlertTriangle } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
+import { useWeekendLock } from "@/hooks/useWeekendLock";
+import { useAuth } from "@/context/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import WeekendApprovalDialog from "./WeekendApprovalDialog";
 
 // Import the components we've created
 import { timeEntryFormSchema, TimeEntryFormValues } from "./time-entry/schema";
@@ -48,11 +51,16 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   onSave,
   entries = [], // Default to empty array
 }) => {
+  const { userRole } = useAuth();
   const [entryType, setEntryType] = useState<"project" | "contract">("project");
+  const [weekendApprovalOpen, setWeekendApprovalOpen] = useState(false);
 
   // Get working days validation
   const weekStart = getWeekStart(date);
   const validation = useWorkingDaysValidation(userId, entries, weekStart);
+
+  // Get weekend lock validation
+  const { validateWeekendEntry } = useWeekendLock(userId);
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
@@ -96,14 +104,27 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const isNewEntry = !existingEntry;
   const showValidationWarning = isNewEntry && !canAddToThisDate;
 
+  // Weekend validation
+  const isWeekendDate = isWeekend(date);
+  const isAdmin = userRole === "admin";
+  const weekendValidation = validateWeekendEntry(date);
+  const canLogWeekend = weekendValidation.isValid;
+  const showWeekendWarning = isWeekendDate && !canLogWeekend && isNewEntry;
+
   const handleSubmit = async (values: TimeEntryFormValues) => {
-    // Check validation for new entries
+    // Check working days validation for new entries
     if (isNewEntry && !canAddToThisDate) {
       toast({
         title: "Cannot add entry",
         description: validation.getValidationMessage(),
         variant: "destructive",
       });
+      return;
+    }
+
+    // Check weekend validation for new entries
+    if (isNewEntry && showWeekendWarning) {
+      setWeekendApprovalOpen(true);
       return;
     }
 
@@ -161,70 +182,106 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     onOpenChange(false);
   };
 
+  // Determine if the save button should be disabled
+  const isSaveDisabled = showValidationWarning || showWeekendWarning;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] p-6">
-        <DialogHeader>
-          <DialogTitle className="text-xl">{existingEntry ? "Edit time entry" : "Add time"}</DialogTitle>
-        </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5 mt-4">
-            <div className="flex items-center mb-4">
-              <div className="bg-primary/10 p-2 rounded-full mr-3">
-                <Calendar className="h-5 w-5 text-primary" />
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px] p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl">{existingEntry ? "Edit time entry" : "Add time"}</DialogTitle>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5 mt-4">
+              <div className="flex items-center mb-4">
+                <div className="bg-primary/10 p-2 rounded-full mr-3">
+                  <Calendar className="h-5 w-5 text-primary" />
+                </div>
+                <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
+                {isWeekendDate && (
+                  <div className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                    Weekend
+                  </div>
+                )}
               </div>
-              <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
-            </div>
 
-            {/* Working Days Validation Alert */}
-            {showValidationWarning && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  {validation.getValidationMessage()}
-                </AlertDescription>
-              </Alert>
-            )}
+              {/* Working Days Validation Alert */}
+              {showValidationWarning && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    {validation.getValidationMessage()}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-            {/* Show validation info for allowed entries */}
-            {!showValidationWarning && validation.daysRemaining > 0 && isNewEntry && (
-              <Alert className="mb-4">
-                <Calendar className="h-4 w-4" />
-                <AlertDescription>
-                  {validation.getValidationMessage()}
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            <EntryTypeSelector control={form.control} />
-            
-            {entryType === "project" ? (
-              <ProjectSelector control={form.control} projects={projects} />
-            ) : (
-              <ContractSelector control={form.control} />
-            )}
-            
-            <TimeInput control={form.control} />
+              {/* Weekend Validation Alert */}
+              {showWeekendWarning && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Weekend entries are not allowed. Please contact your administrator for approval.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-            <TaskDetails control={form.control} />
+              {/* Show validation info for allowed entries */}
+              {!showValidationWarning && !showWeekendWarning && validation.daysRemaining > 0 && isNewEntry && (
+                <Alert className="mb-4">
+                  <Calendar className="h-4 w-4" />
+                  <AlertDescription>
+                    {validation.getValidationMessage()}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-            <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                className="px-6"
-                disabled={showValidationWarning}
-              >
-                Save
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              {/* Show weekend allowed info for admins */}
+              {isWeekendDate && canLogWeekend && isAdmin && (
+                <Alert className="mb-4">
+                  <Calendar className="h-4 w-4" />
+                  <AlertDescription>
+                    Weekend entry allowed (Admin privilege).
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <EntryTypeSelector control={form.control} />
+              
+              {entryType === "project" ? (
+                <ProjectSelector control={form.control} projects={projects} />
+              ) : (
+                <ContractSelector control={form.control} />
+              )}
+              
+              <TimeInput control={form.control} />
+
+              <TaskDetails control={form.control} />
+
+              <DialogFooter className="gap-2">
+                <Button type="button" variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="px-6"
+                  disabled={isSaveDisabled}
+                >
+                  Save
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <WeekendApprovalDialog
+        open={weekendApprovalOpen}
+        onOpenChange={setWeekendApprovalOpen}
+        date={date}
+      />
+    </>
   );
 };
 
