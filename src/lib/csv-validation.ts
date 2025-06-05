@@ -58,14 +58,14 @@ export const validateContractRow = (row: Record<string, string>, rowIndex: numbe
   
   if (!row.start_date?.trim()) {
     errors.push({ row: rowIndex, field: 'start_date', message: 'Start date is required' });
-  } else if (!isValidDate(row.start_date)) {
-    errors.push({ row: rowIndex, field: 'start_date', message: 'Start date must be in YYYY-MM-DD format' });
+  } else if (!isValidDDMMYYYYDate(row.start_date)) {
+    errors.push({ row: rowIndex, field: 'start_date', message: 'Start date must be in DD/MM/YYYY format' });
   }
   
   if (!row.end_date?.trim()) {
     errors.push({ row: rowIndex, field: 'end_date', message: 'End date is required' });
-  } else if (!isValidDate(row.end_date)) {
-    errors.push({ row: rowIndex, field: 'end_date', message: 'End date must be in YYYY-MM-DD format' });
+  } else if (!isValidDDMMYYYYDate(row.end_date)) {
+    errors.push({ row: rowIndex, field: 'end_date', message: 'End date must be in DD/MM/YYYY format' });
   }
   
   if (!row.status?.trim()) {
@@ -74,10 +74,15 @@ export const validateContractRow = (row: Record<string, string>, rowIndex: numbe
     errors.push({ row: rowIndex, field: 'status', message: 'Status must be: active, expired, pending_renewal, or renewed' });
   }
   
+  // Validate date range if both dates are valid
   if (row.start_date?.trim() && row.end_date?.trim() && 
-      isValidDate(row.start_date) && isValidDate(row.end_date) &&
-      new Date(row.start_date) >= new Date(row.end_date)) {
-    errors.push({ row: rowIndex, field: 'end_date', message: 'End date must be after start date' });
+      isValidDDMMYYYYDate(row.start_date) && isValidDDMMYYYYDate(row.end_date)) {
+    const startDate = parseDDMMYYYYDate(row.start_date);
+    const endDate = parseDDMMYYYYDate(row.end_date);
+    
+    if (endDate <= startDate) {
+      errors.push({ row: rowIndex, field: 'end_date', message: 'End date must be after start date' });
+    }
   }
   
   return errors;
@@ -115,6 +120,48 @@ const isValidDate = (dateString: string): boolean => {
   
   const date = new Date(dateString);
   return date instanceof Date && !isNaN(date.getTime()) && dateString === date.toISOString().split('T')[0];
+};
+
+const isValidDDMMYYYYDate = (dateString: string): boolean => {
+  if (!dateString || dateString.trim() === '') return false;
+  
+  const trimmedDate = dateString.trim();
+  
+  // Check if it's already in ISO format (YYYY-MM-DD) - also accept this
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedDate)) {
+    const date = new Date(trimmedDate);
+    return date instanceof Date && !isNaN(date.getTime()) && trimmedDate === date.toISOString().split('T')[0];
+  }
+  
+  // Parse DD/MM/YYYY format
+  const ddmmyyyyMatch = trimmedDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!ddmmyyyyMatch) return false;
+  
+  const [, day, month, year] = ddmmyyyyMatch;
+  
+  // Validate the date
+  const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  return date.getFullYear() === parseInt(year) && 
+         date.getMonth() === parseInt(month) - 1 && 
+         date.getDate() === parseInt(day);
+};
+
+const parseDDMMYYYYDate = (dateString: string): Date => {
+  const trimmedDate = dateString.trim();
+  
+  // If it's already in ISO format, parse directly
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedDate)) {
+    return new Date(trimmedDate);
+  }
+  
+  // Parse DD/MM/YYYY format
+  const ddmmyyyyMatch = trimmedDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const [, day, month, year] = ddmmyyyyMatch;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  
+  throw new Error('Invalid date format');
 };
 
 const isValidEmail = (email: string): boolean => {
