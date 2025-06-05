@@ -57,18 +57,3 @@ export const getWeekStart = (date: Date): Date => {
   const monday = startOfWeek(date, { weekStartsOn: 1 });
   return monday;
 };
-
-/**
- * Checks if a given date is a weekend (Saturday or Sunday)
- */
-export const isWeekend = (date: Date): boolean => {
-  const dayOfWeek = date.getDay();
-  return dayOfWeek === 0 || dayOfWeek === 6; // Sunday = 0, Saturday = 6
-};
-
-/**
- * Gets the day name for a given date
- */
-export const getDayName = (date: Date): string => {
-  return date.toLocaleDateString('en-US', { weekday: 'long' });
-};

@@ -45,21 +45,14 @@ const EntryList: React.FC<EntryListProps> = ({
                   isDragDisabled={!entry.id}
                 >
                   {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className={cn(
-                        snapshot.isDragging && "shadow-lg rotate-2 scale-105"
-                      )}
-                    >
-                      <EntryCard 
-                        entry={entry}
-                        onEditEntry={onEditEntry}
-                        onDeleteEntry={onDeleteEntry}
-                        onEntryChange={onEntryChange}
-                      />
-                    </div>
+                    <EntryCard 
+                      entry={entry}
+                      provided={provided}
+                      snapshot={snapshot}
+                      onEditEntry={onEditEntry}
+                      onDeleteEntry={onDeleteEntry}
+                      onEntryChange={onEntryChange}
+                    />
                   )}
                 </Draggable>
               ))}

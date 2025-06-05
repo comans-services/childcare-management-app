@@ -1,4 +1,3 @@
-
 // Define all the shared types for the timesheet functionality
 
 export interface Project {
@@ -38,12 +37,6 @@ export interface TimesheetEntry {
   // Either project_id OR contract_id will be set, never both
   project_id?: string;
   contract_id?: string;
-  // Approval fields
-  approval_status?: 'pending' | 'approved' | 'rejected';
-  requires_approval?: boolean;
-  approved_by?: string;
-  approved_at?: string;
-  approval_notes?: string;
   // Related data that gets joined
   project?: Project;
   contract?: Contract;

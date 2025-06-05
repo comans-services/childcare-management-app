@@ -54,15 +54,8 @@ const DayColumn: React.FC<DayColumnProps> = ({
     return false;
   });
 
-  // Calculate total hours only from approved entries
   const totalHours = dayEntries.reduce(
-    (sum, entry) => {
-      // Only count approved entries in the total
-      if (entry.approval_status === 'approved' || entry.approval_status === undefined) {
-        return sum + entry.hours_logged;
-      }
-      return sum;
-    },
+    (sum, entry) => sum + entry.hours_logged,
     0
   );
 
@@ -137,7 +130,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
             <AddEntryButton 
               onClick={handleAddEntry}
               disabled={!canAddToThisDay}
-              date={date}
               className={cn(
                 !canAddToThisDay && !hasEntries && "opacity-50 cursor-not-allowed"
               )}

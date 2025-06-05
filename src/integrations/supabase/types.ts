@@ -336,10 +336,6 @@ export type Database = {
       }
       timesheet_entries: {
         Row: {
-          approval_notes: string | null
-          approval_status: string | null
-          approved_at: string | null
-          approved_by: string | null
           contract_id: string | null
           created_at: string
           end_time: string | null
@@ -350,16 +346,11 @@ export type Database = {
           jira_task_id: string | null
           notes: string | null
           project_id: string | null
-          requires_approval: boolean | null
           start_time: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          approval_notes?: string | null
-          approval_status?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
           contract_id?: string | null
           created_at?: string
           end_time?: string | null
@@ -370,16 +361,11 @@ export type Database = {
           jira_task_id?: string | null
           notes?: string | null
           project_id?: string | null
-          requires_approval?: boolean | null
           start_time?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          approval_notes?: string | null
-          approval_status?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
           contract_id?: string | null
           created_at?: string
           end_time?: string | null
@@ -390,7 +376,6 @@ export type Database = {
           jira_task_id?: string | null
           notes?: string | null
           project_id?: string | null
-          requires_approval?: boolean | null
           start_time?: string | null
           updated_at?: string
           user_id?: string
@@ -401,13 +386,6 @@ export type Database = {
             columns: ["contract_id"]
             isOneToOne: false
             referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "timesheet_entries_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -557,10 +535,6 @@ export type Database = {
       }
       is_user_assigned_to_project: {
         Args: { p_user_id: string; p_project_id: string }
-        Returns: boolean
-      }
-      is_weekend_day: {
-        Args: { entry_date: string }
         Returns: boolean
       }
       timesheet_entries_report: {
