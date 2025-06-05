@@ -1,4 +1,3 @@
-
 import { TimesheetEntry, Project } from "./timesheet-service";
 import { Contract } from "./contract-service";
 import { User } from "./user-service";
@@ -53,7 +52,7 @@ const formatReportData = (
     };
 
     const employeeIdData = filters.includeEmployeeIds ? {
-      'User ID': entry.user_id || '-',
+      'Employee ID': employee?.employee_id || '-',
       'Employee Card ID': employee?.employee_card_id || '-'
     } : {};
 
@@ -149,7 +148,7 @@ export const exportToExcel = (
   // Create total row with proper structure matching the conditional columns
   const totalRow: any = { Date: 'TOTAL', Employee: '' };
   if (filters.includeEmployeeIds) {
-    totalRow['User ID'] = '';
+    totalRow['Employee ID'] = '';
     totalRow['Employee Card ID'] = '';
   }
   if (filters.includeProject) {
@@ -223,7 +222,7 @@ export const exportToPDF = (
   // Generate table headers dynamically based on filter settings
   const headerCells = ['Date', 'Employee'];
   if (filters.includeEmployeeIds) {
-    headerCells.push('User ID', 'Employee Card ID');
+    headerCells.push('Employee ID', 'Employee Card ID');
   }
   if (filters.includeProject) {
     headerCells.push('Project');

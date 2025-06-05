@@ -47,7 +47,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
   const baseColumns = 3; // Date, Employee, Hours
   const projectColumns = filters.includeProject ? 1 : 0;
   const contractColumns = filters.includeContract ? 1 : 0;
-  const employeeIdColumns = filters.includeEmployeeIds ? 2 : 0; // User ID, Employee Card ID
+  const employeeIdColumns = filters.includeEmployeeIds ? 2 : 0; // Employee ID, Employee Card ID
   const taskColumns = 2; // Jira Task ID, Notes
   const totalColumns = baseColumns + projectColumns + contractColumns + employeeIdColumns + taskColumns;
 
@@ -59,7 +59,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead>Employee</TableHead>
-              {filters.includeEmployeeIds && <TableHead>User ID</TableHead>}
+              {filters.includeEmployeeIds && <TableHead>Employee ID</TableHead>}
               {filters.includeEmployeeIds && <TableHead>Employee Card ID</TableHead>}
               {filters.includeProject && <TableHead>Project</TableHead>}
               {filters.includeContract && <TableHead>Contract</TableHead>}
@@ -115,7 +115,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead>Employee</TableHead>
-              {filters.includeEmployeeIds && <TableHead>User ID</TableHead>}
+              {filters.includeEmployeeIds && <TableHead>Employee ID</TableHead>}
               {filters.includeEmployeeIds && <TableHead>Employee Card ID</TableHead>}
               {filters.includeProject && <TableHead>Project</TableHead>}
               {filters.includeContract && <TableHead>Contract</TableHead>}
@@ -133,7 +133,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
                 <TableRow key={entry.id}>
                   <TableCell>{formatDateDisplay(new Date(entry.entry_date))}</TableCell>
                   <TableCell>{employee?.full_name || 'Unknown Employee'}</TableCell>
-                  {filters.includeEmployeeIds && <TableCell>{entry.user_id || '-'}</TableCell>}
+                  {filters.includeEmployeeIds && <TableCell>{employee?.employee_id || '-'}</TableCell>}
                   {filters.includeEmployeeIds && <TableCell>{employee?.employee_card_id || '-'}</TableCell>}
                   {filters.includeProject && <TableCell>{project?.name || 'Unknown Project'}</TableCell>}
                   {filters.includeContract && <TableCell>
