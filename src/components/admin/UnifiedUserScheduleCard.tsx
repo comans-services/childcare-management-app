@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Calendar, Clock, Target } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
+
 interface UnifiedUserScheduleCardProps {
   user: {
     id: string;
@@ -17,6 +18,7 @@ interface UnifiedUserScheduleCardProps {
   };
   weekStartDate: Date;
 }
+
 const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
   user,
   weekStartDate
@@ -40,6 +42,7 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
     isUpdating,
     isReverting
   } = useSimpleWeeklySchedule(user.id, weekStartDate);
+
   if (globalLoading || weeklyLoading) {
     return <Card className="hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
@@ -99,8 +102,6 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
           {isAdmin ? <DayCountSelector currentDays={effectiveDays} hasOverride={hasOverride} onDaysChange={updateWeeklyDays} onRevertToDefault={revertToDefault} isUpdating={isUpdating} isReverting={isReverting} /> : <div className="text-sm text-muted-foreground">
               {effectiveDays} working days this week
             </div>}
-          
-          
         </div>
 
         <Separator />
@@ -111,10 +112,11 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             <span className="text-sm font-medium text-muted-foreground">Default Schedule</span>
           </div>
           <div className="text-sm text-muted-foreground">
-            {workingDays} days / {workingDays * 8} hours per week
+            {workingDays} days per week
           </div>
         </div>
       </CardContent>
     </Card>;
 };
+
 export default UnifiedUserScheduleCard;
