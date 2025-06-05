@@ -78,9 +78,9 @@ const parseCSVLine = (line: string): string[] => {
 
 export const generateCSVTemplate = (entityType: 'projects' | 'customers' | 'contracts' | 'team-members'): string => {
   const templates = {
-    projects: 'name,description,budget_hours,start_date,end_date,customer_name\n"Sample Project","Project description",120,2024-01-15,2024-06-15,"Sample Customer"',
+    projects: 'name,description,budget_hours,customer_name,is_internal,is_active\n"Website Development","Client website project",120,"Acme Corp",false,true\n"Internal Tool Development","Internal productivity tools",200,"",true,true',
     customers: 'name,email,phone,company\n"John Doe","john@example.com","+1234567890","Acme Corp"',
-    contracts: 'name,description,start_date,end_date,status,customer_name\n"Annual Support","24/7 support service",2024-01-01,2024-12-31,"active","Sample Customer"',
+    contracts: 'name,description,start_date,end_date,status,customer_name\n"Annual Support","24/7 support service",01/01/2024,31/12/2024,"active","Sample Customer"',
     'team-members': 'full_name,email,employee_card_id,employment_type,role,organization,time_zone,password\n"Jane Smith","jane@company.com","EMP001","full-time","employee","Engineering","America/New_York","TempPass123"'
   };
   

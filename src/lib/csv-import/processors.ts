@@ -67,7 +67,11 @@ export const processProjects = (data: any[]): any[] => {
       const project = {
         name: row.name?.toString().trim(),
         description: row.description?.toString().trim() || '',
-        customer_id: row.customer_id?.toString().trim() || '',
+        budget_hours: parseFloat(row.budget_hours?.toString().trim() || '0'),
+        customer_id: row.customer_id?.toString().trim() || null,
+        is_internal: row.is_internal !== undefined ? 
+          (row.is_internal.toString().toLowerCase() === 'true' || row.is_internal.toString() === '1') : 
+          false,
         is_active: row.is_active !== undefined ? 
           (row.is_active.toString().toLowerCase() === 'true' || row.is_active.toString() === '1') : 
           true
@@ -77,8 +81,14 @@ export const processProjects = (data: any[]): any[] => {
       if (!project.name) {
         throw new Error('Project name is required');
       }
-      if (!project.customer_id) {
-        throw new Error('Customer ID is required');
+      if (!project.budget_hours || project.budget_hours <= 0) {
+        throw new Error('Budget hours must be a positive number');
+      }
+
+      // For external projects (is_internal=false), customer_id should be provided
+      // For internal projects (is_internal=true), customer_id can be null
+      if (!project.is_internal && !project.customer_id) {
+        console.warn(`Project "${project.name}" is external but has no customer_id - this may cause issues`);
       }
 
       console.log(`Processed project ${index + 1}:`, project);

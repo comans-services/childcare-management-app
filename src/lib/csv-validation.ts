@@ -23,11 +23,16 @@ export const validateProjectRow = (row: Record<string, string>, rowIndex: number
     errors.push({ row: rowIndex, field: 'is_internal', message: 'is_internal must be "true" or "false"' });
   }
   
-  // Check if customer_name is required (only for non-internal projects)
+  // Validate is_active field if provided
+  if (row.is_active?.trim() && !['true', 'false'].includes(row.is_active.toLowerCase())) {
+    errors.push({ row: rowIndex, field: 'is_active', message: 'is_active must be "true" or "false"' });
+  }
+  
+  // Check customer_name requirement based on is_internal status
   const isInternal = row.is_internal?.toLowerCase() === 'true';
   if (!isInternal && row.customer_name !== undefined && !row.customer_name?.trim()) {
-    // Only warn if customer_name field exists but is empty for non-internal projects
-    // This allows flexibility in CSV format
+    // For external projects, warn if customer_name is empty (but don't error as it might be optional)
+    console.warn(`Row ${rowIndex}: External project without customer_name`);
   }
   
   if (row.start_date?.trim() && !isValidDate(row.start_date)) {

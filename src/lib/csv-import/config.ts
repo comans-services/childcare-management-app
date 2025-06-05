@@ -144,9 +144,9 @@ export const csvImportConfig = {
     },
     sampleData: [
       {
-        name: 'Website Maintenance Project',
-        description: 'Monthly website maintenance and updates',
-        budget_hours: '100',
+        name: 'Website Development Project',
+        description: 'Client website development and maintenance',
+        budget_hours: '120',
         customer_name: 'Acme Corp',
         is_internal: 'false',
         is_active: 'true'
@@ -162,8 +162,8 @@ export const csvImportConfig = {
     ],
     validationRules: {
       name: 'Required. Project name must be provided.',
-      budget_hours: 'Required. Budget hours must be provided.',
-      customer_name: 'Optional. Customer name for client projects (leave empty for internal projects).',
+      budget_hours: 'Required. Budget hours must be provided as a positive number.',
+      customer_name: 'Optional. Customer name for client projects. Leave empty for internal projects.',
       is_internal: 'Optional. Use "true" for internal projects, "false" for client projects. Defaults to "false".',
       is_active: 'Optional. Use "true" or "false". Defaults to "true".',
       description: 'Optional. Brief description of the project.'
