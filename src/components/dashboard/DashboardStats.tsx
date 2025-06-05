@@ -16,6 +16,7 @@ interface DashboardStatsProps {
   isTodayComplete: boolean;
   workingDays: number;
   weeklyTarget: number;
+  isLoading: boolean;
 }
 
 const getColorByPercentage = (percentage: number): string => {
