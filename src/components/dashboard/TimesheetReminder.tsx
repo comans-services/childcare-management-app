@@ -1,38 +1,34 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle, Clock, CalendarClock, Settings } from "lucide-react";
-
 interface TimesheetReminderProps {
   hasEntries: boolean;
   completeWeek: boolean;
   allDaysHaveEntries: boolean;
   isLate: boolean;
   weekProgress: number;
-  daysRemaining: number;
+  hoursRemaining: number;
   caughtUp: boolean;
   deadlineMessage: string;
   workingDays: number;
   weeklyTarget: number;
 }
-
 const TimesheetReminder: React.FC<TimesheetReminderProps> = ({
   hasEntries,
   completeWeek,
   allDaysHaveEntries,
   isLate,
   weekProgress,
-  daysRemaining,
+  hoursRemaining,
   caughtUp,
   deadlineMessage,
   workingDays,
-  weeklyTarget,
+  weeklyTarget
 }) => {
   const navigate = useNavigate();
-
   const getTimesheetCardStyle = () => {
     if (!hasEntries) {
       return {
@@ -68,73 +64,41 @@ const TimesheetReminder: React.FC<TimesheetReminderProps> = ({
       };
     }
   };
-
   const cardStyle = getTimesheetCardStyle();
-
-  return (
-    <Card className={`${cardStyle.background} ${cardStyle.border}`}>
+  return <Card className={`${cardStyle.background} ${cardStyle.border}`}>
       <CardHeader className="pb-2">
         <CardTitle className={`flex items-center gap-2 ${cardStyle.title}`}>
           <AlertCircle className="h-5 w-5" />
           Weekly Timesheet Reminder
-          <div className="ml-auto flex items-center gap-2 text-sm">
-            <Settings className="h-4 w-4" />
-            {workingDays} days ({weeklyTarget}h/week)
-          </div>
+          
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className={`mb-2 ${cardStyle.text}`}>
-          {!hasEntries 
-            ? `You haven't entered any timesheet data for this week yet. Your current schedule is ${workingDays} working days.`
-            : completeWeek && allDaysHaveEntries
-              ? `Great job! You've completed your timesheet entries for this week (${workingDays} days).`
-              : !allDaysHaveEntries
-                ? `Please ensure you have at least one entry for each of your ${workingDays} working days.`
-                : "All timesheet entries for this week must be completed by Friday 5:00 PM. Data will be processed over the weekend."
-          }
+          {!hasEntries ? `You haven't entered any timesheet data for this week yet. Your current schedule is ${workingDays} working days.` : completeWeek && allDaysHaveEntries ? `Great job! You've completed your timesheet entries for this week (${workingDays} days).` : !allDaysHaveEntries ? `Please ensure you have at least one entry for each of your ${workingDays} working days.` : "All timesheet entries for this week must be completed by Friday 5:00 PM. Data will be processed over the weekend."}
         </div>
         <div className="flex items-center gap-2 text-sm">
           <Clock className={`h-4 w-4 ${cardStyle.text}`} />
           <span className={cardStyle.text}>
-            {hasEntries && !completeWeek 
-              ? caughtUp
-                ? "Congratulations! You have caught up to your expected working days."
-                : `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining to reach your weekly target of ${workingDays} days`
-              : deadlineMessage}
+            {hasEntries && !completeWeek ? caughtUp ? "Congratulations! You have caught up to your expected hours." : `${hoursRemaining.toFixed(1)} hours remaining to reach your weekly target of ${weeklyTarget} hours` : deadlineMessage}
           </span>
         </div>
         <div className="mt-2">
           <div className="flex justify-between text-sm mb-1">
             <span className={cardStyle.text}>This Week's Progress</span>
             <span className={cardStyle.text}>
-              {hasEntries ? `${Math.round(weekProgress)}% Complete (${workingDays} days target)` : "No entries yet"}
+              {hasEntries ? `${Math.round(weekProgress)}% Complete (${weeklyTarget}h target)` : "No entries yet"}
             </span>
           </div>
-          <Progress 
-            value={weekProgress} 
-            className="h-2"
-            indicatorClassName={
-              !hasEntries ? "bg-yellow-500" : 
-              completeWeek && allDaysHaveEntries ? "bg-green-500" : 
-              isLate ? "bg-red-500" : 
-              "bg-amber-500"
-            }
-          />
+          <Progress value={weekProgress} className="h-2" indicatorClassName={!hasEntries ? "bg-yellow-500" : completeWeek && allDaysHaveEntries ? "bg-green-500" : isLate ? "bg-red-500" : "bg-amber-500"} />
         </div>
       </CardContent>
       <CardFooter className="pt-0">
-        <Button 
-          onClick={() => navigate("/timesheet")} 
-          variant="outline" 
-          className={cardStyle.button}
-        >
+        <Button onClick={() => navigate("/timesheet")} variant="outline" className={cardStyle.button}>
           <CalendarClock className="mr-2 h-4 w-4" />
           {hasEntries && completeWeek && allDaysHaveEntries ? "View Timesheet" : "Enter Timesheet"}
         </Button>
       </CardFooter>
-    </Card>
-  );
+    </Card>;
 };
-
 export default TimesheetReminder;
