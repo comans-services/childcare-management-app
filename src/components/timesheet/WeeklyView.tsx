@@ -111,10 +111,14 @@ const WeeklyView: React.FC = () => {
   // Calculate unique days worked (any entry on a day counts as 1 day)
   const uniqueDatesWorked = new Set(
     filteredEntries.map(entry => {
-      if (typeof entry.entry_date === 'string') {
-        return entry.entry_date.substring(0, 10);
+      // Handle both string and Date types properly
+      const entryDate = entry.entry_date;
+      if (typeof entryDate === 'string') {
+        return entryDate.substring(0, 10);
+      } else {
+        // entryDate is a Date object
+        return entryDate.toISOString().substring(0, 10);
       }
-      return entry.entry_date.toISOString().substring(0, 10);
     })
   );
   
