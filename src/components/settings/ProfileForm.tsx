@@ -14,7 +14,6 @@ export interface ProfileFormData {
   organization: string;
   time_zone: string;
   preferred_name: string;
-  employee_id: string;
 }
 
 interface ProfileFormProps {
@@ -30,7 +29,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
     organization: profile?.organization || "",
     time_zone: profile?.time_zone || "",
     preferred_name: localStorage.getItem(`preferred-name-${user?.id}`) || "",
-    employee_id: profile?.employee_id || "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,7 +68,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
         full_name: formState.full_name,
         organization: formState.organization,
         time_zone: formState.time_zone,
-        employee_id: formState.employee_id,
       });
 
       onProfileUpdate(updatedUser);
@@ -137,66 +134,29 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {userRole === 'admin' && (
             <div className="space-y-2">
-              <Label htmlFor="employee_id">Employee ID</Label>
+              <Label htmlFor="role">Role</Label>
               <Input
-                id="employee_id"
-                name="employee_id"
-                value={formState.employee_id}
-                onChange={handleInputChange}
-                placeholder="e.g., FIN001, EMP-2024-001"
-                disabled={userRole !== 'admin'}
-              />
-              {userRole !== 'admin' ? (
-                <p className="text-sm text-muted-foreground">
-                  Employee ID can only be changed by administrators.
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Employee ID for finance reporting and external systems.
-                </p>
-              )}
-            </div>
-
-            {userRole === 'admin' && (
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Input
-                  id="role"
-                  value={userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Employee"}
-                  disabled
-                />
-                <p className="text-sm text-muted-foreground">
-                  Roles are managed by administrators.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="employment_type">Employment Type</Label>
-              <Input
-                id="employment_type"
-                value={profile?.employment_type ? profile.employment_type.charAt(0).toUpperCase() + profile.employment_type.slice(1) : "Full-time"}
+                id="role"
+                value={userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Employee"}
                 disabled
               />
               <p className="text-sm text-muted-foreground">
-                Employment type can only be changed by administrators in the Team page.
+                Roles are managed by administrators.
               </p>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="organization">Organization</Label>
-              <Input
-                id="organization"
-                name="organization"
-                value={formState.organization}
-                onChange={handleInputChange}
-                placeholder="Your organization"
-              />
-            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="organization">Organization</Label>
+            <Input
+              id="organization"
+              name="organization"
+              value={formState.organization}
+              onChange={handleInputChange}
+              placeholder="Your organization"
+            />
           </div>
           
           <div className="space-y-2">
