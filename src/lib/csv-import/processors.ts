@@ -1,4 +1,3 @@
-
 import { parse } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { EntityType } from './config';
@@ -41,11 +40,9 @@ export const processCustomers = (data: any[]): any[] => {
     try {
       const customer = {
         name: row.name?.toString().trim(),
-        industry: row.industry?.toString().trim() || '',
-        website: row.website?.toString().trim() || '',
-        contact_name: row.contact_name?.toString().trim() || '',
-        contact_email: row.contact_email?.toString().trim() || '',
-        contact_phone: row.contact_phone?.toString().trim() || ''
+        email: row.email?.toString().trim() || row.contact_email?.toString().trim() || '',
+        phone: row.phone?.toString().trim() || row.contact_phone?.toString().trim() || '',
+        company: row.company?.toString().trim() || ''
       };
 
       // Validate required fields
