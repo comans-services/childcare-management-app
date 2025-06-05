@@ -100,27 +100,17 @@ const WeeklyView: React.FC = () => {
   // Filter entries based on the view mode
   const filteredEntries = viewMode === "today" 
     ? entries.filter(entry => {
-        if (typeof entry.entry_date === 'string') {
-          const entryDate = entry.entry_date.substring(0, 10);
-          return entryDate === new Date().toISOString().substring(0, 10);
-        }
-        return false;
+        const entryDateString = String(entry.entry_date).substring(0, 10);
+        return entryDateString === new Date().toISOString().substring(0, 10);
       })
     : entries;
 
   // Calculate unique days worked (any entry on a day counts as 1 day)
   const uniqueDatesWorked = new Set(
     filteredEntries.map(entry => {
-      // Handle both string and Date types properly with explicit type checking
-      const entryDate = entry.entry_date;
-      if (typeof entryDate === 'string') {
-        return entryDate.substring(0, 10);
-      } else if (entryDate instanceof Date) {
-        return entryDate.toISOString().substring(0, 10);
-      } else {
-        // Fallback for any other type - convert to string and extract date part
-        return String(entryDate).substring(0, 10);
-      }
+      // Since entry_date is typed as string, treat it as such with a fallback
+      const entryDateString = String(entry.entry_date);
+      return entryDateString.substring(0, 10);
     })
   );
   
