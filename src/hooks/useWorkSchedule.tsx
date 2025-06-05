@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchWorkSchedule, upsertWorkSchedule, updateWeekendEntryPermission, migrateLocalStorageToDatabase, getDefaultWorkingDays } from "@/lib/work-schedule-service";
+import { fetchWorkSchedule, upsertWorkSchedule, migrateLocalStorageToDatabase, getDefaultWorkingDays } from "@/lib/work-schedule-service";
 import { toast } from "@/hooks/use-toast";
 
 export const useWorkSchedule = (userId?: string) => {
@@ -10,7 +10,6 @@ export const useWorkSchedule = (userId?: string) => {
   const targetUserId = userId || user?.id;
   
   const [workingDays, setWorkingDays] = useState<number>(5); // Default to 5 days
-  const [allowWeekendEntries, setAllowWeekendEntries] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,8 +34,7 @@ export const useWorkSchedule = (userId?: string) => {
       
       if (schedule) {
         setWorkingDays(schedule.working_days);
-        setAllowWeekendEntries(schedule.allow_weekend_entries || false);
-        console.log(`Loaded work schedule from database: ${schedule.working_days} days, weekend entries: ${schedule.allow_weekend_entries} for user ${targetUserId}`);
+        console.log(`Loaded work schedule from database: ${schedule.working_days} days for user ${targetUserId}`);
       } else {
         // Get default based on employment type
         const defaultDays = await getDefaultWorkingDays(targetUserId);
@@ -50,7 +48,6 @@ export const useWorkSchedule = (userId?: string) => {
         const fallbackDays = saved && !isNaN(parseInt(saved)) ? parseInt(saved) : defaultDays;
         
         setWorkingDays(fallbackDays);
-        setAllowWeekendEntries(false); // Default to false for new users
         console.log(`Using ${saved ? 'localStorage' : 'employment type default'} work schedule: ${fallbackDays} days for user ${targetUserId}`);
         
         // Try to save the fallback to database
@@ -73,10 +70,8 @@ export const useWorkSchedule = (userId?: string) => {
         
         const saved = localStorage.getItem(localStorageKey);
         setWorkingDays(saved && !isNaN(parseInt(saved)) ? parseInt(saved) : defaultDays);
-        setAllowWeekendEntries(false);
       } catch {
         setWorkingDays(5); // Final fallback
-        setAllowWeekendEntries(false);
       }
     } finally {
       setLoading(false);
@@ -132,43 +127,6 @@ export const useWorkSchedule = (userId?: string) => {
     }
   };
 
-  // Update weekend entry permission
-  const updateWeekendPermission = async (allowed: boolean) => {
-    if (!targetUserId) {
-      console.error("No user ID available for updating weekend permission");
-      return;
-    }
-
-    try {
-      console.log(`Updating weekend entry permission for user ${targetUserId}: ${allowed}`);
-      
-      // Update database
-      await updateWeekendEntryPermission(targetUserId, allowed);
-      
-      // Update local state
-      setAllowWeekendEntries(allowed);
-      
-      console.log(`Weekend entry permission updated successfully: ${allowed} for user ${targetUserId}`);
-      
-      // Show success message only for the current user
-      if (targetUserId === user?.id) {
-        toast({
-          title: "Weekend Permission Updated",
-          description: `Weekend time entry has been ${allowed ? 'enabled' : 'disabled'}.`,
-        });
-      }
-    } catch (err) {
-      console.error("Error updating weekend permission:", err);
-      setError("Failed to update weekend permission");
-      
-      toast({
-        title: "Error",
-        description: "Failed to update weekend permission. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Load work schedule on mount and when user changes
   useEffect(() => {
     loadWorkSchedule();
@@ -195,8 +153,6 @@ export const useWorkSchedule = (userId?: string) => {
           
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const newWorkingDays = payload.new?.working_days;
-            const newAllowWeekendEntries = payload.new?.allow_weekend_entries;
-            
             if (typeof newWorkingDays === 'number') {
               setWorkingDays(newWorkingDays);
               console.log(`Realtime update: work schedule changed to ${newWorkingDays} days`);
@@ -206,19 +162,14 @@ export const useWorkSchedule = (userId?: string) => {
                 ? "timesheet-working-days" 
                 : `timesheet-working-days-${targetUserId}`;
               localStorage.setItem(localStorageKey, newWorkingDays.toString());
-            }
-            
-            if (typeof newAllowWeekendEntries === 'boolean') {
-              setAllowWeekendEntries(newAllowWeekendEntries);
-              console.log(`Realtime update: weekend entries permission changed to ${newAllowWeekendEntries}`);
-            }
-            
-            // Show notification only for the current user
-            if (targetUserId === user?.id) {
-              toast({
-                title: "Work Schedule Updated",
-                description: `Your work schedule has been updated.`,
-              });
+              
+              // Show notification only for the current user
+              if (targetUserId === user?.id) {
+                toast({
+                  title: "Work Schedule Updated",
+                  description: `Your work schedule has been updated to ${newWorkingDays} days per week.`,
+                });
+              }
             }
           }
         }
@@ -233,10 +184,8 @@ export const useWorkSchedule = (userId?: string) => {
 
   return {
     workingDays,
-    allowWeekendEntries,
     weeklyTarget,
     updateWorkingDays,
-    updateWeekendPermission,
     loading,
     error,
     reload: loadWorkSchedule,

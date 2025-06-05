@@ -29,9 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDateDisplay, formatDate, getHoursDifference } from "@/lib/date-utils";
-import { useWeekendLock } from "@/hooks/useWeekendLock";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Clock, Lock } from "lucide-react";
+import { Clock } from "lucide-react";
 
 interface EntryFormProps {
   userId: string;
@@ -57,10 +55,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
   const [useTimeRange, setUseTimeRange] = useState(
     !!(existingEntry?.start_time && existingEntry?.end_time)
   );
-
-  // Add weekend lock validation
-  const { isWeekendLocked, getWeekendMessage } = useWeekendLock(userId);
-  const isWeekendBlocked = isWeekendLocked(date);
 
   const getDefaultProjectId = () => {
     if (existingEntry?.project_id) return existingEntry.project_id;
@@ -171,16 +165,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
     start_time: string;
     end_time: string;
   }) => {
-    // Check weekend validation first
-    if (isWeekendBlocked) {
-      toast({
-        title: "Weekend Entry Blocked",
-        description: getWeekendMessage(date),
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!values.project_id) {
       toast({
         title: "Error",
@@ -234,44 +218,22 @@ const EntryForm: React.FC<EntryFormProps> = ({
       onSave(savedEntry);
     } catch (error) {
       console.error("Error saving entry:", error);
-      
-      // Check if it's a weekend validation error
-      if (error instanceof Error && error.message.includes("Weekend time entries require admin approval")) {
-        toast({
-          title: "Weekend Entry Blocked",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: `Failed to ${existingEntry ? "update" : "create"} time entry. Please try again.`,
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: `Failed to ${existingEntry ? "update" : "create"} time entry. Please try again.`,
+        variant: "destructive",
+      });
       onSave();
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const isFormDisabled = isWeekendBlocked;
-
   return (
     <div className="entry-form-container overflow-y-auto p-2 md:p-4 max-h-[70vh] animate-in fade-in-50 duration-200">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="font-medium text-lg">{formatDateDisplay(date)}</div>
-          
-          {/* Weekend Warning */}
-          {isWeekendBlocked && (
-            <Alert className="mb-4 border-red-200 bg-red-50">
-              <Lock className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-700">
-                {getWeekendMessage(date)}
-              </AlertDescription>
-            </Alert>
-          )}
           
           {projects.length === 0 ? (
             <div className="text-amber-600 p-2 border rounded bg-amber-50">
@@ -287,7 +249,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                   <Select
                     defaultValue={field.value}
                     onValueChange={field.onChange}
-                    disabled={isSubmitting || isFormDisabled}
+                    disabled={isSubmitting}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary/20 whitespace-normal break-words">
@@ -316,7 +278,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
             <Switch
               checked={useTimeRange}
               onCheckedChange={(checked) => setUseTimeRange(checked)}
-              disabled={isSubmitting || projects.length === 0 || isFormDisabled}
+              disabled={isSubmitting || projects.length === 0}
               id="use-time-range"
             />
             <FormLabel htmlFor="use-time-range" className="cursor-pointer text-sm m-0">
@@ -581,7 +543,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
           <div className="flex flex-col justify-end space-y-2 pt-4 sticky bottom-0 bg-background pb-2">
             <Button 
               type="submit" 
-              disabled={isSubmitting || projects.length === 0 || isFormDisabled}
+              disabled={isSubmitting || projects.length === 0}
               className="transition-all duration-200 hover:scale-[1.02]"
               size="sm"
             >

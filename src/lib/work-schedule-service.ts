@@ -1,10 +1,10 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface WorkSchedule {
   id: string;
   user_id: string;
   working_days: number;
-  allow_weekend_entries: boolean;
   created_at: string;
   updated_at: string;
   created_by?: string;
@@ -64,34 +64,23 @@ export const getDefaultWorkingDays = async (userId: string): Promise<number> => 
   }
 };
 
-export const upsertWorkSchedule = async (
-  userId: string, 
-  workingDays: number, 
-  allowWeekendEntries?: boolean
-): Promise<WorkSchedule | null> => {
+export const upsertWorkSchedule = async (userId: string, workingDays: number): Promise<WorkSchedule | null> => {
   try {
-    console.log(`Upserting work schedule for user ${userId}: ${workingDays} days, weekend entries: ${allowWeekendEntries}`);
+    console.log(`Upserting work schedule for user ${userId}: ${workingDays} days`);
     
     const currentUser = (await supabase.auth.getUser()).data.user;
     if (!currentUser) {
       throw new Error("No authenticated user");
     }
 
-    const updateData: any = {
-      user_id: userId,
-      working_days: workingDays,
-      created_by: currentUser.id,
-      updated_at: new Date().toISOString()
-    };
-
-    // Only include allow_weekend_entries if it's explicitly provided
-    if (allowWeekendEntries !== undefined) {
-      updateData.allow_weekend_entries = allowWeekendEntries;
-    }
-
     const { data, error } = await supabase
       .from("work_schedules")
-      .upsert(updateData, {
+      .upsert({
+        user_id: userId,
+        working_days: workingDays,
+        created_by: currentUser.id,
+        updated_at: new Date().toISOString()
+      }, {
         onConflict: "user_id"
       })
       .select()
@@ -106,44 +95,6 @@ export const upsertWorkSchedule = async (
     return data;
   } catch (error) {
     console.error("Error in upsertWorkSchedule:", error);
-    throw error;
-  }
-};
-
-export const updateWeekendEntryPermission = async (
-  userId: string, 
-  allowWeekendEntries: boolean
-): Promise<WorkSchedule | null> => {
-  try {
-    console.log(`Updating weekend entry permission for user ${userId}: ${allowWeekendEntries}`);
-    
-    const currentUser = (await supabase.auth.getUser()).data.user;
-    if (!currentUser) {
-      throw new Error("No authenticated user");
-    }
-
-    const { data, error } = await supabase
-      .from("work_schedules")
-      .upsert({
-        user_id: userId,
-        allow_weekend_entries: allowWeekendEntries,
-        created_by: currentUser.id,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: "user_id"
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error updating weekend entry permission:", error);
-      throw error;
-    }
-
-    console.log(`Weekend entry permission updated successfully:`, data);
-    return data;
-  } catch (error) {
-    console.error("Error in updateWeekendEntryPermission:", error);
     throw error;
   }
 };

@@ -12,12 +12,11 @@ import { Button } from "@/components/ui/button";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDate, getWeekStart } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
-import { Calendar, AlertTriangle, Lock, Shield } from "lucide-react";
+import { Calendar, AlertTriangle } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
-import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Import the components we've created
@@ -54,9 +53,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   // Get working days validation
   const weekStart = getWeekStart(date);
   const validation = useWorkingDaysValidation(userId, entries, weekStart);
-
-  // Get weekend lock status - now includes per-user permission checking
-  const { isWeekendLocked, getWeekendMessage } = useWeekendLock(userId);
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
@@ -97,25 +93,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
   // Check if this date can accept new entries
   const canAddToThisDate = validation.canAddToDate(date);
-  const isWeekendBlocked = isWeekendLocked(date);
   const isNewEntry = !existingEntry;
-  
-  // Show validation warning for ANY entry that is blocked (both new and existing)
-  const showWorkingDaysWarning = isNewEntry && !canAddToThisDate;
-  const showWeekendWarning = isWeekendBlocked; // Remove isNewEntry condition - block all weekend operations
+  const showValidationWarning = isNewEntry && !canAddToThisDate;
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
-    // Check weekend validation for ALL entries (both new and existing)
-    if (isWeekendBlocked) {
-      toast({
-        title: "Weekend Entry Blocked",
-        description: getWeekendMessage(date),
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check working days validation for new entries
+    // Check validation for new entries
     if (isNewEntry && !canAddToThisDate) {
       toast({
         title: "Cannot add entry",
@@ -166,21 +148,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
       onOpenChange(false);
     } catch (error) {
       console.error("Error saving entry:", error);
-      
-      // Check if it's a weekend validation error
-      if (error instanceof Error && error.message.includes("Weekend time entries require admin approval")) {
-        toast({
-          title: "Weekend Entry Blocked",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to save your entry.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: "Failed to save your entry.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -188,8 +160,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     form.reset();
     onOpenChange(false);
   };
-
-  const isFormDisabled = showWorkingDaysWarning || showWeekendWarning;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -207,18 +177,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
             </div>
 
-            {/* Weekend Approval Alert - now shows for ALL weekend operations */}
-            {showWeekendWarning && (
-              <Alert className="mb-4 border-red-200 bg-red-50">
-                <Lock className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-700">
-                  {getWeekendMessage(date)}
-                </AlertDescription>
-              </Alert>
-            )}
-
             {/* Working Days Validation Alert */}
-            {showWorkingDaysWarning && !showWeekendWarning && (
+            {showValidationWarning && (
               <Alert variant="destructive" className="mb-4">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
@@ -228,7 +188,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
             )}
 
             {/* Show validation info for allowed entries */}
-            {!isFormDisabled && validation.daysRemaining > 0 && isNewEntry && (
+            {!showValidationWarning && validation.daysRemaining > 0 && isNewEntry && (
               <Alert className="mb-4">
                 <Calendar className="h-4 w-4" />
                 <AlertDescription>
@@ -256,7 +216,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               <Button 
                 type="submit" 
                 className="px-6"
-                disabled={isFormDisabled}
+                disabled={showValidationWarning}
               >
                 Save
               </Button>
