@@ -465,6 +465,7 @@ export type Database = {
       }
       work_schedules: {
         Row: {
+          allow_weekend_entries: boolean
           created_at: string
           created_by: string | null
           id: string
@@ -473,6 +474,7 @@ export type Database = {
           working_days: number
         }
         Insert: {
+          allow_weekend_entries?: boolean
           created_at?: string
           created_by?: string | null
           id?: string
@@ -481,6 +483,7 @@ export type Database = {
           working_days?: number
         }
         Update: {
+          allow_weekend_entries?: boolean
           created_at?: string
           created_by?: string | null
           id?: string
@@ -535,6 +538,10 @@ export type Database = {
       }
       is_user_assigned_to_project: {
         Args: { p_user_id: string; p_project_id: string }
+        Returns: boolean
+      }
+      is_weekend_day: {
+        Args: { entry_date: string }
         Returns: boolean
       }
       timesheet_entries_report: {

@@ -1,3 +1,4 @@
+
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay } from "date-fns";
 
 export const formatDate = (date: Date): string => {
@@ -31,6 +32,12 @@ export const getPreviousWeek = (currentDate: Date): Date => {
 
 export const isToday = (date: Date): boolean => {
   return isSameDay(date, new Date());
+};
+
+// Check if a date falls on weekend (Saturday or Sunday)
+export const isWeekend = (date: Date): boolean => {
+  const dayOfWeek = date.getDay();
+  return dayOfWeek === 0 || dayOfWeek === 6; // Sunday = 0, Saturday = 6
 };
 
 // Helper function to format time (for timer display)
