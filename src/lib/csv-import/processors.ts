@@ -169,33 +169,6 @@ export const processContracts = (data: any[]): any[] => {
   });
 };
 
-export const processInternalProjects = (data: any[]): any[] => {
-  console.log("Processing internal projects data:", data);
-
-  return data.map((row, index) => {
-    try {
-      const internalProject = {
-        name: row.name?.toString().trim(),
-        description: row.description?.toString().trim() || '',
-        is_active: row.is_active !== undefined ? 
-          (row.is_active.toString().toLowerCase() === 'true' || row.is_active.toString() === '1') : 
-          true
-      };
-
-      // Validate required fields
-      if (!internalProject.name) {
-        throw new Error('Internal project name is required');
-      }
-
-      console.log(`Processed internal project ${index + 1}:`, internalProject);
-      return internalProject;
-    } catch (error) {
-      console.error(`Error processing internal project row ${index + 1}:`, error);
-      throw new Error(`Row ${index + 1}: ${error.message}`);
-    }
-  });
-};
-
 // Main processRow function that routes to appropriate processor and saves to database
 export const processRow = async (
   row: any, 
@@ -220,9 +193,6 @@ export const processRow = async (
         break;
       case 'team-members':
         processedData = processUsers([row])[0];
-        break;
-      case 'internal-projects':
-        processedData = processInternalProjects([row])[0];
         break;
       default:
         throw new Error(`Unsupported entity type: ${entityType}`);
@@ -281,23 +251,6 @@ export const processRow = async (
         
         savedData = projectData;
         console.log('Project saved successfully:', savedData);
-        break;
-
-      case 'internal-projects':
-        console.log('Saving internal project to database:', processedData);
-        const { data: internalProjectData, error: internalProjectError } = await supabase
-          .from('internal_projects')
-          .insert(processedData)
-          .select()
-          .single();
-        
-        if (internalProjectError) {
-          console.error('Error saving internal project:', internalProjectError);
-          throw new Error(`Failed to save internal project: ${internalProjectError.message}`);
-        }
-        
-        savedData = internalProjectData;
-        console.log('Internal project saved successfully:', savedData);
         break;
         
       case 'team-members':

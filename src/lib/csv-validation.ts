@@ -1,3 +1,4 @@
+
 export interface ValidationError {
   row: number;
   field: string;
@@ -108,16 +109,6 @@ export const validateTeamMemberRow = (row: Record<string, string>, rowIndex: num
   
   if (row.role?.trim() && !['admin', 'employee'].includes(row.role)) {
     errors.push({ row: rowIndex, field: 'role', message: 'Role must be: admin or employee' });
-  }
-  
-  return errors;
-};
-
-export const validateInternalProjectRow = (row: Record<string, string>, rowIndex: number): ValidationError[] => {
-  const errors: ValidationError[] = [];
-  
-  if (!row.name?.trim()) {
-    errors.push({ row: rowIndex, field: 'name', message: 'Internal project name is required' });
   }
   
   return errors;

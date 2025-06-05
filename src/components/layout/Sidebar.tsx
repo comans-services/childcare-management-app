@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
-import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, UserPlus, Clock, Folder } from "lucide-react";
+import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, UserPlus, Clock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -53,10 +53,6 @@ const SidebarContent = () => {
             <Link to="/projects" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
               <FolderKanban className="h-5 w-5" />
               <span>Projects</span>
-            </Link>
-            <Link to="/internal-projects" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
-              <Folder className="h-5 w-5" />
-              <span>Internal Projects</span>
             </Link>
             <Link to="/customers" className="flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2">
               <Users className="h-5 w-5" />

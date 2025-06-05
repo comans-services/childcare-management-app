@@ -12,7 +12,6 @@ import AuthPage from "@/pages/AuthPage";
 import Dashboard from "@/pages/Index";
 import TimesheetPage from "@/pages/TimesheetPage";
 import ProjectsPage from "@/pages/ProjectsPage";
-import InternalProjectsPage from "@/pages/InternalProjectsPage";
 import ContractsPage from "@/pages/ContractsPage";
 import CustomersPage from "@/pages/CustomersPage";
 import ReportsPage from "@/pages/ReportsPage";
@@ -41,7 +40,6 @@ const App = () => (
               {/* Admin-only routes protected by AdminRoute */}
               <Route element={<AdminRoute />}>
                 <Route path="projects" element={<ProjectsPage />} />
-                <Route path="internal-projects" element={<InternalProjectsPage />} />
                 <Route path="contracts" element={<ContractsPage />} />
                 <Route path="customers" element={<CustomersPage />} />
                 <Route path="reports" element={<ReportsPage />} />
