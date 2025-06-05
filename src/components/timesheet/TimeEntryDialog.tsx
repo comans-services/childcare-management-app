@@ -12,11 +12,12 @@ import { Button } from "@/components/ui/button";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDate, getWeekStart } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
-import { Calendar, AlertTriangle } from "lucide-react";
+import { Calendar, AlertTriangle, Lock } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
+import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Import the components we've created
@@ -53,6 +54,9 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   // Get working days validation
   const weekStart = getWeekStart(date);
   const validation = useWorkingDaysValidation(userId, entries, weekStart);
+
+  // Get weekend lock status
+  const { isWeekendLocked, getWeekendMessage } = useWeekendLock();
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
@@ -93,11 +97,25 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
   // Check if this date can accept new entries
   const canAddToThisDate = validation.canAddToDate(date);
+  const isWeekendBlocked = isWeekendLocked(date);
   const isNewEntry = !existingEntry;
-  const showValidationWarning = isNewEntry && !canAddToThisDate;
+  
+  // Show validation warning for new entries that are blocked
+  const showWorkingDaysWarning = isNewEntry && !canAddToThisDate;
+  const showWeekendWarning = isNewEntry && isWeekendBlocked;
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
-    // Check validation for new entries
+    // Check weekend validation for new entries
+    if (isNewEntry && isWeekendBlocked) {
+      toast({
+        title: "Weekend restriction",
+        description: getWeekendMessage(date),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check working days validation for new entries
     if (isNewEntry && !canAddToThisDate) {
       toast({
         title: "Cannot add entry",
@@ -161,6 +179,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     onOpenChange(false);
   };
 
+  const isFormDisabled = showWorkingDaysWarning || showWeekendWarning;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] p-6">
@@ -177,8 +197,18 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
             </div>
 
+            {/* Weekend Lock Alert */}
+            {showWeekendWarning && (
+              <Alert variant="destructive" className="mb-4">
+                <Lock className="h-4 w-4" />
+                <AlertDescription>
+                  {getWeekendMessage(date)}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Working Days Validation Alert */}
-            {showValidationWarning && (
+            {showWorkingDaysWarning && !showWeekendWarning && (
               <Alert variant="destructive" className="mb-4">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
@@ -188,7 +218,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
             )}
 
             {/* Show validation info for allowed entries */}
-            {!showValidationWarning && validation.daysRemaining > 0 && isNewEntry && (
+            {!isFormDisabled && validation.daysRemaining > 0 && isNewEntry && (
               <Alert className="mb-4">
                 <Calendar className="h-4 w-4" />
                 <AlertDescription>
@@ -216,7 +246,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               <Button 
                 type="submit" 
                 className="px-6"
-                disabled={showValidationWarning}
+                disabled={isFormDisabled}
               >
                 Save
               </Button>
