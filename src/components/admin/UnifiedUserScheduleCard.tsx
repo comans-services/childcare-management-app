@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +8,6 @@ import { useAuth } from "@/context/AuthContext";
 import { Calendar, Clock, Target } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
-
 interface UnifiedUserScheduleCardProps {
   user: {
     id: string;
@@ -19,20 +17,19 @@ interface UnifiedUserScheduleCardProps {
   };
   weekStartDate: Date;
 }
-
 const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
   user,
   weekStartDate
 }) => {
-  const { userRole } = useAuth();
+  const {
+    userRole
+  } = useAuth();
   const isAdmin = userRole === "admin";
-  
   const {
     workingDays,
     loading: globalLoading,
     error: globalError
   } = useWorkSchedule(user.id);
-  
   const {
     effectiveDays,
     effectiveHours,
@@ -43,10 +40,8 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
     isUpdating,
     isReverting
   } = useSimpleWeeklySchedule(user.id, weekStartDate);
-
   if (globalLoading || weeklyLoading) {
-    return (
-      <Card className="hover:shadow-md transition-shadow">
+    return <Card className="hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-4 w-32" />
@@ -57,13 +52,10 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             <Skeleton className="h-16 w-full" />
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
   if (globalError) {
-    return (
-      <Card className="hover:shadow-md transition-shadow">
+    return <Card className="hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">
             {user.full_name || user.email}
@@ -74,24 +66,19 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             Failed to load work schedule data
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <Card className="hover:shadow-md transition-shadow">
+  return <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">
             {user.full_name || user.email}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {hasOverride && (
-              <Badge variant="outline" className="text-xs">
+            {hasOverride && <Badge variant="outline" className="text-xs">
                 <Calendar className="h-3 w-3 mr-1" />
                 Custom
-              </Badge>
-            )}
+              </Badge>}
             <Badge variant={user.role === "admin" ? "default" : "secondary"}>
               {user.role || "employee"}
             </Badge>
@@ -106,30 +93,14 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-primary" />
             <span className="font-medium text-sm">This Week</span>
-            {hasOverride && (
-              <div className="h-2 w-2 bg-blue-500 rounded-full" />
-            )}
+            {hasOverride && <div className="h-2 w-2 bg-blue-500 rounded-full" />}
           </div>
           
-          {isAdmin ? (
-            <DayCountSelector
-              currentDays={effectiveDays}
-              hasOverride={hasOverride}
-              onDaysChange={updateWeeklyDays}
-              onRevertToDefault={revertToDefault}
-              isUpdating={isUpdating}
-              isReverting={isReverting}
-            />
-          ) : (
-            <div className="text-sm text-muted-foreground">
+          {isAdmin ? <DayCountSelector currentDays={effectiveDays} hasOverride={hasOverride} onDaysChange={updateWeeklyDays} onRevertToDefault={revertToDefault} isUpdating={isUpdating} isReverting={isReverting} /> : <div className="text-sm text-muted-foreground">
               {effectiveDays} working days this week
-            </div>
-          )}
+            </div>}
           
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Target className="h-3 w-3" />
-            <span>{effectiveHours} hours target</span>
-          </div>
+          
         </div>
 
         <Separator />
@@ -144,8 +115,6 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default UnifiedUserScheduleCard;
