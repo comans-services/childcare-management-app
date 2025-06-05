@@ -1,29 +1,40 @@
 
 import React from "react";
+import { format } from "date-fns";
+import { isToday, isWeekend } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
-import { formatDateShort, isToday } from "@/lib/date-utils";
+import WeekendLockIndicator from "../WeekendLockIndicator";
 
 interface DayHeaderProps {
   date: Date;
 }
 
 const DayHeader: React.FC<DayHeaderProps> = ({ date }) => {
+  const isCurrentDay = isToday(date);
+  const isWeekendDay = isWeekend(date);
+
   return (
     <div className={cn(
-      "text-xs md:text-sm font-medium p-2 md:p-3 rounded-t-md relative overflow-hidden",
-      isToday(date) 
-        ? "bg-primary text-primary-foreground" 
-        : "bg-muted"
+      "p-3 border-b bg-background text-center rounded-t-md relative",
+      isCurrentDay && "bg-primary/10 border-primary/30",
+      isWeekendDay && "bg-gray-50"
     )}>
-      <div className="flex justify-between items-center">
-        <span className="font-bold">{formatDateShort(date)}</span>
-        {isToday(date) && (
-          <span className="px-1.5 py-0.5 bg-white/20 text-white rounded-full text-[10px]">Today</span>
-        )}
-      </div>
-      
-      <div className="absolute bottom-0 left-0 right-0 h-1">
-        <div className="progress-indicator h-full w-0"></div>
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <div className={cn(
+            "text-sm font-medium",
+            isCurrentDay && "text-primary font-semibold"
+          )}>
+            {format(date, "EEE")}
+          </div>
+          <div className={cn(
+            "text-lg font-bold",
+            isCurrentDay && "text-primary"
+          )}>
+            {format(date, "d")}
+          </div>
+        </div>
+        <WeekendLockIndicator date={date} />
       </div>
     </div>
   );

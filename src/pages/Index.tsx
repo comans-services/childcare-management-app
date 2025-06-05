@@ -1,148 +1,66 @@
-
-import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import React from "react";
+import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import DashboardStats from "@/components/dashboard/DashboardStats";
-import TimesheetReminder from "@/components/dashboard/TimesheetReminder";
-import ChartSection from "@/components/dashboard/ChartSection";
-import CompanyNews from "@/components/dashboard/CompanyNews";
-import HelpSection from "@/components/dashboard/HelpSection";
-import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
-import { getWeekStart } from "@/lib/date-utils";
+import { TimesheetReminder } from "@/components/dashboard/TimesheetReminder";
+import { CompanyNews } from "@/components/dashboard/CompanyNews";
+import { HelpAndSupport } from "@/components/dashboard/HelpAndSupport";
+import PendingApprovalsCard from "@/components/admin/PendingApprovalsCard";
 
-const Dashboard = () => {
-  const { session, user } = useAuth();
-  const navigate = useNavigate();
-  
-  // Get current week's schedule using the unified hook
-  const weekStartDate = getWeekStart(new Date());
-  const {
-    effectiveDays: workingDays,
-    effectiveHours: weeklyTarget,
-    isLoading: scheduleLoading
-  } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
-  
-  const {
-    // Computed values - using correct property names
-    expectedDaysToDate,
-    daysLoggedToDate,
-    weekProgress,
-    daysRemaining,
-    projectsChartData,
-    customersChartData,
-    deadlineMessage,
-    
-    // States
-    completeWeek,
-    hasEntries,
-    allDaysHaveEntries,
-    isTodayComplete,
-    isLate,
-    caughtUp,
-    
-    // Loading states
-    isLoading,
-    hasError,
-    entriesError,
-  } = useDashboardData();
-
-  useEffect(() => {
-    if (!session || !user) {
-      console.log("No session or user found, redirecting to auth");
-      navigate("/auth");
-    }
-  }, [session, user, navigate]);
-
-  // Security check before rendering
-  if (!session || !user) {
-    return (
-      <div className="container mx-auto p-4 space-y-6">
-        <div className="text-center text-gray-500">
-          <p>Please sign in to view your dashboard.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading while schedule is loading
-  if (scheduleLoading) {
-    return (
-      <div className="container mx-auto p-4 space-y-6">
-        <div className="text-center text-gray-500">
-          <p>Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+const Index = () => {
+  const { dashboardData, isLoading, error } = useDashboardData();
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-gray-600">
-          Welcome to your timesheet dashboard - {workingDays} days work
-        </p>
-        {entriesError && (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>
-              There was an error loading your timesheet data. Please refresh the page.
-            </AlertDescription>
-          </Alert>
-        )}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
+            Welcome to Your Dashboard
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-300">
+            Here's a snapshot of your key metrics and important updates.
+          </p>
+        </div>
+
+        {/* Dashboard Stats */}
+        <DashboardStats 
+          totalHours={dashboardData.totalHours}
+          totalProjects={dashboardData.totalProjects}
+          daysWorked={dashboardData.daysWorked}
+          isLoading={isLoading}
+        />
+
+        {/* Add Pending Approvals Card for Admins */}
+        <PendingApprovalsCard />
+
+        {/* Grid Layout for main content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Charts and Graphs (Placeholder) */}
+          <div className="col-span-1 lg:col-span-2">
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Key Performance Indicators
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300">
+                Interactive charts and graphs will be displayed here.
+              </p>
+            </div>
+          </div>
+
+          {/* Timesheet Reminder */}
+          <div>
+            <TimesheetReminder />
+          </div>
+        </div>
+
+        {/* Company News and Announcements */}
+        <CompanyNews />
+
+        {/* Help and Support Section */}
+        <HelpAndSupport />
       </div>
-      
-      <TimesheetReminder
-        hasEntries={hasEntries}
-        completeWeek={completeWeek}
-        allDaysHaveEntries={allDaysHaveEntries}
-        isLate={isLate}
-        weekProgress={weekProgress}
-        daysRemaining={daysRemaining}
-        caughtUp={caughtUp}
-        deadlineMessage={deadlineMessage}
-        workingDays={workingDays}
-        weeklyTarget={weeklyTarget}
-      />
-      
-      {isLate && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Action Required</AlertTitle>
-          <AlertDescription>
-            It's Friday and you haven't entered any timesheet data yet. Please submit your hours before 5:00 PM today.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      <DashboardStats
-        hasEntries={hasEntries}
-        expectedDaysToDate={expectedDaysToDate}
-        daysLoggedToDate={daysLoggedToDate}
-        weekProgress={weekProgress}
-        completeWeek={completeWeek}
-        allDaysHaveEntries={allDaysHaveEntries}
-        isTodayComplete={isTodayComplete}
-        workingDays={workingDays}
-        weeklyTarget={weeklyTarget}
-      />
-      
-      <ChartSection
-        projectsChartData={projectsChartData}
-        customersChartData={customersChartData}
-        isLoading={isLoading}
-        hasError={hasError}
-      />
-      
-      <CompanyNews />
-      
-      <HelpSection />
     </div>
   );
 };
 
-export default Dashboard;
+export default Index;

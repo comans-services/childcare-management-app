@@ -10,13 +10,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
-import { formatDate, getWeekStart } from "@/lib/date-utils";
+import { formatDate, getWeekStart, isWeekend } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
-import { Calendar, AlertTriangle } from "lucide-react";
+import { Calendar, AlertTriangle, Lock } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
+import { useAuth } from "@/context/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Import the components we've created
@@ -49,6 +50,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   entries = [], // Default to empty array
 }) => {
   const [entryType, setEntryType] = useState<"project" | "contract">("project");
+  const { userRole } = useAuth();
 
   // Get working days validation
   const weekStart = getWeekStart(date);
@@ -95,6 +97,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const canAddToThisDate = validation.canAddToDate(date);
   const isNewEntry = !existingEntry;
   const showValidationWarning = isNewEntry && !canAddToThisDate;
+  
+  // Weekend-specific logic
+  const isWeekendDate = isWeekend(date);
+  const isAdmin = userRole === 'admin';
+  const isPendingWeekendEntry = existingEntry?.approval_status === 'pending' && existingEntry?.requires_approval;
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
     // Check validation for new entries
@@ -137,12 +144,20 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
       
       const savedEntry = await saveTimesheetEntry(entryData);
       
-      toast({
-        title: existingEntry ? "Entry updated" : "Entry created",
-        description: existingEntry 
-          ? "Your timesheet entry has been updated." 
-          : "Your timesheet entry has been created.",
-      });
+      // Show appropriate success message based on weekend status
+      if (isWeekendDate && !isAdmin && !existingEntry) {
+        toast({
+          title: "Weekend entry submitted",
+          description: "Your weekend entry has been submitted and is pending approval.",
+        });
+      } else {
+        toast({
+          title: existingEntry ? "Entry updated" : "Entry created",
+          description: existingEntry 
+            ? "Your timesheet entry has been updated." 
+            : "Your timesheet entry has been created.",
+        });
+      }
       
       onSave(savedEntry);
       onOpenChange(false);
@@ -165,7 +180,10 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] p-6">
         <DialogHeader>
-          <DialogTitle className="text-xl">{existingEntry ? "Edit time entry" : "Add time"}</DialogTitle>
+          <DialogTitle className="text-xl flex items-center gap-2">
+            {existingEntry ? "Edit time entry" : "Add time"}
+            {isWeekendDate && !isAdmin && <Lock className="h-4 w-4 text-amber-600" />}
+          </DialogTitle>
         </DialogHeader>
         
         <Form {...form}>
@@ -176,6 +194,26 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               </div>
               <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
             </div>
+
+            {/* Weekend Warning for Non-Admins */}
+            {isWeekendDate && !isAdmin && (
+              <Alert className="mb-4 border-amber-200 bg-amber-50">
+                <Lock className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  <strong>Weekend Entry:</strong> This entry will require admin approval before being counted in your timesheet.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Show pending status for existing weekend entries */}
+            {isPendingWeekendEntry && (
+              <Alert variant="secondary" className="mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  This weekend entry is currently pending approval.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Working Days Validation Alert */}
             {showValidationWarning && (
@@ -218,7 +256,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 className="px-6"
                 disabled={showValidationWarning}
               >
-                Save
+                {isWeekendDate && !isAdmin && !existingEntry ? "Submit for Approval" : "Save"}
               </Button>
             </DialogFooter>
           </form>
