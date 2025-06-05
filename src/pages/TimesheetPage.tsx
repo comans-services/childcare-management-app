@@ -76,7 +76,7 @@ const TimesheetPage = () => {
       <div className="mb-6 md:mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">My Timesheet</h1>
-          <p className="text-gray-600 text-sm md:text-base">Track and manage your working hours - {effectiveDays} days ({effectiveHours}h/week)</p>
+          <p className="text-gray-600 text-sm md:text-base">Track and manage your working hours - {effectiveDays} days</p>
         </div>
         
         <Button 
