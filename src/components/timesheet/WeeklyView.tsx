@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -107,13 +108,20 @@ const WeeklyView: React.FC = () => {
       })
     : entries;
 
-  const totalHours = filteredEntries.reduce((sum, entry) => {
-    const hoursLogged = Number(entry.hours_logged) || 0;
-    return sum + hoursLogged;
-  }, 0);
+  // Calculate unique days worked (any entry on a day counts as 1 day)
+  const uniqueDatesWorked = new Set(
+    filteredEntries.map(entry => {
+      if (typeof entry.entry_date === 'string') {
+        return entry.entry_date.substring(0, 10);
+      }
+      return entry.entry_date.toISOString().substring(0, 10);
+    })
+  );
+  
+  const totalDaysWorked = uniqueDatesWorked.size;
 
   // Calculate the target based on view mode
-  const progressTarget = viewMode === "today" ? (workingDays > 0 ? 8 : 0) : weeklyTarget;
+  const workingDaysTarget = viewMode === "today" ? 1 : workingDays;
 
   // Handler for opening the entry dialog
   const handleOpenEntryDialog = useCallback((date: Date, entry?: TimesheetEntry) => {
@@ -178,8 +186,8 @@ const WeeklyView: React.FC = () => {
 
       {!loading && !error && filteredEntries.length > 0 && (
         <WeeklyProgressBar 
-          totalWeekHours={totalHours} 
-          weeklyTarget={progressTarget} 
+          totalDaysWorked={totalDaysWorked} 
+          workingDaysTarget={workingDaysTarget} 
         />
       )}
 
