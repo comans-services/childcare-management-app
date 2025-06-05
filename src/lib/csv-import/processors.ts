@@ -1,4 +1,6 @@
+
 import { parse } from 'date-fns';
+import { EntityType } from './config';
 
 export const processUsers = (data: any[]): any[] => {
   console.log("Processing users data:", data);
@@ -167,4 +169,44 @@ export const processContracts = (data: any[]): any[] => {
       throw new Error(`Row ${index + 1}: ${error.message}`);
     }
   });
+};
+
+// Main processRow function that routes to appropriate processor
+export const processRow = async (
+  row: any, 
+  entityType: EntityType, 
+  existingCustomers: any[] = [],
+  rowIndex: number = 0
+): Promise<any> => {
+  console.log(`Processing ${entityType} row ${rowIndex}:`, row);
+  
+  try {
+    let processedData;
+    
+    switch (entityType) {
+      case 'projects':
+        processedData = processProjects([row])[0];
+        break;
+      case 'customers':
+        processedData = processCustomers([row])[0];
+        break;
+      case 'contracts':
+        processedData = processContracts([row])[0];
+        break;
+      case 'team-members':
+        processedData = processUsers([row])[0];
+        break;
+      default:
+        throw new Error(`Unsupported entity type: ${entityType}`);
+    }
+
+    // Here you would typically save the processed data to the database
+    // For now, we'll just return the processed data
+    console.log(`Successfully processed ${entityType} row ${rowIndex}:`, processedData);
+    return processedData;
+    
+  } catch (error) {
+    console.error(`Error processing ${entityType} row ${rowIndex}:`, error);
+    throw error;
+  }
 };
