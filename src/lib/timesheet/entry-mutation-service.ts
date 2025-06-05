@@ -1,11 +1,50 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry } from "./types";
+import { fetchWorkSchedule } from "@/lib/work-schedule-service";
+import { isWeekend } from "@/lib/date-utils";
+import { isAdmin } from "@/utils/roles";
+
+// Helper function to validate weekend entry permissions
+const validateWeekendEntryPermission = async (entryDate: string, userId?: string): Promise<void> => {
+  const date = new Date(entryDate);
+  
+  // If not a weekend, allow the entry
+  if (!isWeekend(date)) {
+    return;
+  }
+  
+  // Get current user for admin check
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error("Authentication required");
+  }
+  
+  // Check if current user is admin - admins can always add weekend entries
+  const isUserAdmin = await isAdmin(user);
+  if (isUserAdmin) {
+    console.log("Admin user - allowing weekend entry");
+    return;
+  }
+  
+  // For non-admin users, check the target user's work schedule
+  const targetUserId = userId || user.id;
+  const workSchedule = await fetchWorkSchedule(targetUserId);
+  
+  // If user doesn't have weekend permission, block the entry
+  if (!workSchedule?.allow_weekend_entries) {
+    throw new Error("Weekend time entries require admin approval. Contact your administrator to enable weekend entries for your account.");
+  }
+  
+  console.log("User has weekend permission - allowing weekend entry");
+};
 
 export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
   try {
     console.log("=== SAVING TIMESHEET ENTRY ===");
     console.log("Entry data:", entry);
+    
+    // Validate weekend entry permissions before proceeding
+    await validateWeekendEntryPermission(entry.entry_date, entry.user_id);
     
     // Validate entry type and corresponding ID
     if (entry.entry_type === 'project' && !entry.project_id) {
@@ -109,6 +148,9 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
     if (!originalEntry) {
       throw new Error("Original entry not found or access denied");
     }
+    
+    // Validate weekend entry permissions for the duplicate
+    await validateWeekendEntryPermission(originalEntry.entry_date);
     
     // Create a new entry with the same data but no user_id (trigger will set it)
     const newEntryData = {
