@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthContextProps } from "./auth/authTypes";
 import { validateSession } from "./auth/authUtils";
 import { signInOperation, signOutOperation, changePasswordOperation, fetchUserRole } from "./auth/authOperations";
-import { logAuthState, logUserRoleDetection } from "@/utils/auth-debug";
 
 const AuthContext = createContext<AuthContextProps>({
   session: null,
@@ -26,7 +25,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Clear all user-related state
   const clearUserState = () => {
     console.log("Clearing user state");
-    logAuthState("clearing user state");
     setSession(null);
     setUser(null);
     setUserRole(null);
@@ -34,7 +32,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
-    logAuthState("auth provider init");
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -46,7 +43,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userEmail: newSession?.user?.email,
           hasSession: !!newSession
         });
-        logAuthState(`auth state change - ${event}`);
 
         if (event === 'SIGNED_OUT' || !newSession) {
           clearUserState();
@@ -79,7 +75,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userId: existingSession?.user?.id,
         userEmail: existingSession?.user?.email
       });
-      logAuthState("initial session check");
 
       if (existingSession && validateSession(existingSession)) {
         setSession(existingSession);
@@ -100,9 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleUserRoleFetch = async (userId: string) => {
     const userData = await fetchUserRole(userId);
     if (userData) {
-      const role = userData.role as "employee" | "admin" || "employee";
-      setUserRole(role);
-      logUserRoleDetection(role, "auth context");
+      setUserRole(userData.role as "employee" | "admin" || "employee");
       
       // Update user profile with email if missing
       if (!userData.email && user?.email) {

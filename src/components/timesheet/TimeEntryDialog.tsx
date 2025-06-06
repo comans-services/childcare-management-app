@@ -65,18 +65,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   entries = [], // Default to empty array
 }) => {
   const { userRole } = useAuth();
-  const isAdmin = userRole === "admin";
   const [entryType, setEntryType] = useState<"project" | "contract">("project");
   const [weekendApprovalOpen, setWeekendApprovalOpen] = useState(false);
   const [budgetValidation, setBudgetValidation] = useState<BudgetValidation | null>(null);
   const [budgetChecking, setBudgetChecking] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
-
-  // DEBUG: Log user role detection in TimeEntryDialog
-  console.log("=== TIME ENTRY DIALOG DEBUG ===");
-  console.log("User Role from useAuth:", userRole);
-  console.log("Is Admin:", isAdmin);
-  console.log("Should show budget details:", isAdmin);
 
   // Get working days validation
   const weekStart = getWeekStart(date);
@@ -181,6 +174,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   // Validation checks
   const isNewEntry = !existingEntry;
   const isWeekendDate = isWeekend(date);
+  const isAdmin = userRole === "admin";
   
   // Working days validation
   const canAddToThisDate = validation.canAddToDate(date);
@@ -193,19 +187,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
   // Budget validation checks with stronger employee blocking
   const showBudgetError = budgetValidation && !budgetValidation.isValid && !budgetValidation.canOverride;
-  const showBudgetWarning = budgetValidation && budgetValidation.isValid && budgetValidation.message && isAdmin; // ADMIN ONLY
-  const showBudgetOverride = budgetValidation && !budgetValidation.isValid && budgetValidation.canOverride && isAdmin; // ADMIN ONLY
+  const showBudgetWarning = budgetValidation && budgetValidation.isValid && budgetValidation.message;
+  const showBudgetOverride = budgetValidation && !budgetValidation.isValid && budgetValidation.canOverride;
 
   // Employee-specific budget blocking
   const isEmployeeBudgetBlocked = budgetValidation && !budgetValidation.isValid && !isAdmin;
-
-  // DEBUG: Log budget visibility decisions
-  console.log("=== BUDGET VISIBILITY DEBUG ===");
-  console.log("Budget validation:", budgetValidation);
-  console.log("Show budget error:", showBudgetError);
-  console.log("Show budget warning (admin only):", showBudgetWarning);
-  console.log("Show budget override (admin only):", showBudgetOverride);
-  console.log("Is employee budget blocked:", isEmployeeBudgetBlocked);
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
     console.log("=== ATTEMPTING TO SAVE ENTRY ===");
@@ -367,13 +353,13 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     <div className="font-medium">Budget Exceeded - Entry Blocked</div>
-                    This entry would exceed the project budget and cannot be saved.
+                    {budgetValidation?.message || "This entry would exceed the project budget and cannot be saved."}
                   </AlertDescription>
                 </Alert>
               )}
 
-              {/* Budget Override Alert - Show when admin can override (ADMIN ONLY) */}
-              {isAdmin && !showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && showBudgetOverride && (
+              {/* Budget Override Alert - Show when admin can override */}
+              {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && showBudgetOverride && (
                 <Alert className="border-yellow-200 bg-yellow-50">
                   <AlertTriangle className="h-4 w-4 text-yellow-600" />
                   <AlertDescription className="text-yellow-800">
@@ -383,8 +369,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 </Alert>
               )}
 
-              {/* Budget Warning Alert - Show when approaching budget limit (ADMIN ONLY) */}
-              {isAdmin && !showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && !showBudgetOverride && showBudgetWarning && (
+              {/* Budget Warning Alert - Show when approaching budget limit */}
+              {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && !showBudgetOverride && showBudgetWarning && (
                 <Alert className="border-yellow-200 bg-yellow-50">
                   <AlertTriangle className="h-4 w-4 text-yellow-600" />
                   <AlertDescription className="text-yellow-800">
@@ -393,8 +379,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 </Alert>
               )}
 
-              {/* Budget Status Display - Show current budget info when valid (ADMIN ONLY) */}
-              {isAdmin && !showWorkingDaysWarning && !showWeekendWarning && budgetValidation && budgetValidation.totalBudget > 0 && (
+              {/* Budget Status Display - Show current budget info when valid */}
+              {!showWorkingDaysWarning && !showWeekendWarning && budgetValidation && budgetValidation.totalBudget > 0 && (
                 <div className="p-3 bg-gray-50 rounded-lg border">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Project Budget:</span>
