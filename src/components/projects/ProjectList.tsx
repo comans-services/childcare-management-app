@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { 
   Card, 
   CardContent, 
@@ -43,10 +42,29 @@ const ProjectList: React.FC<ProjectListProps> = ({
 }) => {
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const lastRightClickTime = useRef<number>(0);
+  const lastRightClickedProject = useRef<string | null>(null);
 
   const handleManageAssignments = (project: Project) => {
     setSelectedProject(project);
     setAssignmentDialogOpen(true);
+  };
+
+  const handleDoubleRightClick = (project: Project, event: React.MouseEvent) => {
+    event.preventDefault(); // Prevent context menu
+    
+    const currentTime = Date.now();
+    const timeDiff = currentTime - lastRightClickTime.current;
+    
+    // Check if this is a double right-click (within 500ms and same project)
+    if (timeDiff < 500 && lastRightClickedProject.current === project.id) {
+      onEdit(project);
+      lastRightClickTime.current = 0; // Reset to prevent triple clicks
+      lastRightClickedProject.current = null;
+    } else {
+      lastRightClickTime.current = currentTime;
+      lastRightClickedProject.current = project.id;
+    }
   };
 
   const getStatusColor = (isActive: boolean) => {
@@ -78,7 +96,11 @@ const ProjectList: React.FC<ProjectListProps> = ({
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {projects.map((project) => (
-          <Card key={project.id} className="hover:shadow-md transition-shadow">
+          <Card 
+            key={project.id} 
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onContextMenu={(e) => handleDoubleRightClick(project, e)}
+          >
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg font-semibold">{project.name}</CardTitle>
