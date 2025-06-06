@@ -39,9 +39,9 @@ const TimesheetPage = () => {
   // Redirect if no user is authenticated
   if (!user) {
     return (
-      <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-[110%] w-full">
-        <div className="p-4 md:p-8 text-center">
-          <p className="text-gray-500">Please sign in to view your timesheet</p>
+      <div className="container-responsive">
+        <div className="p-responsive text-center">
+          <p className="text-gray-500 text-fluid-base">Please sign in to view your timesheet</p>
         </div>
       </div>
     );
@@ -72,60 +72,85 @@ const TimesheetPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-[110%] w-full">
-      <div className="mb-6 md:mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">My Timesheet</h1>
-          <p className="text-gray-600 text-sm md:text-base">Track and manage your working hours - {effectiveDays} days</p>
+    <div className="container-responsive">
+      {/* Enhanced header with fluid typography */}
+      <div className="mb-fluid-md lg:mb-fluid-lg flex flex-col sm:flex-row sm:justify-between sm:items-start gap-fluid-sm">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-fluid-3xl lg:text-fluid-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-fluid-tight">
+            My Timesheet
+          </h1>
+          <p className="text-gray-600 text-fluid-md lg:text-fluid-lg mt-2 leading-fluid-normal">
+            Track and manage your working hours
+            <span className="show-on-sm"> - {effectiveDays} days</span>
+          </p>
         </div>
         
         <Button 
           variant="destructive" 
-          size="sm"
+          size={isMobile ? "default" : "sm"}
           onClick={() => setIsDeleteDialogOpen(true)}
           disabled={isDeleting}
-          className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md"
+          className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md flex-shrink-0"
         >
           <TrashIcon className="h-4 w-4 mr-2" />
-          Reset All Entries
+          <span className="hide-on-sm">Reset All</span>
+          <span className="show-on-sm">Reset All Entries</span>
         </Button>
       </div>
 
-      {/* Show timer prominently on mobile devices */}
+      {/* Timer component with dynamic positioning */}
       {isMobile && (
-        <TimerComponent />
+        <div className="mb-fluid-md">
+          <TimerComponent />
+        </div>
       )}
 
-      <Card className="mb-6 md:mb-8 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg md:text-xl font-semibold">Weekly Overview</CardTitle>
-          <CardDescription className="text-sm">Your time entries for the current week</CardDescription>
+      {/* Enhanced weekly overview card */}
+      <Card className="mb-fluid-md lg:mb-fluid-lg shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary">
+        <CardHeader className="pb-3 p-responsive">
+          <CardTitle className="text-fluid-xl lg:text-fluid-2xl font-semibold leading-fluid-tight">
+            Weekly Overview
+          </CardTitle>
+          <CardDescription className="text-fluid-sm lg:text-fluid-md leading-fluid-normal">
+            Your time entries for the current week
+            <span className="show-on-lg"> - {effectiveHours}h expected per week</span>
+          </CardDescription>
         </CardHeader>
-        <CardContent className="pt-2">
+        <CardContent className="p-responsive">
           {/* WeeklyView now handles user filtering internally via RLS */}
           <WeeklyView key={refreshKey} />
         </CardContent>
       </Card>
 
-      {/* Show timer below weekly view on desktop */}
+      {/* Desktop timer with enhanced styling */}
       {!isMobile && (
-        <TimerComponent />
+        <div className="show-on-md">
+          <TimerComponent />
+        </div>
       )}
 
+      {/* Enhanced delete confirmation dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="rounded-xl border-red-200 shadow-lg">
+        <AlertDialogContent className="rounded-xl border-red-200 shadow-lg dialog-responsive-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete All Entries</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-fluid-lg lg:text-fluid-xl">
+              Delete All Entries
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-fluid-sm lg:text-fluid-base leading-fluid-relaxed">
               This action will permanently delete all your timesheet entries. 
               This cannot be undone. Are you sure you want to continue?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting} className="hover:scale-105 transition-transform duration-200">Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-3">
+            <AlertDialogCancel 
+              disabled={isDeleting} 
+              className="hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
+            >
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteAllEntries}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md w-full sm:w-auto"
               disabled={isDeleting}
             >
               {isDeleting ? "Deleting..." : "Delete All Entries"}

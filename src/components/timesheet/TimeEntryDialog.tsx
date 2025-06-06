@@ -23,6 +23,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import WeekendApprovalDialog from "./WeekendApprovalDialog";
 import { validateProjectBudget } from "@/lib/timesheet/validation/budget-validation-service";
 import { showBudgetToast, showBudgetSaveSuccess } from "@/lib/timesheet/budget-notification-service";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Import the components we've created
 import { timeEntryFormSchema, TimeEntryFormValues } from "./time-entry/schema";
@@ -65,6 +66,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   entries = [],
 }) => {
   const { userRole } = useAuth();
+  const isMobile = useIsMobile();
   const isAdmin = userRole === "admin";
   const [entryType, setEntryType] = useState<"project" | "contract">("project");
   const [weekendApprovalOpen, setWeekendApprovalOpen] = useState(false);
@@ -275,124 +277,165 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[700px] flex flex-col max-h-[90vh]">
-          <DialogHeader className="flex-shrink-0 pb-6">
-            <DialogTitle className="text-xl">{existingEntry ? "Edit time entry" : "Add time"}</DialogTitle>
+        <DialogContent className={`
+          flex flex-col max-h-[95vh]
+          ${isMobile 
+            ? 'w-[95vw] max-w-[95vw] h-[95vh] p-3' 
+            : 'dialog-responsive-xl'
+          }
+          2xl:max-w-[1000px] 2xl:grid 2xl:grid-cols-2 2xl:gap-6
+          3xl:max-w-[1200px]
+        `}>
+          {/* Header - spans full width on ultra-wide */}
+          <DialogHeader className={`
+            flex-shrink-0 
+            ${isMobile ? 'pb-3' : 'pb-4 lg:pb-6'}
+            2xl:col-span-2
+          `}>
+            <DialogTitle className="text-fluid-xl lg:text-fluid-2xl">
+              {existingEntry ? "Edit time entry" : "Add time"}
+            </DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto min-h-0 px-2">
-            <div className="space-y-6">
-              <div className="flex items-center">
-                <div className="bg-primary/10 p-2 rounded-full mr-3">
-                  <Calendar className="h-5 w-5 text-primary" />
+          {/* Left column on ultra-wide: Date info and alerts */}
+          <div className={`
+            flex-1 overflow-y-auto min-h-0 space-y-4 lg:space-y-6
+            ${isMobile ? 'px-1' : 'px-2'}
+            2xl:overflow-visible 2xl:space-y-4
+          `}>
+            {/* Date display */}
+            <div className="flex items-center">
+              <div className="bg-primary/10 p-2 rounded-full mr-3">
+                <Calendar className="h-4 w-4 lg:h-5 lg:w-5 text-primary" />
+              </div>
+              <span className="text-fluid-md lg:text-fluid-lg font-medium">
+                {format(date, "EEE, MMM d, yyyy")}
+              </span>
+              {isWeekendDate && (
+                <div className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                  Weekend
                 </div>
-                <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
-                {isWeekendDate && (
-                  <div className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
-                    Weekend
-                  </div>
+              )}
+            </div>
+
+            {/* Validation alerts */}
+            {showWorkingDaysWarning && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-fluid-sm">
+                  {validation.getValidationMessage()}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!showWorkingDaysWarning && showWeekendWarning && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-fluid-sm">
+                  Weekend entries are not allowed. Please contact your administrator for approval.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!showWorkingDaysWarning && !showWeekendWarning && isEmployeeBudgetBlocked && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <div className="font-medium text-fluid-sm">Budget Exceeded</div>
+                  <div className="text-fluid-xs">This project is over budget. Please contact your administrator.</div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Admin budget info */}
+            {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && isAdmin && budgetValidation && budgetValidation.totalBudget > 0 && (
+              <div className="p-3 lg:p-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between text-fluid-sm">
+                  <span className="text-gray-600">Project Budget:</span>
+                  <span className="font-medium">
+                    {budgetValidation.hoursUsed.toFixed(1)} / {budgetValidation.totalBudget.toFixed(1)} hours used
+                    {budgetValidation.remainingHours > 0 && (
+                      <span className="ml-2 text-gray-500 hidden sm:inline">
+                        ({budgetValidation.remainingHours.toFixed(1)}h remaining)
+                      </span>
+                    )}
+                  </span>
+                </div>
+                {(budgetChecking || isValidating) && (
+                  <div className="mt-2 text-fluid-xs text-gray-500">Validating budget...</div>
                 )}
               </div>
+            )}
 
-              {/* Working Days Validation Alert */}
-              {showWorkingDaysWarning && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    {validation.getValidationMessage()}
-                  </AlertDescription>
-                </Alert>
-              )}
+            {/* Validation info for allowed entries */}
+            {!showWorkingDaysWarning && !showWeekendWarning && validation.daysRemaining > 0 && isNewEntry && (
+              <Alert>
+                <Calendar className="h-4 w-4" />
+                <AlertDescription className="text-fluid-sm">
+                  {validation.getValidationMessage()}
+                </AlertDescription>
+              </Alert>
+            )}
 
-              {/* Weekend Validation Alert */}
-              {!showWorkingDaysWarning && showWeekendWarning && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Weekend entries are not allowed. Please contact your administrator for approval.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Budget Error Alert - Generic message for employees */}
-              {!showWorkingDaysWarning && !showWeekendWarning && isEmployeeBudgetBlocked && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    <div className="font-medium">Budget Exceeded</div>
-                    This project is over budget. Please contact your administrator.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Admin-only detailed budget information */}
-              {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && isAdmin && budgetValidation && budgetValidation.totalBudget > 0 && (
-                <div className="p-4 bg-gray-50 rounded-lg border">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Project Budget:</span>
-                    <span className="font-medium">
-                      {budgetValidation.hoursUsed.toFixed(1)} / {budgetValidation.totalBudget.toFixed(1)} hours used
-                      {budgetValidation.remainingHours > 0 && (
-                        <span className="ml-2 text-gray-500">
-                          ({budgetValidation.remainingHours.toFixed(1)}h remaining)
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  {(budgetChecking || isValidating) && (
-                    <div className="mt-2 text-xs text-gray-500">Validating budget...</div>
-                  )}
-                </div>
-              )}
-
-              {/* Show validation info for allowed entries */}
-              {!showWorkingDaysWarning && !showWeekendWarning && validation.daysRemaining > 0 && isNewEntry && (
-                <Alert>
-                  <Calendar className="h-4 w-4" />
-                  <AlertDescription>
-                    {validation.getValidationMessage()}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Show weekend allowed info for admins */}
-              {isWeekendDate && canLogWeekend && isAdmin && (
-                <Alert>
-                  <Calendar className="h-4 w-4" />
-                  <AlertDescription>
-                    Weekend entry allowed (Admin privilege).
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Form Content */}
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                  <EntryTypeSelector control={form.control} />
-                  
-                  {entryType === "project" ? (
-                    <ProjectSelector control={form.control} projects={projects} />
-                  ) : (
-                    <ContractSelector control={form.control} />
-                  )}
-                  
-                  <TimeInput control={form.control} />
-
-                  <TaskDetails control={form.control} />
-                </form>
-              </Form>
-            </div>
+            {/* Weekend allowed info for admins */}
+            {isWeekendDate && canLogWeekend && isAdmin && (
+              <Alert>
+                <Calendar className="h-4 w-4" />
+                <AlertDescription className="text-fluid-sm">
+                  Weekend entry allowed (Admin privilege).
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
-          <DialogFooter className="flex-shrink-0 pt-6 border-t">
-            <div className="flex w-full gap-3 sm:justify-end">
-              <Button type="button" variant="outline" onClick={handleCancel}>
+          {/* Right column on ultra-wide: Form content */}
+          <div className={`
+            flex-1 overflow-y-auto min-h-0
+            ${isMobile ? 'px-1' : 'px-2'}
+            2xl:overflow-visible
+          `}>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 lg:space-y-6">
+                <EntryTypeSelector control={form.control} />
+                
+                {entryType === "project" ? (
+                  <ProjectSelector control={form.control} projects={projects} />
+                ) : (
+                  <ContractSelector control={form.control} />
+                )}
+                
+                <TimeInput control={form.control} />
+
+                <TaskDetails control={form.control} />
+              </form>
+            </Form>
+          </div>
+
+          {/* Footer - spans full width on ultra-wide */}
+          <DialogFooter className={`
+            flex-shrink-0 border-t
+            ${isMobile ? 'pt-3 mt-3' : 'pt-4 lg:pt-6 mt-4 lg:mt-6'}
+            2xl:col-span-2
+          `}>
+            <div className={`
+              flex w-full gap-3 
+              ${isMobile ? 'flex-col' : 'sm:justify-end'}
+            `}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleCancel}
+                className={isMobile ? 'w-full' : ''}
+              >
                 Cancel
               </Button>
               <Button 
                 type="button"
                 onClick={form.handleSubmit(handleSubmit)}
-                className={`px-8 ${isEmployeeBudgetBlocked ? 'bg-red-600 hover:bg-red-700' : ''}`}
+                className={`
+                  ${isMobile ? 'w-full' : 'px-8'} 
+                  ${isEmployeeBudgetBlocked ? 'bg-red-600 hover:bg-red-700' : ''}
+                `}
                 disabled={isSaveDisabled}
                 variant={isEmployeeBudgetBlocked ? "destructive" : "default"}
               >

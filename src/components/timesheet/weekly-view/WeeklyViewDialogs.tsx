@@ -11,7 +11,7 @@ interface WeeklyViewDialogsProps {
   projects: Project[];
   editingEntry: TimesheetEntry | undefined;
   onSave: (savedEntry?: TimesheetEntry) => void;
-  entries: TimesheetEntry[]; // Add entries prop
+  entries: TimesheetEntry[];
 }
 
 const WeeklyViewDialogs: React.FC<WeeklyViewDialogsProps> = ({
