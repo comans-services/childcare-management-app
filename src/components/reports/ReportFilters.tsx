@@ -81,8 +81,8 @@ const ReportFilters = ({
   return (
     <Card className="p-4">
       <div className="space-y-4">
-        {/* Primary filters - always visible */}
-        <div className="flex flex-wrap gap-4">
+        {/* Primary filters - improved responsive layout */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <DateRangeFilterNew filters={filters} setFilters={setFilters} />
           
           <FilterActions

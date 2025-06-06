@@ -17,7 +17,7 @@ export const FilterActions = ({
   isGeneratingReport
 }: FilterActionsProps) => {
   return (
-    <div className="flex items-end ml-auto gap-2 self-end">
+    <div className="flex items-center gap-2 flex-shrink-0">
       <Button
         variant="outline"
         size="sm"
