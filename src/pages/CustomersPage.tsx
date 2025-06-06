@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ const CustomersPage = () => {
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const lastRightClickTime = useRef<number>(0);
+  const lastRightClickedCustomer = useRef<string | null>(null);
 
   const { 
     data: customers = [], 
@@ -57,6 +59,23 @@ const CustomersPage = () => {
   const handleEditCustomer = (customer: Customer) => {
     setEditingCustomer(customer);
     setIsAddCustomerOpen(true);
+  };
+
+  const handleDoubleRightClick = (customer: Customer, event: React.MouseEvent) => {
+    event.preventDefault(); // Prevent context menu
+    
+    const currentTime = Date.now();
+    const timeDiff = currentTime - lastRightClickTime.current;
+    
+    // Check if this is a double right-click (within 500ms and same customer)
+    if (timeDiff < 500 && lastRightClickedCustomer.current === customer.id) {
+      handleEditCustomer(customer);
+      lastRightClickTime.current = 0; // Reset to prevent triple clicks
+      lastRightClickedCustomer.current = null;
+    } else {
+      lastRightClickTime.current = currentTime;
+      lastRightClickedCustomer.current = customer.id;
+    }
   };
 
   const closeAddEditDialog = () => {
@@ -190,7 +209,11 @@ const CustomersPage = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
+                    <TableRow 
+                      key={customer.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onContextMenu={(e) => handleDoubleRightClick(customer, e)}
+                    >
                       <TableCell className="font-medium">{customer.name}</TableCell>
                       <TableCell>
                         {customer.email ? (
