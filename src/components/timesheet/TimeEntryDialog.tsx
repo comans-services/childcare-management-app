@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { 
@@ -274,13 +275,13 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px] flex flex-col max-h-[90vh]">
+        <DialogContent className="sm:max-w-[650px] flex flex-col max-h-[90vh]">
           <DialogHeader className="flex-shrink-0 pb-4">
             <DialogTitle className="text-xl">{existingEntry ? "Edit time entry" : "Add time"}</DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto min-h-0 pr-2 -mr-2">
-            <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto min-h-0 px-1">
+            <div className="space-y-6">
               <div className="flex items-center">
                 <div className="bg-primary/10 p-2 rounded-full mr-3">
                   <Calendar className="h-5 w-5 text-primary" />
@@ -326,7 +327,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
               {/* Admin-only detailed budget information */}
               {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && isAdmin && budgetValidation && budgetValidation.totalBudget > 0 && (
-                <div className="p-3 bg-gray-50 rounded-lg border">
+                <div className="p-4 bg-gray-50 rounded-lg border">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Project Budget:</span>
                     <span className="font-medium">
@@ -366,7 +367,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
               {/* Form Content */}
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                   <EntryTypeSelector control={form.control} />
                   
                   {entryType === "project" ? (
@@ -383,14 +384,14 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
             </div>
           </div>
 
-          <DialogFooter className="flex-shrink-0 pt-4 border-t gap-2">
+          <DialogFooter className="flex-shrink-0 pt-6 border-t gap-3">
             <Button type="button" variant="outline" onClick={handleCancel}>
               Cancel
             </Button>
             <Button 
               type="button"
               onClick={form.handleSubmit(handleSubmit)}
-              className={`px-6 ${isEmployeeBudgetBlocked ? 'bg-red-600 hover:bg-red-700' : ''}`}
+              className={`px-8 ${isEmployeeBudgetBlocked ? 'bg-red-600 hover:bg-red-700' : ''}`}
               disabled={isSaveDisabled}
               variant={isEmployeeBudgetBlocked ? "destructive" : "default"}
             >
