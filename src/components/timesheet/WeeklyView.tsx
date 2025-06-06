@@ -24,7 +24,6 @@ import { getWeekStart } from "@/lib/date-utils";
 import { LazyContent } from "@/components/common/LazyContent";
 import { ResponsiveContainer } from "@/components/common/ResponsiveContainer";
 import { useSmoothTransitions } from "@/hooks/useSmoothTransitions";
-import { usePerformanceOptimization } from "@/hooks/usePerformanceOptimization";
 
 const WeeklyView: React.FC = () => {
   const { user, session } = useAuth();
@@ -32,10 +31,6 @@ const WeeklyView: React.FC = () => {
   
   // Performance and transition hooks
   const { getTransitionClass } = useSmoothTransitions();
-  const { ref: containerRef, isVisible, dimensions } = usePerformanceOptimization({
-    enableLazyLoading: true,
-    enableResizeOptimization: true,
-  });
   
   const {
     currentDate,
@@ -171,7 +166,6 @@ const WeeklyView: React.FC = () => {
 
   return (
     <ResponsiveContainer 
-      ref={containerRef}
       className={getTransitionClass("space-y-4 w-full max-w-full")}
       onResize={(width) => {
         console.log(`WeeklyView container resized to: ${width}px`);
@@ -192,7 +186,7 @@ const WeeklyView: React.FC = () => {
       {!loading && !error && filteredEntries.length > 0 && (
         <LazyContent
           fallback={<div className="h-20 bg-gray-100 rounded-lg animate-pulse" />}
-          priority={isVisible}
+          priority={true}
         >
           <WeeklyHoursSummary 
             totalHours={totalHours}
@@ -215,7 +209,7 @@ const WeeklyView: React.FC = () => {
               ))}
             </div>
           }
-          priority={isVisible}
+          priority={true}
           className="w-full max-w-full overflow-hidden"
         >
           {projects.length === 0 ? (
@@ -239,7 +233,7 @@ const WeeklyView: React.FC = () => {
       {!loading && !error && filteredEntries.length > 0 && (
         <LazyContent
           fallback={<div className="h-4 bg-gray-100 rounded animate-pulse" />}
-          priority={isVisible}
+          priority={true}
         >
           <WeeklyProgressBar 
             totalDaysWorked={totalDaysWorked} 
