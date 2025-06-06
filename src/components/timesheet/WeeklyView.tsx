@@ -21,10 +21,21 @@ import { useWeeklyViewData } from "./weekly-view/hooks/useWeeklyViewData";
 import { useEntryOperations } from "./weekly-view/hooks/useEntryOperations";
 import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
 import { getWeekStart } from "@/lib/date-utils";
+import { LazyContent } from "@/components/common/LazyContent";
+import { ResponsiveContainer } from "@/components/common/ResponsiveContainer";
+import { useSmoothTransitions } from "@/hooks/useSmoothTransitions";
+import { usePerformanceOptimization } from "@/hooks/usePerformanceOptimization";
 
 const WeeklyView: React.FC = () => {
   const { user, session } = useAuth();
   const [weekDates, setWeekDates] = useState<Date[]>([]);
+  
+  // Performance and transition hooks
+  const { getTransitionClass } = useSmoothTransitions();
+  const { ref: containerRef, isVisible, dimensions } = usePerformanceOptimization({
+    enableLazyLoading: true,
+    enableResizeOptimization: true,
+  });
   
   const {
     currentDate,
@@ -70,7 +81,7 @@ const WeeklyView: React.FC = () => {
       console.log(`User changed from ${lastUserId} to ${currentUserId}`);
       clearComponentState();
       clearDialogState();
-      setEditingEntry(undefined); // Clear editing entry on user change
+      setEditingEntry(undefined);
       setLastUserId(currentUserId);
     }
   }, [user?.id, lastUserId, clearComponentState, clearDialogState, setLastUserId]);
@@ -117,7 +128,6 @@ const WeeklyView: React.FC = () => {
   // Calculate unique days worked (any entry on a day counts as 1 day)
   const uniqueDatesWorked = new Set(
     filteredEntries.map(entry => {
-      // Since entry_date is typed as string, treat it as such with a fallback
       const entryDateString = String(entry.entry_date);
       return entryDateString.substring(0, 10);
     })
@@ -160,7 +170,13 @@ const WeeklyView: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 w-full max-w-full">
+    <ResponsiveContainer 
+      ref={containerRef}
+      className={getTransitionClass("space-y-4 w-full max-w-full")}
+      onResize={(width) => {
+        console.log(`WeeklyView container resized to: ${width}px`);
+      }}
+    >
       <WeekNavigation 
         weekDates={weekDates}
         navigateToPreviousWeek={navigateToPreviousWeek}
@@ -172,13 +188,18 @@ const WeeklyView: React.FC = () => {
         toggleViewMode={toggleViewMode}
       />
 
-      {/* Show hours summary when we have entries */}
+      {/* Lazy load hours summary when we have entries */}
       {!loading && !error && filteredEntries.length > 0 && (
-        <WeeklyHoursSummary 
-          totalHours={totalHours}
-          weeklyTarget={weeklyTarget}
-          entries={entries}
-        />
+        <LazyContent
+          fallback={<div className="h-20 bg-gray-100 rounded-lg animate-pulse" />}
+          priority={isVisible}
+        >
+          <WeeklyHoursSummary 
+            totalHours={totalHours}
+            weeklyTarget={weeklyTarget}
+            entries={entries}
+          />
+        </LazyContent>
       )}
 
       {loading ? (
@@ -186,7 +207,17 @@ const WeeklyView: React.FC = () => {
       ) : error ? (
         <ErrorState error={error} onRetry={fetchData} />
       ) : (
-        <div className="w-full max-w-full overflow-hidden">
+        <LazyContent
+          fallback={
+            <div className="grid gap-2 grid-cols-1 md:grid-cols-7">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="h-32 bg-gray-100 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          }
+          priority={isVisible}
+          className="w-full max-w-full overflow-hidden"
+        >
           {projects.length === 0 ? (
             <EmptyState />
           ) : (
@@ -202,14 +233,19 @@ const WeeklyView: React.FC = () => {
               viewMode={viewMode}
             />
           )}
-        </div>
+        </LazyContent>
       )}
 
       {!loading && !error && filteredEntries.length > 0 && (
-        <WeeklyProgressBar 
-          totalDaysWorked={totalDaysWorked} 
-          workingDaysTarget={workingDaysTarget} 
-        />
+        <LazyContent
+          fallback={<div className="h-4 bg-gray-100 rounded animate-pulse" />}
+          priority={isVisible}
+        >
+          <WeeklyProgressBar 
+            totalDaysWorked={totalDaysWorked} 
+            workingDaysTarget={workingDaysTarget} 
+          />
+        </LazyContent>
       )}
 
       <WeeklyViewDialogs
@@ -222,7 +258,7 @@ const WeeklyView: React.FC = () => {
         onSave={handleSaveEntry}
         entries={entries}
       />
-    </div>
+    </ResponsiveContainer>
   );
 };
 

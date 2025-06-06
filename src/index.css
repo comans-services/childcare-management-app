@@ -91,6 +91,15 @@
     --dialog-width-lg: clamp(500px, 75vw, 800px);
     --dialog-width-xl: clamp(600px, 70vw, 1000px);
     --dialog-width-2xl: clamp(700px, 65vw, 1200px);
+    
+    /* Performance optimization variables */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Viewport-aware sizing */
+    --vw-safe: calc(100vw - (100vw - 100%));
+    --vh-safe: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 
   .dark {
@@ -141,6 +150,22 @@
     @apply bg-background text-foreground;
     font-size: var(--fluid-text-base);
     line-height: var(--fluid-leading-normal);
+    /* Enhanced performance optimizations */
+    font-feature-settings: "kern" 1, "liga" 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Performance optimizations for smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* GPU acceleration for transforms */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
   }
 }
 
@@ -150,7 +175,7 @@
     container-type: inline-size;
   }
   
-  /* Enhanced responsive grid utilities */
+  /* Enhanced responsive grid utilities with auto-fit */
   .grid-responsive {
     display: grid;
     grid-template-columns: var(--grid-cols-responsive);
@@ -174,6 +199,19 @@
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   }
   
+  /* Performance-optimized auto-fill grids */
+  .auto-fill-grid-sm {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+  
+  .auto-fill-grid-md {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  
+  .auto-fill-grid-lg {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  }
+  
   /* Enhanced fluid spacing utilities */
   .space-fluid-xs > * + * {
     margin-top: var(--fluid-space-xs);
@@ -195,7 +233,7 @@
     margin-top: var(--fluid-space-xl);
   }
   
-  /* Enhanced responsive padding */
+  /* Enhanced responsive padding with fluid margins */
   .p-responsive {
     padding: clamp(0.5rem, 2vw, 1.5rem);
   }
@@ -217,6 +255,39 @@
   .px-responsive-lg {
     padding-left: clamp(1.5rem, 4vw, 3rem);
     padding-right: clamp(1.5rem, 4vw, 3rem);
+  }
+  
+  /* Fluid margin utilities */
+  .m-fluid-xs {
+    margin: var(--fluid-space-xs);
+  }
+  
+  .m-fluid-sm {
+    margin: var(--fluid-space-sm);
+  }
+  
+  .m-fluid-md {
+    margin: var(--fluid-space-md);
+  }
+  
+  .m-fluid-lg {
+    margin: var(--fluid-space-lg);
+  }
+  
+  .mb-fluid-xs {
+    margin-bottom: var(--fluid-space-xs);
+  }
+  
+  .mb-fluid-sm {
+    margin-bottom: var(--fluid-space-sm);
+  }
+  
+  .mb-fluid-md {
+    margin-bottom: var(--fluid-space-md);
+  }
+  
+  .mb-fluid-lg {
+    margin-bottom: var(--fluid-space-lg);
   }
 
   /* Fluid typography utilities */
@@ -306,6 +377,14 @@
     @apply lg:hidden;
   }
 
+  /* Container-aware responsive utilities */
+  .container-responsive {
+    width: 100%;
+    max-width: var(--vw-safe);
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 5vw, 2rem);
+  }
+
   /* Dialog responsive utilities */
   .dialog-responsive-sm {
     width: var(--dialog-width-sm);
@@ -332,6 +411,29 @@
     max-width: 75vw;
   }
 
+  /* Performance-optimized transition utilities */
+  .transition-fast {
+    transition: var(--transition-fast);
+  }
+  
+  .transition-normal {
+    transition: var(--transition-normal);
+  }
+  
+  .transition-slow {
+    transition: var(--transition-slow);
+  }
+  
+  /* GPU acceleration utilities */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
   /* Text utilities for responsive truncation */
   .line-clamp-2 {
     display: -webkit-box;
@@ -353,10 +455,23 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+  
+  /* Viewport-safe utilities */
+  .w-screen-safe {
+    width: var(--vw-safe);
+  }
+  
+  .h-screen-safe {
+    height: var(--vh-safe);
+  }
+  
+  .min-h-screen-safe {
+    min-height: var(--vh-safe);
+  }
 }
 
 @layer utilities {
-  /* Container query breakpoints with enhanced responsiveness */
+  /* Enhanced container query breakpoints with performance focus */
   @container (min-width: 320px) {
     .cq-xs\:grid-cols-1 {
       grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -364,11 +479,17 @@
     .cq-xs\:text-sm {
       font-size: 0.875rem;
     }
+    .cq-xs\:gap-2 {
+      gap: 0.5rem;
+    }
   }
   
   @container (min-width: 480px) {
     .cq-sm\:grid-cols-2 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .cq-sm\:gap-3 {
+      gap: 0.75rem;
     }
   }
   
@@ -376,23 +497,47 @@
     .cq-md\:grid-cols-2 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+    .cq-md\:grid-cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .cq-md\:gap-4 {
+      gap: 1rem;
+    }
   }
   
   @container (min-width: 768px) {
-    .cq-md\:grid-cols-3 {
+    .cq-lg\:grid-cols-3 {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .cq-lg\:grid-cols-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .cq-lg\:gap-5 {
+      gap: 1.25rem;
     }
   }
   
   @container (min-width: 1024px) {
-    .cq-lg\:grid-cols-4 {
+    .cq-xl\:grid-cols-4 {
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .cq-xl\:grid-cols-5 {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+    .cq-xl\:gap-6 {
+      gap: 1.5rem;
     }
   }
   
   @container (min-width: 1280px) {
-    .cq-xl\:grid-cols-5 {
+    .cq-2xl\:grid-cols-5 {
       grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+    .cq-2xl\:grid-cols-6 {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .cq-2xl\:gap-8 {
+      gap: 2rem;
     }
   }
   
@@ -400,11 +545,17 @@
     .cq-3xl\:grid-cols-6 {
       grid-template-columns: repeat(6, minmax(0, 1fr));
     }
+    .cq-3xl\:grid-cols-8 {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
   }
 
   @container (min-width: 2560px) {
     .cq-4xl\:grid-cols-8 {
       grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+    .cq-4xl\:grid-cols-10 {
+      grid-template-columns: repeat(10, minmax(0, 1fr));
     }
   }
 
@@ -441,5 +592,36 @@
     .lg\:text-fluid-3xl {
       font-size: var(--fluid-text-3xl);
     }
+  }
+  
+  /* Performance optimization utilities */
+  @media (prefers-reduced-motion: reduce) {
+    .motion-safe\:transition-none {
+      transition: none;
+    }
+    .motion-safe\:animate-none {
+      animation: none;
+    }
+  }
+  
+  @media (prefers-reduced-motion: no-preference) {
+    .motion-safe\:transition-all {
+      transition: all var(--transition-normal);
+    }
+  }
+}
+
+/* Critical performance CSS - loaded first */
+@supports (container-type: inline-size) {
+  .container-query {
+    container-type: inline-size;
+  }
+}
+
+/* Progressive enhancement for newer browsers */
+@supports (grid-template-columns: subgrid) {
+  .subgrid {
+    grid-template-columns: subgrid;
+    grid-template-rows: subgrid;
   }
 }
