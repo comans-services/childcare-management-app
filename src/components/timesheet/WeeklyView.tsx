@@ -9,11 +9,14 @@ import {
 } from "@/lib/date-utils";
 import { TimesheetEntry } from "@/lib/timesheet-service";
 import WeekNavigation from "./weekly-view/WeekNavigation";
+import MobileWeekNavigation from "./weekly-view/MobileWeekNavigation";
 import WeeklyProgressBar from "./weekly-view/WeeklyProgressBar";
 import WeeklyHoursSummary from "./weekly-view/WeeklyHoursSummary";
+import MobileWeeklyHoursSummary from "./weekly-view/MobileWeeklyHoursSummary";
 import LoadingState from "./weekly-view/LoadingState";
 import ErrorState from "./weekly-view/ErrorState";
 import WeekGrid from "./weekly-view/WeekGrid";
+import MobileWeekGrid from "./weekly-view/MobileWeekGrid";
 import EmptyState from "./weekly-view/EmptyState";
 import WeeklyViewDialogs from "./weekly-view/WeeklyViewDialogs";
 import { useWeeklyViewState } from "./weekly-view/hooks/useWeeklyViewState";
@@ -24,10 +27,12 @@ import { getWeekStart } from "@/lib/date-utils";
 import { LazyContent } from "@/components/common/LazyContent";
 import { ResponsiveContainer } from "@/components/common/ResponsiveContainer";
 import { useSmoothTransitions } from "@/hooks/useSmoothTransitions";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const WeeklyView: React.FC = () => {
   const { user, session } = useAuth();
   const [weekDates, setWeekDates] = useState<Date[]>([]);
+  const isMobile = useIsMobile();
   
   // Performance and transition hooks
   const { getTransitionClass } = useSmoothTransitions();
@@ -171,16 +176,30 @@ const WeeklyView: React.FC = () => {
         console.log(`WeeklyView container resized to: ${width}px`);
       }}
     >
-      <WeekNavigation 
-        weekDates={weekDates}
-        navigateToPreviousWeek={navigateToPreviousWeek}
-        navigateToNextWeek={navigateToNextWeek}
-        navigateToCurrentWeek={navigateToCurrentWeek}
-        error={error}
-        fetchData={fetchData}
-        viewMode={viewMode}
-        toggleViewMode={toggleViewMode}
-      />
+      {/* Use mobile or desktop navigation based on screen size */}
+      {isMobile ? (
+        <MobileWeekNavigation 
+          weekDates={weekDates}
+          navigateToPreviousWeek={navigateToPreviousWeek}
+          navigateToNextWeek={navigateToNextWeek}
+          navigateToCurrentWeek={navigateToCurrentWeek}
+          error={error}
+          fetchData={fetchData}
+          viewMode={viewMode}
+          toggleViewMode={toggleViewMode}
+        />
+      ) : (
+        <WeekNavigation 
+          weekDates={weekDates}
+          navigateToPreviousWeek={navigateToPreviousWeek}
+          navigateToNextWeek={navigateToNextWeek}
+          navigateToCurrentWeek={navigateToCurrentWeek}
+          error={error}
+          fetchData={fetchData}
+          viewMode={viewMode}
+          toggleViewMode={toggleViewMode}
+        />
+      )}
 
       {/* Lazy load hours summary when we have entries */}
       {!loading && !error && filteredEntries.length > 0 && (
@@ -188,11 +207,19 @@ const WeeklyView: React.FC = () => {
           fallback={<div className="h-20 bg-gray-100 rounded-lg animate-pulse" />}
           priority={true}
         >
-          <WeeklyHoursSummary 
-            totalHours={totalHours}
-            weeklyTarget={weeklyTarget}
-            entries={entries}
-          />
+          {isMobile ? (
+            <MobileWeeklyHoursSummary 
+              totalHours={totalHours}
+              weeklyTarget={weeklyTarget}
+              entries={entries}
+            />
+          ) : (
+            <WeeklyHoursSummary 
+              totalHours={totalHours}
+              weeklyTarget={weeklyTarget}
+              entries={entries}
+            />
+          )}
         </LazyContent>
       )}
 
@@ -215,17 +242,33 @@ const WeeklyView: React.FC = () => {
           {projects.length === 0 ? (
             <EmptyState />
           ) : (
-            <WeekGrid
-              weekDates={weekDates}
-              userId={user.id}
-              entries={entries}
-              projects={projects}
-              onEntryChange={fetchData}
-              onDragEnd={handleDragEnd}
-              onAddEntry={handleOpenEntryDialog}
-              onEditEntry={handleOpenEntryDialog}
-              viewMode={viewMode}
-            />
+            <>
+              {/* Use mobile or desktop grid based on screen size */}
+              {isMobile ? (
+                <MobileWeekGrid
+                  weekDates={weekDates}
+                  userId={user.id}
+                  entries={entries}
+                  projects={projects}
+                  onEntryChange={fetchData}
+                  onAddEntry={handleOpenEntryDialog}
+                  onEditEntry={handleOpenEntryDialog}
+                  viewMode={viewMode}
+                />
+              ) : (
+                <WeekGrid
+                  weekDates={weekDates}
+                  userId={user.id}
+                  entries={entries}
+                  projects={projects}
+                  onEntryChange={fetchData}
+                  onDragEnd={handleDragEnd}
+                  onAddEntry={handleOpenEntryDialog}
+                  onEditEntry={handleOpenEntryDialog}
+                  viewMode={viewMode}
+                />
+              )}
+            </>
           )}
         </LazyContent>
       )}
