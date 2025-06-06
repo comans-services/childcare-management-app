@@ -95,51 +95,92 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
   return (
     <>
-      <div className="grid-cards-responsive container-query">
+      {/* Enhanced dynamic grid with ultra-responsive behavior */}
+      <div className="
+        grid gap-fluid-sm
+        grid-cols-1
+        sm:grid-cols-2
+        lg:grid-cols-3
+        xl:grid-cols-4
+        2xl:grid-cols-4
+        3xl:grid-cols-5
+        4xl:grid-cols-6
+        container-query
+        auto-fit-grid
+      ">
         {projects.map((project) => (
           <Card 
             key={project.id} 
-            className="hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col"
+            className="
+              hover:shadow-lg transition-all duration-300 cursor-pointer 
+              flex flex-col h-full
+              min-w-0 max-w-full
+              hover:-translate-y-1
+              border-l-4 border-l-transparent hover:border-l-primary
+            "
             onContextMenu={(e) => handleDoubleRightClick(project, e)}
           >
             <CardHeader className="pb-3 flex-shrink-0">
-              <div className="flex justify-between items-start gap-2">
-                <CardTitle className="text-fluid-lg font-semibold line-clamp-2">{project.name}</CardTitle>
+              <div className="flex justify-between items-start gap-3">
+                <CardTitle className="text-fluid-lg font-semibold line-clamp-2 min-w-0 flex-1">
+                  {project.name}
+                </CardTitle>
                 <div className="flex flex-col gap-1 flex-shrink-0">
                   <Badge 
                     variant="outline" 
-                    className={`${getStatusColor(project.is_active)} flex items-center gap-1 text-xs`}
+                    className={`${getStatusColor(project.is_active)} flex items-center gap-1 text-xs whitespace-nowrap`}
                   >
                     {getStatusIcon(project.is_active)}
-                    {project.is_active ? 'Active' : 'Inactive'}
+                    <span className="hidden sm:inline">{project.is_active ? 'Active' : 'Inactive'}</span>
                   </Badge>
                   {project.is_internal && (
                     <Badge 
                       variant="outline" 
-                      className="bg-blue-100 text-blue-800 border-blue-300 flex items-center gap-1 text-xs"
+                      className="bg-blue-100 text-blue-800 border-blue-300 flex items-center gap-1 text-xs whitespace-nowrap"
                     >
                       <Home className="h-3 w-3" />
-                      Internal
+                      <span className="hidden sm:inline">Internal</span>
                     </Badge>
                   )}
                 </div>
               </div>
               {project.description && (
-                <CardDescription className="text-fluid-sm line-clamp-2">{project.description}</CardDescription>
+                <CardDescription className="text-fluid-sm line-clamp-3 mt-2">
+                  {project.description}
+                </CardDescription>
               )}
             </CardHeader>
             
-            <CardContent className="space-y-3 flex-1">
+            <CardContent className="space-y-3 flex-1 min-h-0">
+              {/* Budget progress with enhanced visual feedback */}
               <div className="flex items-center text-fluid-sm text-gray-600">
                 <BarChart3 className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span className="truncate">
-                  {project.hours_used || 0}h / {project.budget_hours}h
-                  {isOverBudget(project.hours_used, project.budget_hours) && (
-                    <AlertTriangle className="h-4 w-4 ml-1 text-orange-500 inline flex-shrink-0" />
-                  )}
-                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="truncate">
+                      {project.hours_used || 0}h / {project.budget_hours}h
+                    </span>
+                    {isOverBudget(project.hours_used, project.budget_hours) && (
+                      <AlertTriangle className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                    )}
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        isOverBudget(project.hours_used, project.budget_hours) 
+                          ? 'bg-orange-500' 
+                          : 'bg-blue-500'
+                      }`}
+                      style={{ 
+                        width: `${Math.min((project.hours_used || 0) / project.budget_hours * 100, 100)}%` 
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
+              {/* Date range with responsive layout */}
               {(project.start_date || project.end_date) && (
                 <div className="flex items-center text-fluid-sm text-gray-600">
                   <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -151,64 +192,79 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 </div>
               )}
 
+              {/* Customer info for non-internal projects */}
               {project.customer_id && !project.is_internal && (
                 <div className="flex items-center text-fluid-sm text-gray-600">
                   <Building className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">Customer ID: {project.customer_id}</span>
+                  <span className="truncate">Customer: {project.customer_id}</span>
                 </div>
               )}
             </CardContent>
             
-            <CardFooter className="pt-3 flex gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onToggleStatus(project)}
-                className={`flex items-center gap-1 text-xs ${
-                  project.is_active 
-                    ? 'text-orange-600 hover:text-orange-700' 
-                    : 'text-green-600 hover:text-green-700'
-                }`}
-              >
-                {project.is_active ? (
-                  <>
-                    <PowerOff className="h-3 w-3" />
-                    <span className="hidden sm:inline">Deactivate</span>
-                  </>
-                ) : (
-                  <>
-                    <Power className="h-3 w-3" />
-                    <span className="hidden sm:inline">Activate</span>
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleManageAssignments(project)}
-                className="flex items-center gap-1 text-xs"
-              >
-                <Users className="h-3 w-3" />
-                <span className="hidden sm:inline">Assign</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(project)}
-                className="flex items-center gap-1 text-xs"
-              >
-                <Edit className="h-3 w-3" />
-                <span className="hidden sm:inline">Edit</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onDelete(project)}
-                className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="h-3 w-3" />
-                <span className="hidden sm:inline">Delete</span>
-              </Button>
+            {/* Enhanced footer with smart button layout */}
+            <CardFooter className="pt-3 flex-shrink-0">
+              {/* Primary actions - always visible */}
+              <div className="flex flex-wrap gap-2 w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onToggleStatus(project)}
+                  className={`
+                    flex items-center gap-1 text-xs flex-shrink-0
+                    ${project.is_active 
+                      ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50' 
+                      : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                    }
+                  `}
+                >
+                  {project.is_active ? (
+                    <>
+                      <PowerOff className="h-3 w-3" />
+                      <span className="hidden lg:inline">Deactivate</span>
+                    </>
+                  ) : (
+                    <>
+                      <Power className="h-3 w-3" />
+                      <span className="hidden lg:inline">Activate</span>
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleManageAssignments(project)}
+                  className="flex items-center gap-1 text-xs flex-shrink-0 hover:bg-blue-50"
+                >
+                  <Users className="h-3 w-3" />
+                  <span className="hidden lg:inline">Assign</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(project)}
+                  className="flex items-center gap-1 text-xs flex-shrink-0 hover:bg-gray-50"
+                >
+                  <Edit className="h-3 w-3" />
+                  <span className="hidden lg:inline">Edit</span>
+                </Button>
+
+                {/* Secondary action with responsive visibility */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDelete(project)}
+                  className="
+                    flex items-center gap-1 text-xs flex-shrink-0
+                    text-red-600 hover:text-red-700 hover:bg-red-50
+                    ml-auto
+                  "
+                >
+                  <Trash2 className="h-3 w-3" />
+                  <span className="hidden xl:inline">Delete</span>
+                </Button>
+              </div>
             </CardFooter>
           </Card>
         ))}

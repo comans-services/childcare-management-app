@@ -115,136 +115,209 @@ const ProjectsPage = () => {
 
   return (
     <div className="container-responsive max-w-none">
-      <div className="mb-fluid-md flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-fluid-2xl font-bold">Projects</h1>
-          <p className="text-fluid-sm text-gray-600">Manage and monitor project budgets</p>
-        </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <ImportButton
-            entityType="projects"
-            onImportComplete={refetch}
-            variant="outline"
-          />
+      {/* Header with better responsive layout */}
+      <div className="mb-fluid-md">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-fluid-sm">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-fluid-2xl font-bold truncate">Projects</h1>
+            <p className="text-fluid-sm text-gray-600 mt-1">Manage and monitor project budgets</p>
+          </div>
           
-          <Button 
-            onClick={() => refetch()}
-            variant="outline"
-            title="Refresh projects"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            onClick={() => setIsAddProjectOpen(true)} 
-            className="flex items-center gap-2"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Add Project
-          </Button>
+          {/* Action buttons with smart responsive behavior */}
+          <div className="flex flex-wrap gap-2 lg:flex-nowrap lg:gap-3">
+            <ImportButton
+              entityType="projects"
+              onImportComplete={refetch}
+              variant="outline"
+              className="flex-shrink-0"
+            />
+            
+            <Button 
+              onClick={() => refetch()}
+              variant="outline"
+              title="Refresh projects"
+              className="flex-shrink-0"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">Refresh</span>
+            </Button>
+            
+            <Button 
+              onClick={() => setIsAddProjectOpen(true)} 
+              className="flex items-center gap-2 flex-shrink-0"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">Add Project</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="mb-fluid-md flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search projects..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
-        </div>
+      {/* Enhanced search and filter controls with responsive stacking */}
+      <div className="mb-fluid-md">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+          {/* Search input takes full width on mobile, flex-1 on desktop */}
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search projects..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button 
-            variant={showActiveOnly ? "default" : "outline"} 
-            onClick={() => setShowActiveOnly(!showActiveOnly)}
-            className="flex items-center gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            {showActiveOnly ? "Active Only" : "All Status"}
-          </Button>
+          {/* Filter buttons stack on mobile, inline on desktop */}
+          <div className="flex flex-col sm:flex-row gap-2 lg:flex-row lg:gap-3 flex-shrink-0">
+            <Button 
+              variant={showActiveOnly ? "default" : "outline"} 
+              onClick={() => setShowActiveOnly(!showActiveOnly)}
+              className="flex items-center gap-2 justify-center"
+            >
+              <Filter className="h-4 w-4" />
+              <span className="whitespace-nowrap">{showActiveOnly ? "Active Only" : "All Status"}</span>
+            </Button>
 
-          <Button 
-            variant={showInternalOnly ? "default" : "outline"} 
-            onClick={() => setShowInternalOnly(!showInternalOnly)}
-            className="flex items-center gap-2"
-          >
-            <Building className="h-4 w-4" />
-            {showInternalOnly ? "Internal Only" : "All Types"}
-          </Button>
+            <Button 
+              variant={showInternalOnly ? "default" : "outline"} 
+              onClick={() => setShowInternalOnly(!showInternalOnly)}
+              className="flex items-center gap-2 justify-center"
+            >
+              <Building className="h-4 w-4" />
+              <span className="whitespace-nowrap">{showInternalOnly ? "Internal Only" : "All Types"}</span>
+            </Button>
+          </div>
         </div>
       </div>
 
+      {/* Enhanced stats grid with ultra-responsive behavior */}
       {!isLoading && projects.length > 0 && (
-        <div className="grid-stats-responsive mb-fluid-md container-query">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-fluid-lg">Total Projects</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-fluid-xl font-bold">{stats.totalProjects}</div>
-              <p className="text-fluid-xs text-muted-foreground">
-                {stats.activeProjects} active
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-fluid-lg">Internal Projects</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-fluid-xl font-bold text-blue-600">{stats.internalProjects}</div>
-              <p className="text-fluid-xs text-muted-foreground">
-                Company projects
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-fluid-lg">Client Projects</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-fluid-xl font-bold text-green-600">{stats.clientProjects}</div>
-              <p className="text-fluid-xs text-muted-foreground">
-                Customer projects
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-fluid-lg">Total Budget</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-fluid-xl font-bold">{stats.totalBudgetHours}h</div>
-              <p className="text-fluid-xs text-muted-foreground">
-                Across all projects
-              </p>
-            </CardContent>
-          </Card>
+        <div className="mb-fluid-md">
+          <div className="
+            grid gap-fluid-sm
+            grid-cols-1 
+            xs:grid-cols-2 
+            md:grid-cols-2 
+            lg:grid-cols-4 
+            xl:grid-cols-4 
+            2xl:grid-cols-4
+            3xl:grid-cols-6 
+            4xl:grid-cols-6
+            container-query
+          ">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-fluid-lg flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                  <span className="truncate">Total Projects</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-fluid-xl font-bold text-blue-600">{stats.totalProjects}</div>
+                <p className="text-fluid-xs text-muted-foreground mt-1">
+                  {stats.activeProjects} active
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-fluid-lg flex items-center gap-2">
+                  <Building className="h-5 w-5 text-purple-600" />
+                  <span className="truncate">Internal</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-fluid-xl font-bold text-purple-600">{stats.internalProjects}</div>
+                <p className="text-fluid-xs text-muted-foreground mt-1">
+                  Company projects
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-fluid-lg flex items-center gap-2">
+                  <Users className="h-5 w-5 text-green-600" />
+                  <span className="truncate">Client</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-fluid-xl font-bold text-green-600">{stats.clientProjects}</div>
+                <p className="text-fluid-xs text-muted-foreground mt-1">
+                  Customer projects
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-fluid-lg flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-orange-600" />
+                  <span className="truncate">Total Budget</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-fluid-xl font-bold text-orange-600">{stats.totalBudgetHours}h</div>
+                <p className="text-fluid-xs text-muted-foreground mt-1">
+                  Across all projects
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Additional stats for ultra-wide screens */}
+            <Card className="hover:shadow-md transition-shadow hidden 3xl:block">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-fluid-lg flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-indigo-600" />
+                  <span className="truncate">Avg Budget</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-fluid-xl font-bold text-indigo-600">{stats.avgBudgetHours}h</div>
+                <p className="text-fluid-xs text-muted-foreground mt-1">
+                  Per project
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow hidden 3xl:block">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-fluid-lg flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-pink-600" />
+                  <span className="truncate">Status</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-fluid-xl font-bold text-pink-600">
+                  {Math.round((stats.activeProjects / stats.totalProjects) * 100)}%
+                </div>
+                <p className="text-fluid-xs text-muted-foreground mt-1">
+                  Active rate
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
+      {/* Project list card with enhanced responsive content */}
+      <Card className="shadow-lg">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <CardTitle className="text-fluid-lg">All Projects</CardTitle>
             <CardDescription className="text-fluid-sm">Manage your project budgets and timelines</CardDescription>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             {projects.length > 0 && (
-              <span className="text-fluid-xs text-muted-foreground">
+              <span className="text-fluid-xs text-muted-foreground whitespace-nowrap">
                 {projects.length} project{projects.length !== 1 ? 's' : ''}
               </span>
             )}
           </div>
         </CardHeader>
-        <CardContent className="p-responsive">
+        <CardContent className="p-fluid-sm lg:p-fluid-md">
           {isLoading ? (
             <div className="flex justify-center p-6">
               <Clock className="h-6 w-6 animate-spin text-gray-500" />
