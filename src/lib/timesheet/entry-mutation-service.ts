@@ -31,9 +31,28 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       throw new Error("Authentication required");
     }
 
-    // Step 4: Budget validation for project entries
+    // Step 4: Get user role for budget validation
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
+      throw new Error("Failed to verify user permissions");
+    }
+
+    const userRole = profileData?.role;
+    const isAdmin = userRole === "admin";
+
+    console.log("User role:", userRole, "Is Admin:", isAdmin);
+
+    // Step 5: Critical budget validation for project entries
     let budgetOverrideUsed = false;
     if (entry.entry_type === 'project' && entry.project_id) {
+      console.log("=== BACKEND BUDGET VALIDATION ===");
+      
       const budgetValidation = await validateProjectBudget({
         projectId: entry.project_id,
         hoursToAdd: entry.hours_logged,
@@ -41,16 +60,22 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
         userId: user.id
       });
 
-      // If budget is exceeded and user cannot override, block the save
-      if (!budgetValidation.isValid && !budgetValidation.canOverride) {
-        console.error("Budget validation failed - user cannot override:", budgetValidation.message);
-        throw new Error(budgetValidation.message || "Budget validation failed");
+      console.log("Backend budget validation result:", budgetValidation);
+      console.log("User can override:", budgetValidation.canOverride);
+      console.log("Budget is valid:", budgetValidation.isValid);
+
+      // Critical: Block non-admin users from exceeding budget
+      if (!budgetValidation.isValid && !isAdmin) {
+        console.error("BACKEND BLOCKING: Non-admin user attempting to exceed budget");
+        console.error("User role:", userRole);
+        console.error("Budget message:", budgetValidation.message);
+        throw new Error(budgetValidation.message || "Budget exceeded - entry blocked by server");
       }
 
-      // If budget is exceeded but user can override, allow save with audit logging
-      if (!budgetValidation.isValid && budgetValidation.canOverride) {
+      // If budget is exceeded but user is admin, allow with audit logging
+      if (!budgetValidation.isValid && isAdmin) {
         budgetOverrideUsed = true;
-        console.log("Admin budget override is being used");
+        console.log("Admin budget override being applied by server");
       }
     }
     
