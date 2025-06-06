@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle, TrendingUp, AlertTriangle } from "lucide-react";
 import { getProjectBudgetStatus } from "@/lib/timesheet/validation/budget-validation-service";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProjectSelectorProps {
   control: Control<TimeEntryFormValues>;
@@ -27,6 +28,8 @@ interface ProjectBudgetInfo {
 }
 
 export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ control, projects }) => {
+  const { userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const [budgetInfo, setBudgetInfo] = useState<ProjectBudgetInfo>({});
   const [loadingBudgets, setLoadingBudgets] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -36,14 +39,14 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ control, proje
     setRefreshKey(prev => prev + 1);
   }, [projects]);
 
-  // Fetch budget information for all projects
+  // Fetch budget information for all projects (only for admins)
   useEffect(() => {
     const fetchBudgetInfo = async () => {
-      if (projects.length === 0) return;
+      if (projects.length === 0 || !isAdmin) return;
 
       setLoadingBudgets(true);
       try {
-        console.log("=== REFRESHING PROJECT BUDGET INFO ===");
+        console.log("=== REFRESHING PROJECT BUDGET INFO (ADMIN ONLY) ===");
         const budgetPromises = projects.map(async (project) => {
           const budget = await getProjectBudgetStatus(project.id);
           return { projectId: project.id, budget };
@@ -66,7 +69,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ control, proje
     };
 
     fetchBudgetInfo();
-  }, [projects, refreshKey]); // Include refreshKey to force refresh
+  }, [projects, refreshKey, isAdmin]); // Include isAdmin in dependency
 
   const getBudgetColor = (usagePercentage: number, isOverBudget: boolean) => {
     if (isOverBudget) return "text-red-600";
@@ -83,6 +86,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ control, proje
   };
 
   const formatBudgetDisplay = (project: Project) => {
+    // For employees, show only project name
+    if (!isAdmin) return project.name;
+
     const budget = budgetInfo[project.id];
     if (!budget) return project.name;
 
@@ -97,6 +103,16 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ control, proje
   };
 
   const renderProjectOption = (project: Project) => {
+    // For employees, show simple project name only
+    if (!isAdmin) {
+      return (
+        <div className="flex flex-col space-y-1">
+          <span>{project.name}</span>
+        </div>
+      );
+    }
+
+    // Admin view with budget information
     const budget = budgetInfo[project.id];
     if (!budget || loadingBudgets) {
       return (
