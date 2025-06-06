@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { 
@@ -40,7 +39,7 @@ interface TimeEntryDialogProps {
   projects: Project[];
   existingEntry?: TimesheetEntry;
   onSave: (entry?: TimesheetEntry) => void;
-  entries: TimesheetEntry[]; // Add entries prop for validation
+  entries: TimesheetEntry[];
 }
 
 interface BudgetValidation {
@@ -62,9 +61,10 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   projects,
   existingEntry,
   onSave,
-  entries = [], // Default to empty array
+  entries = [],
 }) => {
   const { userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const [entryType, setEntryType] = useState<"project" | "contract">("project");
   const [weekendApprovalOpen, setWeekendApprovalOpen] = useState(false);
   const [budgetValidation, setBudgetValidation] = useState<BudgetValidation | null>(null);
@@ -101,9 +101,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     setEntryType(watchedEntryType || "project");
   }, [watchedEntryType]);
 
-  // Immediate budget validation without debouncing for critical decisions
+  // Budget validation for save blocking
   const checkBudget = useCallback(async () => {
-    // Only check for project entries with valid data
     if (watchedEntryType !== "project" || !watchedProjectId || !watchedHours || watchedHours <= 0) {
       setBudgetValidation(null);
       setIsValidating(false);
@@ -114,12 +113,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     setBudgetChecking(true);
     
     try {
-      console.log("=== IMMEDIATE BUDGET CHECK FOR SAVE VALIDATION ===");
-      console.log("Project ID:", watchedProjectId);
-      console.log("Hours:", watchedHours);
-      console.log("Existing Entry ID:", existingEntry?.id);
-      console.log("User Role:", userRole);
-
       const validation = await validateProjectBudget({
         projectId: watchedProjectId,
         hoursToAdd: Number(watchedHours),
@@ -128,8 +121,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
       });
 
       setBudgetValidation(validation);
-      console.log("Budget validation result:", validation);
-      console.log("Can save:", validation.isValid || validation.canOverride);
     } catch (error) {
       console.error("Error checking budget:", error);
       setBudgetValidation({
@@ -148,7 +139,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     }
   }, [watchedEntryType, watchedProjectId, watchedHours, existingEntry?.id, userId, userRole]);
 
-  // Immediate validation for save button state (no debounce)
   useEffect(() => {
     checkBudget();
   }, [checkBudget]);
@@ -174,7 +164,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   // Validation checks
   const isNewEntry = !existingEntry;
   const isWeekendDate = isWeekend(date);
-  const isAdmin = userRole === "admin";
   
   // Working days validation
   const canAddToThisDate = validation.canAddToDate(date);
@@ -185,20 +174,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const canLogWeekend = weekendValidation.isValid;
   const showWeekendWarning = isWeekendDate && !canLogWeekend && isNewEntry;
 
-  // Budget validation checks with stronger employee blocking
+  // Budget validation - different messages for admin vs employee
   const showBudgetError = budgetValidation && !budgetValidation.isValid && !budgetValidation.canOverride;
-  const showBudgetWarning = budgetValidation && budgetValidation.isValid && budgetValidation.message;
-  const showBudgetOverride = budgetValidation && !budgetValidation.isValid && budgetValidation.canOverride;
-
-  // Employee-specific budget blocking
   const isEmployeeBudgetBlocked = budgetValidation && !budgetValidation.isValid && !isAdmin;
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
-    console.log("=== ATTEMPTING TO SAVE ENTRY ===");
-    console.log("User Role:", userRole);
-    console.log("Budget Validation:", budgetValidation);
-    console.log("Is Employee Budget Blocked:", isEmployeeBudgetBlocked);
-
     // Priority validation order: working days first, then weekend, then budget
     if (isNewEntry && !canAddToThisDate) {
       toast({
@@ -209,19 +189,16 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
       return;
     }
 
-    // Weekend validation for new entries (with admin override already applied)
     if (isNewEntry && showWeekendWarning) {
       setWeekendApprovalOpen(true);
       return;
     }
 
-    // Critical: Block employees from exceeding budget
+    // Block employees from exceeding budget
     if (isEmployeeBudgetBlocked) {
-      console.error("BLOCKING EMPLOYEE SAVE - Budget exceeded and user cannot override");
-      const selectedProject = projects.find(p => p.id === values.project_id);
       toast({
         title: "Budget Exceeded",
-        description: `Cannot save entry${selectedProject ? ` for ${selectedProject.name}` : ""}. ${budgetValidation?.message || "This entry would exceed the project budget."}`,
+        description: "This entry would exceed the project budget. Please contact your administrator.",
         variant: "destructive",
       });
       return;
@@ -282,20 +259,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     onOpenChange(false);
   };
 
-  // Determine if the save button should be disabled - strengthen employee blocking
   const isSaveDisabled = showWorkingDaysWarning || 
                         showWeekendWarning || 
                         isEmployeeBudgetBlocked || 
                         isValidating || 
                         budgetChecking;
-
-  const getBudgetStatusColor = () => {
-    if (!budgetValidation) return "";
-    if (budgetValidation.isOverBudget) return "text-red-600";
-    if (budgetValidation.usagePercentage >= 95) return "text-red-600";
-    if (budgetValidation.usagePercentage >= 75) return "text-yellow-600";
-    return "text-green-600";
-  };
 
   const getSaveButtonText = () => {
     if (isValidating || budgetChecking) return "Checking Budget...";
@@ -307,12 +275,10 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[500px] flex flex-col max-h-[90vh]">
-          {/* Fixed Header */}
           <DialogHeader className="flex-shrink-0 pb-4">
             <DialogTitle className="text-xl">{existingEntry ? "Edit time entry" : "Add time"}</DialogTitle>
           </DialogHeader>
           
-          {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto min-h-0 pr-2 -mr-2">
             <div className="space-y-4">
               <div className="flex items-center">
@@ -327,7 +293,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 )}
               </div>
 
-              {/* Working Days Validation Alert - Highest Priority */}
+              {/* Working Days Validation Alert */}
               {showWorkingDaysWarning && (
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
@@ -337,7 +303,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 </Alert>
               )}
 
-              {/* Weekend Validation Alert - Only show if working days validation passes */}
+              {/* Weekend Validation Alert */}
               {!showWorkingDaysWarning && showWeekendWarning && (
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
@@ -347,44 +313,23 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 </Alert>
               )}
 
-              {/* Enhanced Budget Error Alert for Employees - Show when budget would be exceeded */}
+              {/* Budget Error Alert - Generic message for employees */}
               {!showWorkingDaysWarning && !showWeekendWarning && isEmployeeBudgetBlocked && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <div className="font-medium">Budget Exceeded - Entry Blocked</div>
-                    {budgetValidation?.message || "This entry would exceed the project budget and cannot be saved."}
+                    <div className="font-medium">Budget Exceeded</div>
+                    This project is over budget. Please contact your administrator.
                   </AlertDescription>
                 </Alert>
               )}
 
-              {/* Budget Override Alert - Show when admin can override */}
-              {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && showBudgetOverride && (
-                <Alert className="border-yellow-200 bg-yellow-50">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <AlertDescription className="text-yellow-800">
-                    <div className="font-medium">Admin Override Available</div>
-                    {budgetValidation?.message}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Budget Warning Alert - Show when approaching budget limit */}
-              {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && !showBudgetOverride && showBudgetWarning && (
-                <Alert className="border-yellow-200 bg-yellow-50">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <AlertDescription className="text-yellow-800">
-                    {budgetValidation?.message}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Budget Status Display - Show current budget info when valid */}
-              {!showWorkingDaysWarning && !showWeekendWarning && budgetValidation && budgetValidation.totalBudget > 0 && (
+              {/* Admin-only detailed budget information */}
+              {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && isAdmin && budgetValidation && budgetValidation.totalBudget > 0 && (
                 <div className="p-3 bg-gray-50 rounded-lg border">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Project Budget:</span>
-                    <span className={`font-medium ${getBudgetStatusColor()}`}>
+                    <span className="font-medium">
                       {budgetValidation.hoursUsed.toFixed(1)} / {budgetValidation.totalBudget.toFixed(1)} hours used
                       {budgetValidation.remainingHours > 0 && (
                         <span className="ml-2 text-gray-500">
@@ -438,7 +383,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
             </div>
           </div>
 
-          {/* Fixed Footer */}
           <DialogFooter className="flex-shrink-0 pt-4 border-t gap-2">
             <Button type="button" variant="outline" onClick={handleCancel}>
               Cancel
