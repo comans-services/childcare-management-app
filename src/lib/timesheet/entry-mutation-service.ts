@@ -31,11 +31,9 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       throw new Error("Authentication required");
     }
 
-    // Step 4: Budget validation for project entries with detailed audit info
+    // Step 4: Budget validation for project entries
     let budgetOverrideUsed = false;
     if (entry.entry_type === 'project' && entry.project_id) {
-      const hoursUsedBefore = await getProjectHoursUsed(entry.project_id, entry.id);
-      
       const budgetValidation = await validateProjectBudget({
         projectId: entry.project_id,
         hoursToAdd: entry.hours_logged,
@@ -43,11 +41,13 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
         userId: user.id
       });
 
+      // If budget is exceeded and user cannot override, block the save
       if (!budgetValidation.isValid && !budgetValidation.canOverride) {
+        console.error("Budget validation failed - user cannot override:", budgetValidation.message);
         throw new Error(budgetValidation.message || "Budget validation failed");
       }
 
-      // Check if admin override is being used
+      // If budget is exceeded but user can override, allow save with audit logging
       if (!budgetValidation.isValid && budgetValidation.canOverride) {
         budgetOverrideUsed = true;
         console.log("Admin budget override is being used");

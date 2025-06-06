@@ -9,7 +9,7 @@ export interface BudgetValidationResult {
   hoursUsed: number;
   isOverBudget: boolean;
   canOverride: boolean; // Whether admin can override
-  usagePercentage: number; // Add missing property
+  usagePercentage: number;
 }
 
 export interface BudgetCheckOptions {
@@ -197,34 +197,26 @@ export const validateProjectBudget = async (
     console.log(`- Would Exceed: ${wouldExceedBudget}`);
     console.log(`- Can Override: ${canOverride}`);
 
-    // Admin override logic
-    if (wouldExceedBudget && canOverride) {
-      console.log("Budget would be exceeded but admin can override");
-      return {
-        isValid: true, // Allow admin to proceed
-        message: `Warning: This entry will exceed the project budget by ${(hoursUsed + hoursToAdd - totalBudget).toFixed(1)} hours. Admin override active.`,
-        remainingHours,
-        totalBudget,
-        hoursUsed,
-        isOverBudget: wouldExceedBudget,
-        canOverride: true,
-        usagePercentage
-      };
-    }
-
-    // Regular validation for non-admin users
+    // Budget exceeded - return false but allow admin override
     if (wouldExceedBudget) {
       const excessHours = (hoursUsed + hoursToAdd - totalBudget).toFixed(1);
       console.log(`Budget validation failed - would exceed by ${excessHours} hours`);
       
+      let message;
+      if (canOverride) {
+        message = `Warning: This entry will exceed the project budget by ${excessHours} hours. Admin override available.`;
+      } else {
+        message = `This entry would exceed the project budget by ${excessHours} hours. Current usage: ${hoursUsed}/${totalBudget} hours. Please contact your administrator for approval.`;
+      }
+
       return {
-        isValid: false,
-        message: `This entry would exceed the project budget by ${excessHours} hours. Current usage: ${hoursUsed}/${totalBudget} hours. Please contact your administrator for approval.`,
+        isValid: false, // Always false when budget is exceeded
+        message,
         remainingHours,
         totalBudget,
         hoursUsed,
         isOverBudget: true,
-        canOverride: false,
+        canOverride, // Admin can override, regular users cannot
         usagePercentage
       };
     }
