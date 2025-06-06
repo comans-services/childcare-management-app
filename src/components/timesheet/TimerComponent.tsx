@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
@@ -135,7 +134,7 @@ const TimerComponent = () => {
   const hasItems = entryType === 'project' ? projects.length > 0 : contracts.length > 0;
 
   return (
-    <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+    <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
       <CardHeader className="p-4 sm:p-6">
         <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
           <span>Time Tracker</span>
@@ -210,17 +209,21 @@ const TimerComponent = () => {
               </div>
             </div>
             
-            <div className="flex justify-center space-x-3">
+            {/* Fixed button container with proper spacing and sizing */}
+            <div className="flex flex-col sm:flex-row justify-center gap-3 px-2">
               {!isRunning ? (
                 <Button 
                   onClick={startTimer} 
-                  className="bg-green-600 hover:bg-green-700 h-11 px-6"
+                  className="bg-green-600 hover:bg-green-700 h-11 px-4 flex-1 sm:flex-none sm:min-w-[140px]"
                   disabled={!currentSelection || !hasItems}
                 >
                   <Play className="mr-2 h-4 w-4" /> Start Timer
                 </Button>
               ) : (
-                <Button onClick={pauseTimer} className="bg-amber-500 hover:bg-amber-600 h-11 px-6">
+                <Button 
+                  onClick={pauseTimer} 
+                  className="bg-amber-500 hover:bg-amber-600 h-11 px-4 flex-1 sm:flex-none sm:min-w-[140px]"
+                >
                   <Pause className="mr-2 h-4 w-4" /> Pause
                 </Button>
               )}
@@ -229,14 +232,14 @@ const TimerComponent = () => {
                 onClick={stopTimer} 
                 variant="destructive"
                 disabled={elapsedTime === 0}
-                className="h-11 px-6"
+                className="h-11 px-4 flex-1 sm:flex-none sm:min-w-[140px]"
               >
                 <StopCircle className="mr-2 h-4 w-4" /> Stop & Save
               </Button>
             </div>
 
             {!hasItems && (
-              <p className="text-sm text-gray-500 text-center">
+              <p className="text-sm text-gray-500 text-center px-2">
                 No {entryType}s available. You can only track time for {entryType}s you're assigned to.
               </p>
             )}
