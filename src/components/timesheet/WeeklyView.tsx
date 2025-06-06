@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -134,11 +135,18 @@ const WeeklyView: React.FC = () => {
     setEntryDialogOpen(true);
   }, [setSelectedDate, setEntryDialogOpen]);
 
-  // Handler for saving an entry
-  const handleSaveEntry = useCallback((savedEntry?: TimesheetEntry) => {
-    fetchData(); // Refresh all data after saving
+  // Enhanced handler for saving an entry with real-time refresh
+  const handleSaveEntry = useCallback(async (savedEntry?: TimesheetEntry) => {
+    console.log("=== REFRESHING DATA AFTER ENTRY SAVE ===");
+    
+    // Force refresh all data to get updated budget calculations
+    await fetchData();
+    
+    // Clear dialog state
     clearDialogState();
     setEditingEntry(undefined);
+    
+    console.log("Data refresh completed after entry save");
   }, [fetchData, clearDialogState]);
 
   // Security validation before rendering

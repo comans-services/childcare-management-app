@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "../types";
 
@@ -10,6 +9,7 @@ export interface BudgetValidationResult {
   hoursUsed: number;
   isOverBudget: boolean;
   canOverride: boolean; // Whether admin can override
+  usagePercentage: number; // Add missing property
 }
 
 export interface BudgetCheckOptions {
@@ -141,7 +141,8 @@ export const validateProjectBudget = async (
         totalBudget: 0,
         hoursUsed: 0,
         isOverBudget: true,
-        canOverride: false
+        canOverride: false,
+        usagePercentage: 0
       };
     }
 
@@ -155,7 +156,8 @@ export const validateProjectBudget = async (
         totalBudget: project.budget_hours || 0,
         hoursUsed: 0,
         isOverBudget: true,
-        canOverride: false
+        canOverride: false,
+        usagePercentage: 0
       };
     }
 
@@ -172,14 +174,16 @@ export const validateProjectBudget = async (
         totalBudget: 0,
         hoursUsed,
         isOverBudget: false,
-        canOverride: false
+        canOverride: false,
+        usagePercentage: 0
       };
     }
 
-    // Calculate remaining hours and check if adding hours would exceed budget
+    // Calculate remaining hours and usage percentage
     const remainingHours = totalBudget - hoursUsed;
     const wouldExceedBudget = hoursUsed + hoursToAdd > totalBudget;
     const isCurrentlyOverBudget = hoursUsed > totalBudget;
+    const usagePercentage = totalBudget > 0 ? (hoursUsed / totalBudget) * 100 : 0;
 
     // Check admin override capability
     const canOverride = await canUserOverrideBudget(userId);
@@ -189,6 +193,7 @@ export const validateProjectBudget = async (
     console.log(`- Hours Used: ${hoursUsed} hours`);
     console.log(`- Hours to Add: ${hoursToAdd} hours`);
     console.log(`- Remaining: ${remainingHours} hours`);
+    console.log(`- Usage Percentage: ${usagePercentage.toFixed(1)}%`);
     console.log(`- Would Exceed: ${wouldExceedBudget}`);
     console.log(`- Can Override: ${canOverride}`);
 
@@ -202,7 +207,8 @@ export const validateProjectBudget = async (
         totalBudget,
         hoursUsed,
         isOverBudget: wouldExceedBudget,
-        canOverride: true
+        canOverride: true,
+        usagePercentage
       };
     }
 
@@ -218,7 +224,8 @@ export const validateProjectBudget = async (
         totalBudget,
         hoursUsed,
         isOverBudget: true,
-        canOverride: false
+        canOverride: false,
+        usagePercentage
       };
     }
 
@@ -239,7 +246,8 @@ export const validateProjectBudget = async (
       totalBudget,
       hoursUsed,
       isOverBudget: false,
-      canOverride
+      canOverride,
+      usagePercentage
     };
 
   } catch (error) {
@@ -251,7 +259,8 @@ export const validateProjectBudget = async (
       totalBudget: 0,
       hoursUsed: 0,
       isOverBudget: true,
-      canOverride: false
+      canOverride: false,
+      usagePercentage: 0
     };
   }
 };

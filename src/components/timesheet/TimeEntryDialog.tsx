@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { 
   Dialog, 
@@ -22,6 +22,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import WeekendApprovalDialog from "./WeekendApprovalDialog";
 import { validateProjectBudget } from "@/lib/timesheet/validation/budget-validation-service";
+import { showBudgetToast, showBudgetSaveSuccess } from "@/lib/timesheet/budget-notification-service";
 
 // Import the components we've created
 import { timeEntryFormSchema, TimeEntryFormValues } from "./time-entry/schema";
@@ -50,6 +51,7 @@ interface BudgetValidation {
   hoursUsed: number;
   isOverBudget: boolean;
   canOverride: boolean;
+  usagePercentage: number;
 }
 
 const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
@@ -98,51 +100,52 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     setEntryType(watchedEntryType || "project");
   }, [watchedEntryType]);
 
-  // Real-time budget validation
+  // Real-time budget validation with debouncing
+  const checkBudget = useCallback(async () => {
+    // Only check for project entries with valid data
+    if (watchedEntryType !== "project" || !watchedProjectId || !watchedHours || watchedHours <= 0) {
+      setBudgetValidation(null);
+      return;
+    }
+
+    setBudgetChecking(true);
+    try {
+      console.log("=== REAL-TIME BUDGET CHECK ===");
+      console.log("Project ID:", watchedProjectId);
+      console.log("Hours:", watchedHours);
+      console.log("Existing Entry ID:", existingEntry?.id);
+
+      const validation = await validateProjectBudget({
+        projectId: watchedProjectId,
+        hoursToAdd: Number(watchedHours),
+        existingEntryId: existingEntry?.id,
+        userId
+      });
+
+      setBudgetValidation(validation);
+      console.log("Budget validation result:", validation);
+    } catch (error) {
+      console.error("Error checking budget:", error);
+      setBudgetValidation({
+        isValid: false,
+        message: "Failed to check project budget",
+        remainingHours: 0,
+        totalBudget: 0,
+        hoursUsed: 0,
+        isOverBudget: true,
+        canOverride: false,
+        usagePercentage: 0
+      });
+    } finally {
+      setBudgetChecking(false);
+    }
+  }, [watchedEntryType, watchedProjectId, watchedHours, existingEntry?.id, userId]);
+
   useEffect(() => {
-    const checkBudget = async () => {
-      // Only check for project entries with valid data
-      if (watchedEntryType !== "project" || !watchedProjectId || !watchedHours || watchedHours <= 0) {
-        setBudgetValidation(null);
-        return;
-      }
-
-      setBudgetChecking(true);
-      try {
-        console.log("=== REAL-TIME BUDGET CHECK ===");
-        console.log("Project ID:", watchedProjectId);
-        console.log("Hours:", watchedHours);
-        console.log("Existing Entry ID:", existingEntry?.id);
-
-        const validation = await validateProjectBudget({
-          projectId: watchedProjectId,
-          hoursToAdd: Number(watchedHours),
-          existingEntryId: existingEntry?.id,
-          userId
-        });
-
-        setBudgetValidation(validation);
-        console.log("Budget validation result:", validation);
-      } catch (error) {
-        console.error("Error checking budget:", error);
-        setBudgetValidation({
-          isValid: false,
-          message: "Failed to check project budget",
-          remainingHours: 0,
-          totalBudget: 0,
-          hoursUsed: 0,
-          isOverBudget: true,
-          canOverride: false
-        });
-      } finally {
-        setBudgetChecking(false);
-      }
-    };
-
     // Debounce the budget check to avoid too many API calls
     const timeoutId = setTimeout(checkBudget, 300);
     return () => clearTimeout(timeoutId);
-  }, [watchedEntryType, watchedProjectId, watchedHours, existingEntry?.id, userId]);
+  }, [checkBudget]);
 
   // Reset form when dialog opens/closes
   useEffect(() => {
@@ -199,11 +202,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
     // Budget validation - block non-admin users from exceeding budget
     if (showBudgetError) {
-      toast({
-        title: "Budget exceeded",
-        description: budgetValidation?.message || "This entry would exceed the project budget.",
-        variant: "destructive",
-      });
+      const selectedProject = projects.find(p => p.id === values.project_id);
+      showBudgetToast(budgetValidation!, selectedProject?.name);
       return;
     }
 
@@ -237,12 +237,9 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
       
       const savedEntry = await saveTimesheetEntry(entryData);
       
-      toast({
-        title: existingEntry ? "Entry updated" : "Entry created",
-        description: existingEntry 
-          ? "Your timesheet entry has been updated." 
-          : "Your timesheet entry has been created.",
-      });
+      // Show success notification with budget info
+      const selectedProject = projects.find(p => p.id === values.project_id);
+      showBudgetSaveSuccess(!!existingEntry, budgetValidation || undefined, selectedProject?.name);
       
       onSave(savedEntry);
       onOpenChange(false);

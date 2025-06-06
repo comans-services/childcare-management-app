@@ -29,6 +29,12 @@ interface ProjectBudgetInfo {
 export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ control, projects }) => {
   const [budgetInfo, setBudgetInfo] = useState<ProjectBudgetInfo>({});
   const [loadingBudgets, setLoadingBudgets] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Force refresh budget info when projects change (e.g., after saving an entry)
+  useEffect(() => {
+    setRefreshKey(prev => prev + 1);
+  }, [projects]);
 
   // Fetch budget information for all projects
   useEffect(() => {
@@ -37,6 +43,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ control, proje
 
       setLoadingBudgets(true);
       try {
+        console.log("=== REFRESHING PROJECT BUDGET INFO ===");
         const budgetPromises = projects.map(async (project) => {
           const budget = await getProjectBudgetStatus(project.id);
           return { projectId: project.id, budget };
@@ -50,6 +57,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ control, proje
         });
 
         setBudgetInfo(budgetMap);
+        console.log("Project budget info refreshed:", budgetMap);
       } catch (error) {
         console.error("Error fetching project budget info:", error);
       } finally {
@@ -58,7 +66,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ control, proje
     };
 
     fetchBudgetInfo();
-  }, [projects]);
+  }, [projects, refreshKey]); // Include refreshKey to force refresh
 
   const getBudgetColor = (usagePercentage: number, isOverBudget: boolean) => {
     if (isOverBudget) return "text-red-600";
