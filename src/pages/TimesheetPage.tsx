@@ -39,9 +39,9 @@ const TimesheetPage = () => {
   // Redirect if no user is authenticated
   if (!user) {
     return (
-      <div className="container-responsive">
-        <div className="p-responsive text-center">
-          <p className="text-gray-500 text-fluid-base">Please sign in to view your timesheet</p>
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="py-8 text-center">
+          <p className="text-gray-500">Please sign in to view your timesheet</p>
         </div>
       </div>
     );
@@ -72,16 +72,16 @@ const TimesheetPage = () => {
   };
 
   return (
-    <div className="container-responsive">
-      {/* Enhanced header with fluid typography */}
-      <div className="mb-fluid-md lg:mb-fluid-lg flex flex-col sm:flex-row sm:justify-between sm:items-start gap-fluid-sm">
+    <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* Header section with improved mobile spacing */}
+      <div className="mb-6 lg:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="text-fluid-3xl lg:text-fluid-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-fluid-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             My Timesheet
           </h1>
-          <p className="text-gray-600 text-fluid-md lg:text-fluid-lg mt-2 leading-fluid-normal">
+          <p className="text-gray-600 text-sm sm:text-base lg:text-lg mt-2">
             Track and manage your working hours
-            <span className="show-on-sm"> - {effectiveDays} days</span>
+            <span className="hidden sm:inline"> - {effectiveDays} days</span>
           </p>
         </div>
         
@@ -93,50 +93,50 @@ const TimesheetPage = () => {
           className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md flex-shrink-0"
         >
           <TrashIcon className="h-4 w-4 mr-2" />
-          <span className="hide-on-sm">Reset All</span>
-          <span className="show-on-sm">Reset All Entries</span>
+          <span className="sm:hidden">Reset All Entries</span>
+          <span className="hidden sm:inline">Reset All</span>
         </Button>
       </div>
 
-      {/* Timer component with dynamic positioning */}
+      {/* Mobile timer with proper spacing */}
       {isMobile && (
-        <div className="mb-fluid-md">
+        <div className="mb-6">
           <TimerComponent />
         </div>
       )}
 
-      {/* Enhanced weekly overview card */}
-      <Card className="mb-fluid-md lg:mb-fluid-lg shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary">
-        <CardHeader className="pb-3 p-responsive">
-          <CardTitle className="text-fluid-xl lg:text-fluid-2xl font-semibold leading-fluid-tight">
+      {/* Weekly overview card with consistent padding */}
+      <Card className="mb-6 lg:mb-8 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl lg:text-2xl font-semibold">
             Weekly Overview
           </CardTitle>
-          <CardDescription className="text-fluid-sm lg:text-fluid-md leading-fluid-normal">
+          <CardDescription className="text-sm sm:text-base">
             Your time entries for the current week
-            <span className="show-on-lg"> - {effectiveHours}h expected per week</span>
+            <span className="hidden lg:inline"> - {effectiveHours}h expected per week</span>
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-responsive">
+        <CardContent className="p-4 sm:p-6 pt-0">
           {/* WeeklyView now handles user filtering internally via RLS */}
           <WeeklyView key={refreshKey} />
         </CardContent>
       </Card>
 
-      {/* Desktop timer with enhanced styling */}
+      {/* Desktop timer with consistent spacing */}
       {!isMobile && (
-        <div className="show-on-md">
+        <div className="hidden md:block">
           <TimerComponent />
         </div>
       )}
 
-      {/* Enhanced delete confirmation dialog */}
+      {/* Delete confirmation dialog with responsive sizing */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="rounded-xl border-red-200 shadow-lg dialog-responsive-md">
+        <AlertDialogContent className="rounded-xl border-red-200 shadow-lg w-[90vw] max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-fluid-lg lg:text-fluid-xl">
+            <AlertDialogTitle className="text-lg lg:text-xl">
               Delete All Entries
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-fluid-sm lg:text-fluid-base leading-fluid-relaxed">
+            <AlertDialogDescription className="text-sm lg:text-base leading-relaxed">
               This action will permanently delete all your timesheet entries. 
               This cannot be undone. Are you sure you want to continue?
             </AlertDialogDescription>

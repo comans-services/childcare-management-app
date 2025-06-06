@@ -49,15 +49,15 @@ const MobileWeeklyHoursSummary: React.FC<MobileWeeklyHoursSummaryProps> = ({
 
   return (
     <Card className="mb-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-sm">
-      <CardContent className="p-4 space-y-4">
+      <CardContent className="p-5 sm:p-6 space-y-5">
         {/* Main Hours Display */}
         <div className="text-center">
-          <div className="flex items-center justify-center mb-2">
+          <div className="flex items-center justify-center mb-3">
             <div className="p-3 bg-blue-100 rounded-full">
               <Clock className="h-6 w-6 text-blue-600" />
             </div>
           </div>
-          <p className="text-sm text-gray-600 mb-1">Total Hours This Week</p>
+          <p className="text-sm text-gray-600 mb-2">Total Hours This Week</p>
           <p className={`text-3xl font-bold ${getHoursColor()}`}>
             {formatHours(totalHours)}
             {weeklyTarget && (
@@ -67,14 +67,14 @@ const MobileWeeklyHoursSummary: React.FC<MobileWeeklyHoursSummaryProps> = ({
           
           {/* Progress Bar */}
           {weeklyTarget && (
-            <div className="mt-3">
+            <div className="mt-4">
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${getProgressPercentage()}%` }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-2">
                 {getProgressPercentage().toFixed(0)}% of weekly target
               </p>
             </div>
@@ -82,9 +82,9 @@ const MobileWeeklyHoursSummary: React.FC<MobileWeeklyHoursSummaryProps> = ({
         </div>
 
         {/* Days Worked */}
-        <div className="flex items-center justify-center space-x-4 pt-3 border-t border-blue-200">
+        <div className="flex items-center justify-center space-x-6 pt-4 border-t border-blue-200">
           <div className="text-center">
-            <div className="flex items-center justify-center mb-1">
+            <div className="flex items-center justify-center mb-2">
               <Calendar className="h-4 w-4 text-indigo-600 mr-1" />
               <span className="text-sm text-gray-600">Days Worked</span>
             </div>
@@ -95,7 +95,7 @@ const MobileWeeklyHoursSummary: React.FC<MobileWeeklyHoursSummaryProps> = ({
           
           {validation.daysRemaining > 0 && (
             <div className="text-center">
-              <div className="flex items-center justify-center mb-1">
+              <div className="flex items-center justify-center mb-2">
                 <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
                 <span className="text-sm text-gray-600">Remaining</span>
               </div>

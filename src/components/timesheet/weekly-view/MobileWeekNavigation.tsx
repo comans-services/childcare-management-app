@@ -28,9 +28,9 @@ const MobileWeekNavigation: React.FC<MobileWeekNavigationProps> = ({
 }) => {
   return (
     <Card className="mb-4 shadow-sm">
-      <CardContent className="p-3">
+      <CardContent className="p-4 sm:p-5">
         {/* Date Display */}
-        <div className="text-center mb-3">
+        <div className="text-center mb-4">
           <div className="text-lg font-semibold text-primary">
             {weekDates.length > 0 && (
               viewMode === "today" 
@@ -46,29 +46,29 @@ const MobileWeekNavigation: React.FC<MobileWeekNavigationProps> = ({
             variant="outline"
             size="lg"
             onClick={navigateToPreviousWeek}
-            className="flex-1 h-12 shadow-sm hover:shadow-md transition-all duration-200"
+            className="flex-1 h-12 shadow-sm hover:shadow-md transition-all duration-200 min-w-0"
             aria-label="Previous week"
           >
-            <ChevronLeft className="h-5 w-5 mr-2" />
-            Previous
+            <ChevronLeft className="h-5 w-5 mr-1 sm:mr-2 flex-shrink-0" />
+            <span className="truncate">Previous</span>
           </Button>
           
           <Button
             variant={viewMode === "today" ? "default" : "outline"}
             size="lg"
             onClick={toggleViewMode}
-            className="flex-1 h-12 shadow-sm hover:shadow-md transition-all duration-200"
+            className="flex-1 h-12 shadow-sm hover:shadow-md transition-all duration-200 min-w-0"
             aria-label="Toggle view mode"
           >
             {viewMode === "today" ? (
               <>
-                <Calendar className="h-4 w-4 mr-2" />
-                Today
+                <Calendar className="h-4 w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">Today</span>
               </>
             ) : (
               <>
-                <CalendarDays className="h-4 w-4 mr-2" />
-                Week
+                <CalendarDays className="h-4 w-4 mr-1 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">Week</span>
               </>
             )}
           </Button>
@@ -77,17 +77,17 @@ const MobileWeekNavigation: React.FC<MobileWeekNavigationProps> = ({
             variant="outline"
             size="lg"
             onClick={navigateToNextWeek}
-            className="flex-1 h-12 shadow-sm hover:shadow-md transition-all duration-200"
+            className="flex-1 h-12 shadow-sm hover:shadow-md transition-all duration-200 min-w-0"
             aria-label="Next week"
           >
-            Next
-            <ChevronRight className="h-5 w-5 ml-2" />
+            <span className="truncate">Next</span>
+            <ChevronRight className="h-5 w-5 ml-1 sm:ml-2 flex-shrink-0" />
           </Button>
         </div>
 
         {/* Error Retry */}
         {error && (
-          <div className="mt-3">
+          <div className="mt-4">
             <Button 
               onClick={fetchData} 
               variant="ghost"

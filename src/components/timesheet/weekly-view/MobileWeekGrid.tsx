@@ -61,11 +61,11 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
   return (
     <div className="w-full animate-in fade-in-50">
       <Carousel className="w-full">
-        <CarouselContent className="-ml-2 md:-ml-4">
+        <CarouselContent className="ml-0 pl-4">
           {displayDates.map((date) => (
             <CarouselItem 
               key={date.toISOString()} 
-              className="pl-2 md:pl-4 basis-full min-w-0"
+              className="pl-0 pr-4 basis-full min-w-0"
             >
               <MobileDayColumn
                 date={date}
@@ -81,7 +81,7 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
         </CarouselContent>
         
         {/* Navigation Controls */}
-        <div className="flex justify-center items-center mt-4 space-x-4">
+        <div className="flex justify-center items-center mt-6 space-x-4">
           <CarouselPrevious className="relative static translate-y-0 translate-x-0 h-12 w-12 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />
           
           {/* Day Indicator */}

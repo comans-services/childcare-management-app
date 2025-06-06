@@ -135,14 +135,14 @@ const TimerComponent = () => {
   const hasItems = entryType === 'project' ? projects.length > 0 : contracts.length > 0;
 
   return (
-    <Card className="mt-6">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <span className="text-xl">Time Tracker</span>
+    <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <span>Time Tracker</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="p-4 sm:p-6 pt-0">
+        <div className="space-y-4 sm:space-y-5">
           <div className="flex flex-col gap-4">
             {/* Entry Type Selection */}
             <div className="space-y-2">
@@ -171,7 +171,7 @@ const TimerComponent = () => {
                 onValueChange={setSelectedProject}
                 disabled={isRunning}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full h-11">
                   <SelectValue placeholder="Select a project" />
                 </SelectTrigger>
                 <SelectContent>
@@ -191,7 +191,7 @@ const TimerComponent = () => {
                 onValueChange={setSelectedContract}
                 disabled={isRunning}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full h-11">
                   <SelectValue placeholder="Select a contract" />
                 </SelectTrigger>
                 <SelectContent>
@@ -204,23 +204,23 @@ const TimerComponent = () => {
               </Select>
             )}
             
-            <div className="flex items-center justify-center">
-              <div className="text-4xl font-mono font-bold">
+            <div className="flex items-center justify-center py-2">
+              <div className="text-3xl sm:text-4xl font-mono font-bold">
                 {formattedTime()}
               </div>
             </div>
             
-            <div className="flex justify-center space-x-2">
+            <div className="flex justify-center space-x-3">
               {!isRunning ? (
                 <Button 
                   onClick={startTimer} 
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 h-11 px-6"
                   disabled={!currentSelection || !hasItems}
                 >
                   <Play className="mr-2 h-4 w-4" /> Start Timer
                 </Button>
               ) : (
-                <Button onClick={pauseTimer} className="bg-amber-500 hover:bg-amber-600">
+                <Button onClick={pauseTimer} className="bg-amber-500 hover:bg-amber-600 h-11 px-6">
                   <Pause className="mr-2 h-4 w-4" /> Pause
                 </Button>
               )}
@@ -229,6 +229,7 @@ const TimerComponent = () => {
                 onClick={stopTimer} 
                 variant="destructive"
                 disabled={elapsedTime === 0}
+                className="h-11 px-6"
               >
                 <StopCircle className="mr-2 h-4 w-4" /> Stop & Save
               </Button>
