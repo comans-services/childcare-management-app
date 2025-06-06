@@ -275,12 +275,12 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[650px] flex flex-col max-h-[90vh]">
-          <DialogHeader className="flex-shrink-0 pb-4">
+        <DialogContent className="sm:max-w-[700px] flex flex-col max-h-[90vh]">
+          <DialogHeader className="flex-shrink-0 pb-6">
             <DialogTitle className="text-xl">{existingEntry ? "Edit time entry" : "Add time"}</DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto min-h-0 px-1">
+          <div className="flex-1 overflow-y-auto min-h-0 px-2">
             <div className="space-y-6">
               <div className="flex items-center">
                 <div className="bg-primary/10 p-2 rounded-full mr-3">
@@ -384,19 +384,21 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
             </div>
           </div>
 
-          <DialogFooter className="flex-shrink-0 pt-6 border-t gap-3">
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button 
-              type="button"
-              onClick={form.handleSubmit(handleSubmit)}
-              className={`px-8 ${isEmployeeBudgetBlocked ? 'bg-red-600 hover:bg-red-700' : ''}`}
-              disabled={isSaveDisabled}
-              variant={isEmployeeBudgetBlocked ? "destructive" : "default"}
-            >
-              {getSaveButtonText()}
-            </Button>
+          <DialogFooter className="flex-shrink-0 pt-6 border-t">
+            <div className="flex w-full gap-3 sm:justify-end">
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button 
+                type="button"
+                onClick={form.handleSubmit(handleSubmit)}
+                className={`px-8 ${isEmployeeBudgetBlocked ? 'bg-red-600 hover:bg-red-700' : ''}`}
+                disabled={isSaveDisabled}
+                variant={isEmployeeBudgetBlocked ? "destructive" : "default"}
+              >
+                {getSaveButtonText()}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
