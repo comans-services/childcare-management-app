@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDate, getWeekStart, isWeekend } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
-import { Calendar, AlertTriangle } from "lucide-react";
+import { Calendar, AlertTriangle, AlertCircle } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -21,6 +21,7 @@ import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useAuth } from "@/context/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import WeekendApprovalDialog from "./WeekendApprovalDialog";
+import { validateProjectBudget } from "@/lib/timesheet/validation/budget-validation-service";
 
 // Import the components we've created
 import { timeEntryFormSchema, TimeEntryFormValues } from "./time-entry/schema";
@@ -41,6 +42,16 @@ interface TimeEntryDialogProps {
   entries: TimesheetEntry[]; // Add entries prop for validation
 }
 
+interface BudgetValidation {
+  isValid: boolean;
+  message?: string;
+  remainingHours: number;
+  totalBudget: number;
+  hoursUsed: number;
+  isOverBudget: boolean;
+  canOverride: boolean;
+}
+
 const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   open,
   onOpenChange,
@@ -54,6 +65,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const { userRole } = useAuth();
   const [entryType, setEntryType] = useState<"project" | "contract">("project");
   const [weekendApprovalOpen, setWeekendApprovalOpen] = useState(false);
+  const [budgetValidation, setBudgetValidation] = useState<BudgetValidation | null>(null);
+  const [budgetChecking, setBudgetChecking] = useState(false);
 
   // Get working days validation
   const weekStart = getWeekStart(date);
@@ -76,12 +89,60 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     },
   });
 
-  // Watch entry type changes
+  // Watch form values for real-time budget checking
   const watchedEntryType = form.watch("entry_type");
+  const watchedProjectId = form.watch("project_id");
+  const watchedHours = form.watch("hours_logged");
 
   useEffect(() => {
     setEntryType(watchedEntryType || "project");
   }, [watchedEntryType]);
+
+  // Real-time budget validation
+  useEffect(() => {
+    const checkBudget = async () => {
+      // Only check for project entries with valid data
+      if (watchedEntryType !== "project" || !watchedProjectId || !watchedHours || watchedHours <= 0) {
+        setBudgetValidation(null);
+        return;
+      }
+
+      setBudgetChecking(true);
+      try {
+        console.log("=== REAL-TIME BUDGET CHECK ===");
+        console.log("Project ID:", watchedProjectId);
+        console.log("Hours:", watchedHours);
+        console.log("Existing Entry ID:", existingEntry?.id);
+
+        const validation = await validateProjectBudget({
+          projectId: watchedProjectId,
+          hoursToAdd: Number(watchedHours),
+          existingEntryId: existingEntry?.id,
+          userId
+        });
+
+        setBudgetValidation(validation);
+        console.log("Budget validation result:", validation);
+      } catch (error) {
+        console.error("Error checking budget:", error);
+        setBudgetValidation({
+          isValid: false,
+          message: "Failed to check project budget",
+          remainingHours: 0,
+          totalBudget: 0,
+          hoursUsed: 0,
+          isOverBudget: true,
+          canOverride: false
+        });
+      } finally {
+        setBudgetChecking(false);
+      }
+    };
+
+    // Debounce the budget check to avoid too many API calls
+    const timeoutId = setTimeout(checkBudget, 300);
+    return () => clearTimeout(timeoutId);
+  }, [watchedEntryType, watchedProjectId, watchedHours, existingEntry?.id, userId]);
 
   // Reset form when dialog opens/closes
   useEffect(() => {
@@ -96,6 +157,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
         start_time: existingEntry?.start_time || "",
         end_time: existingEntry?.end_time || "",
       });
+      setBudgetValidation(null);
     }
   }, [open, existingEntry, form]);
 
@@ -113,8 +175,13 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const canLogWeekend = weekendValidation.isValid;
   const showWeekendWarning = isWeekendDate && !canLogWeekend && isNewEntry;
 
+  // Budget validation checks
+  const showBudgetError = budgetValidation && !budgetValidation.isValid && !budgetValidation.canOverride;
+  const showBudgetWarning = budgetValidation && budgetValidation.isValid && budgetValidation.message;
+  const showBudgetOverride = budgetValidation && !budgetValidation.isValid && budgetValidation.canOverride;
+
   const handleSubmit = async (values: TimeEntryFormValues) => {
-    // Priority validation order: working days first, then weekend
+    // Priority validation order: working days first, then weekend, then budget
     if (isNewEntry && !canAddToThisDate) {
       toast({
         title: "Cannot add entry",
@@ -127,6 +194,16 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     // Weekend validation for new entries (with admin override already applied)
     if (isNewEntry && showWeekendWarning) {
       setWeekendApprovalOpen(true);
+      return;
+    }
+
+    // Budget validation - block non-admin users from exceeding budget
+    if (showBudgetError) {
+      toast({
+        title: "Budget exceeded",
+        description: budgetValidation?.message || "This entry would exceed the project budget.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -173,7 +250,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
       console.error("Error saving entry:", error);
       toast({
         title: "Error",
-        description: "Failed to save your entry.",
+        description: error instanceof Error ? error.message : "Failed to save your entry.",
         variant: "destructive",
       });
     }
@@ -181,11 +258,20 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
   const handleCancel = () => {
     form.reset();
+    setBudgetValidation(null);
     onOpenChange(false);
   };
 
   // Determine if the save button should be disabled
-  const isSaveDisabled = showWorkingDaysWarning || showWeekendWarning;
+  const isSaveDisabled = showWorkingDaysWarning || showWeekendWarning || showBudgetError || budgetChecking;
+
+  const getBudgetStatusColor = () => {
+    if (!budgetValidation) return "";
+    if (budgetValidation.isOverBudget) return "text-red-600";
+    if (budgetValidation.usagePercentage >= 95) return "text-red-600";
+    if (budgetValidation.usagePercentage >= 75) return "text-yellow-600";
+    return "text-green-600";
+  };
 
   return (
     <>
@@ -229,6 +315,57 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 </Alert>
               )}
 
+              {/* Budget Error Alert - Show when budget would be exceeded */}
+              {!showWorkingDaysWarning && !showWeekendWarning && showBudgetError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {budgetValidation?.message || "This entry would exceed the project budget."}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Budget Override Alert - Show when admin can override */}
+              {!showWorkingDaysWarning && !showWeekendWarning && showBudgetOverride && (
+                <Alert className="mb-4 border-yellow-200 bg-yellow-50">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    <div className="font-medium">Admin Override Active</div>
+                    {budgetValidation?.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Budget Warning Alert - Show when approaching budget limit */}
+              {!showWorkingDaysWarning && !showWeekendWarning && !showBudgetError && !showBudgetOverride && showBudgetWarning && (
+                <Alert className="mb-4 border-yellow-200 bg-yellow-50">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    {budgetValidation?.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Budget Status Display - Show current budget info when valid */}
+              {!showWorkingDaysWarning && !showWeekendWarning && budgetValidation && budgetValidation.totalBudget > 0 && (
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Project Budget:</span>
+                    <span className={`font-medium ${getBudgetStatusColor()}`}>
+                      {budgetValidation.hoursUsed.toFixed(1)} / {budgetValidation.totalBudget.toFixed(1)} hours used
+                      {budgetValidation.remainingHours > 0 && (
+                        <span className="ml-2 text-gray-500">
+                          ({budgetValidation.remainingHours.toFixed(1)}h remaining)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  {budgetChecking && (
+                    <div className="mt-2 text-xs text-gray-500">Checking budget...</div>
+                  )}
+                </div>
+              )}
+
               {/* Show validation info for allowed entries */}
               {!showWorkingDaysWarning && !showWeekendWarning && validation.daysRemaining > 0 && isNewEntry && (
                 <Alert className="mb-4">
@@ -270,7 +407,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                   className="px-6"
                   disabled={isSaveDisabled}
                 >
-                  Save
+                  {budgetChecking ? "Checking..." : "Save"}
                 </Button>
               </DialogFooter>
             </form>
