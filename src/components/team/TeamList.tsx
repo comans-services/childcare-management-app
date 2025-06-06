@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchUsers, User, updateUser } from "@/lib/user-service";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +22,8 @@ const TeamList = () => {
   const queryClient = useQueryClient();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const lastRightClickTime = useRef<number>(0);
+  const lastRightClickedUser = useRef<string | null>(null);
 
   const { data: users, isLoading, error, refetch } = useQuery({
     queryKey: ["users", refreshTrigger],
@@ -53,6 +55,23 @@ const TeamList = () => {
   const handleEditUser = (user: User) => {
     console.log("Editing user:", user);
     setEditingUser(user);
+  };
+
+  const handleDoubleRightClick = (user: User, event: React.MouseEvent) => {
+    event.preventDefault(); // Prevent context menu
+    
+    const currentTime = Date.now();
+    const timeDiff = currentTime - lastRightClickTime.current;
+    
+    // Check if this is a double right-click (within 500ms and same user)
+    if (timeDiff < 500 && lastRightClickedUser.current === user.id) {
+      handleEditUser(user);
+      lastRightClickTime.current = 0; // Reset to prevent triple clicks
+      lastRightClickedUser.current = null;
+    } else {
+      lastRightClickTime.current = currentTime;
+      lastRightClickedUser.current = user.id;
+    }
   };
 
   const handleUserUpdate = (user: User) => {
@@ -172,7 +191,11 @@ const TeamList = () => {
         <TableBody>
           {users && users.length > 0 ? (
             users.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow 
+                key={user.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onContextMenu={(e) => handleDoubleRightClick(user, e)}
+              >
                 <TableCell className="font-medium">{user.full_name || "Not set"}</TableCell>
                 <TableCell>
                   <span className="text-sm text-gray-600 font-mono">
