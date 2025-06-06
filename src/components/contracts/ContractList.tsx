@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { 
   Card, 
   CardContent, 
@@ -38,10 +37,29 @@ const ContractList: React.FC<ContractListProps> = ({
 }) => {
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const lastRightClickTime = useRef<number>(0);
+  const lastRightClickedContract = useRef<string | null>(null);
 
   const handleManageAssignments = (contract: Contract) => {
     setSelectedContract(contract);
     setAssignmentDialogOpen(true);
+  };
+
+  const handleDoubleRightClick = (contract: Contract, event: React.MouseEvent) => {
+    event.preventDefault(); // Prevent context menu
+    
+    const currentTime = Date.now();
+    const timeDiff = currentTime - lastRightClickTime.current;
+    
+    // Check if this is a double right-click (within 500ms and same contract)
+    if (timeDiff < 500 && lastRightClickedContract.current === contract.id) {
+      onEdit(contract);
+      lastRightClickTime.current = 0; // Reset to prevent triple clicks
+      lastRightClickedContract.current = null;
+    } else {
+      lastRightClickTime.current = currentTime;
+      lastRightClickedContract.current = contract.id;
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -77,7 +95,11 @@ const ContractList: React.FC<ContractListProps> = ({
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {contracts.map((contract) => (
-          <Card key={contract.id} className="hover:shadow-md transition-shadow">
+          <Card 
+            key={contract.id} 
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onContextMenu={(e) => handleDoubleRightClick(contract, e)}
+          >
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg font-semibold">{contract.name}</CardTitle>
