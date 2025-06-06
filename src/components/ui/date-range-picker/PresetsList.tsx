@@ -6,18 +6,22 @@ import { dateRangePresets } from "@/lib/date-range-utils";
 interface PresetsListProps {
   selectedPreset: string | null;
   onPresetClick: (preset: any) => void;
+  isMobile?: boolean;
 }
 
-export const PresetsList = ({ selectedPreset, onPresetClick }: PresetsListProps) => {
+export const PresetsList = ({ selectedPreset, onPresetClick, isMobile = false }: PresetsListProps) => {
   return (
-    <div className="space-y-1">
+    <>
       {dateRangePresets.map((preset) => (
         <button
           key={preset.value}
           type="button"
           onClick={() => onPresetClick(preset)}
           className={cn(
-            "w-full text-left px-3 py-2 text-sm rounded-md transition-colors",
+            "text-left text-sm rounded-md transition-colors font-medium",
+            isMobile 
+              ? "px-3 py-3 w-full" 
+              : "w-full px-3 py-2",
             selectedPreset === preset.value
               ? "bg-blue-100 text-blue-900"
               : "hover:bg-gray-100 text-gray-700"
@@ -26,6 +30,6 @@ export const PresetsList = ({ selectedPreset, onPresetClick }: PresetsListProps)
           {preset.label}
         </button>
       ))}
-    </div>
+    </>
   );
 };
