@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -14,10 +15,16 @@ export default {
 			center: true,
 			padding: '2rem',
 			screens: {
-				'2xl': '1400px'
+				'2xl': '1400px',
+				'3xl': '1920px',
+				'4xl': '2560px'
 			}
 		},
 		extend: {
+			screens: {
+				'3xl': '1920px',
+				'4xl': '2560px',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -68,6 +75,21 @@ export default {
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
 			},
+			spacing: {
+				'fluid-xs': 'clamp(0.25rem, 0.5vw, 0.5rem)',
+				'fluid-sm': 'clamp(0.5rem, 1vw, 1rem)',
+				'fluid-md': 'clamp(1rem, 2vw, 2rem)',
+				'fluid-lg': 'clamp(1.5rem, 3vw, 3rem)',
+				'fluid-xl': 'clamp(2rem, 4vw, 4rem)',
+			},
+			fontSize: {
+				'fluid-xs': 'clamp(0.75rem, 1.5vw, 0.875rem)',
+				'fluid-sm': 'clamp(0.875rem, 2vw, 1rem)',
+				'fluid-base': 'clamp(1rem, 2.5vw, 1.125rem)',
+				'fluid-lg': 'clamp(1.125rem, 3vw, 1.25rem)',
+				'fluid-xl': 'clamp(1.25rem, 3.5vw, 1.5rem)',
+				'fluid-2xl': 'clamp(1.5rem, 4vw, 2rem)',
+			},
 			keyframes: {
 				'accordion-down': {
 					from: {
@@ -92,5 +114,44 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		function({ addUtilities }: { addUtilities: Function }) {
+			const newUtilities = {
+				'.grid-auto-fit-200': {
+					'grid-template-columns': 'repeat(auto-fit, minmax(200px, 1fr))',
+				},
+				'.grid-auto-fit-250': {
+					'grid-template-columns': 'repeat(auto-fit, minmax(250px, 1fr))',
+				},
+				'.grid-auto-fit-280': {
+					'grid-template-columns': 'repeat(auto-fit, minmax(280px, 1fr))',
+				},
+				'.grid-auto-fit-300': {
+					'grid-template-columns': 'repeat(auto-fit, minmax(300px, 1fr))',
+				},
+				'.grid-auto-fit-350': {
+					'grid-template-columns': 'repeat(auto-fit, minmax(350px, 1fr))',
+				},
+				'.grid-auto-fill-200': {
+					'grid-template-columns': 'repeat(auto-fill, minmax(200px, 1fr))',
+				},
+				'.grid-auto-fill-250': {
+					'grid-template-columns': 'repeat(auto-fill, minmax(250px, 1fr))',
+				},
+				'.grid-auto-fill-280': {
+					'grid-template-columns': 'repeat(auto-fill, minmax(280px, 1fr))',
+				},
+				'.container-responsive': {
+					width: '100%',
+					'max-width': '100%',
+					'margin-left': 'auto',
+					'margin-right': 'auto',
+					'padding-left': 'clamp(1rem, 5vw, 2rem)',
+					'padding-right': 'clamp(1rem, 5vw, 2rem)',
+				},
+			};
+			addUtilities(newUtilities);
+		},
+	],
 } satisfies Config;

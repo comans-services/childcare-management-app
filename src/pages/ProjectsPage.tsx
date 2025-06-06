@@ -114,14 +114,14 @@ const ProjectsPage = () => {
   const stats = calculateProjectStats();
 
   return (
-    <div className="container mx-auto">
-      <div className="mb-6 flex justify-between items-center">
+    <div className="container-responsive max-w-none">
+      <div className="mb-fluid-md flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Projects</h1>
-          <p className="text-gray-600">Manage and monitor project budgets</p>
+          <h1 className="text-fluid-2xl font-bold">Projects</h1>
+          <p className="text-fluid-sm text-gray-600">Manage and monitor project budgets</p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <ImportButton
             entityType="projects"
             onImportComplete={refetch}
@@ -146,7 +146,7 @@ const ProjectsPage = () => {
         </div>
       </div>
 
-      <div className="mb-6 flex flex-col sm:flex-row gap-2 items-center">
+      <div className="mb-fluid-md flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -157,7 +157,7 @@ const ProjectsPage = () => {
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             variant={showActiveOnly ? "default" : "outline"} 
             onClick={() => setShowActiveOnly(!showActiveOnly)}
@@ -179,14 +179,14 @@ const ProjectsPage = () => {
       </div>
 
       {!isLoading && projects.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid-stats-responsive mb-fluid-md container-query">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Total Projects</CardTitle>
+              <CardTitle className="text-fluid-lg">Total Projects</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalProjects}</div>
-              <p className="text-sm text-muted-foreground">
+              <div className="text-fluid-xl font-bold">{stats.totalProjects}</div>
+              <p className="text-fluid-xs text-muted-foreground">
                 {stats.activeProjects} active
               </p>
             </CardContent>
@@ -194,11 +194,11 @@ const ProjectsPage = () => {
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Internal Projects</CardTitle>
+              <CardTitle className="text-fluid-lg">Internal Projects</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.internalProjects}</div>
-              <p className="text-sm text-muted-foreground">
+              <div className="text-fluid-xl font-bold text-blue-600">{stats.internalProjects}</div>
+              <p className="text-fluid-xs text-muted-foreground">
                 Company projects
               </p>
             </CardContent>
@@ -206,11 +206,11 @@ const ProjectsPage = () => {
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Client Projects</CardTitle>
+              <CardTitle className="text-fluid-lg">Client Projects</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.clientProjects}</div>
-              <p className="text-sm text-muted-foreground">
+              <div className="text-fluid-xl font-bold text-green-600">{stats.clientProjects}</div>
+              <p className="text-fluid-xs text-muted-foreground">
                 Customer projects
               </p>
             </CardContent>
@@ -218,11 +218,11 @@ const ProjectsPage = () => {
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Total Budget</CardTitle>
+              <CardTitle className="text-fluid-lg">Total Budget</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalBudgetHours}h</div>
-              <p className="text-sm text-muted-foreground">
+              <div className="text-fluid-xl font-bold">{stats.totalBudgetHours}h</div>
+              <p className="text-fluid-xs text-muted-foreground">
                 Across all projects
               </p>
             </CardContent>
@@ -233,18 +233,18 @@ const ProjectsPage = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>All Projects</CardTitle>
-            <CardDescription>Manage your project budgets and timelines</CardDescription>
+            <CardTitle className="text-fluid-lg">All Projects</CardTitle>
+            <CardDescription className="text-fluid-sm">Manage your project budgets and timelines</CardDescription>
           </div>
           <div className="flex items-center space-x-2">
             {projects.length > 0 && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-fluid-xs text-muted-foreground">
                 {projects.length} project{projects.length !== 1 ? 's' : ''}
               </span>
             )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-responsive">
           {isLoading ? (
             <div className="flex justify-center p-6">
               <Clock className="h-6 w-6 animate-spin text-gray-500" />

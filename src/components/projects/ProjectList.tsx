@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import { 
   Card, 
@@ -94,20 +95,20 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid-cards-responsive container-query">
         {projects.map((project) => (
           <Card 
             key={project.id} 
-            className="hover:shadow-md transition-shadow cursor-pointer"
+            className="hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col"
             onContextMenu={(e) => handleDoubleRightClick(project, e)}
           >
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg font-semibold">{project.name}</CardTitle>
-                <div className="flex flex-col gap-1">
+            <CardHeader className="pb-3 flex-shrink-0">
+              <div className="flex justify-between items-start gap-2">
+                <CardTitle className="text-fluid-lg font-semibold line-clamp-2">{project.name}</CardTitle>
+                <div className="flex flex-col gap-1 flex-shrink-0">
                   <Badge 
                     variant="outline" 
-                    className={`${getStatusColor(project.is_active)} flex items-center gap-1`}
+                    className={`${getStatusColor(project.is_active)} flex items-center gap-1 text-xs`}
                   >
                     {getStatusIcon(project.is_active)}
                     {project.is_active ? 'Active' : 'Inactive'}
@@ -115,7 +116,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
                   {project.is_internal && (
                     <Badge 
                       variant="outline" 
-                      className="bg-blue-100 text-blue-800 border-blue-300 flex items-center gap-1"
+                      className="bg-blue-100 text-blue-800 border-blue-300 flex items-center gap-1 text-xs"
                     >
                       <Home className="h-3 w-3" />
                       Internal
@@ -124,25 +125,25 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 </div>
               </div>
               {project.description && (
-                <CardDescription className="text-sm">{project.description}</CardDescription>
+                <CardDescription className="text-fluid-sm line-clamp-2">{project.description}</CardDescription>
               )}
             </CardHeader>
             
-            <CardContent className="space-y-3">
-              <div className="flex items-center text-sm text-gray-600">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                <span>
+            <CardContent className="space-y-3 flex-1">
+              <div className="flex items-center text-fluid-sm text-gray-600">
+                <BarChart3 className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span className="truncate">
                   {project.hours_used || 0}h / {project.budget_hours}h
                   {isOverBudget(project.hours_used, project.budget_hours) && (
-                    <AlertTriangle className="h-4 w-4 ml-1 text-orange-500 inline" />
+                    <AlertTriangle className="h-4 w-4 ml-1 text-orange-500 inline flex-shrink-0" />
                   )}
                 </span>
               </div>
 
               {(project.start_date || project.end_date) && (
-                <div className="flex items-center text-sm text-gray-600">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span>
+                <div className="flex items-center text-fluid-sm text-gray-600">
+                  <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">
                     {project.start_date && formatDate(new Date(project.start_date))}
                     {project.start_date && project.end_date && ' - '}
                     {project.end_date && formatDate(new Date(project.end_date))}
@@ -151,9 +152,9 @@ const ProjectList: React.FC<ProjectListProps> = ({
               )}
 
               {project.customer_id && !project.is_internal && (
-                <div className="flex items-center text-sm text-gray-600">
-                  <Building className="h-4 w-4 mr-2" />
-                  <span>Customer ID: {project.customer_id}</span>
+                <div className="flex items-center text-fluid-sm text-gray-600">
+                  <Building className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">Customer ID: {project.customer_id}</span>
                 </div>
               )}
             </CardContent>
@@ -163,7 +164,7 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => onToggleStatus(project)}
-                className={`flex items-center gap-1 ${
+                className={`flex items-center gap-1 text-xs ${
                   project.is_active 
                     ? 'text-orange-600 hover:text-orange-700' 
                     : 'text-green-600 hover:text-green-700'
@@ -171,13 +172,13 @@ const ProjectList: React.FC<ProjectListProps> = ({
               >
                 {project.is_active ? (
                   <>
-                    <PowerOff className="h-4 w-4" />
-                    Deactivate
+                    <PowerOff className="h-3 w-3" />
+                    <span className="hidden sm:inline">Deactivate</span>
                   </>
                 ) : (
                   <>
-                    <Power className="h-4 w-4" />
-                    Activate
+                    <Power className="h-3 w-3" />
+                    <span className="hidden sm:inline">Activate</span>
                   </>
                 )}
               </Button>
@@ -185,28 +186,28 @@ const ProjectList: React.FC<ProjectListProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => handleManageAssignments(project)}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 text-xs"
               >
-                <Users className="h-4 w-4" />
-                Assign
+                <Users className="h-3 w-3" />
+                <span className="hidden sm:inline">Assign</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onEdit(project)}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 text-xs"
               >
-                <Edit className="h-4 w-4" />
-                Edit
+                <Edit className="h-3 w-3" />
+                <span className="hidden sm:inline">Edit</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onDelete(project)}
-                className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700"
               >
-                <Trash2 className="h-4 w-4" />
-                Delete
+                <Trash2 className="h-3 w-3" />
+                <span className="hidden sm:inline">Delete</span>
               </Button>
             </CardFooter>
           </Card>
