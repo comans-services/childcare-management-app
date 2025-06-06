@@ -27,10 +27,10 @@ export const MainLayout = () => {
     <div className="min-h-screen bg-slate-50 w-full">
       <Header />
       <div className="flex w-full">
-        {/* Dynamic sidebar with responsive behavior */}
+        {/* Dynamic sidebar with responsive behavior - default to expanded */}
         <div className="
           hidden md:block 
-          w-12 lg:w-44 xl:w-48 2xl:w-52 3xl:w-56 4xl:w-60
+          w-12 lg:w-56 xl:w-60 2xl:w-64 3xl:w-68 4xl:w-72
           border-r min-h-[calc(100vh-4rem)] bg-white 
           transition-all duration-300 ease-in-out
           shrink-0
@@ -41,10 +41,10 @@ export const MainLayout = () => {
         {/* Mobile sidebar overlay */}
         {isMobile && <Sidebar />}
         
-        {/* Main content area with proper responsive padding */}
+        {/* Main content area with proper responsive padding for expanded sidebar */}
         <main className="
           flex-1 min-w-0 
-          p-fluid-sm sm:p-fluid-md lg:p-fluid-lg xl:p-fluid-xl 2xl:p-8 3xl:p-10 4xl:p-12
+          p-fluid-sm sm:p-fluid-md lg:p-6 xl:p-7 2xl:p-8 3xl:p-9 4xl:p-10
           overflow-x-hidden
           container-query
         ">

@@ -17,6 +17,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+const SIDEBAR_STORAGE_KEY = "sidebar-collapsed";
+
 const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: { 
   isCollapsed?: boolean; 
   onToggleCollapse?: () => void; 
@@ -137,30 +139,50 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
 
 const Sidebar = () => {
   const isMobile = useIsMobile();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  // Initialize state from localStorage or default to expanded (false = expanded)
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : false; // Default to expanded
+  });
 
-  // Auto-collapse logic for medium screens (1024px-1280px)
+  // Save collapse state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
+
+  // Only auto-collapse on very small screens, but respect user preference
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       
-      // Auto-collapse on medium screens (1024px-1280px)
-      if (width >= 1024 && width < 1280) {
-        setIsCollapsed(true);
-      }
-      // Auto-expand on larger screens
-      else if (width >= 1280) {
-        setIsCollapsed(false);
+      // Only auto-collapse on very small screens (less than 1024px)
+      // and only if user hasn't manually set a preference
+      const hasUserPreference = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      
+      if (!hasUserPreference) {
+        if (width < 1024) {
+          setIsCollapsed(true);
+        } else {
+          setIsCollapsed(false); // Default to expanded on desktop
+        }
       }
     };
 
-    // Set initial state
-    handleResize();
+    // Set initial state only if no user preference exists
+    const hasUserPreference = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (!hasUserPreference) {
+      handleResize();
+    }
     
     // Listen for resize events
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const handleToggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   // Mobile sidebar
   if (isMobile) {
@@ -186,7 +208,7 @@ const Sidebar = () => {
     `}>
       <SidebarContent 
         isCollapsed={isCollapsed} 
-        onToggleCollapse={() => setIsCollapsed(!isCollapsed)} 
+        onToggleCollapse={handleToggleCollapse} 
       />
     </div>
   );
