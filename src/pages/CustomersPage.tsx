@@ -8,16 +8,9 @@ import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Customer, fetchCustomers } from "@/lib/customer-service";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import AddEditCustomerDialog from "@/components/customers/AddEditCustomerDialog";
+import CustomerList from "@/components/customers/CustomerList";
 import ImportButton from "@/components/common/ImportButton";
 
 const CustomersPage = () => {
@@ -196,70 +189,11 @@ const CustomersPage = () => {
               <Clock className="h-6 w-6 animate-spin text-gray-500" />
             </div>
           ) : filteredCustomers.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCustomers.map((customer) => (
-                    <TableRow 
-                      key={customer.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onContextMenu={(e) => handleDoubleRightClick(customer, e)}
-                    >
-                      <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>
-                        {customer.email ? (
-                          <a 
-                            href={`mailto:${customer.email}`}
-                            className="text-blue-600 hover:underline"
-                          >
-                            {customer.email}
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground">No email</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {customer.phone ? (
-                          <a 
-                            href={`tel:${customer.phone}`}
-                            className="text-blue-600 hover:underline"
-                          >
-                            {customer.phone}
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground">No phone</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {customer.company ? (
-                          <Badge variant="secondary">{customer.company}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">No company</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditCustomer(customer)}
-                        >
-                          Edit
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <CustomerList 
+              customers={filteredCustomers}
+              onEdit={handleEditCustomer}
+              onDoubleRightClick={handleDoubleRightClick}
+            />
           ) : customers.length === 0 ? (
             <div className="p-8 text-center">
               <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
