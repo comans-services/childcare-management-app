@@ -306,151 +306,153 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] p-0 overflow-hidden">
-          <div className="p-6 pb-0">
-            <DialogHeader>
-              <DialogTitle className="text-xl">{existingEntry ? "Edit time entry" : "Add time"}</DialogTitle>
-            </DialogHeader>
-          </div>
+        <DialogContent className="sm:max-w-[500px] flex flex-col max-h-[90vh]">
+          {/* Fixed Header */}
+          <DialogHeader className="flex-shrink-0 pb-4">
+            <DialogTitle className="text-xl">{existingEntry ? "Edit time entry" : "Add time"}</DialogTitle>
+          </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto px-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5 mt-4">
-                <div className="flex items-center mb-4">
-                  <div className="bg-primary/10 p-2 rounded-full mr-3">
-                    <Calendar className="h-5 w-5 text-primary" />
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto min-h-0 pr-2 -mr-2">
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <div className="bg-primary/10 p-2 rounded-full mr-3">
+                  <Calendar className="h-5 w-5 text-primary" />
+                </div>
+                <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
+                {isWeekendDate && (
+                  <div className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                    Weekend
                   </div>
-                  <span className="font-medium">{format(date, "EEE, MMM d, yyyy")}</span>
-                  {isWeekendDate && (
-                    <div className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
-                      Weekend
-                    </div>
+                )}
+              </div>
+
+              {/* Working Days Validation Alert - Highest Priority */}
+              {showWorkingDaysWarning && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    {validation.getValidationMessage()}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Weekend Validation Alert - Only show if working days validation passes */}
+              {!showWorkingDaysWarning && showWeekendWarning && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Weekend entries are not allowed. Please contact your administrator for approval.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Enhanced Budget Error Alert for Employees - Show when budget would be exceeded */}
+              {!showWorkingDaysWarning && !showWeekendWarning && isEmployeeBudgetBlocked && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="font-medium">Budget Exceeded - Entry Blocked</div>
+                    {budgetValidation?.message || "This entry would exceed the project budget and cannot be saved."}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Budget Override Alert - Show when admin can override */}
+              {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && showBudgetOverride && (
+                <Alert className="border-yellow-200 bg-yellow-50">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    <div className="font-medium">Admin Override Available</div>
+                    {budgetValidation?.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Budget Warning Alert - Show when approaching budget limit */}
+              {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && !showBudgetOverride && showBudgetWarning && (
+                <Alert className="border-yellow-200 bg-yellow-50">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    {budgetValidation?.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Budget Status Display - Show current budget info when valid */}
+              {!showWorkingDaysWarning && !showWeekendWarning && budgetValidation && budgetValidation.totalBudget > 0 && (
+                <div className="p-3 bg-gray-50 rounded-lg border">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Project Budget:</span>
+                    <span className={`font-medium ${getBudgetStatusColor()}`}>
+                      {budgetValidation.hoursUsed.toFixed(1)} / {budgetValidation.totalBudget.toFixed(1)} hours used
+                      {budgetValidation.remainingHours > 0 && (
+                        <span className="ml-2 text-gray-500">
+                          ({budgetValidation.remainingHours.toFixed(1)}h remaining)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  {(budgetChecking || isValidating) && (
+                    <div className="mt-2 text-xs text-gray-500">Validating budget...</div>
                   )}
                 </div>
+              )}
 
-                {/* Working Days Validation Alert - Highest Priority */}
-                {showWorkingDaysWarning && (
-                  <Alert variant="destructive" className="mb-4">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      {validation.getValidationMessage()}
-                    </AlertDescription>
-                  </Alert>
-                )}
+              {/* Show validation info for allowed entries */}
+              {!showWorkingDaysWarning && !showWeekendWarning && validation.daysRemaining > 0 && isNewEntry && (
+                <Alert>
+                  <Calendar className="h-4 w-4" />
+                  <AlertDescription>
+                    {validation.getValidationMessage()}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-                {/* Weekend Validation Alert - Only show if working days validation passes */}
-                {!showWorkingDaysWarning && showWeekendWarning && (
-                  <Alert variant="destructive" className="mb-4">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      Weekend entries are not allowed. Please contact your administrator for approval.
-                    </AlertDescription>
-                  </Alert>
-                )}
+              {/* Show weekend allowed info for admins */}
+              {isWeekendDate && canLogWeekend && isAdmin && (
+                <Alert>
+                  <Calendar className="h-4 w-4" />
+                  <AlertDescription>
+                    Weekend entry allowed (Admin privilege).
+                  </AlertDescription>
+                </Alert>
+              )}
 
-                {/* Enhanced Budget Error Alert for Employees - Show when budget would be exceeded */}
-                {!showWorkingDaysWarning && !showWeekendWarning && isEmployeeBudgetBlocked && (
-                  <Alert variant="destructive" className="mb-4">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <div className="font-medium">Budget Exceeded - Entry Blocked</div>
-                      {budgetValidation?.message || "This entry would exceed the project budget and cannot be saved."}
-                    </AlertDescription>
-                  </Alert>
-                )}
+              {/* Form Content */}
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
+                  <EntryTypeSelector control={form.control} />
+                  
+                  {entryType === "project" ? (
+                    <ProjectSelector control={form.control} projects={projects} />
+                  ) : (
+                    <ContractSelector control={form.control} />
+                  )}
+                  
+                  <TimeInput control={form.control} />
 
-                {/* Budget Override Alert - Show when admin can override */}
-                {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && showBudgetOverride && (
-                  <Alert className="mb-4 border-yellow-200 bg-yellow-50">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                    <AlertDescription className="text-yellow-800">
-                      <div className="font-medium">Admin Override Available</div>
-                      {budgetValidation?.message}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Budget Warning Alert - Show when approaching budget limit */}
-                {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && !showBudgetOverride && showBudgetWarning && (
-                  <Alert className="mb-4 border-yellow-200 bg-yellow-50">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                    <AlertDescription className="text-yellow-800">
-                      {budgetValidation?.message}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Budget Status Display - Show current budget info when valid */}
-                {!showWorkingDaysWarning && !showWeekendWarning && budgetValidation && budgetValidation.totalBudget > 0 && (
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Project Budget:</span>
-                      <span className={`font-medium ${getBudgetStatusColor()}`}>
-                        {budgetValidation.hoursUsed.toFixed(1)} / {budgetValidation.totalBudget.toFixed(1)} hours used
-                        {budgetValidation.remainingHours > 0 && (
-                          <span className="ml-2 text-gray-500">
-                            ({budgetValidation.remainingHours.toFixed(1)}h remaining)
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    {(budgetChecking || isValidating) && (
-                      <div className="mt-2 text-xs text-gray-500">Validating budget...</div>
-                    )}
-                  </div>
-                )}
-
-                {/* Show validation info for allowed entries */}
-                {!showWorkingDaysWarning && !showWeekendWarning && validation.daysRemaining > 0 && isNewEntry && (
-                  <Alert className="mb-4">
-                    <Calendar className="h-4 w-4" />
-                    <AlertDescription>
-                      {validation.getValidationMessage()}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Show weekend allowed info for admins */}
-                {isWeekendDate && canLogWeekend && isAdmin && (
-                  <Alert className="mb-4">
-                    <Calendar className="h-4 w-4" />
-                    <AlertDescription>
-                      Weekend entry allowed (Admin privilege).
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                <EntryTypeSelector control={form.control} />
-                
-                {entryType === "project" ? (
-                  <ProjectSelector control={form.control} projects={projects} />
-                ) : (
-                  <ContractSelector control={form.control} />
-                )}
-                
-                <TimeInput control={form.control} />
-
-                <TaskDetails control={form.control} />
-              </form>
-            </Form>
+                  <TaskDetails control={form.control} />
+                </form>
+              </Form>
+            </div>
           </div>
 
-          <div className="p-6 pt-4 border-t">
-            <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button 
-                type="button"
-                onClick={form.handleSubmit(handleSubmit)}
-                className={`px-6 ${isEmployeeBudgetBlocked ? 'bg-red-600 hover:bg-red-700' : ''}`}
-                disabled={isSaveDisabled}
-                variant={isEmployeeBudgetBlocked ? "destructive" : "default"}
-              >
-                {getSaveButtonText()}
-              </Button>
-            </DialogFooter>
-          </div>
+          {/* Fixed Footer */}
+          <DialogFooter className="flex-shrink-0 pt-4 border-t gap-2">
+            <Button type="button" variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button 
+              type="button"
+              onClick={form.handleSubmit(handleSubmit)}
+              className={`px-6 ${isEmployeeBudgetBlocked ? 'bg-red-600 hover:bg-red-700' : ''}`}
+              disabled={isSaveDisabled}
+              variant={isEmployeeBudgetBlocked ? "destructive" : "default"}
+            >
+              {getSaveButtonText()}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
