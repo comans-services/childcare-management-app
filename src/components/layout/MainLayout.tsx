@@ -24,15 +24,31 @@ export const MainLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 w-full">
       <Header />
-      <div className="flex">
-        <div className="hidden md:block w-44 lg:w-48 xl:w-52 2xl:w-56 3xl:w-60 border-r min-h-[calc(100vh-4rem)] bg-white transition-all duration-200">
+      <div className="flex w-full">
+        {/* Dynamic sidebar with responsive behavior */}
+        <div className="
+          hidden md:block 
+          w-12 lg:w-44 xl:w-48 2xl:w-52 3xl:w-56 4xl:w-60
+          border-r min-h-[calc(100vh-4rem)] bg-white 
+          transition-all duration-300 ease-in-out
+          shrink-0
+        ">
           <Sidebar />
         </div>
+        
+        {/* Mobile sidebar overlay */}
         {isMobile && <Sidebar />}
-        <main className="flex-1 min-w-0 p-responsive sm:p-6 lg:p-8 xl:p-10 2xl:p-12 3xl:p-16 overflow-x-hidden">
-          <div className="max-w-full mx-auto">
+        
+        {/* Main content area with proper responsive padding */}
+        <main className="
+          flex-1 min-w-0 
+          p-fluid-sm sm:p-fluid-md lg:p-fluid-lg xl:p-fluid-xl 2xl:p-8 3xl:p-10 4xl:p-12
+          overflow-x-hidden
+          container-query
+        ">
+          <div className="max-w-full mx-auto w-full">
             <Outlet />
           </div>
         </main>
