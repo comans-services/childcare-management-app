@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { 
@@ -70,6 +71,12 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const [budgetValidation, setBudgetValidation] = useState<BudgetValidation | null>(null);
   const [budgetChecking, setBudgetChecking] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+
+  // DEBUG: Log user role detection in TimeEntryDialog
+  console.log("=== TIME ENTRY DIALOG DEBUG ===");
+  console.log("User Role from useAuth:", userRole);
+  console.log("Is Admin:", isAdmin);
+  console.log("Should show budget details:", isAdmin);
 
   // Get working days validation
   const weekStart = getWeekStart(date);
@@ -186,11 +193,19 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
   // Budget validation checks with stronger employee blocking
   const showBudgetError = budgetValidation && !budgetValidation.isValid && !budgetValidation.canOverride;
-  const showBudgetWarning = budgetValidation && budgetValidation.isValid && budgetValidation.message;
-  const showBudgetOverride = budgetValidation && !budgetValidation.isValid && budgetValidation.canOverride;
+  const showBudgetWarning = budgetValidation && budgetValidation.isValid && budgetValidation.message && isAdmin; // ADMIN ONLY
+  const showBudgetOverride = budgetValidation && !budgetValidation.isValid && budgetValidation.canOverride && isAdmin; // ADMIN ONLY
 
   // Employee-specific budget blocking
   const isEmployeeBudgetBlocked = budgetValidation && !budgetValidation.isValid && !isAdmin;
+
+  // DEBUG: Log budget visibility decisions
+  console.log("=== BUDGET VISIBILITY DEBUG ===");
+  console.log("Budget validation:", budgetValidation);
+  console.log("Show budget error:", showBudgetError);
+  console.log("Show budget warning (admin only):", showBudgetWarning);
+  console.log("Show budget override (admin only):", showBudgetOverride);
+  console.log("Is employee budget blocked:", isEmployeeBudgetBlocked);
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
     console.log("=== ATTEMPTING TO SAVE ENTRY ===");
@@ -352,7 +367,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     <div className="font-medium">Budget Exceeded - Entry Blocked</div>
-                    {isAdmin ? (budgetValidation?.message || "This entry would exceed the project budget and cannot be saved.") : "This entry would exceed the project budget and cannot be saved."}
+                    This entry would exceed the project budget and cannot be saved.
                   </AlertDescription>
                 </Alert>
               )}
