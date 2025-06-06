@@ -171,7 +171,7 @@ const Sidebar = () => {
             <Menu />
           </Button>
         </SheetTrigger>
-        <SheetContent className="w-64">
+        <SheetContent side="left" className="w-64">
           <SidebarContent />
         </SheetContent>
       </Sheet>
