@@ -79,18 +79,22 @@ const ReportFilters = ({
   }, [customersData, contractsData, projectsData, usersData, setCustomers, setContracts, setProjects, setUsers]);
 
   return (
-    <Card className="p-4">
-      <div className="space-y-4">
-        {/* Primary filters - improved responsive layout */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <DateRangeFilterNew filters={filters} setFilters={setFilters} />
+    <Card className="p-6">
+      <div className="space-y-6">
+        {/* Primary filters - fixed spacing and alignment */}
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div className="flex-1 max-w-md">
+            <DateRangeFilterNew filters={filters} setFilters={setFilters} />
+          </div>
           
-          <FilterActions
-            isExpanded={isExpanded}
-            setIsExpanded={setIsExpanded}
-            onGenerateReport={generateReport}
-            isGeneratingReport={isGeneratingReport}
-          />
+          <div className="flex-shrink-0">
+            <FilterActions
+              isExpanded={isExpanded}
+              setIsExpanded={setIsExpanded}
+              onGenerateReport={generateReport}
+              isGeneratingReport={isGeneratingReport}
+            />
+          </div>
         </div>
 
         {/* Optional filter toggles */}
@@ -98,14 +102,14 @@ const ReportFilters = ({
           <div className="space-y-4">
             <Separator />
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               <h4 className="text-sm font-medium text-gray-700">Optional Filters</h4>
               <FilterToggles filters={filters} setFilters={setFilters} />
             </div>
 
             {/* Conditional filter dropdowns */}
             {(filters.includeProject || filters.includeContract) && (
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4 pt-2">
                 <SelectFilters
                   filters={filters}
                   setFilters={setFilters}

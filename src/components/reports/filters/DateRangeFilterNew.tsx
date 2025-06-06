@@ -18,15 +18,15 @@ export const DateRangeFilterNew = ({ filters, setFilters }: DateRangeFilterProps
   };
 
   return (
-    <div className="flex flex-col gap-2 min-w-0 flex-shrink-0">
-      <label className="text-sm font-medium">Date Range</label>
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-gray-700">Date Range</label>
       <DateRangePicker
         value={{
           from: filters.startDate,
           to: filters.endDate
         }}
         onChange={handleRangeChange}
-        className="w-full sm:w-auto"
+        className="w-full"
       />
     </div>
   );

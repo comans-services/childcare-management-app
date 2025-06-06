@@ -17,11 +17,12 @@ export const FilterActions = ({
   isGeneratingReport
 }: FilterActionsProps) => {
   return (
-    <div className="flex items-center gap-2 flex-shrink-0">
+    <div className="flex items-center gap-3">
       <Button
         variant="outline"
         size="sm"
         onClick={() => setIsExpanded(!isExpanded)}
+        className="whitespace-nowrap"
       >
         {isExpanded ? 'Less Filters' : 'More Filters'}
       </Button>
@@ -29,6 +30,7 @@ export const FilterActions = ({
         onClick={onGenerateReport}
         size="sm"
         disabled={isGeneratingReport}
+        className="whitespace-nowrap"
       >
         {isGeneratingReport ? (
           <>
