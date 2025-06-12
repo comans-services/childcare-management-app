@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useMediaQuery } from "@/hooks/use-mobile";
@@ -113,7 +112,7 @@ const TimesheetPage = () => {
           </CardTitle>
           <CardDescription className="text-sm sm:text-base">
             Your time entries for the current week
-            <span className="hidden lg:inline"> - {effectiveHours}h expected per week</span>
+            <span className="hidden lg:inline"> - {effectiveDays} days expected per week</span>
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
