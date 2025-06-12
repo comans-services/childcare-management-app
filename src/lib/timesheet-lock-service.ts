@@ -56,7 +56,7 @@ export const lockTimesheetsGlobally = async (
         locked_at: new Date().toISOString(),
         locked_by: user.id
       })
-      .neq('user_id', 'null'); // Update all existing work schedules
+      .not('user_id', 'is', null); // Fixed: Changed from .neq('user_id', 'null') to properly check for non-null UUIDs
 
     if (error) {
       console.error('Error locking timesheets globally:', error);
