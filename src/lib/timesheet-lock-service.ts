@@ -104,8 +104,8 @@ export const getUsersLockInfo = async (): Promise<UserLockInfo[]> => {
         lock_reason,
         locked_at,
         locked_by,
-        profiles!inner(full_name, email),
-        locked_by_profile:profiles!locked_by(full_name)
+        profiles!work_schedules_user_id_fkey(full_name, email),
+        locked_by_profile:profiles!work_schedules_locked_by_fkey(full_name)
       `)
       .not('locked_until_date', 'is', null);
 
