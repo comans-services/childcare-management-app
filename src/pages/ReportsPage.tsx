@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { isAdmin } from "@/utils/roles";
@@ -5,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import ReportFilters from "@/components/reports/ReportFilters";
 import ReportCharts from "@/components/reports/ReportCharts";
 import ReportDataTable from "@/components/reports/ReportDataTable";
+import TimesheetLockManager from "@/components/reports/TimesheetLockManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, Lock } from "lucide-react";
 import { TimesheetEntry, Project, fetchReportData } from "@/lib/timesheet-service";
 import { Contract } from "@/lib/contract-service";
 import { Customer } from "@/lib/customer-service";
@@ -126,7 +128,7 @@ const ReportsPage = () => {
       <div className="mb-4 md:mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-xl md:text-2xl font-bold">Reports</h1>
-          <p className="text-gray-600 text-sm md:text-base">Generate and download time reports</p>
+          <p className="text-gray-600 text-sm md:text-base">Generate reports and manage timesheet locks</p>
         </div>
         
         <div className="flex gap-2">
@@ -162,39 +164,55 @@ const ReportsPage = () => {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Time Reports</CardTitle>
-          <CardDescription>Create custom reports for your team</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ReportFilters 
-            filters={filters} 
-            setFilters={setFilters} 
-            setReportData={setReportData} 
-            setProjects={setProjects} 
-            setContracts={setContracts} 
-            setCustomers={setCustomers} 
-            setUsers={setUsers} 
-            setIsLoading={setIsLoading} 
-          />
-          
-          <Separator className="my-6" />
-          
-          <Tabs defaultValue="visual" className="w-full">
-            <TabsList>
-              <TabsTrigger value="visual">Visual Reports</TabsTrigger>
-              <TabsTrigger value="tabular">Tabular Data</TabsTrigger>
-            </TabsList>
-            <TabsContent value="visual" className="mt-4">
-              <ReportCharts reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
-            </TabsContent>
-            <TabsContent value="tabular" className="mt-4">
-              <ReportDataTable reportData={reportData} projects={projects} contracts={contracts} users={users} filters={filters} isLoading={isLoading} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="reports" className="w-full">
+        <TabsList>
+          <TabsTrigger value="reports">Time Reports</TabsTrigger>
+          <TabsTrigger value="locks" className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            Timesheet Locks
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="reports" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Time Reports</CardTitle>
+              <CardDescription>Create custom reports for your team</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ReportFilters 
+                filters={filters} 
+                setFilters={setFilters} 
+                setReportData={setReportData} 
+                setProjects={setProjects} 
+                setContracts={setContracts} 
+                setCustomers={setCustomers} 
+                setUsers={setUsers} 
+                setIsLoading={setIsLoading} 
+              />
+              
+              <Separator className="my-6" />
+              
+              <Tabs defaultValue="visual" className="w-full">
+                <TabsList>
+                  <TabsTrigger value="visual">Visual Reports</TabsTrigger>
+                  <TabsTrigger value="tabular">Tabular Data</TabsTrigger>
+                </TabsList>
+                <TabsContent value="visual" className="mt-4">
+                  <ReportCharts reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
+                </TabsContent>
+                <TabsContent value="tabular" className="mt-4">
+                  <ReportDataTable reportData={reportData} projects={projects} contracts={contracts} users={users} filters={filters} isLoading={isLoading} />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="locks" className="mt-4">
+          <TimesheetLockManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
