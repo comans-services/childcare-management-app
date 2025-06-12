@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Command,
   CommandEmpty,
@@ -135,53 +136,57 @@ const ContractAssigneeSelector: React.FC<ContractAssigneeSelectorProps> = ({
           <Command>
             <CommandInput placeholder="Search users..." />
             <CommandList>
-              <CommandEmpty>
-                {isLoading ? "Loading users..." : "No users found."}
-              </CommandEmpty>
-              <CommandGroup>
-                {Array.isArray(users) && users.map((user) => (
-                  user && user.id ? (
-                    <CommandItem
-                      key={user.id}
-                      onSelect={() => handleSelect(user.id)}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedUserIds.includes(user.id) ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <div className="flex flex-col">
-                        <span>{formatUserName(user)}</span>
-                        {user.full_name && user.email && (
-                          <span className="text-sm text-muted-foreground">{user.email}</span>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ) : null
-                ))}
-              </CommandGroup>
+              <ScrollArea className="h-[200px]">
+                <CommandEmpty>
+                  {isLoading ? "Loading users..." : "No users found."}
+                </CommandEmpty>
+                <CommandGroup>
+                  {Array.isArray(users) && users.map((user) => (
+                    user && user.id ? (
+                      <CommandItem
+                        key={user.id}
+                        onSelect={() => handleSelect(user.id)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedUserIds.includes(user.id) ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div className="flex flex-col">
+                          <span>{formatUserName(user)}</span>
+                          {user.full_name && user.email && (
+                            <span className="text-sm text-muted-foreground">{user.email}</span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ) : null
+                  ))}
+                </CommandGroup>
+              </ScrollArea>
             </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
 
       {selectedUsers.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {selectedUsers.map((user) => (
-            user && user.id ? (
-              <Badge key={user.id} variant="secondary" className="flex items-center gap-1">
-                {formatUserName(user)}
-                {!disabled && (
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    onClick={() => handleRemoveUser(user.id)}
-                  />
-                )}
-              </Badge>
-            ) : null
-          ))}
-        </div>
+        <ScrollArea className="max-h-[120px]">
+          <div className="flex flex-wrap gap-2 pr-4">
+            {selectedUsers.map((user) => (
+              user && user.id ? (
+                <Badge key={user.id} variant="secondary" className="flex items-center gap-1">
+                  {formatUserName(user)}
+                  {!disabled && (
+                    <X
+                      className="h-3 w-3 cursor-pointer hover:text-destructive"
+                      onClick={() => handleRemoveUser(user.id)}
+                    />
+                  )}
+                </Badge>
+              ) : null
+            ))}
+          </div>
+        </ScrollArea>
       )}
     </div>
   );
