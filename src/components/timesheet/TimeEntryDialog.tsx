@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { 
@@ -12,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDate, getWeekStart, isWeekend } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
-import { Calendar, AlertTriangle, AlertCircle } from "lucide-react";
+import { Calendar, AlertTriangle, AlertCircle, Lock } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -23,6 +22,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import WeekendApprovalDialog from "./WeekendApprovalDialog";
 import { validateProjectBudget } from "@/lib/timesheet/validation/budget-validation-service";
 import { showBudgetToast, showBudgetSaveSuccess } from "@/lib/timesheet/budget-notification-service";
+import { checkIfDateLocked } from "@/lib/timesheet-lock-service";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Import the components we've created
@@ -73,6 +73,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const [budgetValidation, setBudgetValidation] = useState<BudgetValidation | null>(null);
   const [budgetChecking, setBudgetChecking] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [isDateLocked, setIsDateLocked] = useState(false);
+  const [lockCheckLoading, setLockCheckLoading] = useState(false);
 
   // Get working days validation
   const weekStart = getWeekStart(date);
@@ -103,6 +105,26 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   useEffect(() => {
     setEntryType(watchedEntryType || "project");
   }, [watchedEntryType]);
+
+  // Check if date is locked
+  useEffect(() => {
+    const checkLockStatus = async () => {
+      if (!open || !userId) return;
+      
+      setLockCheckLoading(true);
+      try {
+        const locked = await checkIfDateLocked(userId, formatDate(date));
+        setIsDateLocked(locked);
+      } catch (error) {
+        console.error("Error checking lock status:", error);
+        setIsDateLocked(false);
+      } finally {
+        setLockCheckLoading(false);
+      }
+    };
+
+    checkLockStatus();
+  }, [open, userId, date]);
 
   // Budget validation for save blocking
   const checkBudget = useCallback(async () => {
@@ -182,7 +204,16 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const isEmployeeBudgetBlocked = budgetValidation && !budgetValidation.isValid && !isAdmin;
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
-    // Priority validation order: working days first, then weekend, then budget
+    // Priority validation order: lock status first, then working days, then weekend, then budget
+    if (isDateLocked && !isAdmin) {
+      toast({
+        title: "Timesheet Locked",
+        description: "Timesheet entries are locked for this date. Please contact your administrator.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (isNewEntry && !canAddToThisDate) {
       toast({
         title: "Cannot add entry",
@@ -262,13 +293,17 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     onOpenChange(false);
   };
 
-  const isSaveDisabled = showWorkingDaysWarning || 
+  const isSaveDisabled = (isDateLocked && !isAdmin) ||
+                        showWorkingDaysWarning || 
                         showWeekendWarning || 
                         isEmployeeBudgetBlocked || 
                         isValidating || 
-                        budgetChecking;
+                        budgetChecking ||
+                        lockCheckLoading;
 
   const getSaveButtonText = () => {
+    if (lockCheckLoading) return "Checking Lock Status...";
+    if (isDateLocked && !isAdmin) return "Date Locked";
     if (isValidating || budgetChecking) return "Checking Budget...";
     if (isEmployeeBudgetBlocked) return "Budget Exceeded";
     return "Save";
@@ -316,7 +351,33 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                   Weekend
                 </div>
               )}
+              {isDateLocked && (
+                <div className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-1 rounded flex items-center gap-1">
+                  <Lock className="h-3 w-3" />
+                  Locked
+                </div>
+              )}
             </div>
+
+            {/* Lock status alert */}
+            {isDateLocked && !isAdmin && (
+              <Alert variant="destructive">
+                <Lock className="h-4 w-4" />
+                <AlertDescription className="text-fluid-sm">
+                  Timesheet entries are locked for this date. Please contact your administrator to make changes.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Admin lock override notice */}
+            {isDateLocked && isAdmin && (
+              <Alert>
+                <Lock className="h-4 w-4" />
+                <AlertDescription className="text-fluid-sm">
+                  This date is locked for regular users, but you can override as an administrator.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Validation alerts */}
             {showWorkingDaysWarning && (

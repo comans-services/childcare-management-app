@@ -469,6 +469,10 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          lock_reason: string | null
+          locked_at: string | null
+          locked_by: string | null
+          locked_until_date: string | null
           updated_at: string
           user_id: string
           working_days: number
@@ -478,6 +482,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          lock_reason?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          locked_until_date?: string | null
           updated_at?: string
           user_id: string
           working_days?: number
@@ -487,6 +495,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          lock_reason?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          locked_until_date?: string | null
           updated_at?: string
           user_id?: string
           working_days?: number
@@ -517,6 +529,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_global_lock_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_users_locked: number
+          earliest_lock_date: string
+          latest_lock_date: string
+          most_common_reason: string
+        }[]
+      }
       get_users_missing_timesheet_entries: {
         Args: { p_week_start_date?: string }
         Returns: {
@@ -531,6 +552,10 @@ export type Database = {
           week_start_date: string
           week_end_date: string
         }[]
+      }
+      is_date_locked_for_user: {
+        Args: { p_user_id: string; entry_date: string }
+        Returns: boolean
       }
       is_user_assigned_to_contract: {
         Args: { p_user_id: string; p_contract_id: string }

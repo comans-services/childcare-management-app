@@ -10,6 +10,10 @@ export interface User {
   employment_type?: 'full-time' | 'part-time';
   employee_card_id?: string;
   employee_id?: string;
+  locked_until_date?: string;
+  lock_reason?: string;
+  locked_at?: string;
+  locked_by?: string;
 }
 
 export interface NewUser extends Omit<User, "id"> {
@@ -44,10 +48,13 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     console.log("Current authenticated user:", authData?.user?.email);
     
-    // Get all profiles from the profiles table including new employee_id field
+    // Get all profiles from the profiles table including new employee_id field and lock information from work_schedules
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone, email, employment_type, employee_card_id, employee_id");
+      .select(`
+        id, full_name, role, organization, time_zone, email, employment_type, employee_card_id, employee_id,
+        work_schedules!inner(locked_until_date, lock_reason, locked_at, locked_by)
+      `);
     
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -148,8 +155,17 @@ export const fetchUsers = async (): Promise<User[]> => {
         }
       }
       
-      console.log("Final profiles data with employment and employee_id fields:", profilesData);
-      return profilesData as User[];
+      // Transform the data to include lock information
+      const transformedData = profilesData.map(profile => ({
+        ...profile,
+        locked_until_date: profile.work_schedules?.locked_until_date,
+        lock_reason: profile.work_schedules?.lock_reason,
+        locked_at: profile.work_schedules?.locked_at,
+        locked_by: profile.work_schedules?.locked_by
+      }));
+      
+      console.log("Final profiles data with employment, employee_id, and lock fields:", transformedData);
+      return transformedData as User[];
     }
     
     return [];
