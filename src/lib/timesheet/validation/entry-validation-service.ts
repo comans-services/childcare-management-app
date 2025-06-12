@@ -1,87 +1,47 @@
 
-import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry } from "../types";
-import { checkIfDateLocked } from "@/lib/timesheet-lock-service";
+import { validateProjectBudget } from "./budget-validation-service";
 
 export const validateEntryData = (entry: TimesheetEntry): void => {
-  if (!entry.entry_date) {
-    throw new Error("Entry date is required");
-  }
-
-  if (!entry.hours_logged || entry.hours_logged <= 0) {
-    throw new Error("Hours logged must be greater than 0");
-  }
-
+  console.log("=== VALIDATING TIMESHEET ENTRY ===");
+  console.log("Entry data:", entry);
+  
+  // Validate entry type and corresponding ID
   if (entry.entry_type === 'project' && !entry.project_id) {
-    throw new Error("Project is required for project entries");
+    throw new Error("Project ID is required for project entries");
   }
-
   if (entry.entry_type === 'contract' && !entry.contract_id) {
-    throw new Error("Contract is required for contract entries");
+    throw new Error("Contract ID is required for contract entries");
   }
 };
 
-export const validateTimesheetLock = async (userId: string, entryDate: string): Promise<void> => {
-  try {
-    console.log(`Checking timesheet lock for user ${userId} on date ${entryDate}`);
-    
-    const isLocked = await checkIfDateLocked(userId, entryDate);
-    
-    if (isLocked) {
-      console.log(`Timesheet is locked for user ${userId} on date ${entryDate}`);
-      throw new Error("Timesheet entries are locked for this date. Please contact your administrator.");
-    }
-    
-    console.log(`Timesheet is not locked for user ${userId} on date ${entryDate}`);
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("locked")) {
-      throw error;
-    }
-    console.error("Error checking timesheet lock:", error);
-    // Don't block on lock check errors - fail open for better UX
-  }
-};
-
-export const validateProjectBudgetForEntry = async (entry: TimesheetEntry): Promise<boolean> => {
-  if (entry.entry_type !== 'project' || !entry.project_id) {
-    return true;
+export const validateProjectBudgetForEntry = async (
+  entry: TimesheetEntry,
+  userId?: string
+): Promise<void> => {
+  // Only validate budget for project entries
+  if (entry.entry_type !== 'project' || !entry.project_id || !entry.hours_logged) {
+    return;
   }
 
-  try {
-    const { data: project, error } = await supabase
-      .from("projects")
-      .select("budget_hours, name")
-      .eq("id", entry.project_id)
-      .single();
+  console.log("=== VALIDATING PROJECT BUDGET FOR ENTRY ===");
+  console.log("Project ID:", entry.project_id);
+  console.log("Hours to add:", entry.hours_logged);
+  console.log("Existing entry ID:", entry.id);
 
-    if (error || !project) {
-      console.warn("Could not fetch project for budget validation");
-      return true;
-    }
+  const validation = await validateProjectBudget({
+    projectId: entry.project_id,
+    hoursToAdd: entry.hours_logged,
+    existingEntryId: entry.id,
+    userId
+  });
 
-    const budgetHours = Number(project.budget_hours) || 0;
-    if (budgetHours <= 0) {
-      return true;
-    }
+  if (!validation.isValid) {
+    console.error("Budget validation failed:", validation.message);
+    throw new Error(validation.message || "Budget validation failed");
+  }
 
-    // Get total hours used for this project
-    const { data: entries, error: entriesError } = await supabase
-      .from("timesheet_entries")
-      .select("hours_logged")
-      .eq("project_id", entry.project_id)
-      .neq("id", entry.id || "");
-
-    if (entriesError) {
-      console.warn("Could not fetch existing entries for budget validation");
-      return true;
-    }
-
-    const totalUsed = entries.reduce((sum, e) => sum + Number(e.hours_logged), 0);
-    const newTotal = totalUsed + Number(entry.hours_logged);
-
-    return newTotal <= budgetHours;
-  } catch (error) {
-    console.error("Error in budget validation:", error);
-    return true;
+  if (validation.message) {
+    console.warn("Budget validation warning:", validation.message);
   }
 };

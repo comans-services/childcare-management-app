@@ -1,7 +1,7 @@
 
 import { TimesheetEntry } from "./types";
 import { validateWeekendEntry } from "./validation/weekend-validation-service";
-import { validateEntryData, validateProjectBudgetForEntry, validateTimesheetLock } from "./validation/entry-validation-service";
+import { validateEntryData, validateProjectBudgetForEntry } from "./validation/entry-validation-service";
 import { createTimesheetEntry } from "./operations/entry-create-service";
 import { updateTimesheetEntry } from "./operations/entry-update-service";
 import { deleteTimesheetEntry, deleteAllTimesheetEntries } from "./operations/entry-delete-service";
@@ -17,24 +17,21 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     // Step 1: Validate basic entry data
     validateEntryData(entry);
 
-    // Step 2: Get current user for authentication and role checks
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.error("Authentication error during entry save:", authError);
-      throw new Error("Authentication required");
-    }
-
-    // Step 3: Check if timesheet is locked for this date
-    await validateTimesheetLock(user.id, entry.entry_date);
-
-    // Step 4: Server-side weekend validation
+    // Step 2: Server-side weekend validation
     const weekendValidation = await validateWeekendEntry(entry.entry_date);
     if (!weekendValidation.isValid) {
       console.error("Weekend validation failed:", weekendValidation.message);
       throw new Error(weekendValidation.message || "Weekend entry not allowed");
     }
 
-    // Step 5: Get user role for budget validation
+    // Step 3: Get current user for admin override checks
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Authentication error during entry save:", authError);
+      throw new Error("Authentication required");
+    }
+
+    // Step 4: Get user role for budget validation
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("role")
@@ -51,7 +48,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
 
     console.log("User role:", userRole, "Is Admin:", isAdmin);
 
-    // Step 6: Critical budget validation for project entries
+    // Step 5: Critical budget validation for project entries
     let budgetOverrideUsed = false;
     if (entry.entry_type === 'project' && entry.project_id) {
       console.log("=== BACKEND BUDGET VALIDATION ===");

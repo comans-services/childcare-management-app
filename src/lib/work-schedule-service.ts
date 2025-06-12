@@ -8,10 +8,6 @@ export interface WorkSchedule {
   created_at: string;
   updated_at: string;
   created_by?: string;
-  locked_until_date?: string;
-  lock_reason?: string;
-  locked_at?: string;
-  locked_by?: string;
 }
 
 export const fetchWorkSchedule = async (userId?: string): Promise<WorkSchedule | null> => {

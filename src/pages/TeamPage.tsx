@@ -1,44 +1,139 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import TeamList from "@/components/team/TeamList";
 import { useAuth } from "@/context/AuthContext";
 import { isAdmin } from "@/utils/roles";
-import TeamList from "@/components/team/TeamList";
-import TimesheetLockManager from "@/components/admin/TimesheetLockManager";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
+import AddEditUserDialog from "@/components/team/AddEditUserDialog";
+import { createUser } from "@/lib/user-service";
+import { toast } from "@/components/ui/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import ImportButton from "@/components/common/ImportButton";
 
 const TeamPage = () => {
   const { user, userRole } = useAuth();
-  const isUserAdmin = userRole === "admin";
+  const queryClient = useQueryClient();
+  const isAdminRole = userRole === "admin";
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [userIsAdmin, setUserIsAdmin] = useState<boolean | null>(null);
 
-  if (!user) {
-    return <div>Please sign in to view this page.</div>;
+  // Defense-in-depth: Check admin status
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user) {
+        const adminStatus = await isAdmin(user);
+        setUserIsAdmin(adminStatus);
+      }
+    };
+    checkAdmin();
+  }, [user]);
+
+  useEffect(() => {
+    console.log("Current user:", user);
+    console.log("User role:", userRole);
+  }, [user, userRole]);
+
+  // Return null if user is not admin (backup protection)
+  if (userIsAdmin === false) {
+    return null;
   }
 
-  if (!isUserAdmin) {
-    return <div>Access denied. Admin role required.</div>;
-  }
+  const handleAddUser = () => {
+    console.log("Opening add user dialog");
+    setIsAddUserOpen(true);
+  };
+
+  const handleCreateUser = (userData: any) => {
+    console.log("Creating user:", userData);
+    setIsCreatingUser(true);
+    
+    createUser(userData)
+      .then((createdUser) => {
+        toast({
+          title: "User created",
+          description: `New team member ${createdUser.full_name || createdUser.email} has been added successfully`,
+        });
+        setIsAddUserOpen(false);
+        
+        // Force refetch users after creating a new user - use multiple strategies for reliability
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["users"] });
+          queryClient.refetchQueries({ queryKey: ["users"] });
+        }, 500);
+      })
+      .catch((error) => {
+        toast({
+          title: "Error creating user",
+          description: error.message || "Failed to create user",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        setIsCreatingUser(false);
+      });
+  };
+
+  const handleImportComplete = () => {
+    // Force refetch users after import
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.refetchQueries({ queryKey: ["users"] });
+    }, 500);
+  };
 
   return (
     <div className="container mx-auto px-4">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Team Management</h1>
-        <p className="text-gray-600">Manage team members and timesheet settings</p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Team</h1>
+          <p className="text-gray-600">Manage and view team members</p>
+        </div>
+        {isAdminRole && (
+          <div className="flex gap-2">
+            <ImportButton
+              entityType="team-members"
+              onImportComplete={handleImportComplete}
+              variant="outline"
+            />
+            
+            <Button 
+              onClick={handleAddUser}
+              size="lg" 
+              className="bg-primary hover:bg-primary/90"
+              disabled={isCreatingUser}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              {isCreatingUser ? "Adding..." : "Add Team Member"}
+            </Button>
+          </div>
+        )}
       </div>
 
-      <Tabs defaultValue="members" className="w-full">
-        <TabsList>
-          <TabsTrigger value="members">Team Members</TabsTrigger>
-          <TabsTrigger value="locks">Timesheet Locks</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="members" className="mt-6">
+      <Card className="shadow-md">
+        <CardHeader className="bg-muted/50">
+          <CardTitle>Team Members</CardTitle>
+          <CardDescription>
+            {isAdminRole 
+              ? "Manage your team members and their roles" 
+              : "View team members"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
           <TeamList />
-        </TabsContent>
-        
-        <TabsContent value="locks" className="mt-6">
-          <TimesheetLockManager />
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
+
+      {isAdminRole && (
+        <AddEditUserDialog
+          isOpen={isAddUserOpen}
+          onClose={() => setIsAddUserOpen(false)}
+          onSave={handleCreateUser}
+          isNewUser={true}
+        />
+      )}
     </div>
   );
 };

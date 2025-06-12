@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -11,10 +10,6 @@ export interface User {
   employment_type?: 'full-time' | 'part-time';
   employee_card_id?: string;
   employee_id?: string;
-  locked_until_date?: string;
-  lock_reason?: string;
-  locked_at?: string;
-  locked_by?: string;
 }
 
 export interface NewUser extends Omit<User, "id"> {
@@ -49,13 +44,10 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     console.log("Current authenticated user:", authData?.user?.email);
     
-    // Get all profiles from the profiles table with work_schedules data
+    // Get all profiles from the profiles table including new employee_id field
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select(`
-        id, full_name, role, organization, time_zone, email, employment_type, employee_card_id, employee_id,
-        work_schedules(locked_until_date, lock_reason, locked_at, locked_by)
-      `);
+      .select("id, full_name, role, organization, time_zone, email, employment_type, employee_card_id, employee_id");
     
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -156,24 +148,8 @@ export const fetchUsers = async (): Promise<User[]> => {
         }
       }
       
-      // Transform the data to include lock information - fix the array access issue
-      const transformedData = profilesData.map(profile => {
-        // work_schedules is an array, get the first item (should only be one per user)
-        const workSchedule = Array.isArray(profile.work_schedules) && profile.work_schedules.length > 0 
-          ? profile.work_schedules[0] 
-          : null;
-        
-        return {
-          ...profile,
-          locked_until_date: workSchedule?.locked_until_date,
-          lock_reason: workSchedule?.lock_reason,
-          locked_at: workSchedule?.locked_at,
-          locked_by: workSchedule?.locked_by
-        };
-      });
-      
-      console.log("Final profiles data with employment, employee_id, and lock fields:", transformedData);
-      return transformedData as User[];
+      console.log("Final profiles data with employment and employee_id fields:", profilesData);
+      return profilesData as User[];
     }
     
     return [];
