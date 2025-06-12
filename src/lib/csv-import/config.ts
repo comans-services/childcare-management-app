@@ -1,3 +1,4 @@
+
 import { validateProjectRow, validateCustomerRow, validateContractRow, validateTeamMemberRow } from "@/lib/csv-validation";
 
 export type EntityType = 'projects' | 'customers' | 'contracts' | 'team-members';
@@ -13,7 +14,7 @@ export const REQUIRED_HEADERS = {
   projects: ['name', 'budget_hours'],
   customers: ['name'],
   contracts: ['name', 'start_date', 'end_date', 'status'],
-  'team-members': ['email', 'password']
+  'team-members': ['full_name', 'email', 'password']
 };
 
 export const VALIDATORS = {
