@@ -113,7 +113,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
                 <TableRow>
                   <TableCell className="font-medium flex items-center gap-2">
                     <Settings className="h-4 w-4 text-orange-500" />
-                    Weekly target
+                    Days expected per week
                   </TableCell>
                   <TableCell>{workingDays} days</TableCell>
                 </TableRow>
