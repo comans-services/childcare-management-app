@@ -124,25 +124,27 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] h-[600px] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Manage Project Assignments</DialogTitle>
           <DialogDescription>
             Assign users to "{project?.name}" project. Only assigned users can log time to this project.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[400px]">
-          <div className="space-y-4 pr-4">
-            <ProjectAssigneeSelector
-              selectedUserIds={selectedUserIds}
-              onSelectionChange={setSelectedUserIds}
-              disabled={assignUsersMutation.isPending}
-            />
-          </div>
-        </ScrollArea>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="space-y-4 p-1">
+              <ProjectAssigneeSelector
+                selectedUserIds={selectedUserIds}
+                onSelectionChange={setSelectedUserIds}
+                disabled={assignUsersMutation.isPending}
+              />
+            </div>
+          </ScrollArea>
+        </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0">
           <Button variant="outline" onClick={handleCancel} disabled={assignUsersMutation.isPending}>
             Cancel
           </Button>

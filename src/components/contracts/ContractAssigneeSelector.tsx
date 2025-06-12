@@ -132,61 +132,61 @@ const ContractAssigneeSelector: React.FC<ContractAssigneeSelectorProps> = ({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0" align="start">
+        <PopoverContent className="w-[400px] p-0 max-h-[300px] overflow-hidden" align="start">
           <Command>
             <CommandInput placeholder="Search users..." />
-            <CommandList>
-              <ScrollArea className="h-[200px]">
-                <CommandEmpty>
-                  {isLoading ? "Loading users..." : "No users found."}
-                </CommandEmpty>
-                <CommandGroup>
-                  {Array.isArray(users) && users.map((user) => (
-                    user && user.id ? (
-                      <CommandItem
-                        key={user.id}
-                        onSelect={() => handleSelect(user.id)}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedUserIds.includes(user.id) ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        <div className="flex flex-col">
-                          <span>{formatUserName(user)}</span>
-                          {user.full_name && user.email && (
-                            <span className="text-sm text-muted-foreground">{user.email}</span>
-                          )}
-                        </div>
-                      </CommandItem>
-                    ) : null
-                  ))}
-                </CommandGroup>
-              </ScrollArea>
+            <CommandList className="max-h-[250px] overflow-y-auto">
+              <CommandEmpty>
+                {isLoading ? "Loading users..." : "No users found."}
+              </CommandEmpty>
+              <CommandGroup>
+                {Array.isArray(users) && users.map((user) => (
+                  user && user.id ? (
+                    <CommandItem
+                      key={user.id}
+                      onSelect={() => handleSelect(user.id)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedUserIds.includes(user.id) ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex flex-col">
+                        <span>{formatUserName(user)}</span>
+                        {user.full_name && user.email && (
+                          <span className="text-sm text-muted-foreground">{user.email}</span>
+                        )}
+                      </div>
+                    </CommandItem>
+                  ) : null
+                ))}
+              </CommandGroup>
             </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
 
       {selectedUsers.length > 0 && (
-        <ScrollArea className="max-h-[120px]">
-          <div className="flex flex-wrap gap-2 pr-4">
-            {selectedUsers.map((user) => (
-              user && user.id ? (
-                <Badge key={user.id} variant="secondary" className="flex items-center gap-1">
-                  {formatUserName(user)}
-                  {!disabled && (
-                    <X
-                      className="h-3 w-3 cursor-pointer hover:text-destructive"
-                      onClick={() => handleRemoveUser(user.id)}
-                    />
-                  )}
-                </Badge>
-              ) : null
-            ))}
-          </div>
-        </ScrollArea>
+        <div className="max-h-[120px] overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="flex flex-wrap gap-2 p-1">
+              {selectedUsers.map((user) => (
+                user && user.id ? (
+                  <Badge key={user.id} variant="secondary" className="flex items-center gap-1">
+                    {formatUserName(user)}
+                    {!disabled && (
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-destructive"
+                        onClick={() => handleRemoveUser(user.id)}
+                      />
+                    )}
+                  </Badge>
+                ) : null
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
       )}
     </div>
   );
