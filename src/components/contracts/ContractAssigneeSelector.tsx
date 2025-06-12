@@ -168,9 +168,9 @@ const ContractAssigneeSelector: React.FC<ContractAssigneeSelectorProps> = ({
       </Popover>
 
       {selectedUsers.length > 0 && (
-        <div className="max-h-[120px] overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="flex flex-wrap gap-2 p-1">
+        <div className="border rounded-md">
+          <ScrollArea className="h-[120px]">
+            <div className="flex flex-wrap gap-2 p-3">
               {selectedUsers.map((user) => (
                 user && user.id ? (
                   <Badge key={user.id} variant="secondary" className="flex items-center gap-1">
