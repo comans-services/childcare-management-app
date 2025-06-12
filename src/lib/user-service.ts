@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -259,16 +260,16 @@ export const updateUser = async (user: User): Promise<User> => {
 
 export const createUser = async (userData: NewUser): Promise<User> => {
   try {
-    console.log("Creating new user...");
+    console.log("Creating new user with admin API...");
     
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Step 1: Create auth user using admin API (same as CSV import)
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: userData.email,
       password: userData.password,
-      options: {
-        data: {
-          full_name: userData.full_name,
-        },
-      }
+      user_metadata: {
+        full_name: userData.full_name,
+      },
+      email_confirm: true // Auto-confirm email for imported users
     });
     
     if (authError || !authData.user) {
@@ -276,48 +277,57 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       throw authError || new Error("Failed to create user");
     }
     
-    console.log("Auth user created successfully:", authData.user);
+    console.log("Auth user created successfully:", authData.user.id);
     
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .insert([{
+    try {
+      // Step 2: Create profile record
+      const profileData = {
         id: authData.user.id,
         full_name: userData.full_name,
+        email: userData.email,
         role: userData.role || "employee",
         organization: userData.organization,
         time_zone: userData.time_zone,
-        email: userData.email,
         employment_type: userData.employment_type || "full-time",
         employee_card_id: userData.employee_card_id,
         employee_id: userData.employee_id,
         updated_at: new Date().toISOString(),
-      }])
-      .select();
-    
-    if (profileError) {
-      console.error("Error creating profile:", profileError);
-      throw profileError;
-    }
-    
-    console.log("User profile created successfully:", profileData);
-    
-    if (profileData && profileData.length > 0) {
-      return profileData[0] as User;
-    } else {
-      const newUser: User = {
-        id: authData.user.id,
-        full_name: userData.full_name,
-        role: userData.role || "employee",
-        organization: userData.organization,
-        time_zone: userData.time_zone,
-        email: userData.email,
-        employment_type: userData.employment_type || "full-time",
-        employee_card_id: userData.employee_card_id,
-        employee_id: userData.employee_id,
       };
       
-      console.log("Returning new user:", newUser);
-      return newUser;
+      console.log("Creating profile record:", profileData);
+      
+      const { data: profileResult, error: profileError } = await supabase
+        .from("profiles")
+        .insert(profileData)
+        .select()
+        .single();
+      
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+        
+        // Clean up auth user if profile creation fails
+        try {
+          await supabase.auth.admin.deleteUser(authData.user.id);
+          console.log("Cleaned up auth user after profile creation failure");
+        } catch (cleanupError) {
+          console.error("Failed to cleanup auth user:", cleanupError);
+        }
+        
+        throw new Error(`Failed to create profile: ${profileError.message}`);
+      }
+      
+      console.log("User created successfully:", profileResult);
+      return profileResult as User;
+      
+    } catch (profileCreationError) {
+      // If profile creation fails, clean up the auth user
+      try {
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        console.log("Cleaned up auth user after error");
+      } catch (cleanupError) {
+        console.error("Failed to cleanup auth user:", cleanupError);
+      }
+      throw profileCreationError;
     }
   } catch (error) {
     console.error("Error in createUser:", error);
