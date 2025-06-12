@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Command,
   CommandEmpty,
@@ -135,7 +134,7 @@ const ProjectAssigneeSelector: React.FC<ProjectAssigneeSelectorProps> = ({
         <PopoverContent className="w-[400px] p-0" align="start">
           <Command>
             <CommandInput placeholder="Search users..." />
-            <CommandList className="max-h-[200px] overflow-y-auto">
+            <CommandList>
               <CommandEmpty>
                 {isLoading ? "Loading users..." : "No users found."}
               </CommandEmpty>
@@ -168,23 +167,21 @@ const ProjectAssigneeSelector: React.FC<ProjectAssigneeSelectorProps> = ({
       </Popover>
 
       {selectedUsers.length > 0 && (
-        <ScrollArea className="max-h-[120px]">
-          <div className="flex flex-wrap gap-2 pr-4">
-            {selectedUsers.map((user) => (
-              user && user.id ? (
-                <Badge key={user.id} variant="secondary" className="flex items-center gap-1">
-                  {formatUserName(user)}
-                  {!disabled && (
-                    <X
-                      className="h-3 w-3 cursor-pointer hover:text-destructive"
-                      onClick={() => handleRemoveUser(user.id)}
-                    />
-                  )}
-                </Badge>
-              ) : null
-            ))}
-          </div>
-        </ScrollArea>
+        <div className="flex flex-wrap gap-2">
+          {selectedUsers.map((user) => (
+            user && user.id ? (
+              <Badge key={user.id} variant="secondary" className="flex items-center gap-1">
+                {formatUserName(user)}
+                {!disabled && (
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => handleRemoveUser(user.id)}
+                  />
+                )}
+              </Badge>
+            ) : null
+          ))}
+        </div>
       )}
     </div>
   );

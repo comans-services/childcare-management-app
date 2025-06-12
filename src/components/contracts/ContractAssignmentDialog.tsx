@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { Contract } from "@/lib/contract-service";
 import {
@@ -102,7 +101,7 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Manage Contract Assignments</DialogTitle>
           <DialogDescription>
@@ -110,15 +109,13 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh] pr-4">
-          <div className="space-y-4">
-            <ContractAssigneeSelector
-              selectedUserIds={selectedUserIds}
-              onSelectionChange={setSelectedUserIds}
-              disabled={assignUsersMutation.isPending}
-            />
-          </div>
-        </ScrollArea>
+        <div className="space-y-4">
+          <ContractAssigneeSelector
+            selectedUserIds={selectedUserIds}
+            onSelectionChange={setSelectedUserIds}
+            disabled={assignUsersMutation.isPending}
+          />
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel} disabled={assignUsersMutation.isPending}>

@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { Project } from "@/lib/timesheet/types";
 import {
@@ -124,7 +123,7 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Manage Project Assignments</DialogTitle>
           <DialogDescription>
@@ -132,15 +131,13 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh] pr-4">
-          <div className="space-y-4">
-            <ProjectAssigneeSelector
-              selectedUserIds={selectedUserIds}
-              onSelectionChange={setSelectedUserIds}
-              disabled={assignUsersMutation.isPending}
-            />
-          </div>
-        </ScrollArea>
+        <div className="space-y-4">
+          <ProjectAssigneeSelector
+            selectedUserIds={selectedUserIds}
+            onSelectionChange={setSelectedUserIds}
+            disabled={assignUsersMutation.isPending}
+          />
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel} disabled={assignUsersMutation.isPending}>
