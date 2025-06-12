@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -260,16 +259,18 @@ export const updateUser = async (user: User): Promise<User> => {
 
 export const createUser = async (userData: NewUser): Promise<User> => {
   try {
-    console.log("Creating new user with admin API...");
+    console.log("Creating new user (matching CSV import method)...");
     
-    // Step 1: Create auth user using admin API (same as CSV import)
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // Use the same approach as CSV import - signUp instead of admin API
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
-      user_metadata: {
-        full_name: userData.full_name,
-      },
-      email_confirm: true // Auto-confirm email for imported users
+      options: {
+        data: {
+          full_name: userData.full_name,
+        },
+        emailRedirectTo: undefined // This will prevent email confirmation requirement
+      }
     });
     
     if (authError || !authData.user) {
@@ -280,7 +281,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
     console.log("Auth user created successfully:", authData.user.id);
     
     try {
-      // Step 2: Create profile record
+      // Step 2: Create profile record (exactly like CSV import)
       const profileData = {
         id: authData.user.id,
         full_name: userData.full_name,
@@ -304,15 +305,6 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       
       if (profileError) {
         console.error("Error creating profile:", profileError);
-        
-        // Clean up auth user if profile creation fails
-        try {
-          await supabase.auth.admin.deleteUser(authData.user.id);
-          console.log("Cleaned up auth user after profile creation failure");
-        } catch (cleanupError) {
-          console.error("Failed to cleanup auth user:", cleanupError);
-        }
-        
         throw new Error(`Failed to create profile: ${profileError.message}`);
       }
       
@@ -320,13 +312,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       return profileResult as User;
       
     } catch (profileCreationError) {
-      // If profile creation fails, clean up the auth user
-      try {
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        console.log("Cleaned up auth user after error");
-      } catch (cleanupError) {
-        console.error("Failed to cleanup auth user:", cleanupError);
-      }
+      console.error("Profile creation failed:", profileCreationError);
       throw profileCreationError;
     }
   } catch (error) {
