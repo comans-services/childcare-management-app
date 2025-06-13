@@ -4,30 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Search, Loader2 } from "lucide-react";
 
 interface FilterActionsProps {
-  isExpanded: boolean;
-  setIsExpanded: React.Dispatch<React.SetStateAction<boolean>>;
-  onGenerateReport: () => void;
+  generateReport: () => Promise<void>;
   isGeneratingReport: boolean;
 }
 
 export const FilterActions = ({
-  isExpanded,
-  setIsExpanded,
-  onGenerateReport,
+  generateReport,
   isGeneratingReport
 }: FilterActionsProps) => {
   return (
     <div className="flex flex-col gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="whitespace-nowrap"
-      >
-        {isExpanded ? 'Less Filters' : 'More Filters'}
-      </Button>
       <Button 
-        onClick={onGenerateReport}
+        onClick={generateReport}
         size="sm"
         disabled={isGeneratingReport}
         className="whitespace-nowrap"

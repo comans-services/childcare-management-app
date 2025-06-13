@@ -2,26 +2,36 @@
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ReportFiltersType } from "@/pages/ReportsPage";
+import { Project, Contract } from "@/lib/timesheet-service";
+import { Customer } from "@/lib/customer-service";
+import { User } from "@/lib/user-service";
 
 interface SelectFiltersProps {
   filters: ReportFiltersType;
   setFilters: React.Dispatch<React.SetStateAction<ReportFiltersType>>;
-  customersData?: any[];
-  projectsData?: any[];
-  contractsData?: any[];
-  usersData?: any[];
-  normalizeSelectValue: (value: string | undefined) => string | null;
+  projects: Project[];
+  contracts: Contract[];
+  customers: Customer[];
+  users: User[];
+  actionTypes: string[];
 }
 
 export const SelectFilters = ({
   filters,
   setFilters,
-  customersData,
-  projectsData,
-  contractsData,
-  usersData,
-  normalizeSelectValue
+  projects,
+  contracts,
+  customers,
+  users,
+  actionTypes
 }: SelectFiltersProps) => {
+  const normalizeSelectValue = (value: string | undefined): string | null => {
+    if (!value || value === "" || value === "all" || value === "empty") {
+      return null;
+    }
+    return value;
+  };
+
   return (
     <>
       <div className="w-full md:w-auto">
@@ -35,7 +45,7 @@ export const SelectFilters = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">All Customers</SelectItem>
-            {customersData?.map((customer) => (
+            {customers?.map((customer) => (
               <SelectItem key={customer.id} value={customer.id}>
                 {customer.name}
               </SelectItem>
@@ -56,7 +66,7 @@ export const SelectFilters = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">All Projects</SelectItem>
-              {projectsData?.map((project) => (
+              {projects?.map((project) => (
                 <SelectItem key={project.id} value={project.id}>
                   {project.name}
                 </SelectItem>
@@ -78,7 +88,7 @@ export const SelectFilters = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">All Contracts</SelectItem>
-              {contractsData?.map((contract) => (
+              {contracts?.map((contract) => (
                 <SelectItem key={contract.id} value={contract.id}>
                   {contract.name}
                 </SelectItem>
@@ -99,7 +109,7 @@ export const SelectFilters = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">All Employees</SelectItem>
-            {usersData?.map((user) => (
+            {users?.map((user) => (
               <SelectItem key={user.id} value={user.id}>
                 {user.employee_id ? `${user.employee_id} - ${user.full_name || "Unknown User"}` : user.full_name || "Unknown User"}
               </SelectItem>
@@ -107,6 +117,28 @@ export const SelectFilters = ({
           </SelectContent>
         </Select>
       </div>
+
+      {filters.reportType === 'audit' && (
+        <div className="w-full md:w-auto">
+          <label className="text-sm font-medium">Action Type</label>
+          <Select
+            value={filters.actionType || ""}
+            onValueChange={(value) => setFilters(prev => ({ ...prev, actionType: normalizeSelectValue(value) }))}
+          >
+            <SelectTrigger className="w-full md:w-[200px]">
+              <SelectValue placeholder="All Actions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Actions</SelectItem>
+              {actionTypes?.map((actionType) => (
+                <SelectItem key={actionType} value={actionType}>
+                  {actionType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </>
   );
 };
