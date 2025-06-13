@@ -2,7 +2,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry, CreateTimesheetEntry } from "../types";
 import { validateWeekendEntry } from "../validation/weekend-validation-service";
-import { logTimesheetEntryUpdated } from "@/lib/audit/audit-service";
 
 export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
   console.log(`Updating existing entry: ${entry.id}`);
@@ -48,22 +47,6 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
   }
   if (entry.contract) {
     updatedEntry.contract = entry.contract;
-  }
-  
-  // Log the audit event
-  try {
-    const projectName = entry.project?.name || entry.contract?.name || 'Unknown Project/Contract';
-    await logTimesheetEntryUpdated(
-      updatedEntry.user_id,
-      updatedEntry.id,
-      projectName,
-      Number(updatedEntry.hours_logged),
-      updatedEntry.entry_date,
-      { original_entry: entry, updated_fields: dbEntry }
-    );
-  } catch (auditError) {
-    console.error("Error logging audit event:", auditError);
-    // Don't throw - audit logging shouldn't break the main operation
   }
   
   return updatedEntry;

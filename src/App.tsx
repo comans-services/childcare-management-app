@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,7 +19,6 @@ import TeamPage from "@/pages/TeamPage";
 import WorkSchedulePage from "@/pages/WorkSchedulePage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
-import AuditLogsPage from "@/pages/AuditLogsPage";
 
 const queryClient = new QueryClient();
 
@@ -37,15 +37,14 @@ const App = () => (
               <Route path="timesheet" element={<TimesheetPage />} />
               <Route path="settings" element={<SettingsPage />} />
               
-              {/* Admin routes */}
+              {/* Admin-only routes protected by AdminRoute */}
               <Route element={<AdminRoute />}>
-                <Route path="/projects" element={<ProjectsPage />} />
-                <Route path="/team" element={<TeamPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/customers" element={<CustomersPage />} />
-                <Route path="/contracts" element={<ContractsPage />} />
-                <Route path="/work-schedule" element={<WorkSchedulePage />} />
-                <Route path="/audit-logs" element={<AuditLogsPage />} />
+                <Route path="projects" element={<ProjectsPage />} />
+                <Route path="contracts" element={<ContractsPage />} />
+                <Route path="customers" element={<CustomersPage />} />
+                <Route path="reports" element={<ReportsPage />} />
+                <Route path="team" element={<TeamPage />} />
+                <Route path="work-schedule" element={<WorkSchedulePage />} />
               </Route>
             </Route>
             

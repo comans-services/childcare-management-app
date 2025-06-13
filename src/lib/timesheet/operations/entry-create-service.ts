@@ -1,7 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry, CreateTimesheetEntry } from "../types";
-import { logTimesheetEntryCreated } from "@/lib/audit/audit-service";
 
 export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
   console.log("Creating new entry (user_id will be auto-assigned by trigger)");
@@ -41,21 +40,6 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
   }
   if (entry.contract) {
     newEntry.contract = entry.contract;
-  }
-  
-  // Log the audit event
-  try {
-    const projectName = entry.project?.name || entry.contract?.name || 'Unknown Project/Contract';
-    await logTimesheetEntryCreated(
-      newEntry.user_id,
-      newEntry.id,
-      projectName,
-      Number(newEntry.hours_logged),
-      newEntry.entry_date
-    );
-  } catch (auditError) {
-    console.error("Error logging audit event:", auditError);
-    // Don't throw - audit logging shouldn't break the main operation
   }
   
   return newEntry;
