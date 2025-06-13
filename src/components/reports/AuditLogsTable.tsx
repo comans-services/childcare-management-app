@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDate } from "@/lib/date-utils";
+import { format } from "date-fns";
 import { User } from "@/lib/user-service";
 import { AuditLogEntry } from "@/lib/audit/audit-service";
 
@@ -100,7 +100,7 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
               {auditData.map((entry) => (
                 <TableRow key={entry.id}>
                   <TableCell className="font-mono text-sm">
-                    {formatDate(new Date(entry.created_at), 'dd/MM/yyyy HH:mm')}
+                    {format(new Date(entry.created_at), 'dd/MM/yyyy HH:mm')}
                   </TableCell>
                   <TableCell>
                     <div className="font-medium">

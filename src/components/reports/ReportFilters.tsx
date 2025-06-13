@@ -1,10 +1,10 @@
 
 import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import DateRangeFilter from "./filters/DateRangeFilter";
-import SelectFilters from "./filters/SelectFilters";
-import FilterActions from "./filters/FilterActions";
-import FilterToggles from "./filters/FilterToggles";
+import { DateRangeFilter } from "./filters/DateRangeFilter";
+import { SelectFilters } from "./filters/SelectFilters";
+import { FilterActions } from "./filters/FilterActions";
+import { FilterToggles } from "./filters/FilterToggles";
 import { fetchProjects, fetchUserContracts, Project, Contract } from "@/lib/timesheet-service";
 import { fetchCustomers, Customer } from "@/lib/customer-service";
 import { fetchUsers, User } from "@/lib/user-service";
