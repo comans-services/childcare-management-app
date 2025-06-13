@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AuditLogEntry {
@@ -25,105 +24,88 @@ export interface AuditFilters {
 }
 
 /**
- * Get user display name for audit logging - prioritizes full_name from profiles
- */
-const getUserDisplayName = async (userId: string): Promise<string> => {
-  try {
-    console.log("Fetching user display name for userId:", userId);
-    
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('full_name, email')
-      .eq('id', userId)
-      .single();
-    
-    if (error) {
-      console.error("Error fetching user profile for audit:", error);
-      return 'Unknown User';
-    }
-    
-    const displayName = profile?.full_name || profile?.email || 'Unknown User';
-    console.log("User display name resolved:", displayName);
-    return displayName;
-  } catch (error) {
-    console.error("Error in getUserDisplayName:", error);
-    return 'Unknown User';
-  }
-};
-
-/**
- * Generate human-readable descriptions for audit events
- */
-const generateDescription = (action: string, entityType: string, entityName?: string, details?: Record<string, any>): string => {
-  const entity = entityName || entityType.replace('_', ' ');
-  
-  switch (action.toLowerCase()) {
-    case 'entry_created':
-      return `Created timesheet entry for ${entity}${details?.hours_logged ? ` (${details.hours_logged} hours)` : ''}`;
-    case 'entry_updated':
-      return `Updated timesheet entry for ${entity}${details?.hours_logged ? ` (${details.hours_logged} hours)` : ''}`;
-    case 'entry_deleted':
-      return `Deleted timesheet entry for ${entity}`;
-    case 'budget_override':
-      return `Overrode budget limit for ${entity}${details?.excessHours ? ` (${details.excessHours} hours over budget)` : ''}`;
-    case 'project_created':
-      return `Created project: ${entity}`;
-    case 'project_updated':
-      return `Updated project: ${entity}`;
-    case 'project_deleted':
-      return `Deleted project: ${entity}`;
-    case 'user_created':
-      return `Created user account for ${entity}`;
-    case 'user_updated':
-      return `Updated user profile for ${entity}`;
-    case 'login':
-      return `User logged in`;
-    case 'logout':
-      return `User logged out`;
-    default:
-      return `Performed ${action} on ${entity}`;
-  }
-};
-
-/**
- * Fetch audit logs with filters
+ * Fetch audit logs using the new database function approach
  */
 export const fetchAuditLogs = async (filters: AuditFilters): Promise<AuditLogEntry[]> => {
   console.log("Fetching audit logs with filters:", filters);
   
-  let query = supabase
-    .from('audit_logs')
-    .select('*')
-    .gte('created_at', filters.startDate.toISOString())
-    .lte('created_at', filters.endDate.toISOString())
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase.rpc('get_user_activities', {
+      p_start_date: filters.startDate.toISOString().split('T')[0],
+      p_end_date: filters.endDate.toISOString().split('T')[0],
+      p_user_id: filters.userId || null
+    });
 
-  if (filters.userId) {
-    query = query.eq('user_id', filters.userId);
-  }
+    if (error) {
+      console.error("Error fetching audit logs:", error);
+      throw error;
+    }
 
-  if (filters.actionType) {
-    query = query.eq('action', filters.actionType);
-  }
+    console.log("Raw audit data received:", data?.length || 0, "records");
 
-  if (filters.entityType) {
-    query = query.eq('entity_type', filters.entityType);
-  }
+    // Transform the data to match our interface and apply additional filters
+    let transformedData = (data || []).map((item: any) => ({
+      id: item.id,
+      user_id: item.user_id,
+      user_name: item.user_name,
+      action: item.action,
+      entity_type: item.entity_type,
+      entity_id: null, // Not directly available from our function
+      entity_name: item.entity_name,
+      description: item.description,
+      details: item.details,
+      ip_address: null, // Not tracked in this approach
+      user_agent: null, // Not tracked in this approach
+      created_at: item.created_at
+    }));
 
-  const { data, error } = await query;
+    // Apply frontend filters for action type and entity type
+    if (filters.actionType) {
+      transformedData = transformedData.filter(item => 
+        item.action.toLowerCase().includes(filters.actionType!.toLowerCase())
+      );
+    }
 
-  if (error) {
-    console.error("Error fetching audit logs:", error);
+    if (filters.entityType) {
+      transformedData = transformedData.filter(item => 
+        item.entity_type === filters.entityType
+      );
+    }
+
+    console.log("Filtered audit logs:", transformedData.length, "records");
+    return transformedData;
+  } catch (error) {
+    console.error("Error in fetchAuditLogs:", error);
     throw error;
   }
-
-  console.log("Fetched audit logs:", data?.length || 0, "records");
-  return data || [];
 };
 
 /**
- * Log an audit event with proper description and user name
+ * Get unique action types for filtering - derived from known actions
  */
+export const getAuditActionTypes = async (): Promise<string[]> => {
+  // Return known action types from our database function
+  return [
+    'entry_created',
+    'entry_updated', 
+    'project_created',
+    'project_updated',
+    'user_assigned'
+  ];
+};
+
+/**
+ * Get unique entity types for filtering - derived from known entity types
+ */
+export const getAuditEntityTypes = async (): Promise<string[]> => {
+  // Return known entity types from our database function
+  return [
+    'timesheet_entry',
+    'project'
+  ];
+};
+
+// Legacy function - no longer needed but kept for compatibility
 export const logAuditEvent = async (entry: {
   user_id: string;
   action: string;
@@ -133,85 +115,7 @@ export const logAuditEvent = async (entry: {
   description?: string;
   details?: Record<string, any>;
 }): Promise<void> => {
-  try {
-    console.log("=== LOGGING AUDIT EVENT ===", entry);
-    
-    // Get user display name from profiles table
-    const userDisplayName = await getUserDisplayName(entry.user_id);
-    
-    // Generate description if not provided
-    const description = entry.description || generateDescription(
-      entry.action, 
-      entry.entity_type, 
-      entry.entity_name, 
-      entry.details
-    );
-
-    const auditRecord = {
-      user_id: entry.user_id,
-      user_name: userDisplayName,
-      action: entry.action,
-      entity_type: entry.entity_type,
-      entity_id: entry.entity_id || null,
-      entity_name: entry.entity_name || null,
-      description: description,
-      details: entry.details || null,
-      created_at: new Date().toISOString()
-    };
-
-    console.log("Inserting audit record:", auditRecord);
-
-    const { error } = await supabase
-      .from('audit_logs')
-      .insert([auditRecord]);
-
-    if (error) {
-      console.error("Error inserting audit record:", error);
-      console.error("Audit record that failed:", auditRecord);
-      // Don't throw here - audit logging should not break the main flow
-    } else {
-      console.log("✅ Audit event logged successfully:", description);
-    }
-  } catch (error) {
-    console.error("Error in logAuditEvent:", error);
-    // Don't throw here - audit logging should not break the main flow
-  }
-};
-
-/**
- * Get unique action types for filtering
- */
-export const getAuditActionTypes = async (): Promise<string[]> => {
-  const { data, error } = await supabase
-    .from('audit_logs')
-    .select('action')
-    .order('action');
-
-  if (error) {
-    console.error("Error fetching action types:", error);
-    return [];
-  }
-
-  // Get unique values
-  const uniqueActions = [...new Set(data?.map(item => item.action) || [])];
-  return uniqueActions;
-};
-
-/**
- * Get unique entity types for filtering
- */
-export const getAuditEntityTypes = async (): Promise<string[]> => {
-  const { data, error } = await supabase
-    .from('audit_logs')
-    .select('entity_type')
-    .order('entity_type');
-
-  if (error) {
-    console.error("Error fetching entity types:", error);
-    return [];
-  }
-
-  // Get unique values
-  const uniqueEntityTypes = [...new Set(data?.map(item => item.entity_type) || [])];
-  return uniqueEntityTypes;
+  // This function is no longer needed since we're using existing tables
+  // for audit tracking, but keeping it for backward compatibility
+  console.log("Legacy audit logging - no action needed:", entry);
 };

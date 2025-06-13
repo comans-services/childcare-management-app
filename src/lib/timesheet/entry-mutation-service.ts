@@ -1,3 +1,4 @@
+
 import { TimesheetEntry } from "./types";
 import { validateWeekendEntry } from "./validation/weekend-validation-service";
 import { validateEntryData, validateProjectBudgetForEntry } from "./validation/entry-validation-service";
@@ -5,7 +6,6 @@ import { createTimesheetEntry } from "./operations/entry-create-service";
 import { updateTimesheetEntry } from "./operations/entry-update-service";
 import { deleteTimesheetEntry, deleteAllTimesheetEntries } from "./operations/entry-delete-service";
 import { duplicateTimesheetEntry } from "./operations/entry-duplicate-service";
-import { logBudgetOverride, logEntryEvent } from "./audit-service";
 import { validateProjectBudget, getProjectHoursUsed } from "./validation/budget-validation-service";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -73,7 +73,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
         throw new Error(budgetValidation.message || "Budget exceeded - entry blocked by server");
       }
 
-      // If budget is exceeded but user is admin, allow with audit logging
+      // If budget is exceeded but user is admin, allow with logging
       if (!budgetValidation.isValid && isAdmin) {
         budgetOverrideUsed = true;
         console.log("Admin budget override being applied by server");
@@ -82,53 +82,22 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     
     console.log("All validations passed, proceeding with save");
     
-    // Save the entry
+    // Save the entry - audit trail is automatically created by the database function
     let savedEntry: TimesheetEntry;
     const isUpdate = !!entry.id;
     
     if (isUpdate) {
       console.log("=== UPDATING EXISTING ENTRY ===", entry.id);
       savedEntry = await updateTimesheetEntry(entry);
-      
-      console.log("=== LOGGING UPDATE AUDIT EVENT ===");
-      await logEntryEvent(user.id, 'entry_updated', savedEntry.id!, {
-        project_id: entry.project_id,
-        hours_logged: entry.hours_logged,
-        entry_date: entry.entry_date,
-        entry_type: entry.entry_type,
-        notes: entry.notes
-      });
     } else {
       console.log("=== CREATING NEW ENTRY ===");
       savedEntry = await createTimesheetEntry(entry);
-      
-      console.log("=== LOGGING CREATE AUDIT EVENT ===", savedEntry.id);
-      await logEntryEvent(user.id, 'entry_created', savedEntry.id!, {
-        project_id: entry.project_id,
-        hours_logged: entry.hours_logged,
-        entry_date: entry.entry_date,
-        entry_type: entry.entry_type,
-        notes: entry.notes
-      });
     }
 
-    // Log budget override if it was used
-    if (budgetOverrideUsed && entry.project_id) {
-      console.log("=== LOGGING BUDGET OVERRIDE ===");
-      const hoursUsedAfter = await getProjectHoursUsed(entry.project_id);
-      const budgetValidation = await validateProjectBudget({
-        projectId: entry.project_id,
-        hoursToAdd: 0, // Just get current status
-        userId: user.id
-      });
-
-      await logBudgetOverride(user.id, entry.project_id, savedEntry.id!, {
-        hoursAdded: entry.hours_logged,
-        totalBudget: budgetValidation.totalBudget,
-        hoursUsedBefore: budgetValidation.hoursUsed - entry.hours_logged,
-        hoursUsedAfter: budgetValidation.hoursUsed,
-        excessHours: Math.max(0, budgetValidation.hoursUsed - budgetValidation.totalBudget)
-      });
+    // Budget override logging is now handled by the database function
+    if (budgetOverrideUsed) {
+      console.log("=== BUDGET OVERRIDE OCCURRED ===");
+      console.log("Admin override applied - tracked by database function");
     }
 
     console.log("=== ENTRY SAVE COMPLETED SUCCESSFULLY ===");

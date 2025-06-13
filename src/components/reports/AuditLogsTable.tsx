@@ -3,9 +3,8 @@ import React from "react";
 import { AuditLogEntry } from "@/lib/audit/audit-service";
 import { User } from "@/lib/user-service";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatDateDisplay } from "@/lib/date-utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileX, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 
 interface AuditLogsTableProps {
   auditData: AuditLogEntry[];
@@ -30,7 +29,6 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
               <TableHead>Date & Time</TableHead>
               <TableHead>User</TableHead>
               <TableHead>Action</TableHead>
-              <TableHead>Entity</TableHead>
               <TableHead>Description</TableHead>
             </TableRow>
           </TableHeader>
@@ -40,7 +38,6 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
                 <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-full" /></TableCell>
               </TableRow>
             ))}
@@ -55,9 +52,9 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
       <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
         <Shield className="h-12 w-12 text-gray-400" />
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">No audit logs found</h3>
+          <h3 className="text-lg font-semibold text-gray-900">No activity logs found</h3>
           <p className="text-sm text-gray-500 mt-2 max-w-sm">
-            No audit entries match your current filters. Try adjusting the date range or removing some filters.
+            No user activities found for the selected criteria. Try adjusting the date range or removing some filters.
           </p>
         </div>
       </div>
@@ -77,28 +74,24 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
 
   const getActionBadgeColor = (action: string) => {
     switch (action.toLowerCase()) {
-      case 'create':
-      case 'created':
+      case 'entry_created':
+      case 'project_created':
         return 'bg-green-100 text-green-800';
-      case 'update':
-      case 'updated':
+      case 'entry_updated':
+      case 'project_updated':
         return 'bg-blue-100 text-blue-800';
-      case 'delete':
-      case 'deleted':
+      case 'entry_deleted':
+      case 'project_deleted':
         return 'bg-red-100 text-red-800';
-      case 'assign':
-      case 'assigned':
+      case 'user_assigned':
         return 'bg-purple-100 text-purple-800';
-      case 'lock':
-      case 'locked':
-        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const formatEntityType = (entityType: string) => {
-    return entityType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const formatAction = (action: string) => {
+    return action.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   return (
@@ -110,7 +103,6 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
               <TableHead>Date & Time</TableHead>
               <TableHead>User</TableHead>
               <TableHead>Action</TableHead>
-              <TableHead>Entity</TableHead>
               <TableHead>Description</TableHead>
             </TableRow>
           </TableHeader>
@@ -130,16 +122,8 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionBadgeColor(entry.action)}`}>
-                    {entry.action}
+                    {formatAction(entry.action)}
                   </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{formatEntityType(entry.entity_type)}</span>
-                    {entry.entity_name && (
-                      <span className="text-xs text-gray-500">{entry.entity_name}</span>
-                    )}
-                  </div>
                 </TableCell>
                 <TableCell className="max-w-md">
                   <p className="text-sm">{entry.description}</p>
@@ -161,7 +145,7 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
       </div>
       
       <div className="mt-4 text-sm text-gray-500 text-center">
-        Showing {auditData.length} audit log {auditData.length === 1 ? 'entry' : 'entries'}
+        Showing {auditData.length} activity log {auditData.length === 1 ? 'entry' : 'entries'}
       </div>
     </div>
   );

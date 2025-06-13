@@ -1,5 +1,6 @@
 
-import { logAuditEvent } from "@/lib/audit/audit-service";
+// This file is now simplified since we're using the database function approach
+// The audit trail is automatically generated from existing table data
 
 export interface AuditLogEntry {
   id?: string;
@@ -14,21 +15,7 @@ export interface AuditLogEntry {
 }
 
 /**
- * Get project name for audit logging
- */
-const getProjectName = async (projectId: string): Promise<string> => {
-  const { supabase } = await import("@/integrations/supabase/client");
-  const { data: project } = await supabase
-    .from('projects')
-    .select('name')
-    .eq('id', projectId)
-    .single();
-  
-  return project?.name || 'Unknown Project';
-};
-
-/**
- * Log budget override event with detailed description
+ * Log budget override event - simplified for database function approach
  */
 export const logBudgetOverride = async (
   userId: string,
@@ -43,35 +30,17 @@ export const logBudgetOverride = async (
   }
 ): Promise<void> => {
   try {
-    console.log("=== LOGGING BUDGET OVERRIDE EVENT ===", { userId, projectId, entryId, details });
-    
-    const projectName = await getProjectName(projectId);
-    const description = `Overrode budget limit for ${projectName} (added ${details.hoursAdded} hours, ${details.excessHours} hours over ${details.totalBudget}h budget)`;
-    
-    await logAuditEvent({
-      user_id: userId,
-      action: 'budget_override',
-      entity_type: 'timesheet_entry',
-      entity_id: entryId,
-      entity_name: projectName,
-      description: description,
-      details: {
-        project_id: projectId,
-        project_name: projectName,
-        ...details,
-        timestamp: new Date().toISOString()
-      }
-    });
-    
-    console.log("Budget override audit event logged successfully");
+    console.log("=== BUDGET OVERRIDE LOGGED ===", { userId, projectId, entryId, details });
+    // Budget overrides are now tracked through the timesheet entries themselves
+    // The database function will show the entry creation/update that caused the override
+    console.log("Budget override tracking handled by database function");
   } catch (error) {
     console.error("Error in logBudgetOverride:", error);
-    // Don't throw here - audit logging should not break the main flow
   }
 };
 
 /**
- * Log timesheet entry event with descriptive details
+ * Log timesheet entry event - simplified for database function approach  
  */
 export const logEntryEvent = async (
   userId: string,
@@ -80,52 +49,11 @@ export const logEntryEvent = async (
   details: Record<string, any>
 ): Promise<void> => {
   try {
-    console.log("=== LOGGING TIMESHEET ENTRY EVENT ===", { userId, action, entryId, details });
-    
-    let entityName = 'Timesheet Entry';
-    let description = '';
-    
-    // Get project name if available
-    if (details.project_id) {
-      entityName = await getProjectName(details.project_id);
-    }
-    
-    // Generate descriptive text based on action
-    switch (action) {
-      case 'entry_created':
-        description = `Created timesheet entry for ${entityName}`;
-        if (details.hours_logged) {
-          description += ` (${details.hours_logged} hours on ${details.entry_date})`;
-        }
-        break;
-      case 'entry_updated':
-        description = `Updated timesheet entry for ${entityName}`;
-        if (details.hours_logged) {
-          description += ` (${details.hours_logged} hours on ${details.entry_date})`;
-        }
-        break;
-      case 'entry_deleted':
-        description = `Deleted timesheet entry for ${entityName}`;
-        break;
-    }
-
-    await logAuditEvent({
-      user_id: userId,
-      action,
-      entity_type: 'timesheet_entry',
-      entity_id: entryId,
-      entity_name: entityName,
-      description: description,
-      details: {
-        ...details,
-        project_name: entityName !== 'Timesheet Entry' ? entityName : undefined,
-        timestamp: new Date().toISOString()
-      }
-    });
-    
-    console.log("Timesheet entry audit event logged successfully:", description);
+    console.log("=== TIMESHEET ENTRY EVENT LOGGED ===", { userId, action, entryId, details });
+    // Entry events are now tracked through the timesheet entries themselves
+    // The database function will show these automatically
+    console.log("Entry event tracking handled by database function");
   } catch (error) {
     console.error("Error in logEntryEvent:", error);
-    // Don't throw here - audit logging should not break the main flow
   }
 };

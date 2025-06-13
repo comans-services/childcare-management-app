@@ -9,59 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      audit_logs: {
-        Row: {
-          action: string
-          created_at: string
-          description: string
-          details: Json | null
-          entity_id: string | null
-          entity_name: string | null
-          entity_type: string
-          id: string
-          ip_address: string | null
-          user_agent: string | null
-          user_id: string
-          user_name: string
-        }
-        Insert: {
-          action: string
-          created_at?: string
-          description: string
-          details?: Json | null
-          entity_id?: string | null
-          entity_name?: string | null
-          entity_type: string
-          id?: string
-          ip_address?: string | null
-          user_agent?: string | null
-          user_id: string
-          user_name: string
-        }
-        Update: {
-          action?: string
-          created_at?: string
-          description?: string
-          details?: Json | null
-          entity_id?: string | null
-          entity_name?: string | null
-          entity_type?: string
-          id?: string
-          ip_address?: string | null
-          user_agent?: string | null
-          user_id?: string
-          user_name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "audit_logs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       contract_assignments: {
         Row: {
           assigned_at: string
@@ -596,6 +543,20 @@ export type Database = {
           earliest_lock_date: string
           latest_lock_date: string
           most_common_reason: string
+        }[]
+      }
+      get_user_activities: {
+        Args: { p_start_date?: string; p_end_date?: string; p_user_id?: string }
+        Returns: {
+          id: string
+          user_id: string
+          user_name: string
+          action: string
+          entity_type: string
+          entity_name: string
+          description: string
+          details: Json
+          created_at: string
         }[]
       }
       get_user_display_name: {
