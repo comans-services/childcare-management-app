@@ -5,7 +5,7 @@ import { Contract } from "../contract-service";
 export const fetchUserContracts = async (): Promise<Contract[]> => {
   try {
     console.log("=== DEBUGGING CONTRACT FETCH ===");
-    console.log("Fetching contracts assigned to current user...");
+    console.log("Fetching ALL contracts assigned to current user (no status filters)...");
     
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
@@ -44,17 +44,16 @@ export const fetchUserContracts = async (): Promise<Contract[]> => {
     
     // If user has no assignments, return empty array
     if (contractIds.length === 0) {
-      console.log("User has no contract assignments - this is the issue!");
+      console.log("User has no contract assignments");
       return [];
     }
 
-    // Fetch only the contracts the user is assigned to and that are active
-    console.log("Fetching contracts with IDs:", contractIds);
+    // Fetch ALL contracts the user is assigned to (no status filtering)
+    console.log("Fetching ALL assigned contracts with IDs:", contractIds);
     const { data, error } = await supabase
       .from("contracts")
       .select("*")
       .in('id', contractIds)
-      .eq("is_active", true)
       .order("name", { ascending: true });
 
     if (error) {
@@ -63,7 +62,7 @@ export const fetchUserContracts = async (): Promise<Contract[]> => {
     }
 
     console.log("Final contracts fetched:", data);
-    console.log(`Successfully fetched ${data?.length || 0} assigned contracts for user`);
+    console.log(`Successfully fetched ${data?.length || 0} assigned contracts for user (all statuses included)`);
     return data || [];
   } catch (error) {
     console.error("Error in fetchUserContracts:", error);
