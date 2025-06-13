@@ -4,9 +4,9 @@ export interface AuditLogEntry {
   user_id: string;
   user_name: string;
   action: string;
-  entity_name: string | null;
+  entity_name: string;
   description: string;
-  details: Record<string, any> | null;
+  details: Record<string, any>;
   created_at: string;
 }
 
@@ -15,10 +15,4 @@ export interface AuditFilters {
   endDate: Date;
   userId?: string;
   actionType?: string;
-}
-
-export interface ReportGenerationDetails {
-  reportType: 'timesheet' | 'audit';
-  filters: any;
-  resultCount: number;
 }
