@@ -630,6 +630,10 @@ export type Database = {
         Args: { entry_date: string }
         Returns: boolean
       }
+      log_report_generation_secure: {
+        Args: { p_report_type: string; p_filters: Json; p_result_count: number }
+        Returns: undefined
+      }
       timesheet_entries_report: {
         Args: {
           p_start_date: string

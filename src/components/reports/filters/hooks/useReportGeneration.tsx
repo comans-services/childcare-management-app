@@ -66,7 +66,7 @@ export const useReportGeneration = ({
         setReportData(reportData);
         setAuditData([]); // Clear audit data when generating timesheet report
         
-        // Log report generation to audit trail
+        // Log report generation to audit trail using secure database function
         await logReportGeneration({
           reportType: 'timesheet',
           filters: {
@@ -109,7 +109,7 @@ export const useReportGeneration = ({
         setAuditData(auditData);
         setReportData([]); // Clear timesheet data when generating audit report
         
-        // Log audit report generation to audit trail
+        // Log audit report generation to audit trail using secure database function
         await logReportGeneration({
           reportType: 'audit',
           filters: {

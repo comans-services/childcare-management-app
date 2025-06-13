@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AuditLogEntry {
@@ -122,7 +121,7 @@ export const getAuditActionTypes = async (): Promise<string[]> => {
 };
 
 /**
- * Log report generation audit event
+ * Log report generation audit event using secure database function
  */
 export const logReportGeneration = async (reportDetails: {
   reportType: 'timesheet' | 'audit';
@@ -136,67 +135,21 @@ export const logReportGeneration = async (reportDetails: {
       return;
     }
 
-    // Get user display name
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, email')
-      .eq('id', data.user.id)
-      .single();
-
-    const userDisplayName = profile?.full_name || profile?.email || 'Unknown User';
-    
-    // Format description based on report type and filters
-    let description = '';
-    let entityName = '';
-    
-    if (reportDetails.reportType === 'timesheet') {
-      entityName = 'Timesheet Report';
-      description = `Generated timesheet report (${reportDetails.resultCount} entries)`;
-      
-      // Add filter details to description
-      const filterParts = [];
-      if (reportDetails.filters.userId) filterParts.push('filtered by user');
-      if (reportDetails.filters.projectId) filterParts.push('filtered by project');
-      if (reportDetails.filters.customerId) filterParts.push('filtered by customer');
-      if (reportDetails.filters.contractId) filterParts.push('filtered by contract');
-      
-      if (filterParts.length > 0) {
-        description += ` - ${filterParts.join(', ')}`;
-      }
-    } else {
-      entityName = 'Audit Report';
-      description = `Generated audit report (${reportDetails.resultCount} log entries)`;
-      
-      if (reportDetails.filters.actionType) {
-        description += ` - filtered by action: ${reportDetails.filters.actionType}`;
-      }
-      if (reportDetails.filters.userId) {
-        description += ` - filtered by user`;
-      }
-    }
-
-    // Insert audit log entry
-    const { error: insertError } = await supabase.from('audit_logs').insert({
-      user_id: data.user.id,
-      user_name: userDisplayName,
-      action: reportDetails.reportType === 'timesheet' ? 'report_generated' : 'audit_report_generated',
-      entity_name: entityName,
-      description,
-      details: {
-        report_type: reportDetails.reportType,
-        result_count: reportDetails.resultCount,
-        filters: reportDetails.filters,
-        date_range: {
-          start_date: reportDetails.filters.startDate,
-          end_date: reportDetails.filters.endDate
-        }
-      }
+    // Use the secure database function for logging
+    const { error: logError } = await supabase.rpc('log_report_generation_secure', {
+      p_report_type: reportDetails.reportType,
+      p_filters: {
+        ...reportDetails.filters,
+        startDate: reportDetails.filters.startDate,
+        endDate: reportDetails.filters.endDate
+      },
+      p_result_count: reportDetails.resultCount
     });
 
-    if (insertError) {
-      console.error("Error logging report generation:", insertError);
+    if (logError) {
+      console.error("Error logging report generation:", logError);
     } else {
-      console.log("Report generation logged to audit trail");
+      console.log("Report generation logged to audit trail via secure database function");
     }
   } catch (error) {
     console.error("Error in logReportGeneration:", error);
