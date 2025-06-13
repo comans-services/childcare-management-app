@@ -1,216 +1,183 @@
-
-import React, { useState, useEffect } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { Link } from "react-router-dom";
-import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, UserPlus, Clock } from "lucide-react";
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { 
+  CalendarDays, 
+  BarChart3, 
+  Users, 
+  FolderOpen, 
+  Settings, 
+  Menu, 
+  X, 
+  Building2, 
+  FileText,
+  Clock,
+  Shield
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-const SIDEBAR_STORAGE_KEY = "sidebar-collapsed";
+interface NavItem {
+  href: string;
+  icon: React.ComponentType<any>;
+  label: string;
+  badge: string | null;
+}
 
-const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: { 
-  isCollapsed?: boolean; 
-  onToggleCollapse?: () => void; 
-}) => {
-  const { user, userRole, signOut } = useAuth();
-  const navigate = useNavigate();
+const Sidebar = () => {
+  const { userRole } = useAuth();
+  const location = useLocation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/auth");
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
   };
 
-  // Define which navigation items are available for each role
-  const isAdmin = userRole === "admin";
-  const isEmployee = userRole === "employee";
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
 
-  const navigationItems = [
-    { to: "/", icon: Home, label: "Home", showForAll: true },
-    { to: "/timesheet", icon: Calendar, label: "Timesheet", showForAll: true },
-    { to: "/projects", icon: FolderKanban, label: "Projects", adminOnly: true },
-    { to: "/customers", icon: Users, label: "Customers", adminOnly: true },
-    { to: "/contracts", icon: FileText, label: "Contracts", adminOnly: true },
-    { to: "/reports", icon: BarChart, label: "Reports", adminOnly: true },
-    { to: "/team", icon: UserPlus, label: "Team", adminOnly: true },
-    { to: "/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },
+  const navItems = [
+    {
+      href: "/timesheet",
+      icon: CalendarDays,
+      label: "Timesheet",
+      badge: null
+    },
+    {
+      href: "/reports",
+      icon: BarChart3,
+      label: "Reports",
+      badge: null
+    },
+    
+    // Admin-only items
+    ...(userRole === 'admin' ? [
+      {
+        href: "/projects",
+        icon: FolderOpen,
+        label: "Projects",
+        badge: null
+      },
+      {
+        href: "/team",
+        icon: Users,
+        label: "Team",
+        badge: null
+      },
+      {
+        href: "/customers",
+        icon: Building2,
+        label: "Customers",
+        badge: null
+      },
+      {
+        href: "/contracts",
+        icon: FileText,
+        label: "Contracts",
+        badge: null
+      },
+      {
+        href: "/work-schedule",
+        icon: Clock,
+        label: "Work Schedule",
+        badge: null
+      },
+      {
+        href: "/audit-logs",
+        icon: Shield,
+        label: "Audit Logs",
+        badge: null
+      }
+    ] : []),
   ];
-
-  const filteredItems = navigationItems.filter(item => 
-    item.showForAll || (item.adminOnly && isAdmin)
-  );
 
   return (
     <>
-      {/* Header with collapse toggle for desktop */}
-      <div className={`p-4 ${isCollapsed ? 'px-2' : ''} transition-all duration-300`}>
-        {!isCollapsed ? (
-          <>
-            <h2 className="text-xl font-semibold">Timesheet App</h2>
-            <p className="text-sm text-muted-foreground">Manage your time</p>
-          </>
-        ) : (
-          <div className="text-center">
-            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-primary-foreground font-bold text-sm">
-              TA
-            </div>
-          </div>
-        )}
-        
-        {onToggleCollapse && (
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 bg-gray-50 border-r border-gray-200 py-4">
+        <div className="px-6 py-2">
+          <Link to="/" className="font-bold text-lg text-gray-800">
+            Timesheet App
+          </Link>
+        </div>
+        <nav className="flex-1 px-2 py-4 space-y-1">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "group flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-200 hover:text-gray-900 transition-colors duration-200",
+                location.pathname === item.href
+                  ? "bg-gray-200 text-gray-900"
+                  : "text-gray-700"
+              )}
+            >
+              <item.icon className="h-4 w-4 mr-2 opacity-75 group-hover:opacity-100" />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="border-t border-gray-200 p-4">
+          <Link to="/settings" className="flex items-center text-sm text-gray-600 hover:text-gray-800">
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Link>
+        </div>
+      </aside>
+
+      {/* Mobile Sidebar */}
+      <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+        <SheetTrigger asChild>
           <Button
             variant="ghost"
             size="sm"
-            onClick={onToggleCollapse}
-            className="mt-2 w-full hidden lg:flex items-center justify-center"
+            className="md:hidden"
+            onClick={toggleMenu}
           >
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
-        )}
-      </div>
-      
-      <Separator className="my-2" />
-      
-      {/* Navigation items */}
-      <div className="flex flex-col space-y-1 p-2">
-        {filteredItems.map((item) => (
-          <Link 
-            key={item.to}
-            to={item.to} 
-            className={`
-              flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2
-              ${isCollapsed ? 'justify-center' : ''}
-              transition-all duration-300
-            `}
-            title={isCollapsed ? item.label : undefined}
-          >
-            <item.icon className="h-5 w-5 flex-shrink-0" />
-            {!isCollapsed && <span>{item.label}</span>}
-          </Link>
-        ))}
-      </div>
-      
-      <Separator className="my-2" />
-      
-      {/* Settings and logout */}
-      <div className="flex flex-col space-y-1 p-2">
-        <Link 
-          to="/settings" 
-          className={`
-            flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2
-            ${isCollapsed ? 'justify-center' : ''}
-            transition-all duration-300
-          `}
-          title={isCollapsed ? "Settings" : undefined}
-        >
-          <Settings className="h-5 w-5 flex-shrink-0" />
-          {!isCollapsed && <span>Settings</span>}
-        </Link>
-        
-        <Button 
-          variant="ghost" 
-          className={`
-            justify-start
-            ${isCollapsed ? 'px-2' : ''}
-            transition-all duration-300
-          `}
-          onClick={handleLogout}
-          title={isCollapsed ? "Log Out" : undefined}
-        >
-          <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'space-x-2'}`}>
-            <div className="h-5 w-5 flex-shrink-0">↗</div>
-            {!isCollapsed && <span>Log Out</span>}
-          </div>
-        </Button>
-      </div>
-    </>
-  );
-};
-
-const Sidebar = () => {
-  const isMobile = useIsMobile();
-  
-  // Initialize state from localStorage or default to expanded (false = expanded)
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : false; // Default to expanded
-  });
-
-  // Save collapse state to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(isCollapsed));
-  }, [isCollapsed]);
-
-  // Only auto-collapse on very small screens, but respect user preference
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      
-      // Only auto-collapse on very small screens (less than 1024px)
-      // and only if user hasn't manually set a preference
-      const hasUserPreference = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-      
-      if (!hasUserPreference) {
-        if (width < 1024) {
-          setIsCollapsed(true);
-        } else {
-          setIsCollapsed(false); // Default to expanded on desktop
-        }
-      }
-    };
-
-    // Set initial state only if no user preference exists
-    const hasUserPreference = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-    if (!hasUserPreference) {
-      handleResize();
-    }
-    
-    // Listen for resize events
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const handleToggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
-
-  // Mobile sidebar
-  if (isMobile) {
-    return (
-      <Sheet>
-        <SheetTrigger asChild className="md:hidden">
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu />
+            {isMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-64">
-          <SidebarContent />
+        <SheetContent side="left" className="w-64 p-0">
+          <div className="flex flex-col h-full">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <Link to="/" className="font-bold text-lg text-gray-800">
+                Timesheet App
+              </Link>
+            </div>
+            <nav className="flex-1 px-2 py-4 space-y-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  onClick={closeMenu}
+                  className={cn(
+                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-200 hover:text-gray-900 transition-colors duration-200",
+                    location.pathname === item.href
+                      ? "bg-gray-200 text-gray-900"
+                      : "text-gray-700"
+                  )}
+                >
+                  <item.icon className="h-4 w-4 mr-2 opacity-75 group-hover:opacity-100" />
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="border-t border-gray-200 p-4">
+              <Link to="/settings" onClick={closeMenu} className="flex items-center text-sm text-gray-600 hover:text-gray-800">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Link>
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
-    );
-  }
-
-  // Desktop sidebar with collapse functionality
-  return (
-    <div className={`
-      ${isCollapsed ? 'w-12' : 'w-full'} 
-      h-full transition-all duration-300 ease-in-out
-    `}>
-      <SidebarContent 
-        isCollapsed={isCollapsed} 
-        onToggleCollapse={handleToggleCollapse} 
-      />
-    </div>
+    </>
   );
 };
 
