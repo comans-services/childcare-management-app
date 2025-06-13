@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { ReportGenerationDetails } from "./types";
+import type { ReportGenerationDetails } from "./types";
 
 /**
  * Log report generation audit event using secure database function

@@ -1,6 +1,13 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+// Re-export types from the types file
+export type { AuditLogEntry, AuditFilters } from "./types";
+
+// Re-export functions from other services
+export { fetchAuditLogs } from "./fetch-service";
+export { getAuditActionTypes } from "./action-types-service";
+
 /**
  * Log report generation to audit trail using the secure database function
  */
@@ -29,8 +36,3 @@ export const logReportGeneration = async (params: {
     throw error;
   }
 };
-
-/**
- * Re-export the fetchAuditLogs function from the existing fetch service
- */
-export { fetchAuditLogs } from "./fetch-service";
