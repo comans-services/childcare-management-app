@@ -4,8 +4,10 @@ import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCustomers } from "@/lib/customer-service";
 import { fetchContracts } from "@/lib/contract-service";
-import { fetchUserProjects } from "@/lib/timesheet-service";
+import { fetchUserProjects, fetchProjects } from "@/lib/timesheet-service";
 import { fetchUsers } from "@/lib/user-service";
+import { useAuth } from "@/context/AuthContext";
+import { isAdmin } from "@/utils/roles";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 import { DateRangeFilterNew } from "./filters/DateRangeFilterNew";
 import { SelectFilters } from "./filters/SelectFilters";
@@ -36,7 +38,20 @@ const ReportFilters = ({
   setIsLoading 
 }: ReportFiltersProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [userIsAdmin, setUserIsAdmin] = useState<boolean | null>(null);
+  const { user } = useAuth();
   
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const adminStatus = await isAdmin(user);
+        setUserIsAdmin(adminStatus);
+      }
+    };
+    checkAdminStatus();
+  }, [user]);
+
   const { data: customersData } = useQuery({
     queryKey: ['customers'],
     queryFn: fetchCustomers
@@ -47,9 +62,14 @@ const ReportFilters = ({
     queryFn: () => fetchContracts()
   });
 
+  // Conditionally fetch projects based on admin status
   const { data: projectsData } = useQuery({
-    queryKey: ['projects'],
-    queryFn: fetchUserProjects
+    queryKey: ['projects', userIsAdmin],
+    queryFn: () => {
+      // If user is admin, fetch all projects; otherwise fetch only assigned projects
+      return userIsAdmin ? fetchProjects() : fetchUserProjects();
+    },
+    enabled: userIsAdmin !== null // Only run query when admin status is determined
   });
 
   const { data: usersData } = useQuery({
