@@ -1,7 +1,6 @@
 
 import React from "react";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
-import { isToday } from "@/lib/date-utils";
 import MobileDayColumn from "../day-column/MobileDayColumn";
 import {
   Carousel,
@@ -32,13 +31,13 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
   onEditEntry,
   viewMode,
 }) => {
-  // If in today mode, only show today's date
-  const displayDates = viewMode === "today" 
-    ? weekDates.filter(date => isToday(date))
-    : weekDates;
+  // Use the weekDates directly - the parent component already filters correctly
+  // In day mode, weekDates will contain only the selected date
+  // In week mode, weekDates will contain all 7 days of the week
+  const displayDates = weekDates;
 
   if (viewMode === "today") {
-    // Single day view for today mode
+    // Single day view for day mode
     return (
       <div className="w-full animate-in fade-in-50">
         {displayDates.map((date) => (

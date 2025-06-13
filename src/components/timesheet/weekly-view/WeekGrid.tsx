@@ -4,7 +4,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import DayColumn from "../DayColumn";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
-import { isToday, isWeekend } from "@/lib/date-utils";
+import { isWeekend } from "@/lib/date-utils";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -42,10 +42,10 @@ const WeekGrid: React.FC<WeekGridProps> = ({
   const { user } = useAuth();
   const { validateWeekendEntry } = useWeekendLock(user?.id);
   
-  // If in today mode, only show today's date
-  const displayDates = viewMode === "today" 
-    ? weekDates.filter(date => isToday(date))
-    : weekDates;
+  // Use the weekDates directly - the parent component already filters correctly
+  // In day mode, weekDates will contain only the selected date
+  // In week mode, weekDates will contain all 7 days of the week
+  const displayDates = weekDates;
 
   const renderDesktopView = () => (
     <div className={`grid gap-2 w-full overflow-hidden animate-in fade-in-50 ${viewMode === "today" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-7"}`}>
