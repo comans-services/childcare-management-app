@@ -1,24 +1,19 @@
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { TimesheetEntry } from "@/lib/timesheet-service";
-import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 
 export const useWeeklyViewState = () => {
-  const { workingDays, weeklyTarget } = useWorkSchedule();
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"today" | "week">("week");
   const [lastUserId, setLastUserId] = useState<string | null>(null);
   
   // Time entry dialog state
   const [entryDialogOpen, setEntryDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [editingEntry, setEditingEntry] = useState<TimesheetEntry | undefined>(undefined);
 
   // Clear all dialog state
   const clearDialogState = useCallback(() => {
     setEntryDialogOpen(false);
     setSelectedDate(null);
-    setEditingEntry(undefined);
   }, []);
 
   const toggleViewMode = useCallback(() => {
@@ -26,10 +21,6 @@ export const useWeeklyViewState = () => {
   }, []);
 
   return {
-    currentDate,
-    setCurrentDate,
-    workingDays,
-    weeklyTarget,
     viewMode,
     setViewMode,
     toggleViewMode,
@@ -39,8 +30,6 @@ export const useWeeklyViewState = () => {
     setEntryDialogOpen,
     selectedDate,
     setSelectedDate,
-    editingEntry,
-    setEditingEntry,
     clearDialogState,
   };
 };
