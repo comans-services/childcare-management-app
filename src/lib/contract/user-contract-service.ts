@@ -48,21 +48,42 @@ export const fetchUserContracts = async (): Promise<Contract[]> => {
       return [];
     }
 
-    // Fetch only the contracts the user is assigned to and that are active
+    // Fetch only the contracts the user is assigned to with proper filtering
     console.log("Fetching contracts with IDs:", contractIds);
     const { data, error } = await supabase
       .from("contracts")
       .select("*")
       .in('id', contractIds)
       .eq("is_active", true)
+      .eq("status", "active")  // Add status filter
       .order("name", { ascending: true });
 
     if (error) {
       console.error("Error fetching user contracts:", error);
-      throw error;
+      console.log("Trying without status filter...");
+      
+      // Fallback: try without status filter to see what we get
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("contracts")
+        .select("*")
+        .in('id', contractIds)
+        .eq("is_active", true)
+        .order("name", { ascending: true });
+        
+      if (fallbackError) {
+        console.error("Fallback query also failed:", fallbackError);
+        throw error; // throw original error
+      }
+      
+      console.log("Fallback query returned:", fallbackData);
+      console.log("Contract statuses:", fallbackData?.map(c => ({ id: c.id, name: c.name, status: c.status })));
+      
+      // Return fallback data if available
+      return fallbackData || [];
     }
 
     console.log("Final contracts fetched:", data);
+    console.log("Contract details:", data?.map(c => ({ id: c.id, name: c.name, status: c.status, is_active: c.is_active })));
     console.log(`Successfully fetched ${data?.length || 0} assigned contracts for user`);
     return data || [];
   } catch (error) {
