@@ -68,11 +68,11 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
                 ) : (
                   <CalendarDays className="h-3.5 w-3.5 mr-1" />
                 )}
-                <span>{viewMode === "today" ? "Today" : "Week"}</span>
+                <span>{viewMode === "today" ? "Day" : "Week"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Switch to {viewMode === "today" ? "week" : "today"} view</p>
+              <p>Switch to {viewMode === "today" ? "week" : "day"} view</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

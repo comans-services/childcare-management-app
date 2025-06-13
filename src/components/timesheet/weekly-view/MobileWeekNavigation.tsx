@@ -69,7 +69,7 @@ const MobileWeekNavigation: React.FC<MobileWeekNavigationProps> = ({
             {viewMode === "today" ? (
               <>
                 <Calendar className="h-4 w-4 mr-1 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">Today</span>
+                <span className="truncate">Day</span>
               </>
             ) : (
               <>
