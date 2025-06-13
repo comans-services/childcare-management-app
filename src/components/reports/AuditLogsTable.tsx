@@ -31,7 +31,7 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
     return 'default';
   };
 
-  // Format action text for display with comprehensive formatting
+  // Format action text for display with comprehensive formatting including team member actions
   const formatAction = (action: string): string => {
     const actionMap: Record<string, string> = {
       'entry_created': 'Entry Created',
@@ -44,7 +44,10 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
       'contract_updated': 'Contract Updated',
       'contract_deleted': 'Contract Deleted',
       'user_assigned': 'User Assigned',
-      'user_unassigned': 'User Unassigned'
+      'user_unassigned': 'User Unassigned',
+      'member_created': 'Member Added',
+      'member_updated': 'Member Updated',
+      'member_deleted': 'Member Deleted'
     };
     
     return actionMap[action] || action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -95,7 +98,7 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
       <CardHeader>
         <CardTitle>Audit Logs</CardTitle>
         <CardDescription>
-          Complete audit trail showing all user actions including creates, updates, deletions, and assignments ({auditData.length} entries)
+          Complete audit trail showing all user actions including creates, updates, deletions, assignments, and team member management ({auditData.length} entries)
         </CardDescription>
       </CardHeader>
       <CardContent>

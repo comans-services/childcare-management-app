@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AuditLogEntry {
@@ -66,7 +67,7 @@ export const fetchAuditLogs = async (filters: AuditFilters): Promise<AuditLogEnt
 };
 
 /**
- * Get all possible action types for filtering - now includes all tracked actions
+ * Get all possible action types for filtering - now includes all tracked actions including team member actions
  */
 export const getAuditActionTypes = async (): Promise<string[]> => {
   try {
@@ -86,7 +87,10 @@ export const getAuditActionTypes = async (): Promise<string[]> => {
         'contract_updated',
         'contract_deleted',
         'user_assigned',
-        'user_unassigned'
+        'user_unassigned',
+        'member_created',
+        'member_updated',
+        'member_deleted'
       ];
     }
     
@@ -105,7 +109,10 @@ export const getAuditActionTypes = async (): Promise<string[]> => {
       'contract_updated',
       'contract_deleted',
       'user_assigned',
-      'user_unassigned'
+      'user_unassigned',
+      'member_created',
+      'member_updated',
+      'member_deleted'
     ];
   }
 };
