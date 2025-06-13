@@ -18,7 +18,7 @@ export const TaskDetails: React.FC<TaskDetailsProps> = ({ control }) => {
         name="jira_task_id"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-medium">Task ID (optional)</FormLabel>
+            <FormLabel className="font-medium">Task ID</FormLabel>
             <FormControl>
               <Input {...field} placeholder="e.g., JIRA-123" />
             </FormControl>
@@ -32,7 +32,7 @@ export const TaskDetails: React.FC<TaskDetailsProps> = ({ control }) => {
         name="notes"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-medium">Notes (optional)</FormLabel>
+            <FormLabel className="font-medium">Notes</FormLabel>
             <FormControl>
               <Textarea 
                 {...field} 
