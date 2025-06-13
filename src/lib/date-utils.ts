@@ -30,6 +30,14 @@ export const getPreviousWeek = (currentDate: Date): Date => {
   return addDays(currentDate, -7);
 };
 
+export const getNextDay = (currentDate: Date): Date => {
+  return addDays(currentDate, 1);
+};
+
+export const getPreviousDay = (currentDate: Date): Date => {
+  return addDays(currentDate, -1);
+};
+
 export const isToday = (date: Date): boolean => {
   return isSameDay(date, new Date());
 };

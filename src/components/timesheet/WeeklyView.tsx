@@ -5,6 +5,8 @@ import {
   getCurrentWeekDates,
   getNextWeek,
   getPreviousWeek,
+  getNextDay,
+  getPreviousDay,
   isToday,
 } from "@/lib/date-utils";
 import { TimesheetEntry } from "@/lib/timesheet-service";
@@ -97,13 +99,22 @@ const WeeklyView: React.FC = () => {
     }
   }, [fetchData, weekDates, user?.id, session]);
 
-  const navigateToPreviousWeek = useCallback(() => {
-    setCurrentDate(getPreviousWeek(currentDate));
-  }, [currentDate, setCurrentDate]);
+  // Updated navigation functions to handle both day and week navigation
+  const navigateToPrevious = useCallback(() => {
+    if (viewMode === "today") {
+      setCurrentDate(getPreviousDay(currentDate));
+    } else {
+      setCurrentDate(getPreviousWeek(currentDate));
+    }
+  }, [currentDate, setCurrentDate, viewMode]);
 
-  const navigateToNextWeek = useCallback(() => {
-    setCurrentDate(getNextWeek(currentDate));
-  }, [currentDate, setCurrentDate]);
+  const navigateToNext = useCallback(() => {
+    if (viewMode === "today") {
+      setCurrentDate(getNextDay(currentDate));
+    } else {
+      setCurrentDate(getNextWeek(currentDate));
+    }
+  }, [currentDate, setCurrentDate, viewMode]);
 
   const navigateToCurrentWeek = useCallback(() => {
     setCurrentDate(new Date());
@@ -113,7 +124,8 @@ const WeeklyView: React.FC = () => {
   const filteredEntries = viewMode === "today" 
     ? entries.filter(entry => {
         const entryDateString = String(entry.entry_date).substring(0, 10);
-        return entryDateString === new Date().toISOString().substring(0, 10);
+        const currentDateString = currentDate.toISOString().substring(0, 10);
+        return entryDateString === currentDateString;
       })
     : entries;
 
@@ -180,8 +192,9 @@ const WeeklyView: React.FC = () => {
       {isMobile ? (
         <MobileWeekNavigation 
           weekDates={weekDates}
-          navigateToPreviousWeek={navigateToPreviousWeek}
-          navigateToNextWeek={navigateToNextWeek}
+          currentDate={currentDate}
+          navigateToPrevious={navigateToPrevious}
+          navigateToNext={navigateToNext}
           navigateToCurrentWeek={navigateToCurrentWeek}
           error={error}
           fetchData={fetchData}
@@ -191,8 +204,9 @@ const WeeklyView: React.FC = () => {
       ) : (
         <WeekNavigation 
           weekDates={weekDates}
-          navigateToPreviousWeek={navigateToPreviousWeek}
-          navigateToNextWeek={navigateToNextWeek}
+          currentDate={currentDate}
+          navigateToPrevious={navigateToPrevious}
+          navigateToNext={navigateToNext}
           navigateToCurrentWeek={navigateToCurrentWeek}
           error={error}
           fetchData={fetchData}

@@ -7,8 +7,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 interface WeekNavigationProps {
   weekDates: Date[];
-  navigateToPreviousWeek: () => void;
-  navigateToNextWeek: () => void;
+  currentDate: Date;
+  navigateToPrevious: () => void;
+  navigateToNext: () => void;
   navigateToCurrentWeek: () => void;
   error: string | null;
   fetchData: () => void;
@@ -18,14 +19,18 @@ interface WeekNavigationProps {
 
 const WeekNavigation: React.FC<WeekNavigationProps> = ({
   weekDates,
-  navigateToPreviousWeek,
-  navigateToNextWeek,
+  currentDate,
+  navigateToPrevious,
+  navigateToNext,
   navigateToCurrentWeek,
   error,
   fetchData,
   viewMode,
   toggleViewMode,
 }) => {
+  const isWeekMode = viewMode === "week";
+  const navigationLabel = isWeekMode ? "week" : "day";
+  
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -35,15 +40,15 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
               <Button
                 variant="outline"
                 size="icon"
-                onClick={navigateToPreviousWeek}
+                onClick={navigateToPrevious}
                 className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
-                aria-label="Previous week"
+                aria-label={`Previous ${navigationLabel}`}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>View previous week</p>
+              <p>View previous {navigationLabel}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -72,23 +77,21 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
           </Tooltip>
         </TooltipProvider>
         
-        {/* Removed "Go to Current Day/Week" button */}
-        
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
                 size="icon"
-                onClick={navigateToNextWeek}
+                onClick={navigateToNext}
                 className="shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
-                aria-label="Next week"
+                aria-label={`Next ${navigationLabel}`}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>View next week</p>
+              <p>View next {navigationLabel}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -110,7 +113,7 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
         {weekDates.length > 0 && (
           <span className="rounded-full bg-primary/10 px-3 py-1 text-primary whitespace-nowrap">
             {viewMode === "today" 
-              ? formatDateDisplay(new Date()) 
+              ? formatDateDisplay(currentDate) 
               : `${formatDateDisplay(weekDates[0])} - ${formatDateDisplay(weekDates[weekDates.length - 1])}`
             }
           </span>
