@@ -79,6 +79,11 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
   // Calculate the target based on view mode
   const workingDaysTarget = viewMode === "today" ? 1 : workingDays;
 
+  // Determine which dates to display in the grid
+  const displayDates = useMemo(() => {
+    return viewMode === "today" ? [currentDate] : weekDates;
+  }, [viewMode, currentDate, weekDates]);
+
   if (!user?.id) {
     return <div className="text-center text-gray-500">Please sign in to view your timesheet.</div>;
   }
@@ -115,7 +120,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
       <LazyContent
         fallback={
           <div className="grid gap-2 grid-cols-1 md:grid-cols-7">
-            {Array.from({ length: 7 }).map((_, i) => (
+            {Array.from({ length: viewMode === "today" ? 1 : 7 }).map((_, i) => (
               <div key={i} className="h-32 bg-gray-100 rounded-lg animate-pulse" />
             ))}
           </div>
@@ -125,7 +130,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
       >
         {isMobile ? (
           <MobileWeekGrid
-            weekDates={weekDates}
+            weekDates={displayDates}
             userId={user.id}
             entries={entries}
             projects={projects}
@@ -136,7 +141,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
           />
         ) : (
           <WeekGrid
-            weekDates={weekDates}
+            weekDates={displayDates}
             userId={user.id}
             entries={entries}
             projects={projects}
