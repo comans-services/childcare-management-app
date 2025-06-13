@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -87,7 +88,6 @@ export const TimeInput: React.FC<TimeInputProps> = ({ control }) => {
               <FormLabel className="text-fluid-sm lg:text-fluid-md font-medium">
                 <span className="hidden sm:inline">Start time</span>
                 <span className="sm:hidden">Start</span>
-                <span className="text-gray-500 ml-1">(optional)</span>
               </FormLabel>
               <FormControl>
                 <Input 
@@ -109,7 +109,6 @@ export const TimeInput: React.FC<TimeInputProps> = ({ control }) => {
               <FormLabel className="text-fluid-sm lg:text-fluid-md font-medium">
                 <span className="hidden sm:inline">End time</span>
                 <span className="sm:hidden">End</span>
-                <span className="text-gray-500 ml-1">(optional)</span>
               </FormLabel>
               <FormControl>
                 <Input 
