@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AuditLogEntry {
@@ -19,7 +20,7 @@ export interface AuditFilters {
 }
 
 /**
- * Fetch audit logs using the new database function approach
+ * Fetch audit logs using the database function approach
  */
 export const fetchAuditLogs = async (filters: AuditFilters): Promise<AuditLogEntry[]> => {
   console.log("Fetching audit logs with filters:", filters);
@@ -66,23 +67,48 @@ export const fetchAuditLogs = async (filters: AuditFilters): Promise<AuditLogEnt
 };
 
 /**
- * Get unique action types for filtering - comprehensive list including deletions
+ * Get all possible action types for filtering - now includes all tracked actions
  */
 export const getAuditActionTypes = async (): Promise<string[]> => {
-  // Return all possible action types from our comprehensive audit system
-  return [
-    'entry_created',
-    'entry_updated', 
-    'entry_deleted',
-    'project_created',
-    'project_updated',
-    'project_deleted',
-    'contract_created',
-    'contract_updated',
-    'contract_deleted',
-    'user_assigned',
-    'user_unassigned'
-  ];
+  try {
+    const { data, error } = await supabase.rpc('get_audit_action_types');
+    
+    if (error) {
+      console.error("Error fetching action types:", error);
+      // Return fallback list if function fails
+      return [
+        'entry_created',
+        'entry_updated', 
+        'entry_deleted',
+        'project_created',
+        'project_updated',
+        'project_deleted',
+        'contract_created',
+        'contract_updated',
+        'contract_deleted',
+        'user_assigned',
+        'user_unassigned'
+      ];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in getAuditActionTypes:", error);
+    // Return fallback list if there's an error
+    return [
+      'entry_created',
+      'entry_updated', 
+      'entry_deleted',
+      'project_created',
+      'project_updated',
+      'project_deleted',
+      'contract_created',
+      'contract_updated',
+      'contract_deleted',
+      'user_assigned',
+      'user_unassigned'
+    ];
+  }
 };
 
 // Legacy function - no longer needed but kept for compatibility

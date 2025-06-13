@@ -31,9 +31,23 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
     return 'default';
   };
 
-  // Format action text for display
+  // Format action text for display with better formatting
   const formatAction = (action: string): string => {
-    return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const actionMap: Record<string, string> = {
+      'entry_created': 'Entry Created',
+      'entry_updated': 'Entry Updated',
+      'entry_deleted': 'Entry Deleted',
+      'project_created': 'Project Created',
+      'project_updated': 'Project Updated',
+      'project_deleted': 'Project Deleted',
+      'contract_created': 'Contract Created',
+      'contract_updated': 'Contract Updated',
+      'contract_deleted': 'Contract Deleted',
+      'user_assigned': 'User Assigned',
+      'user_unassigned': 'User Unassigned'
+    };
+    
+    return actionMap[action] || action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   // Get user display name
@@ -48,7 +62,7 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
       <Card>
         <CardHeader>
           <CardTitle>Audit Logs</CardTitle>
-          <CardDescription>Loading audit trail...</CardDescription>
+          <CardDescription>Loading comprehensive audit trail...</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-32">
@@ -81,7 +95,7 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
       <CardHeader>
         <CardTitle>Audit Logs</CardTitle>
         <CardDescription>
-          Complete audit trail showing all user actions ({auditData.length} entries)
+          Complete audit trail showing all user actions including creates, updates, and deletions ({auditData.length} entries)
         </CardDescription>
       </CardHeader>
       <CardContent>
