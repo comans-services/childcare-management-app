@@ -15,10 +15,18 @@ interface ContractSelectorProps {
 
 export const ContractSelector: React.FC<ContractSelectorProps> = ({ control }) => {
   // Fetch contracts that the user is assigned to
-  const { data: contracts = [], isLoading } = useQuery({
+  const { data: contracts = [], isLoading, error } = useQuery({
     queryKey: ["user-contracts"],
-    queryFn: () => fetchUserContracts(),
+    queryFn: () => {
+      console.log("=== CONTRACT SELECTOR QUERY EXECUTING ===");
+      return fetchUserContracts();
+    },
   });
+
+  console.log("=== CONTRACT SELECTOR RENDER ===");
+  console.log("Contracts data:", contracts);
+  console.log("Is loading:", isLoading);
+  console.log("Error:", error);
 
   return (
     <FormField
@@ -33,6 +41,7 @@ export const ContractSelector: React.FC<ContractSelectorProps> = ({ control }) =
               <AlertDescription>
                 No contracts available. You can only log time to contracts you're assigned to. 
                 Please contact your administrator to get assigned to contracts.
+                {error && <div className="mt-2 text-sm text-red-600">Debug: {error.message}</div>}
               </AlertDescription>
             </Alert>
           ) : (
