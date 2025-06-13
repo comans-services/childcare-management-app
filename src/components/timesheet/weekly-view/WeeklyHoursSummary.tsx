@@ -59,7 +59,7 @@ const WeeklyHoursSummary: React.FC<WeeklyHoursSummaryProps> = ({
             </div>
           </div>
           
-          {/* Working Days Summary */}
+          {/* Working Days Summary - Only show days */}
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-100 rounded-lg">
               <Calendar className="h-5 w-5 text-indigo-600" />

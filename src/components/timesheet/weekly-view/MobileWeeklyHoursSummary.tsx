@@ -81,7 +81,7 @@ const MobileWeeklyHoursSummary: React.FC<MobileWeeklyHoursSummaryProps> = ({
           )}
         </div>
 
-        {/* Days Worked */}
+        {/* Days Worked - Only show days, no hours */}
         <div className="flex items-center justify-center space-x-6 pt-4 border-t border-blue-200">
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">

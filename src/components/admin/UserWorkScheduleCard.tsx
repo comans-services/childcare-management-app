@@ -54,7 +54,7 @@ const UserWorkScheduleCard: React.FC<UserWorkScheduleCardProps> = ({ user }) => 
               onWorkingDaysChange={handleWorkingDaysChange}
             />
             <div className="mt-3 text-sm text-muted-foreground">
-              Weekly target: {workingDays * 8} hours
+              Working days per week: {workingDays} days
             </div>
           </>
         )}
