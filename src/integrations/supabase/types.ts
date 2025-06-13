@@ -569,6 +569,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string[]
       }
+      get_audit_logs_direct: {
+        Args: { p_start_date?: string; p_end_date?: string; p_user_id?: string }
+        Returns: {
+          id: string
+          user_id: string
+          user_name: string
+          action: string
+          entity_name: string
+          description: string
+          details: Json
+          created_at: string
+        }[]
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string

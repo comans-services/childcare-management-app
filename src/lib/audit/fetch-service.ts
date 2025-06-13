@@ -3,13 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuditLogEntry, AuditFilters } from "./types";
 
 /**
- * Fetch audit logs using the database function approach
+ * Fetch audit logs using the new direct database function approach
  */
 export const fetchAuditLogs = async (filters: AuditFilters): Promise<AuditLogEntry[]> => {
   console.log("Fetching audit logs with filters:", filters);
   
   try {
-    const { data, error } = await supabase.rpc('get_user_activities', {
+    const { data, error } = await supabase.rpc('get_audit_logs_direct', {
       p_start_date: filters.startDate.toISOString().split('T')[0],
       p_end_date: filters.endDate.toISOString().split('T')[0],
       p_user_id: filters.userId || null
