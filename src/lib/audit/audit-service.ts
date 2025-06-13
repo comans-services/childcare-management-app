@@ -130,8 +130,8 @@ export const logReportGeneration = async (reportDetails: {
   resultCount: number;
 }): Promise<void> => {
   try {
-    const { user } = await supabase.auth.getUser();
-    if (!user.user) {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
       console.warn("No authenticated user for audit logging");
       return;
     }
@@ -140,7 +140,7 @@ export const logReportGeneration = async (reportDetails: {
     const { data: profile } = await supabase
       .from('profiles')
       .select('full_name, email')
-      .eq('id', user.user.id)
+      .eq('id', data.user.id)
       .single();
 
     const userDisplayName = profile?.full_name || profile?.email || 'Unknown User';
@@ -176,8 +176,8 @@ export const logReportGeneration = async (reportDetails: {
     }
 
     // Insert audit log entry
-    const { error } = await supabase.from('audit_logs').insert({
-      user_id: user.user.id,
+    const { error: insertError } = await supabase.from('audit_logs').insert({
+      user_id: data.user.id,
       user_name: userDisplayName,
       action: reportDetails.reportType === 'timesheet' ? 'report_generated' : 'audit_report_generated',
       entity_name: entityName,
@@ -193,8 +193,8 @@ export const logReportGeneration = async (reportDetails: {
       }
     });
 
-    if (error) {
-      console.error("Error logging report generation:", error);
+    if (insertError) {
+      console.error("Error logging report generation:", insertError);
     } else {
       console.log("Report generation logged to audit trail");
     }
