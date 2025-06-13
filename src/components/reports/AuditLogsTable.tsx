@@ -28,10 +28,11 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
     if (action.includes('updated')) return 'secondary';
     if (action.includes('deleted') || action.includes('unassigned')) return 'destructive';
     if (action.includes('assigned')) return 'outline';
+    if (action.includes('report_generated') || action.includes('audit_report_generated')) return 'default';
     return 'default';
   };
 
-  // Format action text for display with comprehensive formatting including team member actions
+  // Format action text for display with comprehensive formatting including team member and report generation actions
   const formatAction = (action: string): string => {
     const actionMap: Record<string, string> = {
       'entry_created': 'Entry Created',
@@ -47,7 +48,9 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
       'user_unassigned': 'User Unassigned',
       'member_created': 'Member Added',
       'member_updated': 'Member Updated',
-      'member_deleted': 'Member Deleted'
+      'member_deleted': 'Member Deleted',
+      'report_generated': 'Report Generated',
+      'audit_report_generated': 'Audit Report Generated'
     };
     
     return actionMap[action] || action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -98,7 +101,7 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
       <CardHeader>
         <CardTitle>Audit Logs</CardTitle>
         <CardDescription>
-          Complete audit trail showing all user actions including creates, updates, deletions, assignments, and team member management ({auditData.length} entries)
+          Complete audit trail showing all user actions including creates, updates, deletions, assignments, team member management, and report generation ({auditData.length} entries)
         </CardDescription>
       </CardHeader>
       <CardContent>

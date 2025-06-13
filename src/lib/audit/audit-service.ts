@@ -67,7 +67,7 @@ export const fetchAuditLogs = async (filters: AuditFilters): Promise<AuditLogEnt
 };
 
 /**
- * Get all possible action types for filtering - now includes all tracked actions including team member actions
+ * Get all possible action types for filtering - now includes report generation actions
  */
 export const getAuditActionTypes = async (): Promise<string[]> => {
   try {
@@ -90,7 +90,9 @@ export const getAuditActionTypes = async (): Promise<string[]> => {
         'user_unassigned',
         'member_created',
         'member_updated',
-        'member_deleted'
+        'member_deleted',
+        'report_generated',
+        'audit_report_generated'
       ];
     }
     
@@ -112,8 +114,92 @@ export const getAuditActionTypes = async (): Promise<string[]> => {
       'user_unassigned',
       'member_created',
       'member_updated',
-      'member_deleted'
+      'member_deleted',
+      'report_generated',
+      'audit_report_generated'
     ];
+  }
+};
+
+/**
+ * Log report generation audit event
+ */
+export const logReportGeneration = async (reportDetails: {
+  reportType: 'timesheet' | 'audit';
+  filters: any;
+  resultCount: number;
+}): Promise<void> => {
+  try {
+    const { user } = await supabase.auth.getUser();
+    if (!user.user) {
+      console.warn("No authenticated user for audit logging");
+      return;
+    }
+
+    // Get user display name
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', user.user.id)
+      .single();
+
+    const userDisplayName = profile?.full_name || profile?.email || 'Unknown User';
+    
+    // Format description based on report type and filters
+    let description = '';
+    let entityName = '';
+    
+    if (reportDetails.reportType === 'timesheet') {
+      entityName = 'Timesheet Report';
+      description = `Generated timesheet report (${reportDetails.resultCount} entries)`;
+      
+      // Add filter details to description
+      const filterParts = [];
+      if (reportDetails.filters.userId) filterParts.push('filtered by user');
+      if (reportDetails.filters.projectId) filterParts.push('filtered by project');
+      if (reportDetails.filters.customerId) filterParts.push('filtered by customer');
+      if (reportDetails.filters.contractId) filterParts.push('filtered by contract');
+      
+      if (filterParts.length > 0) {
+        description += ` - ${filterParts.join(', ')}`;
+      }
+    } else {
+      entityName = 'Audit Report';
+      description = `Generated audit report (${reportDetails.resultCount} log entries)`;
+      
+      if (reportDetails.filters.actionType) {
+        description += ` - filtered by action: ${reportDetails.filters.actionType}`;
+      }
+      if (reportDetails.filters.userId) {
+        description += ` - filtered by user`;
+      }
+    }
+
+    // Insert audit log entry
+    const { error } = await supabase.from('audit_logs').insert({
+      user_id: user.user.id,
+      user_name: userDisplayName,
+      action: reportDetails.reportType === 'timesheet' ? 'report_generated' : 'audit_report_generated',
+      entity_name: entityName,
+      description,
+      details: {
+        report_type: reportDetails.reportType,
+        result_count: reportDetails.resultCount,
+        filters: reportDetails.filters,
+        date_range: {
+          start_date: reportDetails.filters.startDate,
+          end_date: reportDetails.filters.endDate
+        }
+      }
+    });
+
+    if (error) {
+      console.error("Error logging report generation:", error);
+    } else {
+      console.log("Report generation logged to audit trail");
+    }
+  } catch (error) {
+    console.error("Error in logReportGeneration:", error);
   }
 };
 

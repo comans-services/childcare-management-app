@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchReportData } from "@/lib/timesheet-service";
-import { fetchAuditLogs } from "@/lib/audit/audit-service";
+import { fetchAuditLogs, logReportGeneration } from "@/lib/audit/audit-service";
 import { toast } from "@/hooks/use-toast";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
@@ -66,6 +66,19 @@ export const useReportGeneration = ({
         setReportData(reportData);
         setAuditData([]); // Clear audit data when generating timesheet report
         
+        // Log report generation to audit trail
+        await logReportGeneration({
+          reportType: 'timesheet',
+          filters: {
+            ...normalizedFilters,
+            startDate: filters.startDate.toISOString().split('T')[0],
+            endDate: filters.endDate.toISOString().split('T')[0],
+            includeProject: filters.includeProject,
+            includeContract: filters.includeContract
+          },
+          resultCount: reportData.length
+        });
+        
         if (reportData.length === 0) {
           toast({
             title: "No data found",
@@ -95,6 +108,18 @@ export const useReportGeneration = ({
         console.log("Audit log data received:", auditData);
         setAuditData(auditData);
         setReportData([]); // Clear timesheet data when generating audit report
+        
+        // Log audit report generation to audit trail
+        await logReportGeneration({
+          reportType: 'audit',
+          filters: {
+            startDate: filters.startDate.toISOString().split('T')[0],
+            endDate: filters.endDate.toISOString().split('T')[0],
+            userId: normalizeSelectValue(filters.userId),
+            actionType: normalizeSelectValue(filters.actionType)
+          },
+          resultCount: auditData.length
+        });
         
         if (auditData.length === 0) {
           toast({
