@@ -52,10 +52,64 @@ const TeamList = () => {
     },
   });
 
+  // Add delete mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { deleteUser } = await import("@/lib/user-service");
+      return deleteUser(userId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast({
+        title: "User deleted",
+        description: "The user has been successfully deleted.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete user",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEditUser = (user: User) => {
     console.log("Editing user:", user);
     setEditingUser(user);
   };
+
+  const handleDeleteCaseyGilbert = () => {
+    // Find Casey Gilbert user
+    const caseyUser = users?.find(u => 
+      u.email?.toLowerCase().includes('casey.gilbert@comansservices.com.au') ||
+      u.full_name?.toLowerCase().includes('casey gilbert')
+    );
+    
+    if (caseyUser) {
+      console.log("Deleting Casey Gilbert user:", caseyUser);
+      deleteUserMutation.mutate(caseyUser.id);
+    } else {
+      toast({
+        title: "User not found",
+        description: "Casey Gilbert user not found in the system.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Auto-delete Casey Gilbert on component mount if user is admin
+  React.useEffect(() => {
+    if (userRole === 'admin' && users) {
+      const caseyUser = users.find(u => 
+        u.email?.toLowerCase().includes('casey.gilbert@comansservices.com.au')
+      );
+      if (caseyUser) {
+        console.log("Auto-deleting Casey Gilbert user");
+        handleDeleteCaseyGilbert();
+      }
+    }
+  }, [users, userRole]);
 
   const handleDoubleRightClick = (user: User, event: React.MouseEvent) => {
     event.preventDefault(); // Prevent context menu

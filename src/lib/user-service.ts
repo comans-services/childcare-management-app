@@ -320,3 +320,24 @@ export const createUser = async (userData: NewUser): Promise<User> => {
     throw error;
   }
 };
+
+export const deleteUser = async (userId: string): Promise<void> => {
+  try {
+    console.log("Deleting user:", userId);
+    
+    // Use the secure database function to delete user and all associated data
+    const { error } = await supabase.rpc('delete_user_cascade', {
+      p_user_id: userId
+    });
+    
+    if (error) {
+      console.error("Error deleting user:", error);
+      throw error;
+    }
+    
+    console.log("User deleted successfully");
+  } catch (error) {
+    console.error("Error in deleteUser:", error);
+    throw error;
+  }
+};
