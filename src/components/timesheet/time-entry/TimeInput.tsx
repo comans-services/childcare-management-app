@@ -1,15 +1,46 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Control } from "react-hook-form";
+import { Control, useWatch } from "react-hook-form";
 import { TimeEntryFormValues } from "./schema";
+import { calculateHoursBetweenTimes, isValidTimeString } from "@/lib/time-calculation-utils";
 
 interface TimeInputProps {
   control: Control<TimeEntryFormValues>;
 }
 
 export const TimeInput: React.FC<TimeInputProps> = ({ control }) => {
+  const [isCalculated, setIsCalculated] = useState(false);
+  
+  // Watch for changes in start_time and end_time
+  const startTime = useWatch({ control, name: "start_time" });
+  const endTime = useWatch({ control, name: "end_time" });
+  const hoursLogged = useWatch({ control, name: "hours_logged" });
+
+  // Auto-calculate hours when start and end times change
+  useEffect(() => {
+    if (startTime && endTime && isValidTimeString(startTime) && isValidTimeString(endTime)) {
+      const calculatedHours = calculateHoursBetweenTimes(startTime, endTime);
+      
+      if (calculatedHours > 0) {
+        // Use setValue from react-hook-form to update the hours field
+        control._formState.isValid && control._defaultValues && 
+        control._setValue && control._setValue("hours_logged", calculatedHours);
+        setIsCalculated(true);
+      }
+    } else {
+      setIsCalculated(false);
+    }
+  }, [startTime, endTime, control]);
+
+  // Clear calculated flag when user manually changes hours
+  useEffect(() => {
+    if (isCalculated && hoursLogged !== calculateHoursBetweenTimes(startTime || "", endTime || "")) {
+      setIsCalculated(false);
+    }
+  }, [hoursLogged, startTime, endTime, isCalculated]);
+
   return (
     <div className="space-y-4 lg:space-y-5">
       <div>
@@ -28,10 +59,19 @@ export const TimeInput: React.FC<TimeInputProps> = ({ control }) => {
                     step="0.25" 
                     {...field} 
                     className="w-20 lg:w-24 text-fluid-base" 
+                    onChange={(e) => {
+                      field.onChange(e);
+                      setIsCalculated(false);
+                    }}
                   />
                 </FormControl>
                 <span className="text-fluid-sm lg:text-fluid-base text-gray-600">hours</span>
               </div>
+              {isCalculated && (
+                <p className="text-fluid-xs text-green-600 mt-1">
+                  ✓ Calculated from start/end times
+                </p>
+              )}
               <FormMessage className="text-fluid-xs lg:text-fluid-sm" />
             </FormItem>
           )}
@@ -83,6 +123,11 @@ export const TimeInput: React.FC<TimeInputProps> = ({ control }) => {
             </FormItem>
           )}
         />
+      </div>
+
+      {/* Helper text */}
+      <div className="text-fluid-xs text-gray-500">
+        <p>Enter hours directly or use start/end times for automatic calculation</p>
       </div>
     </div>
   );
