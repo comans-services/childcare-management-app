@@ -1,4 +1,3 @@
-
 import { TimesheetEntry } from "./types";
 import { validateWeekendEntry } from "./validation/weekend-validation-service";
 import { validateEntryData, validateProjectBudgetForEntry } from "./validation/entry-validation-service";

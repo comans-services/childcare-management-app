@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AuditLogEntry {
@@ -24,16 +25,30 @@ export interface AuditFilters {
 }
 
 /**
- * Get user display name for audit logging
+ * Get user display name for audit logging - prioritizes full_name from profiles
  */
 const getUserDisplayName = async (userId: string): Promise<string> => {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, email')
-    .eq('id', userId)
-    .single();
-  
-  return profile?.full_name || profile?.email || 'Unknown User';
+  try {
+    console.log("Fetching user display name for userId:", userId);
+    
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error("Error fetching user profile for audit:", error);
+      return 'Unknown User';
+    }
+    
+    const displayName = profile?.full_name || profile?.email || 'Unknown User';
+    console.log("User display name resolved:", displayName);
+    return displayName;
+  } catch (error) {
+    console.error("Error in getUserDisplayName:", error);
+    return 'Unknown User';
+  }
 };
 
 /**
@@ -102,6 +117,7 @@ export const fetchAuditLogs = async (filters: AuditFilters): Promise<AuditLogEnt
     throw error;
   }
 
+  console.log("Fetched audit logs:", data?.length || 0, "records");
   return data || [];
 };
 
@@ -118,9 +134,9 @@ export const logAuditEvent = async (entry: {
   details?: Record<string, any>;
 }): Promise<void> => {
   try {
-    console.log("Logging audit event:", entry);
+    console.log("=== LOGGING AUDIT EVENT ===", entry);
     
-    // Get user display name
+    // Get user display name from profiles table
     const userDisplayName = await getUserDisplayName(entry.user_id);
     
     // Generate description if not provided
@@ -131,25 +147,30 @@ export const logAuditEvent = async (entry: {
       entry.details
     );
 
+    const auditRecord = {
+      user_id: entry.user_id,
+      user_name: userDisplayName,
+      action: entry.action,
+      entity_type: entry.entity_type,
+      entity_id: entry.entity_id || null,
+      entity_name: entry.entity_name || null,
+      description: description,
+      details: entry.details || null,
+      created_at: new Date().toISOString()
+    };
+
+    console.log("Inserting audit record:", auditRecord);
+
     const { error } = await supabase
       .from('audit_logs')
-      .insert([{
-        user_id: entry.user_id,
-        user_name: userDisplayName,
-        action: entry.action,
-        entity_type: entry.entity_type,
-        entity_id: entry.entity_id || null,
-        entity_name: entry.entity_name || null,
-        description: description,
-        details: entry.details || null,
-        created_at: new Date().toISOString()
-      }]);
+      .insert([auditRecord]);
 
     if (error) {
-      console.error("Error logging audit event:", error);
+      console.error("Error inserting audit record:", error);
+      console.error("Audit record that failed:", auditRecord);
       // Don't throw here - audit logging should not break the main flow
     } else {
-      console.log("Audit event logged successfully:", description);
+      console.log("✅ Audit event logged successfully:", description);
     }
   } catch (error) {
     console.error("Error in logAuditEvent:", error);
