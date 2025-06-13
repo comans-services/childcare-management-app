@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Control, useWatch } from "react-hook-form";
+import { Control, useWatch, useFormContext } from "react-hook-form";
 import { TimeEntryFormValues } from "./schema";
 import { calculateHoursBetweenTimes, isValidTimeString } from "@/lib/time-calculation-utils";
 
@@ -12,6 +11,7 @@ interface TimeInputProps {
 
 export const TimeInput: React.FC<TimeInputProps> = ({ control }) => {
   const [isCalculated, setIsCalculated] = useState(false);
+  const { setValue } = useFormContext<TimeEntryFormValues>();
   
   // Watch for changes in start_time and end_time
   const startTime = useWatch({ control, name: "start_time" });
@@ -25,14 +25,13 @@ export const TimeInput: React.FC<TimeInputProps> = ({ control }) => {
       
       if (calculatedHours > 0) {
         // Use setValue from react-hook-form to update the hours field
-        control._formState.isValid && control._defaultValues && 
-        control._setValue && control._setValue("hours_logged", calculatedHours);
+        setValue("hours_logged", calculatedHours);
         setIsCalculated(true);
       }
     } else {
       setIsCalculated(false);
     }
-  }, [startTime, endTime, control]);
+  }, [startTime, endTime, setValue]);
 
   // Clear calculated flag when user manually changes hours
   useEffect(() => {
