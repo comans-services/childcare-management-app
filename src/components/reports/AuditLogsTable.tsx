@@ -31,7 +31,7 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
     return 'default';
   };
 
-  // Format action text for display with better formatting
+  // Format action text for display with comprehensive formatting
   const formatAction = (action: string): string => {
     const actionMap: Record<string, string> = {
       'entry_created': 'Entry Created',
@@ -95,7 +95,7 @@ const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) =>
       <CardHeader>
         <CardTitle>Audit Logs</CardTitle>
         <CardDescription>
-          Complete audit trail showing all user actions including creates, updates, and deletions ({auditData.length} entries)
+          Complete audit trail showing all user actions including creates, updates, deletions, and assignments ({auditData.length} entries)
         </CardDescription>
       </CardHeader>
       <CardContent>

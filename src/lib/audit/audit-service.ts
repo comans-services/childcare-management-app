@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AuditLogEntry {
@@ -75,7 +74,7 @@ export const getAuditActionTypes = async (): Promise<string[]> => {
     
     if (error) {
       console.error("Error fetching action types:", error);
-      // Return fallback list if function fails
+      // Return comprehensive fallback list if function fails
       return [
         'entry_created',
         'entry_updated', 
@@ -94,7 +93,7 @@ export const getAuditActionTypes = async (): Promise<string[]> => {
     return data || [];
   } catch (error) {
     console.error("Error in getAuditActionTypes:", error);
-    // Return fallback list if there's an error
+    // Return comprehensive fallback list if there's an error
     return [
       'entry_created',
       'entry_updated', 
@@ -120,6 +119,6 @@ export const logAuditEvent = async (entry: {
   details?: Record<string, any>;
 }): Promise<void> => {
   // This function is no longer needed since we're using database triggers
-  // for audit tracking, but keeping it for backward compatibility
-  console.log("Legacy audit logging - handled by database triggers:", entry);
+  // for comprehensive audit tracking, but keeping it for backward compatibility
+  console.log("Legacy audit logging - handled by comprehensive database triggers:", entry);
 };
