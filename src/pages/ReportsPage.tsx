@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import ReportFilters from "@/components/reports/ReportFilters";
 import ReportCharts from "@/components/reports/ReportCharts";
 import ReportDataTable from "@/components/reports/ReportDataTable";
+import AuditLogsTable from "@/components/reports/AuditLogsTable";
 import TimesheetLockManager from "@/components/reports/TimesheetLockManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -15,6 +16,7 @@ import { TimesheetEntry, Project, fetchReportData } from "@/lib/timesheet-servic
 import { Contract } from "@/lib/contract-service";
 import { Customer } from "@/lib/customer-service";
 import { User } from "@/lib/user-service";
+import { AuditLogEntry, fetchAuditLogs } from "@/lib/audit/audit-service";
 import { toast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/date-utils";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export-utils";
@@ -29,6 +31,9 @@ export type ReportFiltersType = {
   includeProject: boolean;
   includeContract: boolean;
   includeEmployeeIds: boolean;
+  reportType: 'timesheet' | 'audit';
+  actionType?: string | null;
+  entityType?: string | null;
 };
 
 const ReportsPage = () => {
@@ -53,6 +58,7 @@ const ReportsPage = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState<TimesheetEntry[]>([]);
+  const [auditData, setAuditData] = useState<AuditLogEntry[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -66,15 +72,27 @@ const ReportsPage = () => {
     userId: null,
     includeProject: false,
     includeContract: false,
-    includeEmployeeIds: false
+    includeEmployeeIds: false,
+    reportType: 'timesheet',
+    actionType: null,
+    entityType: null
   });
 
   // Check if export is available (data has been generated)
-  const isExportDisabled = reportData.length === 0 || projects.length === 0 || users.length === 0;
+  const isExportDisabled = (filters.reportType === 'timesheet' ? reportData.length === 0 : auditData.length === 0) || projects.length === 0 || users.length === 0;
 
   const handleExportCSV = () => {
     try {
-      exportToCSV(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
+      if (filters.reportType === 'timesheet') {
+        exportToCSV(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
+      } else {
+        // TODO: Implement audit logs CSV export
+        toast({
+          title: "Feature coming soon",
+          description: "Audit logs CSV export will be available soon"
+        });
+        return;
+      }
       toast({
         title: "Export successful",
         description: "The report has been exported to CSV"
@@ -91,7 +109,16 @@ const ReportsPage = () => {
 
   const handleExportExcel = () => {
     try {
-      exportToExcel(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
+      if (filters.reportType === 'timesheet') {
+        exportToExcel(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
+      } else {
+        // TODO: Implement audit logs Excel export
+        toast({
+          title: "Feature coming soon",
+          description: "Audit logs Excel export will be available soon"
+        });
+        return;
+      }
       toast({
         title: "Export successful",
         description: "The report has been exported to Excel"
@@ -108,7 +135,16 @@ const ReportsPage = () => {
 
   const handleExportPDF = () => {
     try {
-      exportToPDF(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
+      if (filters.reportType === 'timesheet') {
+        exportToPDF(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
+      } else {
+        // TODO: Implement audit logs PDF export
+        toast({
+          title: "Feature coming soon",
+          description: "Audit logs PDF export will be available soon"
+        });
+        return;
+      }
       toast({
         title: "Export successful",
         description: "The report has been exported to PDF"
@@ -176,14 +212,20 @@ const ReportsPage = () => {
         <TabsContent value="reports" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Time Reports</CardTitle>
-              <CardDescription>Create custom reports for your team</CardDescription>
+              <CardTitle>Reports</CardTitle>
+              <CardDescription>
+                {filters.reportType === 'timesheet' 
+                  ? 'Create custom timesheet reports for your team' 
+                  : 'View audit logs of all user actions in the system'
+                }
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ReportFilters 
                 filters={filters} 
                 setFilters={setFilters} 
                 setReportData={setReportData} 
+                setAuditData={setAuditData}
                 setProjects={setProjects} 
                 setContracts={setContracts} 
                 setCustomers={setCustomers} 
@@ -193,18 +235,22 @@ const ReportsPage = () => {
               
               <Separator className="my-6" />
               
-              <Tabs defaultValue="visual" className="w-full">
-                <TabsList>
-                  <TabsTrigger value="visual">Visual Reports</TabsTrigger>
-                  <TabsTrigger value="tabular">Tabular Data</TabsTrigger>
-                </TabsList>
-                <TabsContent value="visual" className="mt-4">
-                  <ReportCharts reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
-                </TabsContent>
-                <TabsContent value="tabular" className="mt-4">
-                  <ReportDataTable reportData={reportData} projects={projects} contracts={contracts} users={users} filters={filters} isLoading={isLoading} />
-                </TabsContent>
-              </Tabs>
+              {filters.reportType === 'timesheet' ? (
+                <Tabs defaultValue="visual" className="w-full">
+                  <TabsList>
+                    <TabsTrigger value="visual">Visual Reports</TabsTrigger>
+                    <TabsTrigger value="tabular">Tabular Data</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="visual" className="mt-4">
+                    <ReportCharts reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
+                  </TabsContent>
+                  <TabsContent value="tabular" className="mt-4">
+                    <ReportDataTable reportData={reportData} projects={projects} contracts={contracts} users={users} filters={filters} isLoading={isLoading} />
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <AuditLogsTable auditData={auditData} users={users} isLoading={isLoading} />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

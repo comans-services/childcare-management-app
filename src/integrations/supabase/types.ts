@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          description: string
+          details: Json | null
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
       contract_assignments: {
         Row: {
           assigned_at: string
@@ -544,6 +589,10 @@ export type Database = {
           latest_lock_date: string
           most_common_reason: string
         }[]
+      }
+      get_user_display_name: {
+        Args: { p_user_id: string }
+        Returns: string
       }
       get_users_missing_timesheet_entries: {
         Args: { p_week_start_date?: string }

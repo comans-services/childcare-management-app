@@ -2,18 +2,21 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchReportData } from "@/lib/timesheet-service";
+import { fetchAuditLogs } from "@/lib/audit/audit-service";
 import { toast } from "@/hooks/use-toast";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
 interface UseReportGenerationProps {
   filters: ReportFiltersType;
   setReportData: React.Dispatch<React.SetStateAction<any[]>>;
+  setAuditData: React.Dispatch<React.SetStateAction<any[]>>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const useReportGeneration = ({
   filters,
   setReportData,
+  setAuditData,
   setIsLoading
 }: UseReportGenerationProps) => {
   const { user } = useAuth();
@@ -42,45 +45,76 @@ export const useReportGeneration = ({
     console.log("Current user:", user);
     console.log("Raw filters:", filters);
     
-    // Normalize filters before sending to backend, respecting toggle states
-    const normalizedFilters = {
-      userId: normalizeSelectValue(filters.userId),
-      projectId: filters.includeProject ? normalizeSelectValue(filters.projectId) : null,
-      customerId: normalizeSelectValue(filters.customerId),
-      contractId: filters.includeContract ? normalizeSelectValue(filters.contractId) : null
-    };
-    
-    console.log("Normalized filters for backend:", normalizedFilters);
-    console.log("Toggle states - includeProject:", filters.includeProject, "includeContract:", filters.includeContract);
-    
     setIsGeneratingReport(true);
     setIsLoading(true);
     
     try {
-      // Call fetchReportData with normalized filters
-      const reportData = await fetchReportData(filters.startDate, filters.endDate, normalizedFilters);
-      
-      console.log("Report data received:", reportData);
-      console.log("Number of entries:", reportData.length);
-      
-      setReportData(reportData);
-      
-      if (reportData.length === 0) {
-        toast({
-          title: "No data found",
-          description: "No timesheet entries found for the selected criteria. Try adjusting your filters.",
-          variant: "default"
-        });
+      if (filters.reportType === 'timesheet') {
+        // Handle timesheet reports
+        const normalizedFilters = {
+          userId: normalizeSelectValue(filters.userId),
+          projectId: filters.includeProject ? normalizeSelectValue(filters.projectId) : null,
+          customerId: normalizeSelectValue(filters.customerId),
+          contractId: filters.includeContract ? normalizeSelectValue(filters.contractId) : null
+        };
+        
+        console.log("Normalized timesheet filters:", normalizedFilters);
+        
+        const reportData = await fetchReportData(filters.startDate, filters.endDate, normalizedFilters);
+        
+        console.log("Timesheet report data received:", reportData);
+        setReportData(reportData);
+        setAuditData([]); // Clear audit data when generating timesheet report
+        
+        if (reportData.length === 0) {
+          toast({
+            title: "No data found",
+            description: "No timesheet entries found for the selected criteria. Try adjusting your filters.",
+            variant: "default"
+          });
+        } else {
+          toast({
+            title: "Report generated successfully",
+            description: `Found ${reportData.length} timesheet entries`,
+            variant: "default"
+          });
+        }
       } else {
-        toast({
-          title: "Report generated successfully",
-          description: `Found ${reportData.length} timesheet entries`,
-          variant: "default"
-        });
+        // Handle audit log reports
+        const auditFilters = {
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          userId: normalizeSelectValue(filters.userId),
+          actionType: normalizeSelectValue(filters.actionType),
+          entityType: normalizeSelectValue(filters.entityType)
+        };
+        
+        console.log("Audit log filters:", auditFilters);
+        
+        const auditData = await fetchAuditLogs(auditFilters);
+        
+        console.log("Audit log data received:", auditData);
+        setAuditData(auditData);
+        setReportData([]); // Clear timesheet data when generating audit report
+        
+        if (auditData.length === 0) {
+          toast({
+            title: "No audit logs found",
+            description: "No audit entries found for the selected criteria. Try adjusting your filters.",
+            variant: "default"
+          });
+        } else {
+          toast({
+            title: "Audit report generated successfully",
+            description: `Found ${auditData.length} audit log entries`,
+            variant: "default"
+          });
+        }
       }
     } catch (error) {
       console.error("Error generating report:", error);
       setReportData([]);
+      setAuditData([]);
       
       let errorMessage = "There was an error generating the report";
       if (error instanceof Error) {
