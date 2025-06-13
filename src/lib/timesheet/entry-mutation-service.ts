@@ -31,6 +31,8 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       throw new Error("Authentication required");
     }
 
+    console.log("=== AUTHENTICATED USER ===", user.id);
+
     // Step 4: Get user role for budget validation
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
@@ -83,26 +85,37 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     
     // Save the entry
     let savedEntry: TimesheetEntry;
-    if (entry.id) {
+    const isUpdate = !!entry.id;
+    
+    if (isUpdate) {
+      console.log("=== UPDATING EXISTING ENTRY ===", entry.id);
       savedEntry = await updateTimesheetEntry(entry);
+      
+      console.log("=== LOGGING UPDATE AUDIT EVENT ===");
       await logEntryEvent(user.id, 'entry_updated', savedEntry.id!, {
         project_id: entry.project_id,
         hours_logged: entry.hours_logged,
         entry_date: entry.entry_date,
-        entry_type: entry.entry_type
+        entry_type: entry.entry_type,
+        notes: entry.notes
       });
     } else {
+      console.log("=== CREATING NEW ENTRY ===");
       savedEntry = await createTimesheetEntry(entry);
+      
+      console.log("=== LOGGING CREATE AUDIT EVENT ===", savedEntry.id);
       await logEntryEvent(user.id, 'entry_created', savedEntry.id!, {
         project_id: entry.project_id,
         hours_logged: entry.hours_logged,
         entry_date: entry.entry_date,
-        entry_type: entry.entry_type
+        entry_type: entry.entry_type,
+        notes: entry.notes
       });
     }
 
     // Log budget override if it was used
     if (budgetOverrideUsed && entry.project_id) {
+      console.log("=== LOGGING BUDGET OVERRIDE ===");
       const hoursUsedAfter = await getProjectHoursUsed(entry.project_id);
       const budgetValidation = await validateProjectBudget({
         projectId: entry.project_id,
@@ -119,6 +132,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       });
     }
 
+    console.log("=== ENTRY SAVE COMPLETED SUCCESSFULLY ===");
     return savedEntry;
   } catch (error) {
     console.error("Error in saveTimesheetEntry:", error);

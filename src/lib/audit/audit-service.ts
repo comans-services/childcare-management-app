@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AuditLogEntry {
@@ -23,6 +22,53 @@ export interface AuditFilters {
   actionType?: string;
   entityType?: string;
 }
+
+/**
+ * Get user display name for audit logging
+ */
+const getUserDisplayName = async (userId: string): Promise<string> => {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', userId)
+    .single();
+  
+  return profile?.full_name || profile?.email || 'Unknown User';
+};
+
+/**
+ * Generate human-readable descriptions for audit events
+ */
+const generateDescription = (action: string, entityType: string, entityName?: string, details?: Record<string, any>): string => {
+  const entity = entityName || entityType.replace('_', ' ');
+  
+  switch (action.toLowerCase()) {
+    case 'entry_created':
+      return `Created timesheet entry for ${entity}${details?.hours_logged ? ` (${details.hours_logged} hours)` : ''}`;
+    case 'entry_updated':
+      return `Updated timesheet entry for ${entity}${details?.hours_logged ? ` (${details.hours_logged} hours)` : ''}`;
+    case 'entry_deleted':
+      return `Deleted timesheet entry for ${entity}`;
+    case 'budget_override':
+      return `Overrode budget limit for ${entity}${details?.excessHours ? ` (${details.excessHours} hours over budget)` : ''}`;
+    case 'project_created':
+      return `Created project: ${entity}`;
+    case 'project_updated':
+      return `Updated project: ${entity}`;
+    case 'project_deleted':
+      return `Deleted project: ${entity}`;
+    case 'user_created':
+      return `Created user account for ${entity}`;
+    case 'user_updated':
+      return `Updated user profile for ${entity}`;
+    case 'login':
+      return `User logged in`;
+    case 'logout':
+      return `User logged out`;
+    default:
+      return `Performed ${action} on ${entity}`;
+  }
+};
 
 /**
  * Fetch audit logs with filters
@@ -60,7 +106,7 @@ export const fetchAuditLogs = async (filters: AuditFilters): Promise<AuditLogEnt
 };
 
 /**
- * Log an audit event
+ * Log an audit event with proper description and user name
  */
 export const logAuditEvent = async (entry: {
   user_id: string;
@@ -68,21 +114,33 @@ export const logAuditEvent = async (entry: {
   entity_type: string;
   entity_id?: string;
   entity_name?: string;
-  description: string;
+  description?: string;
   details?: Record<string, any>;
 }): Promise<void> => {
   try {
     console.log("Logging audit event:", entry);
     
+    // Get user display name
+    const userDisplayName = await getUserDisplayName(entry.user_id);
+    
+    // Generate description if not provided
+    const description = entry.description || generateDescription(
+      entry.action, 
+      entry.entity_type, 
+      entry.entity_name, 
+      entry.details
+    );
+
     const { error } = await supabase
       .from('audit_logs')
       .insert([{
         user_id: entry.user_id,
+        user_name: userDisplayName,
         action: entry.action,
         entity_type: entry.entity_type,
         entity_id: entry.entity_id || null,
         entity_name: entry.entity_name || null,
-        description: entry.description,
+        description: description,
         details: entry.details || null,
         created_at: new Date().toISOString()
       }]);
@@ -91,7 +149,7 @@ export const logAuditEvent = async (entry: {
       console.error("Error logging audit event:", error);
       // Don't throw here - audit logging should not break the main flow
     } else {
-      console.log("Audit event logged successfully");
+      console.log("Audit event logged successfully:", description);
     }
   } catch (error) {
     console.error("Error in logAuditEvent:", error);
