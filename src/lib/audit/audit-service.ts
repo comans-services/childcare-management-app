@@ -5,13 +5,9 @@ export interface AuditLogEntry {
   user_id: string;
   user_name: string;
   action: string;
-  entity_type: string;
-  entity_id: string | null;
   entity_name: string | null;
   description: string;
   details: Record<string, any> | null;
-  ip_address: string | null;
-  user_agent: string | null;
   created_at: string;
 }
 
@@ -20,7 +16,6 @@ export interface AuditFilters {
   endDate: Date;
   userId?: string;
   actionType?: string;
-  entityType?: string;
 }
 
 /**
@@ -49,26 +44,16 @@ export const fetchAuditLogs = async (filters: AuditFilters): Promise<AuditLogEnt
       user_id: item.user_id,
       user_name: item.user_name,
       action: item.action,
-      entity_type: item.entity_type,
-      entity_id: null, // Not directly available from our function
       entity_name: item.entity_name,
       description: item.description,
       details: item.details,
-      ip_address: null, // Not tracked in this approach
-      user_agent: null, // Not tracked in this approach
       created_at: item.created_at
     }));
 
-    // Apply frontend filters for action type and entity type
+    // Apply frontend filter for action type
     if (filters.actionType) {
       transformedData = transformedData.filter(item => 
-        item.action.toLowerCase().includes(filters.actionType!.toLowerCase())
-      );
-    }
-
-    if (filters.entityType) {
-      transformedData = transformedData.filter(item => 
-        item.entity_type === filters.entityType
+        item.action === filters.actionType
       );
     }
 
@@ -81,27 +66,22 @@ export const fetchAuditLogs = async (filters: AuditFilters): Promise<AuditLogEnt
 };
 
 /**
- * Get unique action types for filtering - derived from known actions
+ * Get unique action types for filtering - comprehensive list including deletions
  */
 export const getAuditActionTypes = async (): Promise<string[]> => {
-  // Return known action types from our database function
+  // Return all possible action types from our comprehensive audit system
   return [
     'entry_created',
     'entry_updated', 
+    'entry_deleted',
     'project_created',
     'project_updated',
-    'user_assigned'
-  ];
-};
-
-/**
- * Get unique entity types for filtering - derived from known entity types
- */
-export const getAuditEntityTypes = async (): Promise<string[]> => {
-  // Return known entity types from our database function
-  return [
-    'timesheet_entry',
-    'project'
+    'project_deleted',
+    'contract_created',
+    'contract_updated',
+    'contract_deleted',
+    'user_assigned',
+    'user_unassigned'
   ];
 };
 
@@ -109,13 +89,11 @@ export const getAuditEntityTypes = async (): Promise<string[]> => {
 export const logAuditEvent = async (entry: {
   user_id: string;
   action: string;
-  entity_type: string;
-  entity_id?: string;
   entity_name?: string;
   description?: string;
   details?: Record<string, any>;
 }): Promise<void> => {
-  // This function is no longer needed since we're using existing tables
+  // This function is no longer needed since we're using database triggers
   // for audit tracking, but keeping it for backward compatibility
-  console.log("Legacy audit logging - no action needed:", entry);
+  console.log("Legacy audit logging - handled by database triggers:", entry);
 };

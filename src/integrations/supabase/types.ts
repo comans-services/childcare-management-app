@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          description: string | null
+          details: Json | null
+          entity_name: string | null
+          id: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description?: string | null
+          details?: Json | null
+          entity_name?: string | null
+          id?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string | null
+          details?: Json | null
+          entity_name?: string | null
+          id?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       contract_assignments: {
         Row: {
           assigned_at: string
@@ -552,7 +585,6 @@ export type Database = {
           user_id: string
           user_name: string
           action: string
-          entity_type: string
           entity_name: string
           description: string
           details: Json

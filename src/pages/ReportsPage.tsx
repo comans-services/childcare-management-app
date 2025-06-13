@@ -11,7 +11,7 @@ import TimesheetLockManager from "@/components/reports/TimesheetLockManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Download, FileSpreadsheet, Lock } from "lucide-react";
+import { Download, Lock } from "lucide-react";
 import { TimesheetEntry, Project, fetchReportData } from "@/lib/timesheet-service";
 import { Contract } from "@/lib/contract-service";
 import { Customer } from "@/lib/customer-service";
@@ -33,7 +33,6 @@ export type ReportFiltersType = {
   includeEmployeeIds: boolean;
   reportType: 'timesheet' | 'audit';
   actionType?: string | null;
-  entityType?: string | null;
 };
 
 const ReportsPage = () => {
@@ -74,8 +73,7 @@ const ReportsPage = () => {
     includeContract: false,
     includeEmployeeIds: false,
     reportType: 'timesheet',
-    actionType: null,
-    entityType: null
+    actionType: null
   });
 
   // Check if export is available (data has been generated)
@@ -216,7 +214,7 @@ const ReportsPage = () => {
               <CardDescription>
                 {filters.reportType === 'timesheet' 
                   ? 'Create custom timesheet reports for your team' 
-                  : 'View audit logs of all user actions in the system'
+                  : 'View comprehensive audit logs of all user actions including deletions'
                 }
               </CardDescription>
             </CardHeader>

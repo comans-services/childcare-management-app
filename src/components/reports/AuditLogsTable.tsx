@@ -1,10 +1,19 @@
 
 import React from "react";
-import { AuditLogEntry } from "@/lib/audit/audit-service";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatDate } from "@/lib/date-utils";
 import { User } from "@/lib/user-service";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Shield } from "lucide-react";
+import { AuditLogEntry } from "@/lib/audit/audit-service";
 
 interface AuditLogsTableProps {
   auditData: AuditLogEntry[];
@@ -13,141 +22,123 @@ interface AuditLogsTableProps {
 }
 
 const AuditLogsTable = ({ auditData, users, isLoading }: AuditLogsTableProps) => {
-  // Create map for quick user lookups
-  const userMap = React.useMemo(() => {
-    const map = new Map<string, User>();
-    users.forEach(user => map.set(user.id, user));
-    return map;
-  }, [users]);
+  // Get action badge variant based on action type
+  const getActionBadgeVariant = (action: string): "default" | "secondary" | "destructive" | "outline" => {
+    if (action.includes('created')) return 'default';
+    if (action.includes('updated')) return 'secondary';
+    if (action.includes('deleted') || action.includes('unassigned')) return 'destructive';
+    if (action.includes('assigned')) return 'outline';
+    return 'default';
+  };
+
+  // Format action text for display
+  const formatAction = (action: string): string => {
+    return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Get user display name
+  const getUserDisplayName = (userId: string, userName: string): string => {
+    if (userName && userName !== 'Unknown User') return userName;
+    const user = users.find(u => u.id === userId);
+    return user ? (user.full_name || user.email || 'Unknown User') : 'Unknown User';
+  };
 
   if (isLoading) {
     return (
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date & Time</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Description</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array(8).fill(0).map((_, index) => (
-              <TableRow key={index}>
-                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Audit Logs</CardTitle>
+          <CardDescription>Loading audit trail...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (auditData.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-        <Shield className="h-12 w-12 text-gray-400" />
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">No activity logs found</h3>
-          <p className="text-sm text-gray-500 mt-2 max-w-sm">
-            No user activities found for the selected criteria. Try adjusting the date range or removing some filters.
-          </p>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Audit Logs</CardTitle>
+          <CardDescription>No audit logs found for the selected criteria</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-gray-500">
+            <p>No audit entries match your current filters.</p>
+            <p className="text-sm mt-1">Try adjusting the date range or removing filters.</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
-  const formatDateTime = (dateTime: string) => {
-    return new Date(dateTime).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
-  const getActionBadgeColor = (action: string) => {
-    switch (action.toLowerCase()) {
-      case 'entry_created':
-      case 'project_created':
-        return 'bg-green-100 text-green-800';
-      case 'entry_updated':
-      case 'project_updated':
-        return 'bg-blue-100 text-blue-800';
-      case 'entry_deleted':
-      case 'project_deleted':
-        return 'bg-red-100 text-red-800';
-      case 'user_assigned':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const formatAction = (action: string) => {
-    return action.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
-
   return (
-    <div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date & Time</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Description</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {auditData.map((entry) => (
-              <TableRow key={entry.id}>
-                <TableCell className="whitespace-nowrap">
-                  {formatDateTime(entry.created_at)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{entry.user_name}</span>
-                    <span className="text-xs text-gray-500">
-                      {userMap.get(entry.user_id)?.email || 'Unknown'}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionBadgeColor(entry.action)}`}>
-                    {formatAction(entry.action)}
-                  </span>
-                </TableCell>
-                <TableCell className="max-w-md">
-                  <p className="text-sm">{entry.description}</p>
-                  {entry.details && Object.keys(entry.details).length > 0 && (
-                    <details className="mt-1">
-                      <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
-                        View details
-                      </summary>
-                      <pre className="text-xs text-gray-600 mt-1 p-2 bg-gray-50 rounded overflow-x-auto">
-                        {JSON.stringify(entry.details, null, 2)}
-                      </pre>
-                    </details>
-                  )}
-                </TableCell>
+    <Card>
+      <CardHeader>
+        <CardTitle>Audit Logs</CardTitle>
+        <CardDescription>
+          Complete audit trail showing all user actions ({auditData.length} entries)
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-[600px] w-full">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date & Time</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Entity</TableHead>
+                <TableHead>Description</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      
-      <div className="mt-4 text-sm text-gray-500 text-center">
-        Showing {auditData.length} activity log {auditData.length === 1 ? 'entry' : 'entries'}
-      </div>
-    </div>
+            </TableHeader>
+            <TableBody>
+              {auditData.map((entry) => (
+                <TableRow key={entry.id}>
+                  <TableCell className="font-mono text-sm">
+                    {formatDate(new Date(entry.created_at), 'dd/MM/yyyy HH:mm')}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">
+                      {getUserDisplayName(entry.user_id, entry.user_name)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getActionBadgeVariant(entry.action)}>
+                      {formatAction(entry.action)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-medium">
+                      {entry.entity_name || 'Unknown'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="max-w-md">
+                    <div className="truncate" title={entry.description}>
+                      {entry.description}
+                    </div>
+                    {entry.details && (
+                      <details className="mt-1">
+                        <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                          View details
+                        </summary>
+                        <pre className="text-xs bg-gray-50 p-2 rounded mt-1 overflow-auto">
+                          {JSON.stringify(entry.details, null, 2)}
+                        </pre>
+                      </details>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 };
 

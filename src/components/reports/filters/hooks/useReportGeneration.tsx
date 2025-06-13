@@ -85,8 +85,7 @@ export const useReportGeneration = ({
           startDate: filters.startDate,
           endDate: filters.endDate,
           userId: normalizeSelectValue(filters.userId),
-          actionType: normalizeSelectValue(filters.actionType),
-          entityType: normalizeSelectValue(filters.entityType)
+          actionType: normalizeSelectValue(filters.actionType)
         };
         
         console.log("Audit log filters:", auditFilters);
