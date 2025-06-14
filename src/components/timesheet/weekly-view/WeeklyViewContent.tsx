@@ -2,8 +2,9 @@
 import React, { useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
-import { getWeekStart } from "@/lib/date-utils";
+import { getWeekStart, isWeekend } from "@/lib/date-utils";
 import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { LazyContent } from "@/components/common/LazyContent";
 import WeeklyProgressBar from "./WeeklyProgressBar";
@@ -39,6 +40,9 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
+  // Get weekend permissions
+  const { canLogWeekendHours } = useWeekendLock(user?.id);
+
   // Get current week's schedule using the unified hook
   const weekStartDate = getWeekStart(currentDate);
   const {
@@ -46,16 +50,29 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     effectiveHours: weeklyTarget,
   } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
 
-  // Filter entries based on the view mode
+  // Determine which dates to display in the grid with weekend filtering
+  const displayDates = useMemo(() => {
+    if (viewMode === "today") {
+      return [currentDate];
+    }
+    
+    // In week mode, filter out weekends if user doesn't have permission
+    if (!canLogWeekendHours) {
+      return weekDates.filter(date => !isWeekend(date));
+    }
+    
+    return weekDates;
+  }, [viewMode, currentDate, weekDates, canLogWeekendHours]);
+
+  // Filter entries based on the view mode and displayed dates
   const filteredEntries = useMemo(() => {
-    return viewMode === "today" 
-      ? entries.filter(entry => {
-          const entryDateString = String(entry.entry_date).substring(0, 10);
-          const currentDateString = currentDate.toISOString().substring(0, 10);
-          return entryDateString === currentDateString;
-        })
-      : entries;
-  }, [entries, viewMode, currentDate]);
+    const displayDateStrings = displayDates.map(date => date.toISOString().substring(0, 10));
+    
+    return entries.filter(entry => {
+      const entryDateString = String(entry.entry_date).substring(0, 10);
+      return displayDateStrings.includes(entryDateString);
+    });
+  }, [entries, displayDates]);
 
   // Calculate total hours for the current view
   const totalHours = useMemo(() => {
@@ -76,13 +93,11 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     return uniqueDatesWorked.size;
   }, [filteredEntries]);
 
-  // Calculate the target based on view mode
-  const workingDaysTarget = viewMode === "today" ? 1 : workingDays;
-
-  // Determine which dates to display in the grid
-  const displayDates = useMemo(() => {
-    return viewMode === "today" ? [currentDate] : weekDates;
-  }, [viewMode, currentDate, weekDates]);
+  // Calculate the target based on view mode and visible days
+  const workingDaysTarget = useMemo(() => {
+    if (viewMode === "today") return 1;
+    return displayDates.length; // Use actual visible days count
+  }, [viewMode, displayDates.length]);
 
   if (!user?.id) {
     return <div className="text-center text-gray-500">Please sign in to view your timesheet.</div>;
@@ -119,8 +134,8 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
       {/* Week/Day Grid */}
       <LazyContent
         fallback={
-          <div className="grid gap-2 grid-cols-1 md:grid-cols-7">
-            {Array.from({ length: viewMode === "today" ? 1 : 7 }).map((_, i) => (
+          <div className={`grid gap-2 ${viewMode === "today" ? "grid-cols-1" : `grid-cols-1 md:grid-cols-${Math.min(displayDates.length, 7)}`}`}>
+            {Array.from({ length: displayDates.length }).map((_, i) => (
               <div key={i} className="h-32 bg-gray-100 rounded-lg animate-pulse" />
             ))}
           </div>
@@ -165,6 +180,13 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
             workingDaysTarget={workingDaysTarget} 
           />
         </LazyContent>
+      )}
+
+      {/* Weekend Hidden Indicator */}
+      {viewMode === "week" && !canLogWeekendHours && (
+        <div className="text-center text-sm text-muted-foreground mt-2">
+          Weekend columns are hidden. Contact your administrator to enable weekend entries.
+        </div>
       )}
     </>
   );

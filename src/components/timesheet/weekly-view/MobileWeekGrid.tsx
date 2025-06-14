@@ -33,7 +33,7 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
 }) => {
   // Use the weekDates directly - the parent component already filters correctly
   // In day mode, weekDates will contain only the selected date
-  // In week mode, weekDates will contain all 7 days of the week
+  // In week mode, weekDates will contain the visible days (filtered by parent)
   const displayDates = weekDates;
 
   if (viewMode === "today") {
@@ -83,7 +83,7 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
         <div className="flex justify-center items-center mt-6 space-x-4">
           <CarouselPrevious className="relative static translate-y-0 translate-x-0 h-12 w-12 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />
           
-          {/* Day Indicator */}
+          {/* Day Indicator - dynamic based on visible days */}
           <div className="flex space-x-1">
             {displayDates.map((date, index) => (
               <div

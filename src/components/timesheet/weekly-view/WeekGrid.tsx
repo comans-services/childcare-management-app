@@ -44,11 +44,21 @@ const WeekGrid: React.FC<WeekGridProps> = ({
   
   // Use the weekDates directly - the parent component already filters correctly
   // In day mode, weekDates will contain only the selected date
-  // In week mode, weekDates will contain all 7 days of the week
+  // In week mode, weekDates will contain the visible days (filtered by parent)
   const displayDates = weekDates;
 
+  // Calculate dynamic grid columns based on number of visible days
+  const getGridColumns = () => {
+    if (viewMode === "today") return "grid-cols-1";
+    
+    const dayCount = displayDates.length;
+    if (dayCount === 5) return "grid-cols-1 md:grid-cols-5"; // Weekdays only
+    if (dayCount === 6) return "grid-cols-1 md:grid-cols-6"; // 6 days
+    return "grid-cols-1 md:grid-cols-7"; // Full week
+  };
+
   const renderDesktopView = () => (
-    <div className={`grid gap-2 w-full overflow-hidden animate-in fade-in-50 ${viewMode === "today" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-7"}`}>
+    <div className={`grid gap-2 w-full overflow-hidden animate-in fade-in-50 ${getGridColumns()}`}>
       {displayDates.map((date, index) => {
         const isWeekendDay = isWeekend(date);
         const weekendValidation = validateWeekendEntry(date);
