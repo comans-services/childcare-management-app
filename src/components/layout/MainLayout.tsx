@@ -41,14 +41,14 @@ export const MainLayout = () => {
         {/* Mobile sidebar overlay */}
         {isMobile && <Sidebar />}
         
-        {/* Main content area with proper responsive padding for expanded sidebar */}
+        {/* Main content area with improved responsive width utilization */}
         <main className="
-          flex-1 min-w-0 
-          p-fluid-sm sm:p-fluid-md lg:p-6 xl:p-7 2xl:p-8 3xl:p-9 4xl:p-10
+          flex-1 min-w-0 w-full
+          p-fluid-sm sm:p-fluid-md lg:p-6 xl:p-4 2xl:p-6 3xl:p-8 4xl:p-10
           overflow-x-hidden
-          container-query
+          max-w-full
         ">
-          <div className="max-w-full mx-auto w-full">
+          <div className="w-full h-full">
             <Outlet />
           </div>
         </main>

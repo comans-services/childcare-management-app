@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useMediaQuery } from "@/hooks/use-mobile";
@@ -71,7 +72,7 @@ const TimesheetPage = () => {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 3xl:px-20 4xl:px-24 max-w-full mx-auto">
       {/* Header section with improved mobile spacing */}
       <div className="mb-6 lg:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div className="min-w-0 flex-1">
@@ -104,8 +105,8 @@ const TimesheetPage = () => {
         </div>
       )}
 
-      {/* Weekly overview card with consistent padding */}
-      <Card className="mb-6 lg:mb-8 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary">
+      {/* Weekly overview card with expanded width for larger screens */}
+      <Card className="mb-6 lg:mb-8 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary w-full">
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="text-lg sm:text-xl lg:text-2xl font-semibold">
             Weekly Overview
