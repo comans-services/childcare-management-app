@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -42,35 +42,68 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
     enabled: !!contract && open,
   });
 
-  // Initialize selected users when assignments load
+  // Initialize selected users when assignments load - fix infinite loop by adding proper conditions
   React.useEffect(() => {
-    if (assignments.length > 0) {
+    if (assignments.length > 0 && open && contract) {
       const userIds = assignments.map((assignment: ContractAssignment) => assignment.user_id);
-      setSelectedUserIds(userIds);
-    } else {
-      setSelectedUserIds([]);
+      // Only update if the arrays are different to prevent infinite re-renders
+      setSelectedUserIds(prevIds => {
+        const prevIdsSet = new Set(prevIds);
+        const newIdsSet = new Set(userIds);
+        const areEqual = prevIdsSet.size === newIdsSet.size && 
+          [...prevIdsSet].every(id => newIdsSet.has(id));
+        
+        if (!areEqual) {
+          console.log("Updating selected user IDs:", userIds);
+          return userIds;
+        }
+        return prevIds;
+      });
+    } else if (assignments.length === 0 && open && contract) {
+      // Clear selections when no assignments and dialog is open
+      setSelectedUserIds(prevIds => {
+        if (prevIds.length > 0) {
+          console.log("Clearing selected user IDs");
+          return [];
+        }
+        return prevIds;
+      });
     }
-  }, [assignments]);
+  }, [assignments.length, open, contract?.id]); // Only depend on length, open state, and contract ID
 
   const assignUsersMutation = useMutation({
     mutationFn: async () => {
-      if (!contract) return;
+      if (!contract) {
+        console.error("No contract provided for assignment");
+        return;
+      }
+
+      console.log("Starting contract assignment mutation for contract:", contract.id);
+      console.log("Selected user IDs:", selectedUserIds);
 
       const currentUserIds = assignments.map((a: ContractAssignment) => a.user_id);
       const usersToAdd = selectedUserIds.filter(id => !currentUserIds.includes(id));
       const usersToRemove = currentUserIds.filter(id => !selectedUserIds.includes(id));
 
+      console.log("Users to add:", usersToAdd);
+      console.log("Users to remove:", usersToRemove);
+
       // Add new users
       if (usersToAdd.length > 0) {
+        console.log("Adding users to contract...");
         await bulkAssignUsersToContract(contract.id, usersToAdd);
       }
 
       // Remove users
       for (const userId of usersToRemove) {
+        console.log("Removing user from contract:", userId);
         await removeUserFromContract(contract.id, userId);
       }
+
+      console.log("Contract assignment mutation completed successfully");
     },
     onSuccess: () => {
+      console.log("Contract assignments updated successfully");
       toast({
         title: "Success",
         description: "Contract assignments updated successfully.",
@@ -89,16 +122,23 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
     },
   });
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
+    console.log("Saving contract assignments...");
     assignUsersMutation.mutate();
-  };
+  }, [assignUsersMutation]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
+    console.log("Cancelling contract assignment dialog");
     // Reset to original assignments
     const originalUserIds = assignments.map((assignment: ContractAssignment) => assignment.user_id);
     setSelectedUserIds(originalUserIds);
     onOpenChange(false);
-  };
+  }, [assignments, onOpenChange]);
+
+  const handleSelectionChange = useCallback((newSelectedUserIds: string[]) => {
+    console.log("Selection changed:", newSelectedUserIds);
+    setSelectedUserIds(newSelectedUserIds);
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -115,7 +155,7 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
             <div className="space-y-4 p-1">
               <ContractAssigneeSelector
                 selectedUserIds={selectedUserIds}
-                onSelectionChange={setSelectedUserIds}
+                onSelectionChange={handleSelectionChange}
                 disabled={assignUsersMutation.isPending}
               />
             </div>
