@@ -36,7 +36,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
     customer_id: contract?.customer_id || "",
     start_date: contract?.start_date || "",
     end_date: contract?.end_date || "",
-    status: contract?.status || "draft",
+    status: contract?.status || "active" as const,
     file: null as File | null,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,7 +86,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
       setIsUploading(true);
 
       try {
-        const contractData = {
+        const contractData: ContractInput = {
           id: contract?.id,
           name: data.name.trim(),
           description: data.description?.trim() || null,
@@ -283,17 +283,17 @@ const ContractForm: React.FC<ContractFormProps> = ({
             <Label htmlFor="status">Status</Label>
             <Select
               value={formData.status}
-              onValueChange={(value) => handleInputChange("status", value)}
+              onValueChange={(value: 'active' | 'pending_renewal' | 'expired' | 'renewed') => handleInputChange("status", value)}
               disabled={isLoading}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="pending_renewal">Pending Renewal</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+                <SelectItem value="renewed">Renewed</SelectItem>
               </SelectContent>
             </Select>
           </div>

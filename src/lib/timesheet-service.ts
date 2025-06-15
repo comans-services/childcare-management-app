@@ -1,8 +1,8 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks } from "date-fns";
 import { formatDate } from "@/lib/date-utils";
-import { ProjectWithHours, Customer } from "@/lib/customer-service";
-import { Contract } from "@/lib/contract-service";
+import { Customer } from "@/lib/customer-service";
 
 export interface ProjectTimeEntry {
   id: string;
@@ -44,6 +44,40 @@ export interface Project {
   created_by?: string;
 }
 
+export interface Contract {
+  id: string;
+  name: string;
+  description?: string;
+  customer_id: string;
+  customer_name?: string;
+  start_date: string;
+  end_date: string;
+  status: 'active' | 'pending_renewal' | 'expired' | 'renewed';
+  file_url?: string;
+  file_name?: string;
+  file_size?: number;
+  file_type?: string;
+  file_id?: string;
+  uploaded_at?: string;
+  created_at?: string;
+  updated_at?: string;
+  is_active?: boolean;
+  days_until_expiry?: number;
+  services?: Service[];
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProjectWithHours extends Project {
+  total_hours: number;
+}
+
 export interface TimesheetEntry {
   id?: string;
   user_id?: string;
@@ -58,7 +92,24 @@ export interface TimesheetEntry {
   entry_type?: 'project' | 'contract';
   created_at?: string;
   updated_at?: string;
+  // Relational properties
+  project?: Project;
+  contract?: Contract;
+  user?: User;
 }
+
+// Re-export from entry service
+export {
+  fetchTimesheetEntries,
+  fetchReportData,
+  saveTimesheetEntry,
+  duplicateTimesheetEntry,
+  deleteTimesheetEntry,
+  deleteAllTimesheetEntries
+} from "./timesheet/entry-service";
+
+// Re-export contract functions
+export { fetchUserContracts } from "./contract-service";
 
 export const fetchProjects = async (): Promise<Project[]> => {
   console.log("Fetching projects...");
@@ -109,7 +160,7 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
   }
 
   // Extract the projects from the assignments
-  const projects = data?.map(assignment => assignment.projects) || [];
+  const projects = data?.map(assignment => assignment.projects).filter(Boolean) || [];
   
   console.log("Fetched user projects:", projects);
   return projects;
@@ -244,29 +295,6 @@ export const fetchTimeEntriesForDate = async (date: Date): Promise<TimesheetEntr
     return data || [];
 };
 
-export const saveTimesheetEntry = async (entryData: TimesheetEntry): Promise<TimesheetEntry> => {
-  console.log("Saving timesheet entry with data:", entryData);
-
-  try {
-    const { data, error } = await supabase
-      .from("timesheet_entries")
-      .insert([entryData])
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error saving timesheet entry:", error);
-      throw new Error(`Failed to save timesheet entry: ${error.message}`);
-    }
-
-    console.log("Timesheet entry saved successfully:", data);
-    return data;
-  } catch (error) {
-    console.error("Error in saveTimesheetEntry:", error);
-    throw error;
-  }
-};
-
 export const updateTimesheetEntry = async (id: string, entryData: TimesheetEntry): Promise<TimesheetEntry> => {
   console.log(`Updating timesheet entry with ID: ${id} and data:`, entryData);
 
@@ -287,27 +315,6 @@ export const updateTimesheetEntry = async (id: string, entryData: TimesheetEntry
     return data;
   } catch (error) {
     console.error("Error in updateTimesheetEntry:", error);
-    throw error;
-  }
-};
-
-export const deleteTimesheetEntry = async (id: string): Promise<void> => {
-  console.log(`Deleting timesheet entry with ID: ${id}`);
-
-  try {
-    const { error } = await supabase
-      .from("timesheet_entries")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      console.error("Error deleting timesheet entry:", error);
-      throw new Error(`Failed to delete timesheet entry: ${error.message}`);
-    }
-
-    console.log("Timesheet entry deleted successfully");
-  } catch (error) {
-    console.error("Error in deleteTimesheetEntry:", error);
     throw error;
   }
 };
