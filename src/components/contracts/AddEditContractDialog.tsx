@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -41,7 +40,7 @@ import {
 import { format, addDays } from "date-fns";
 import { CalendarIcon, Loader2, FileText, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Contract, saveContract, fetchServices } from "@/lib/contract-service";
+import { Contract, saveContract, fetchServices, Service } from "@/lib/contract-service";
 import CustomerSelector from "../customers/CustomerSelector";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -59,7 +58,7 @@ const formSchema = z.object({
   customer_id: z.string().nullable().optional(),
   start_date: z.date(),
   end_date: z.date(),
-  status: z.enum(['active', 'expired', 'pending_renewal', 'renewed']).default('active'),
+  status: z.enum(['active', 'pending_renewal', 'expired', 'renewed']).default('active'),
   is_active: z.boolean().default(true),
 });
 
@@ -117,12 +116,12 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         customer_id: existingContract.customer_id || null,
         start_date: existingContract.start_date ? new Date(existingContract.start_date) : new Date(),
         end_date: existingContract.end_date ? new Date(existingContract.end_date) : addDays(new Date(), 365),
-        status: existingContract.status || 'active',
+        status: existingContract.status as 'active' | 'pending_renewal' | 'expired' | 'renewed',
         is_active: existingContract.is_active !== false,
       });
       
       // Set selected services if the contract has any
-      if (existingContract.services && existingContract.services.length > 0) {
+      if (existingContract.services && Array.isArray(existingContract.services) && existingContract.services.length > 0) {
         setSelectedServiceIds(existingContract.services.map(service => service.id));
       } else {
         setSelectedServiceIds([]);
@@ -601,9 +600,9 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
                   <div className="flex justify-center p-4">
                     <Loader2 className="h-5 w-5 animate-spin" />
                   </div>
-                ) : services.length > 0 ? (
+                ) : Array.isArray(services) && services.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {services.map(service => (
+                    {services.map((service: Service) => (
                       <div key={service.id} className="flex items-start space-x-2">
                         <Checkbox 
                           id={`service-${service.id}`}
@@ -633,12 +632,12 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
                 )}
               </div>
               <div className="mt-2 flex flex-wrap gap-1">
-                {selectedServiceIds.length > 0 && services.length > 0 && (
+                {selectedServiceIds.length > 0 && Array.isArray(services) && services.length > 0 && (
                   <div className="text-sm text-muted-foreground">Selected:</div>
                 )}
-                {services
-                  .filter(service => selectedServiceIds.includes(service.id))
-                  .map(service => (
+                {Array.isArray(services) && services
+                  .filter((service: Service) => selectedServiceIds.includes(service.id))
+                  .map((service: Service) => (
                     <Badge key={service.id} variant="secondary" className="text-xs">
                       {service.name}
                     </Badge>
