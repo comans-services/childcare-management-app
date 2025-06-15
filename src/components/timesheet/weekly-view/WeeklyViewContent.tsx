@@ -24,6 +24,7 @@ interface WeeklyViewContentProps {
   onAddEntry: (date: Date, entry?: TimesheetEntry) => void;
   onEditEntry: (date: Date, entry?: TimesheetEntry) => void;
   onDragEnd: (result: any) => void;
+  viewAsUserId?: string | null;
 }
 
 const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
@@ -36,19 +37,23 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
   onAddEntry,
   onEditEntry,
   onDragEnd,
+  viewAsUserId,
 }) => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
-  // Get weekend permissions
-  const { canLogWeekendHours } = useWeekendLock(user?.id);
+  // Determine the effective user ID for schedule and weekend permissions
+  const effectiveUserId = viewAsUserId || user?.id;
 
-  // Get current week's schedule using the unified hook
+  // Get weekend permissions for the effective user
+  const { canLogWeekendHours } = useWeekendLock(effectiveUserId);
+
+  // Get current week's schedule using the effective user ID
   const weekStartDate = getWeekStart(currentDate);
   const {
     effectiveDays: workingDays,
     effectiveHours: weeklyTarget,
-  } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
+  } = useSimpleWeeklySchedule(effectiveUserId || "", weekStartDate);
 
   // Determine which dates to display in the grid with weekend filtering
   const displayDates = useMemo(() => {
@@ -146,7 +151,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
         {isMobile ? (
           <MobileWeekGrid
             weekDates={displayDates}
-            userId={user.id}
+            userId={effectiveUserId || ""}
             entries={entries}
             projects={projects}
             onEntryChange={onEntryChange}
@@ -157,7 +162,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
         ) : (
           <WeekGrid
             weekDates={displayDates}
-            userId={user.id}
+            userId={effectiveUserId || ""}
             entries={entries}
             projects={projects}
             onEntryChange={onEntryChange}

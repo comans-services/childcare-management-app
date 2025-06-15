@@ -16,7 +16,11 @@ import ErrorState from "./ErrorState";
 import WeeklyViewContent from "./WeeklyViewContent";
 import WeeklyViewDialogs from "./WeeklyViewDialogs";
 
-const WeeklyViewContainer: React.FC = () => {
+interface WeeklyViewContainerProps {
+  viewAsUserId?: string | null;
+}
+
+const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId }) => {
   const { user, session } = useAuth();
   const isMobile = useIsMobile();
   const { getTransitionClass } = useSmoothTransitions();
@@ -49,24 +53,28 @@ const WeeklyViewContainer: React.FC = () => {
     error,
     fetchData,
     clearComponentState,
-  } = useWeeklyViewData(weekDates);
+  } = useWeeklyViewData(weekDates, viewAsUserId);
 
   const { handleDragEnd } = useEntryOperations(weekDates, entries, () => fetchData(), user?.id);
 
   const [editingEntry, setEditingEntry] = React.useState<TimesheetEntry | undefined>(undefined);
 
-  // Track user changes to force state cleanup
+  // Track user changes and viewAs changes to force state cleanup
   useEffect(() => {
     const currentUserId = user?.id || null;
+    const currentViewAsUserId = viewAsUserId || null;
     
-    if (lastUserId !== currentUserId) {
-      console.log(`User changed from ${lastUserId} to ${currentUserId}`);
+    // Create a composite key to track both authenticated user and viewing user changes
+    const currentCompositeKey = `${currentUserId}:${currentViewAsUserId}`;
+    
+    if (lastUserId !== currentCompositeKey) {
+      console.log(`User or viewAs changed from ${lastUserId} to ${currentCompositeKey}`);
       clearComponentState();
       clearDialogState();
       setEditingEntry(undefined);
-      setLastUserId(currentUserId);
+      setLastUserId(currentCompositeKey);
     }
-  }, [user?.id, lastUserId, clearComponentState, clearDialogState, setLastUserId]);
+  }, [user?.id, viewAsUserId, lastUserId, clearComponentState, clearDialogState, setLastUserId]);
 
   // Update week dates when current date changes
   useEffect(() => {
@@ -102,6 +110,9 @@ const WeeklyViewContainer: React.FC = () => {
   if (!user?.id || !session) {
     return <div className="text-center text-gray-500">Please sign in to view your timesheet.</div>;
   }
+
+  // Determine the effective user ID for operations
+  const effectiveUserId = viewAsUserId || user.id;
 
   return (
     <ResponsiveContainer 
@@ -156,17 +167,19 @@ const WeeklyViewContainer: React.FC = () => {
         />
       )}
 
-      {/* Dialogs */}
-      <WeeklyViewDialogs
-        userId={user.id}
-        selectedDate={selectedDate}
-        entryDialogOpen={entryDialogOpen}
-        setEntryDialogOpen={setEntryDialogOpen}
-        projects={projects}
-        editingEntry={editingEntry}
-        onSave={handleSaveEntry}
-        entries={entries}
-      />
+      {/* Dialogs - Only show if viewing own timesheet */}
+      {!viewAsUserId && (
+        <WeeklyViewDialogs
+          userId={effectiveUserId}
+          selectedDate={selectedDate}
+          entryDialogOpen={entryDialogOpen}
+          setEntryDialogOpen={setEntryDialogOpen}
+          projects={projects}
+          editingEntry={editingEntry}
+          onSave={handleSaveEntry}
+          entries={entries}
+        />
+      )}
     </ResponsiveContainer>
   );
 };

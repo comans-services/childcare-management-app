@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 export const useEntryOperations = (
   weekDates: Date[],
   entries: TimesheetEntry[],
-  setEntries: React.Dispatch<React.SetStateAction<TimesheetEntry[]>>,
+  onEntriesChange: () => void,
   userId: string | undefined
 ) => {
   const handleDragEnd = useCallback(async (result: DropResult) => {
@@ -39,15 +39,8 @@ export const useEntryOperations = (
       
       console.log("Entry saved in database:", savedEntry);
       
-      setEntries(prevEntries => 
-        prevEntries.map(entry => 
-          entry.id === savedEntry.id ? {
-            ...savedEntry,
-            project: draggedEntry.project,
-            user: draggedEntry.user
-          } : entry
-        )
-      );
+      // Call the refresh function instead of direct state setting
+      onEntriesChange();
       
       toast({
         title: "Entry moved",
@@ -61,7 +54,7 @@ export const useEntryOperations = (
         variant: "destructive",
       });
     }
-  }, [weekDates, entries, setEntries, userId]);
+  }, [weekDates, entries, onEntriesChange, userId]);
 
   return {
     handleDragEnd,

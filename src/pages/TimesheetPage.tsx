@@ -162,8 +162,8 @@ const TimesheetPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
-          {/* WeeklyView now handles user filtering internally via RLS */}
-          <WeeklyView key={refreshKey} />
+          {/* Pass viewAsUserId to WeeklyView */}
+          <WeeklyView key={refreshKey} viewAsUserId={selectedUserId} />
         </CardContent>
       </Card>
 
