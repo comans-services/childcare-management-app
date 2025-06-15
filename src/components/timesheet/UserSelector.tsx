@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -46,7 +47,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
     queryFn: fetchUsers
   });
 
-  const selectedUser = users.find(u => u.id === selectedUserId) || currentUser;
+  const selectedUser = users.find(u => u.id === selectedUserId);
   const displayName = selectedUser?.full_name || selectedUser?.email || "Select user";
 
   const getInitials = (user: UserType) => {
@@ -92,7 +93,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
               </Avatar>
               <div className="flex flex-col items-start min-w-0 flex-1">
                 <span className="text-sm font-medium truncate">
-                  {selectedUserId ? displayName : `${currentUser?.full_name || currentUser?.email}`}
+                  {selectedUserId ? displayName : `My Timesheet`}
                 </span>
                 {selectedUser?.employee_id && (
                   <span className="text-xs text-muted-foreground">
@@ -124,7 +125,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
                   />
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                      {currentUser ? getInitials(currentUser) : "ME"}
+                      ME
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
@@ -132,7 +133,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
                       View My Timesheet
                     </span>
                     <span className="text-sm text-muted-foreground">
-                      {currentUser?.full_name || currentUser?.email}
+                      Your own timesheet
                     </span>
                   </div>
                 </CommandItem>
