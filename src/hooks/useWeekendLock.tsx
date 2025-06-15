@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,8 +5,10 @@ import { toast } from "@/hooks/use-toast";
 import { isWeekend } from "@/lib/date-utils";
 
 interface WeekendLockData {
-  canLogWeekendHours: boolean;
-  allowWeekendEntries: boolean; // Raw permission setting
+  canLogWeekendHours: boolean; // Deprecated - kept for backward compatibility
+  allowWeekendEntries: boolean; // Raw permission setting for UI toggle
+  shouldShowWeekendColumns: boolean; // Controls UI visibility (same as allowWeekendEntries)
+  canCreateWeekendEntries: boolean; // Controls actual entry creation (admin override)
   isWeekendEntry: (date: Date) => boolean;
   validateWeekendEntry: (date: Date) => { isValid: boolean; message?: string };
   updateWeekendPermission: (enabled: boolean) => Promise<boolean>;
@@ -165,7 +166,11 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
     return isWeekend(date);
   };
 
-  // Validate if a weekend entry is allowed with admin override
+  // NEW: Separate logic for UI visibility vs entry creation
+  const shouldShowWeekendColumns = allowWeekendEntries; // UI follows the toggle setting
+  const canCreateWeekendEntries = isAdmin || allowWeekendEntries; // Admins can always create, others need permission
+
+  // Validate if a weekend entry is allowed with new logic
   const validateWeekendEntry = (date: Date): { isValid: boolean; message?: string } => {
     console.log(`Validating weekend entry for date: ${date.toDateString()}`);
     console.log(`Is admin: ${isAdmin}, Allow weekend entries: ${allowWeekendEntries}, Is weekend: ${isWeekend(date)}`);
@@ -175,31 +180,27 @@ export const useWeekendLock = (userId?: string): WeekendLockData => {
       return { isValid: true };
     }
 
-    // Admin override: admins can ALWAYS log weekend entries regardless of their settings
-    if (isAdmin) {
-      console.log("Admin override: allowing weekend entry");
+    // Use the new canCreateWeekendEntries logic
+    if (canCreateWeekendEntries) {
+      console.log("Weekend entry allowed - admin privilege or user permission");
       return { isValid: true };
     }
 
-    // Check if user has weekend permission
-    if (allowWeekendEntries) {
-      console.log("User has weekend permission: allowing entry");
-      return { isValid: true };
-    }
-
-    console.log("Weekend entry blocked: user does not have permission");
+    console.log("Weekend entry blocked: user does not have permission and is not admin");
     return { 
       isValid: false, 
       message: "Weekend entries are not allowed. Please contact your administrator for approval." 
     };
   };
 
-  // Determine if user can log weekend hours (admins always can, others need permission)
-  const canLogWeekendHours = isAdmin || allowWeekendEntries;
+  // Backward compatibility - keep existing canLogWeekendHours for any remaining usage
+  const canLogWeekendHours = shouldShowWeekendColumns;
 
   return {
-    canLogWeekendHours,
+    canLogWeekendHours, // Deprecated - kept for backward compatibility
     allowWeekendEntries, // Raw permission setting for toggle display
+    shouldShowWeekendColumns, // Controls UI visibility - follows toggle setting
+    canCreateWeekendEntries, // Controls entry creation - admin override available
     isWeekendEntry,
     validateWeekendEntry,
     updateWeekendPermission,

@@ -11,7 +11,7 @@ interface DayHeaderProps {
 
 const DayHeader: React.FC<DayHeaderProps> = ({ date }) => {
   const { user } = useAuth();
-  const { validateWeekendEntry } = useWeekendLock(user?.id);
+  const { validateWeekendEntry, canCreateWeekendEntries } = useWeekendLock(user?.id);
   
   const isWeekendDay = isWeekend(date);
   const weekendValidation = validateWeekendEntry(date);
@@ -39,9 +39,15 @@ const DayHeader: React.FC<DayHeaderProps> = ({ date }) => {
               "px-1.5 py-0.5 rounded-full text-[10px]",
               isWeekendBlocked 
                 ? "bg-red-200 text-red-800" 
+                : canCreateWeekendEntries
+                ? "bg-green-200 text-green-800"
                 : "bg-blue-200 text-blue-800"
             )}>
-              {isWeekendBlocked ? "Blocked" : "Weekend"}
+              {isWeekendBlocked 
+                ? "Blocked" 
+                : canCreateWeekendEntries 
+                ? "Weekend" 
+                : "Weekend"}
             </span>
           )}
         </div>

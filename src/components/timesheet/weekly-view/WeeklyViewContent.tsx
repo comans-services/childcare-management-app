@@ -45,8 +45,8 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
   // Determine the effective user ID for schedule and weekend permissions
   const effectiveUserId = viewAsUserId || user?.id;
 
-  // Get weekend permissions for the effective user
-  const { canLogWeekendHours } = useWeekendLock(effectiveUserId);
+  // Get weekend permissions for the effective user - NOW USING shouldShowWeekendColumns for UI
+  const { shouldShowWeekendColumns } = useWeekendLock(effectiveUserId);
 
   // Get current week's schedule using the effective user ID
   const weekStartDate = getWeekStart(currentDate);
@@ -55,19 +55,19 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     effectiveHours: weeklyTarget,
   } = useSimpleWeeklySchedule(effectiveUserId || "", weekStartDate);
 
-  // Determine which dates to display in the grid with weekend filtering
+  // Determine which dates to display in the grid with NEW weekend filtering logic
   const displayDates = useMemo(() => {
     if (viewMode === "today") {
       return [currentDate];
     }
     
-    // In week mode, filter out weekends if user doesn't have permission
-    if (!canLogWeekendHours) {
+    // In week mode, filter out weekends based on shouldShowWeekendColumns (affects ALL users including admins)
+    if (!shouldShowWeekendColumns) {
       return weekDates.filter(date => !isWeekend(date));
     }
     
     return weekDates;
-  }, [viewMode, currentDate, weekDates, canLogWeekendHours]);
+  }, [viewMode, currentDate, weekDates, shouldShowWeekendColumns]);
 
   // Filter entries based on the view mode and displayed dates
   const filteredEntries = useMemo(() => {
@@ -187,10 +187,10 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
         </LazyContent>
       )}
 
-      {/* Weekend Hidden Indicator */}
-      {viewMode === "week" && !canLogWeekendHours && (
+      {/* Weekend Hidden Indicator - NOW APPLIES TO ALL USERS INCLUDING ADMINS */}
+      {viewMode === "week" && !shouldShowWeekendColumns && (
         <div className="text-center text-sm text-muted-foreground mt-2">
-          Weekend columns are hidden. Contact your administrator to enable weekend entries.
+          Weekend columns are hidden. Toggle weekend entries to show weekend days.
         </div>
       )}
     </>
