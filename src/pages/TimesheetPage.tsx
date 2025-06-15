@@ -1,63 +1,44 @@
-
-import React, { useState } from "react";
+import React, { useState, useCallback } from 'react';
+import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
 import { useAuth } from "@/context/AuthContext";
-import { useMediaQuery } from "@/hooks/use-mobile";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import WeeklyView from "@/components/timesheet/WeeklyView";
-import TimerComponent from "@/components/timesheet/TimerComponent";
 import { Button } from "@/components/ui/button";
-import { TrashIcon } from "lucide-react";
-import { deleteAllTimesheetEntries } from "@/lib/timesheet-service";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, } from "@/components/ui/command";
+import { Main } from "@/components/ui/main"
 import { toast } from "@/hooks/use-toast";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
-import { getWeekStart } from "@/lib/date-utils";
+import {
+  deleteAllTimesheetEntries
+} from "@/lib/timesheet-service";
+import WeeklyView from "@/components/timesheet/weekly-view/WeeklyView";
 
-const TimesheetPage = () => {
-  const { user, userRole } = useAuth();
-  const isMobile = useMediaQuery("(max-width: 768px)");
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+const TimesheetPage: React.FC = () => {
+  const { user } = useAuth();
+  const [date, setDate] = useState<Date>(new Date());
+  const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
 
-  // Get current week's schedule
-  const weekStartDate = getWeekStart(new Date());
-  const {
-    effectiveDays,
-    effectiveHours
-  } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
+  const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
+  const formattedWeekRange = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
 
-  // Redirect if no user is authenticated
-  if (!user) {
-    return (
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="py-8 text-center">
-          <p className="text-gray-500">Please sign in to view your timesheet</p>
-        </div>
-      </div>
-    );
-  }
+  const handleDateSelect = (newDate: Date | undefined) => {
+    if (newDate) {
+      setDate(newDate);
+    }
+  };
 
-  const handleDeleteAllEntries = async () => {
-    setIsDeleting(true);
+  const deleteAllEntries = async () => {
+    if (!user?.id) return;
+    
     try {
-      // RLS will ensure only current user's entries are deleted
-      const deletedCount = await deleteAllTimesheetEntries();
+      await deleteAllTimesheetEntries(user.id); // Pass the required user ID
       toast({
-        title: "Entries deleted",
-        description: `Successfully deleted ${deletedCount} timesheet entries.`,
+        title: "Success",
+        description: "All timesheet entries have been deleted.",
       });
-      // Force refresh of the WeeklyView component
-      setRefreshKey(prev => prev + 1);
+      // Refresh the data
+      window.location.reload();
     } catch (error) {
       console.error("Error deleting entries:", error);
       toast({
@@ -65,100 +46,75 @@ const TimesheetPage = () => {
         description: "Failed to delete timesheet entries.",
         variant: "destructive",
       });
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteDialogOpen(false);
     }
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 3xl:px-20 4xl:px-24 max-w-full mx-auto">
-      {/* Header section with improved mobile spacing */}
-      <div className="mb-6 lg:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            My Timesheet
-          </h1>
-          <p className="text-gray-600 text-sm sm:text-base lg:text-lg mt-2">
-            Track and manage your working hours
-            <span className="hidden sm:inline"> - {effectiveDays} days</span>
-          </p>
+    <Main>
+      <div className="container mx-auto py-10">
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold">Timesheet</h1>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={
+                    "w-[240px] justify-start text-left font-normal"
+                  }
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formattedWeekRange}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  captionLayout="dropdown"
+                  weekStartsOn={1}
+                  selected={date}
+                  onSelect={handleDateSelect}
+                  className="rounded-md border"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Button onClick={() => setDate(addDays(date, -7))}>Previous Week</Button>
+            <Button onClick={() => setDate(addDays(date, 7))}>Next Week</Button>
+            <Button variant="destructive" onClick={() => setIsDeleteAllOpen(true)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete All
+            </Button>
+          </div>
         </div>
-        
-        <Button 
-          variant="destructive" 
-          size={isMobile ? "default" : "sm"}
-          onClick={() => setIsDeleteDialogOpen(true)}
-          disabled={isDeleting}
-          className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md flex-shrink-0"
-        >
-          <TrashIcon className="h-4 w-4 mr-2" />
-          <span className="sm:hidden">Reset All Entries</span>
-          <span className="hidden sm:inline">Reset All</span>
-        </Button>
+
+        <WeeklyView weekDates={[
+          startOfWeek(date, { weekStartsOn: 1 }),
+          addDays(startOfWeek(date, { weekStartsOn: 1 }), 1),
+          addDays(startOfWeek(date, { weekStartsOn: 1 }), 2),
+          addDays(startOfWeek(date, { weekStartsOn: 1 }), 3),
+          addDays(startOfWeek(date, { weekStartsOn: 1 }), 4),
+          addDays(startOfWeek(date, { weekStartsOn: 1 }), 5),
+          endOfWeek(date, { weekStartsOn: 1 })
+        ]} />
       </div>
 
-      {/* Mobile timer with proper spacing */}
-      {isMobile && (
-        <div className="mb-6">
-          <TimerComponent />
+      {/* Delete All Confirmation Dialog */}
+      {isDeleteAllOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white p-6 rounded-md shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">Delete All Entries?</h2>
+            <p className="mb-4">Are you sure you want to delete all timesheet entries? This action cannot be undone.</p>
+            <div className="flex justify-end space-x-2">
+              <Button variant="ghost" onClick={() => setIsDeleteAllOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={deleteAllEntries}>Delete All</Button>
+            </div>
+          </div>
         </div>
       )}
-
-      {/* Weekly overview card with expanded width for larger screens */}
-      <Card className="mb-6 lg:mb-8 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary w-full">
-        <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-lg sm:text-xl lg:text-2xl font-semibold">
-            Weekly Overview
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Your time entries for the current week
-            <span className="hidden lg:inline"> - {effectiveDays} days expected per week</span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0">
-          {/* WeeklyView now handles user filtering internally via RLS */}
-          <WeeklyView key={refreshKey} />
-        </CardContent>
-      </Card>
-
-      {/* Desktop timer with consistent spacing */}
-      {!isMobile && (
-        <div className="hidden md:block">
-          <TimerComponent />
-        </div>
-      )}
-
-      {/* Delete confirmation dialog with responsive sizing */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="rounded-xl border-red-200 shadow-lg w-[90vw] max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg lg:text-xl">
-              Delete All Entries
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm lg:text-base leading-relaxed">
-              This action will permanently delete all your timesheet entries. 
-              This cannot be undone. Are you sure you want to continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-3">
-            <AlertDialogCancel 
-              disabled={isDeleting} 
-              className="hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteAllEntries}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md w-full sm:w-auto"
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete All Entries"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+    </Main>
   );
 };
 

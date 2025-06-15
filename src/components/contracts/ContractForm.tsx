@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Contract, saveContract } from "@/lib/contract-service";
+import { Contract, saveContract, ContractInput } from "@/lib/contract-service";
 import { Customer, fetchCustomers } from "@/lib/customer-service";
 import { useQuery } from "@tanstack/react-query";
 import { FileUpload } from "@/components/ui/file-upload";

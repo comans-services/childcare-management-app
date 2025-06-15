@@ -52,11 +52,12 @@ export const useWeeklyViewData = (weekDates: Date[]) => {
       if (weekDates.length > 0) {
         console.log("Fetching entries for date range:", weekDates[0], "to", weekDates[weekDates.length - 1]);
         
-        const entriesData = await fetchTimesheetEntries(
-          weekDates[0],
-          weekDates[weekDates.length - 1],
-          { includeUserData: true, forceUserId: user.id }
-        );
+        // Fix the function call to match the expected signature
+        const entriesData = await fetchTimesheetEntries({
+          userId: user.id,
+          startDate: weekDates[0].toISOString().split('T')[0],
+          endDate: weekDates[weekDates.length - 1].toISOString().split('T')[0]
+        });
         
         console.log("Successfully fetched entries via RLS:", entriesData.length);
         setEntries(entriesData);

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks } from "date-fns";
 import { formatDate } from "@/lib/date-utils";
@@ -159,11 +158,11 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
     throw new Error(`Failed to fetch user projects: ${error.message}`);
   }
 
-  // Extract the projects from the assignments
+  // Extract the projects from the assignments and filter out null values
   const projects = data?.map(assignment => assignment.projects).filter(Boolean) || [];
   
   console.log("Fetched user projects:", projects);
-  return projects;
+  return projects as Project[];
 };
 
 export const fetchProjectById = async (id: string): Promise<Project | null> => {

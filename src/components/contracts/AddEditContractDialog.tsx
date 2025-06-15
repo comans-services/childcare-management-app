@@ -250,13 +250,14 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
   // Save contract mutation
   const saveContractMutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      const contractData = {
+      const contractData: ContractInput = {
         ...data,
         name: data.name,
         status: data.status,
         start_date: format(data.start_date, "yyyy-MM-dd"),
         end_date: format(data.end_date, "yyyy-MM-dd"),
         id: existingContract?.id,
+        customer_id: data.customer_id || undefined, // Handle optional customer_id
       };
       
       const savedContract = await saveContract(contractData, selectedServiceIds);

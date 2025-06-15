@@ -35,7 +35,7 @@ export interface ContractInput {
   id?: string;
   name: string;
   description?: string | null;
-  customer_id: string;
+  customer_id?: string; // Make this optional to match the error
   start_date: string;
   end_date: string;
   status: 'active' | 'pending_renewal' | 'expired' | 'renewed';
