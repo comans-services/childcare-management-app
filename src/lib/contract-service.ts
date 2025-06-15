@@ -119,10 +119,13 @@ export const fetchContracts = async (filters?: {
       .eq("id", user.id)
       .single();
 
-    // Start building the query
+    // Start building the query - join with customers to get customer name
     let query = supabase
       .from("contracts")
-      .select("*");
+      .select(`
+        *,
+        customers!inner(name)
+      `);
     
     // For non-admin users, only show contracts they're assigned to
     if (profile?.role !== 'admin') {
@@ -181,8 +184,8 @@ export const fetchContracts = async (filters?: {
       return [];
     }
 
-    // Get customer details separately for each contract if needed
-    const enhancedContracts = await Promise.all(data.map(async (contract) => {
+    // Process the contracts and add calculated fields
+    const enhancedContracts = await Promise.all(data.map(async (contract: any) => {
       // Calculate days until expiry
       const today = new Date();
       const endDate = new Date(contract.end_date);
@@ -207,20 +210,6 @@ export const fetchContracts = async (filters?: {
           contract.status = calculatedStatus;
         } catch (err) {
           console.error("Error updating contract status:", err);
-        }
-      }
-
-      let customerName = null;
-      // If there's a customer_id, try to fetch the customer name
-      if (contract.customer_id) {
-        const { data: customerData } = await supabase
-          .from("customers")
-          .select("name")
-          .eq("id", contract.customer_id)
-          .single();
-        
-        if (customerData) {
-          customerName = customerData.name;
         }
       }
 
@@ -253,7 +242,7 @@ export const fetchContracts = async (filters?: {
       
       return {
         ...contract,
-        customer_name: customerName,
+        customer_name: contract.customers?.name,
         days_until_expiry: daysUntilExpiry,
         services
       };
@@ -275,6 +264,7 @@ export const fetchContractsWithAssignees = async (filters?: { searchTerm?: strin
       .from("contracts")
       .select(`
         *,
+        customers(name),
         contract_assignments!inner(
           user:profiles!contract_assignments_user_id_fkey(id, full_name, email)
         )
@@ -313,20 +303,6 @@ export const fetchContractsWithAssignees = async (filters?: { searchTerm?: strin
           ? contract.contract_assignments.map((assignment: any) => assignment.user).filter(Boolean)
           : [];
 
-        // Get customer name if available
-        let customerName = null;
-        if (contract.customer_id) {
-          const { data: customerData } = await supabase
-            .from("customers")
-            .select("name")
-            .eq("id", contract.customer_id)
-            .single();
-          
-          if (customerData) {
-            customerName = customerData.name;
-          }
-        }
-
         // Get services
         let services: Service[] = [];
         try {
@@ -362,7 +338,7 @@ export const fetchContractsWithAssignees = async (filters?: { searchTerm?: strin
           status: contract.status,
           is_active: contract.is_active,
           customer_id: contract.customer_id,
-          customer_name: customerName,
+          customer_name: contract.customers?.name,
           days_until_expiry: daysUntilExpiry,
           services: services,
           assignees: assignees,
