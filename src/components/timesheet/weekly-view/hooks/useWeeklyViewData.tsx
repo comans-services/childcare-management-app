@@ -9,12 +9,15 @@ import {
 } from "@/lib/timesheet-service";
 import { toast } from "@/hooks/use-toast";
 
-export const useWeeklyViewData = (weekDates: Date[]) => {
+export const useWeeklyViewData = (weekDates: Date[], viewAsUserId?: string | null) => {
   const { user, session } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Determine which user ID to use for data fetching
+  const targetUserId = viewAsUserId || user?.id;
 
   // Clear all state when user changes
   const clearComponentState = useCallback(() => {
@@ -35,30 +38,32 @@ export const useWeeklyViewData = (weekDates: Date[]) => {
     console.log("=== WEEKLY VIEW DATA FETCH ===");
     console.log(`Session user: ${session.user?.id} (${session.user?.email})`);
     console.log(`Context user: ${user.id}`);
+    console.log(`Target user (viewAs): ${targetUserId}`);
 
     setLoading(true);
     setError(null);
     
     try {
-      console.log("Starting data fetch for authenticated user:", user.id);
+      console.log("Starting data fetch for target user:", targetUserId);
       
-      // Fetch projects first
+      // Fetch projects first - always for the authenticated user
       const projectsData = await fetchUserProjects();
       console.log("Successfully fetched projects:", projectsData.length);
       
       setProjects(projectsData);
       
-      // Then fetch entries if we have valid dates - RLS will automatically filter by user
+      // Then fetch entries if we have valid dates - pass target user ID for admin viewing
       if (weekDates.length > 0) {
         console.log("Fetching entries for date range:", weekDates[0], "to", weekDates[weekDates.length - 1]);
+        console.log("Fetching entries for user:", targetUserId);
         
         const entriesData = await fetchTimesheetEntries(
           weekDates[0],
           weekDates[weekDates.length - 1],
-          { includeUserData: true, forceUserId: user.id }
+          { includeUserData: true, forceUserId: targetUserId }
         );
         
-        console.log("Successfully fetched entries via RLS:", entriesData.length);
+        console.log("Successfully fetched entries:", entriesData.length);
         setEntries(entriesData);
       }
     } catch (error) {
@@ -74,7 +79,7 @@ export const useWeeklyViewData = (weekDates: Date[]) => {
     } finally {
       setLoading(false);
     }
-  }, [weekDates, user?.id, session]);
+  }, [weekDates, user?.id, session, targetUserId]);
 
   return {
     projects,
