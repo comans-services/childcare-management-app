@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
@@ -132,7 +131,7 @@ const TimerComponent = () => {
   }, []);
 
   const currentSelection = entryType === 'project' ? selectedProject : selectedContract;
-  const hasItems = entryType === 'project' ? Array.isArray(projects) && projects.length > 0 : Array.isArray(contracts) && contracts.length > 0;
+  const hasItems = entryType === 'project' ? projects.length > 0 : contracts.length > 0;
 
   return (
     <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
@@ -175,7 +174,7 @@ const TimerComponent = () => {
                   <SelectValue placeholder="Select a project" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.isArray(projects) && projects.map((project: Project) => (
+                  {projects.map((project: Project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
                     </SelectItem>
@@ -195,7 +194,7 @@ const TimerComponent = () => {
                   <SelectValue placeholder="Select a contract" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.isArray(contracts) && contracts.map((contract: Contract) => (
+                  {contracts.map((contract: Contract) => (
                     <SelectItem key={contract.id} value={contract.id}>
                       {contract.name}
                     </SelectItem>

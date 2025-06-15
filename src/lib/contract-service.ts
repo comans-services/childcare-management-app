@@ -1,27 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { v4 as uuidv4 } from 'uuid';
-
-export interface Contract {
-  id: string;
-  name: string;
-  description?: string;
-  customer_id: string;
-  customer_name?: string;
-  start_date: string;
-  end_date: string;
-  status: 'active' | 'pending_renewal' | 'expired' | 'renewed';
-  file_url?: string;
-  file_name?: string;
-  file_size?: number;
-  file_type?: string;
-  file_id?: string;
-  uploaded_at?: string;
-  created_at?: string;
-  updated_at?: string;
-  is_active?: boolean;
-  days_until_expiry?: number;
-  services?: Service[];
-}
+import { formatDate } from "./date-utils";
 
 export interface Service {
   id: string;
@@ -31,43 +9,93 @@ export interface Service {
   updated_at?: string;
 }
 
-export interface ContractInput {
-  id?: string;
+export interface Contract {
+  id: string;
   name: string;
-  description?: string | null;
-  customer_id?: string; // Make this optional to match the error
+  description?: string;
+  customer_id?: string | null;
   start_date: string;
   end_date: string;
-  status: 'active' | 'pending_renewal' | 'expired' | 'renewed';
-  file?: File | null;
+  status: 'active' | 'expired' | 'pending_renewal' | 'renewed';
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  services?: Service[];
+  customer_name?: string;
+  days_until_expiry?: number;
+  renewal_reminder_sent?: boolean;
+  file_id?: string;
+  file_name?: string;
+  file_type?: string;
+  file_size?: number;
+  file_url?: string;
+  uploaded_at?: string;
 }
 
 export interface ContractTimeEntry {
-  id: string;
-  user_id: string;
+  id?: string;
   contract_id: string;
+  user_id: string;
   entry_date: string;
   hours_logged: number;
   notes?: string;
+  jira_task_id?: string;
+  start_time?: string;
+  end_time?: string;
   created_at?: string;
   updated_at?: string;
+  contract?: Contract;
+  user?: {
+    id: string;
+    full_name?: string;
+    email?: string;
+    organization?: string;
+    time_zone?: string;
+    employee_card_id?: string;
+  };
 }
 
 export const fetchServices = async (): Promise<Service[]> => {
-  console.log("Fetching services...");
-  
-  const { data, error } = await supabase
-    .from("services")
-    .select("*")
-    .order("name", { ascending: true });
+  try {
+    console.log("Fetching services...");
+    
+    const { data, error } = await supabase
+      .from("services")
+      .select("*")
+      .order("name");
 
-  if (error) {
-    console.error("Error fetching services:", error);
-    throw new Error(`Failed to fetch services: ${error.message}`);
+    if (error) {
+      console.error("Error fetching services:", error);
+      return []; // Return empty array instead of throwing error
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchServices:", error);
+    return []; // Return empty array to avoid breaking UI
   }
+};
 
-  console.log("Fetched services:", data);
-  return data || [];
+/**
+ * Determines the contract status based on start and end dates
+ */
+export const determineContractStatus = (startDate: string, endDate: string): 'active' | 'expired' | 'pending_renewal' => {
+  const today = new Date();
+  const endDateObj = new Date(endDate);
+  const daysUntilExpiry = Math.ceil((endDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Contract has expired
+  if (daysUntilExpiry < 0) {
+    return 'expired';
+  }
+  
+  // Contract is pending renewal (less than 30 days until expiry)
+  if (daysUntilExpiry <= 30) {
+    return 'pending_renewal';
+  }
+  
+  // Contract is active
+  return 'active';
 };
 
 export const fetchContracts = async (filters?: {
@@ -76,382 +104,581 @@ export const fetchContracts = async (filters?: {
   searchTerm?: string;
   isActive?: boolean;
 }): Promise<Contract[]> => {
-  console.log("Fetching contracts with filters:", filters);
-  
-  let query = supabase
-    .from("contracts")
-    .select(`
-      *,
-      customers (
-        id,
-        name,
-        email,
-        company
-      ),
-      contract_services (
-        services (
-          id,
-          name,
-          description
-        )
-      )
-    `)
-    .order("created_at", { ascending: false });
-
-  // Apply filters
-  if (filters?.status && filters.status !== 'all') {
-    query = query.eq('status', filters.status);
-  }
-  
-  if (filters?.customerId && filters.customerId !== 'all') {
-    query = query.eq('customer_id', filters.customerId);
-  }
-  
-  if (filters?.isActive !== undefined) {
-    query = query.eq('is_active', filters.isActive);
-  }
-  
-  if (filters?.searchTerm) {
-    query = query.ilike('name', `%${filters.searchTerm}%`);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Error fetching contracts:", error);
-    throw new Error(`Failed to fetch contracts: ${error.message}`);
-  }
-
-  console.log("Fetched contracts:", data);
-  
-  // Transform the data to include customer_name, days_until_expiry, and services
-  const transformedData = (data || []).map((contract: any) => {
-    const endDate = new Date(contract.end_date);
-    const today = new Date();
-    const timeDiff = endDate.getTime() - today.getTime();
-    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    
-    return {
-      ...contract,
-      customer_name: contract.customers?.name,
-      days_until_expiry: daysDiff,
-      services: contract.contract_services?.map((cs: any) => cs.services) || []
-    };
-  });
-  
-  return transformedData;
-};
-
-export const fetchUserContracts = async (): Promise<Contract[]> => {
-  console.log("Fetching user contracts...");
-  
-  const { data, error } = await supabase
-    .from("contract_assignments")
-    .select(`
-      contracts (
-        *,
-        customers (
-          id,
-          name,
-          email,
-          company
-        )
-      )
-    `)
-    .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
-
-  if (error) {
-    console.error("Error fetching user contracts:", error);
-    throw new Error(`Failed to fetch user contracts: ${error.message}`);
-  }
-
-  console.log("Fetched user contracts:", data);
-  
-  // Transform the data
-  const contracts = (data || []).map((assignment: any) => ({
-    ...assignment.contracts,
-    customer_name: assignment.contracts?.customers?.name
-  }));
-  
-  return contracts;
-};
-
-export const fetchContractById = async (id: string): Promise<Contract | null> => {
-  console.log("Fetching contract by ID:", id);
-  
-  const { data, error } = await supabase
-    .from("contracts")
-    .select(`
-      *,
-      customers (
-        id,
-        name,
-        email,
-        company
-      ),
-      contract_services (
-        services (
-          id,
-          name,
-          description
-        )
-      )
-    `)
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    console.error("Error fetching contract:", error);
-    if (error.code === 'PGRST116') {
-      return null; // Contract not found
-    }
-    throw new Error(`Failed to fetch contract: ${error.message}`);
-  }
-
-  console.log("Fetched contract:", data);
-  return {
-    ...data,
-    customer_name: data.customers?.name,
-    services: data.contract_services?.map((cs: any) => cs.services) || []
-  };
-};
-
-const uploadContractFile = async (file: File, contractId: string): Promise<{
-  file_url: string;
-  file_name: string;
-  file_size: number;
-  file_type: string;
-  file_id: string;
-}> => {
-  console.log("Uploading contract file:", { fileName: file.name, fileSize: file.size, contractId });
-
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${contractId}_${Date.now()}.${fileExt}`;
-  const filePath = `contracts/${fileName}`;
-
-  console.log("File upload path:", filePath);
-
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from('contracts')
-    .upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: false
-    });
-
-  if (uploadError) {
-    console.error("File upload error:", uploadError);
-    throw new Error(`Failed to upload file: ${uploadError.message}`);
-  }
-
-  console.log("File uploaded successfully:", uploadData);
-
-  // Get the public URL for the uploaded file
-  const { data: urlData } = supabase.storage
-    .from('contracts')
-    .getPublicUrl(filePath);
-
-  console.log("Public URL generated:", urlData.publicUrl);
-
-  return {
-    file_url: urlData.publicUrl,
-    file_name: file.name,
-    file_size: file.size,
-    file_type: file.type,
-    file_id: uploadData.path,
-  };
-};
-
-const deleteContractFile = async (filePath: string): Promise<void> => {
-  console.log("Deleting contract file:", filePath);
-  
-  if (!filePath) {
-    console.log("No file path provided, skipping deletion");
-    return;
-  }
-
-  const { error } = await supabase.storage
-    .from('contracts')
-    .remove([filePath]);
-
-  if (error) {
-    console.error("Error deleting file:", error);
-    // Don't throw error for file deletion failure as it shouldn't block contract updates
-    console.warn("Failed to delete old file, continuing with contract update");
-  } else {
-    console.log("File deleted successfully");
-  }
-};
-
-export const saveContract = async (contractData: ContractInput, selectedServiceIds?: string[]): Promise<Contract> => {
-  console.log("Saving contract with data:", contractData);
-
   try {
-    const contractId = contractData.id || uuidv4();
-    console.log("Contract ID:", contractId);
-
-    // Prepare the base contract data
-    let contractRecord: any = {
-      id: contractId,
-      name: contractData.name,
-      description: contractData.description,
-      customer_id: contractData.customer_id,
-      start_date: contractData.start_date,
-      end_date: contractData.end_date,
-      status: contractData.status,
-      updated_at: new Date().toISOString(),
-    };
-
-    // Handle file upload if a new file is provided
-    if (contractData.file) {
-      console.log("Processing file upload...");
-      
-      try {
-        const fileData = await uploadContractFile(contractData.file, contractId);
-        console.log("File upload completed:", fileData);
-        
-        // Add file data to contract record
-        contractRecord = {
-          ...contractRecord,
-          file_url: fileData.file_url,
-          file_name: fileData.file_name,
-          file_size: fileData.file_size,
-          file_type: fileData.file_type,
-          file_id: fileData.file_id,
-          uploaded_at: new Date().toISOString(),
-        };
-      } catch (fileError) {
-        console.error("File upload failed:", fileError);
-        throw new Error(`File upload failed: ${fileError.message}`);
-      }
-    }
-
-    console.log("Final contract record to save:", contractRecord);
-
-    // Save or update the contract
-    let result;
-    if (contractData.id) {
-      console.log("Updating existing contract...");
-      
-      // For updates, fetch the existing contract first to handle file deletion
-      const { data: existingContract } = await supabase
-        .from("contracts")
-        .select("file_id")
-        .eq("id", contractData.id)
-        .single();
-
-      // If there's a new file and an old file exists, delete the old file
-      if (contractData.file && existingContract?.file_id) {
-        console.log("Deleting old contract file...");
-        await deleteContractFile(existingContract.file_id);
-      }
-
-      const { data, error } = await supabase
-        .from("contracts")
-        .update(contractRecord)
-        .eq("id", contractData.id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Contract update error:", error);
-        throw new Error(`Failed to update contract: ${error.message}`);
-      }
-
-      result = data;
-      console.log("Contract updated successfully:", result);
-    } else {
-      console.log("Creating new contract...");
-      
-      contractRecord.created_at = new Date().toISOString();
-      
-      const { data, error } = await supabase
-        .from("contracts")
-        .insert(contractRecord)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Contract creation error:", error);
-        throw new Error(`Failed to create contract: ${error.message}`);
-      }
-
-      result = data;
-      console.log("Contract created successfully:", result);
-    }
-
-    // Handle service assignments if provided
-    if (selectedServiceIds && selectedServiceIds.length > 0) {
-      console.log("Updating contract services...");
-      
-      // First, remove existing service assignments
-      await supabase
-        .from("contract_services")
-        .delete()
-        .eq("contract_id", contractId);
-      
-      // Then add new service assignments
-      const serviceAssignments = selectedServiceIds.map(serviceId => ({
-        contract_id: contractId,
-        service_id: serviceId
-      }));
-      
-      const { error: serviceError } = await supabase
-        .from("contract_services")
-        .insert(serviceAssignments);
-      
-      if (serviceError) {
-        console.error("Error updating contract services:", serviceError);
-        // Don't throw error for service assignments as the contract is already saved
-        console.warn("Contract saved but service assignment failed");
-      }
-    }
-
-    console.log("Contract save operation completed successfully");
-    return result;
-
-  } catch (error) {
-    console.error("Error in saveContract:", error);
+    console.log("Fetching contracts with filters:", filters);
+    const { data: { user } } = await supabase.auth.getUser();
     
-    // Re-throw with a more user-friendly message
-    if (error instanceof Error) {
-      throw new Error(error.message);
-    } else {
-      throw new Error("An unexpected error occurred while saving the contract");
+    if (!user) {
+      throw new Error("User not authenticated");
     }
-  }
-};
 
-export const deleteContract = async (id: string): Promise<void> => {
-  console.log("Deleting contract:", id);
-
-  try {
-    // First, get the contract to check if it has a file
-    const { data: contract } = await supabase
-      .from("contracts")
-      .select("file_id")
-      .eq("id", id)
+    // Check if user is admin
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
       .single();
 
-    // Delete the file if it exists
-    if (contract?.file_id) {
-      console.log("Deleting contract file before contract deletion...");
-      await deleteContractFile(contract.file_id);
+    // Start building the query
+    let query = supabase
+      .from("contracts")
+      .select("*");
+    
+    // For non-admin users, only show contracts they're assigned to
+    if (profile?.role !== 'admin') {
+      // First, get the contract IDs the user is assigned to
+      const { data: assignments } = await supabase
+        .from('contract_assignments')
+        .select('contract_id')
+        .eq('user_id', user.id);
+
+      const contractIds = assignments?.map(a => a.contract_id) || [];
+      
+      // If user has no assignments, return empty array
+      if (contractIds.length === 0) {
+        console.log("User has no contract assignments");
+        return [];
+      }
+
+      // Filter contracts by the assigned contract IDs
+      query = query.in('id', contractIds);
+    }
+    
+    // Apply filters if provided
+    if (filters) {
+      if (filters.status && filters.status !== 'all') {
+        query = query.eq("status", filters.status);
+      }
+      
+      if (filters.customerId && filters.customerId !== 'all') {
+        query = query.eq("customer_id", filters.customerId);
+      }
+      
+      if (filters.searchTerm && filters.searchTerm.trim() !== '') {
+        const searchTerm = filters.searchTerm.trim().toLowerCase();
+        query = query.ilike("name", `%${searchTerm}%`);
+      }
+      
+      if (filters.isActive !== undefined) {
+        query = query.eq("is_active", filters.isActive);
+      }
+    }
+    
+    // Execute the query with ordering
+    const { data, error } = await query
+      .order("is_active", { ascending: false })
+      .order("end_date", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching contracts:", error);
+      return [];
     }
 
-    // Delete the contract record
+    console.log("Contracts fetched:", data);
+
+    // If no data, return empty array
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Get customer details separately for each contract if needed
+    const enhancedContracts = await Promise.all(data.map(async (contract) => {
+      // Calculate days until expiry
+      const today = new Date();
+      const endDate = new Date(contract.end_date);
+      const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Determine if we need to update the contract status based on dates
+      const calculatedStatus = determineContractStatus(contract.start_date, contract.end_date);
+      
+      // If the status has changed, update it in the database
+      if (calculatedStatus !== contract.status) {
+        console.log(`Updating contract ${contract.id} status from ${contract.status} to ${calculatedStatus}`);
+        try {
+          await supabase
+            .from("contracts")
+            .update({ 
+              status: calculatedStatus,
+              updated_at: new Date().toISOString() 
+            })
+            .eq("id", contract.id);
+            
+          // Update the local object with the new status
+          contract.status = calculatedStatus;
+        } catch (err) {
+          console.error("Error updating contract status:", err);
+        }
+      }
+
+      let customerName = null;
+      // If there's a customer_id, try to fetch the customer name
+      if (contract.customer_id) {
+        const { data: customerData } = await supabase
+          .from("customers")
+          .select("name")
+          .eq("id", contract.customer_id)
+          .single();
+        
+        if (customerData) {
+          customerName = customerData.name;
+        }
+      }
+
+      // Try to get services if available
+      let services: Service[] = [];
+      try {
+        const { data: serviceData, error: serviceError } = await supabase
+          .from("contract_services")
+          .select(`
+            service_id
+          `)
+          .eq("contract_id", contract.id);
+
+        if (!serviceError && serviceData && serviceData.length > 0) {
+          // Fetch service details
+          const serviceIds = serviceData.map((item: any) => item.service_id);
+          
+          const { data: servicesData } = await supabase
+            .from("services")
+            .select("*")
+            .in("id", serviceIds);
+            
+          if (servicesData) {
+            services = servicesData;
+          }
+        }
+      } catch (err) {
+        console.log("Error fetching services for contract, skipping:", err);
+      }
+      
+      return {
+        ...contract,
+        customer_name: customerName,
+        days_until_expiry: daysUntilExpiry,
+        services
+      };
+    }));
+
+    console.log(`Enhanced contracts (${enhancedContracts.length}):`, enhancedContracts);
+    return enhancedContracts as Contract[];
+  } catch (error) {
+    console.error("Error in fetchContracts:", error);
+    return []; // Return empty array to prevent UI from breaking
+  }
+};
+
+export const fetchContractsWithAssignees = async (filters?: { searchTerm?: string; activeOnly?: boolean }): Promise<Contract[]> => {
+  try {
+    console.log("Fetching contracts with assignees, filters:", filters);
+    
+    let query = supabase
+      .from("contracts")
+      .select(`
+        *,
+        contract_assignments!inner(
+          user:profiles!contract_assignments_user_id_fkey(id, full_name, email)
+        )
+      `);
+
+    // Apply active filter
+    if (filters?.activeOnly) {
+      query = query.eq("is_active", true);
+    }
+
+    // Apply search filter
+    if (filters?.searchTerm) {
+      query = query.ilike("name", `%${filters.searchTerm}%`);
+    }
+
+    const { data, error } = await query
+      .order("is_active", { ascending: false })
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching contracts with assignees:", error);
+      throw error;
+    }
+
+    console.log(`Fetched ${data?.length || 0} contracts with assignees`);
+    
+    // Transform the data to include assignees properly
+    const contractsWithAssignees = await Promise.all(
+      (data || []).map(async (contract: any) => {
+        const today = new Date();
+        const endDate = new Date(contract.end_date);
+        const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Extract unique assignees
+        const assignees = Array.isArray(contract.contract_assignments) 
+          ? contract.contract_assignments.map((assignment: any) => assignment.user).filter(Boolean)
+          : [];
+
+        // Get customer name if available
+        let customerName = null;
+        if (contract.customer_id) {
+          const { data: customerData } = await supabase
+            .from("customers")
+            .select("name")
+            .eq("id", contract.customer_id)
+            .single();
+          
+          if (customerData) {
+            customerName = customerData.name;
+          }
+        }
+
+        // Get services
+        let services: Service[] = [];
+        try {
+          const { data: serviceData } = await supabase
+            .from("contract_services")
+            .select(`
+              service_id
+            `)
+            .eq("contract_id", contract.id);
+
+          if (serviceData && serviceData.length > 0) {
+            const serviceIds = serviceData.map((item: any) => item.service_id);
+            
+            const { data: servicesData } = await supabase
+              .from("services")
+              .select("*")
+              .in("id", serviceIds);
+              
+            if (servicesData) {
+              services = servicesData;
+            }
+          }
+        } catch (err) {
+          console.log("Error fetching services for contract, skipping:", err);
+        }
+
+        return {
+          id: contract.id,
+          name: contract.name,
+          description: contract.description,
+          start_date: contract.start_date,
+          end_date: contract.end_date,
+          status: contract.status,
+          is_active: contract.is_active,
+          customer_id: contract.customer_id,
+          customer_name: customerName,
+          days_until_expiry: daysUntilExpiry,
+          services: services,
+          assignees: assignees,
+          file_id: contract.file_id,
+          file_name: contract.file_name,
+          file_type: contract.file_type,
+          file_size: contract.file_size,
+          file_url: contract.file_url,
+          uploaded_at: contract.uploaded_at,
+          created_at: contract.created_at,
+          updated_at: contract.updated_at
+        };
+      })
+    );
+    
+    return contractsWithAssignees;
+  } catch (error) {
+    console.error("Error in fetchContractsWithAssignees:", error);
+    throw error;
+  }
+};
+
+export const saveContract = async (contract: Omit<Contract, 'id'> & { id?: string }, selectedServiceIds: string[]): Promise<Contract> => {
+  try {
+    console.log("Saving contract:", contract);
+    console.log("Selected services:", selectedServiceIds);
+
+    // Calculate the contract status based on dates
+    const calculatedStatus = determineContractStatus(contract.start_date, contract.end_date);
+
+    // Use the calculated status unless it's a renewed contract (which should stay as 'renewed')
+    const finalStatus = contract.status === 'renewed' ? 'renewed' : calculatedStatus;
+
+    let contractId = contract.id;
+    let savedContract: Contract;
+
+    if (contractId) {
+      // Update existing contract
+      const { data, error } = await supabase
+        .from("contracts")
+        .update({
+          name: contract.name,
+          description: contract.description,
+          customer_id: contract.customer_id,
+          start_date: contract.start_date,
+          end_date: contract.end_date,
+          status: finalStatus, // Use the calculated or preserved status
+          is_active: contract.is_active ?? true,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", contractId)
+        .select();
+
+      if (error) {
+        console.error("Error updating contract:", error);
+        throw error;
+      }
+
+      savedContract = data?.[0] as Contract;
+      console.log("Contract updated successfully:", savedContract);
+    } else {
+      // Create new contract
+      console.log("Creating new contract with data:", {
+        name: contract.name,
+        description: contract.description,
+        customer_id: contract.customer_id,
+        start_date: contract.start_date,
+        end_date: contract.end_date,
+        status: finalStatus, // Use the calculated status
+        is_active: contract.is_active ?? true
+      });
+      
+      const { data, error } = await supabase
+        .from("contracts")
+        .insert({
+          name: contract.name,
+          description: contract.description,
+          customer_id: contract.customer_id,
+          start_date: contract.start_date,
+          end_date: contract.end_date,
+          status: finalStatus, // Use the calculated status
+          is_active: contract.is_active ?? true
+        })
+        .select();
+
+      if (error) {
+        console.error("Error creating contract:", error);
+        throw error;
+      }
+
+      savedContract = data?.[0] as Contract;
+      contractId = savedContract.id;
+      console.log("Contract created successfully:", savedContract);
+    }
+
+    // Handle service associations
+    if (selectedServiceIds.length > 0 && contractId) {
+      try {
+        // First, remove all existing service associations
+        const { error: deleteError } = await supabase
+          .from("contract_services")
+          .delete()
+          .eq("contract_id", contractId);
+
+        if (deleteError) {
+          console.error("Error removing existing service associations:", deleteError);
+        } else {
+          // Then add new service associations
+          const serviceAssociations = selectedServiceIds.map(serviceId => ({
+            contract_id: contractId as string,
+            service_id: serviceId
+          }));
+
+          const { error: insertError } = await supabase
+            .from("contract_services")
+            .insert(serviceAssociations);
+
+          if (insertError) {
+            console.error("Error creating service associations:", insertError);
+          }
+        }
+      } catch (err) {
+        console.error("Error handling service associations:", err);
+      }
+    }
+
+    return savedContract;
+  } catch (error) {
+    console.error("Error in saveContract:", error);
+    throw error;
+  }
+};
+
+export const deleteContract = async (contractId: string): Promise<void> => {
+  try {
+    console.log(`Deleting contract ${contractId}`);
+    
     const { error } = await supabase
       .from("contracts")
       .delete()
-      .eq("id", id);
+      .eq("id", contractId);
 
     if (error) {
-      console.error("Contract deletion error:", error);
-      throw new Error(`Failed to delete contract: ${error.message}`);
+      console.error("Error deleting contract:", error);
+      throw error;
     }
-
-    console.log("Contract deleted successfully");
+    
+    console.log(`Contract ${contractId} deleted successfully`);
   } catch (error) {
     console.error("Error in deleteContract:", error);
     throw error;
   }
 };
+
+export const updateContractStatus = async (contractId: string, isActive: boolean): Promise<void> => {
+  try {
+    console.log(`Updating contract ${contractId} status to ${isActive ? 'active' : 'inactive'}`);
+    
+    const { error } = await supabase
+      .from("contracts")
+      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .eq("id", contractId);
+
+    if (error) {
+      console.error("Error updating contract status:", error);
+      throw error;
+    }
+    
+    console.log(`Contract ${contractId} status updated successfully`);
+  } catch (error) {
+    console.error("Error in updateContractStatus:", error);
+    throw error;
+  }
+};
+
+export const fetchContractTimeEntries = async (
+  userId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<ContractTimeEntry[]> => {
+  try {
+    console.log(`Fetching contract time entries for user ${userId} from ${formatDate(startDate)} to ${formatDate(endDate)}`);
+    
+    const { data: entriesData, error: entriesError } = await supabase
+      .from("contract_time_entries")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("entry_date", formatDate(startDate))
+      .lte("entry_date", formatDate(endDate));
+
+    if (entriesError) {
+      console.error("Error fetching contract time entries:", entriesError);
+      throw entriesError;
+    }
+
+    if (!entriesData || entriesData.length === 0) {
+      console.log("No contract time entries found for the specified date range");
+      return [];
+    }
+
+    console.log(`Fetched ${entriesData.length} contract time entries`);
+    
+    // Fetch the associated contracts
+    const contractIds = [...new Set(entriesData.map(entry => entry.contract_id))];
+    
+    if (contractIds.length === 0) {
+      return entriesData as ContractTimeEntry[];
+    }
+    
+    const { data: contractsData, error: contractsError } = await supabase
+      .from("contracts")
+      .select("id, name, description, start_date, end_date, status, is_active")
+      .in("id", contractIds);
+
+    if (contractsError) {
+      console.error("Error fetching contracts for entries:", contractsError);
+      return entriesData as ContractTimeEntry[];
+    }
+
+    console.log(`Fetched ${contractsData?.length || 0} contracts for time entries`);
+
+    // Create a map of contracts by ID for quick lookup
+    const contractsMap = (contractsData || []).reduce((acc, contract) => {
+      acc[contract.id] = contract as Contract;
+      return acc;
+    }, {} as Record<string, Contract>);
+
+    // Combine the entries with their respective contracts
+    const entriesWithContracts = entriesData.map(entry => ({
+      ...entry,
+      contract: contractsMap[entry.contract_id]
+    })) as ContractTimeEntry[];
+
+    return entriesWithContracts;
+  } catch (error) {
+    console.error("Error in fetchContractTimeEntries:", error);
+    throw error;
+  }
+};
+
+export const saveContractTimeEntry = async (entry: ContractTimeEntry): Promise<ContractTimeEntry> => {
+  try {
+    console.log("Saving contract time entry:", entry);
+    
+    if (entry.id) {
+      // Update existing entry
+      const { data, error } = await supabase
+        .from("contract_time_entries")
+        .update({
+          contract_id: entry.contract_id,
+          entry_date: entry.entry_date,
+          hours_logged: entry.hours_logged,
+          notes: entry.notes,
+          jira_task_id: entry.jira_task_id,
+          start_time: entry.start_time,
+          end_time: entry.end_time
+        })
+        .eq("id", entry.id)
+        .select();
+
+      if (error) {
+        console.error("Error updating contract time entry:", error);
+        throw error;
+      }
+      
+      console.log("Contract time entry updated successfully:", data?.[0]);
+      return data?.[0] as ContractTimeEntry;
+    } else {
+      // Create new entry
+      const { data, error } = await supabase
+        .from("contract_time_entries")
+        .insert({
+          contract_id: entry.contract_id,
+          user_id: entry.user_id,
+          entry_date: entry.entry_date,
+          hours_logged: entry.hours_logged,
+          notes: entry.notes,
+          jira_task_id: entry.jira_task_id,
+          start_time: entry.start_time,
+          end_time: entry.end_time
+        })
+        .select();
+
+      if (error) {
+        console.error("Error creating contract time entry:", error);
+        throw error;
+      }
+      
+      console.log("Contract time entry created successfully:", data?.[0]);
+      return data?.[0] as ContractTimeEntry;
+    }
+  } catch (error) {
+    console.error("Error in saveContractTimeEntry:", error);
+    throw error;
+  }
+};
+
+export const deleteContractTimeEntry = async (entryId: string): Promise<void> => {
+  try {
+    console.log(`Deleting contract time entry ${entryId}`);
+    
+    const { error } = await supabase
+      .from("contract_time_entries")
+      .delete()
+      .eq("id", entryId);
+
+    if (error) {
+      console.error("Error deleting contract time entry:", error);
+      throw error;
+    }
+    
+    console.log(`Contract time entry ${entryId} deleted successfully`);
+  } catch (error) {
+    console.error("Error in deleteContractTimeEntry:", error);
+    throw error;
+  }
+};
+
+export { fetchUserContracts } from "./contract/user-contract-service";

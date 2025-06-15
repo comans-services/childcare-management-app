@@ -2,8 +2,7 @@
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ReportFiltersType } from "@/pages/ReportsPage";
-import { Project } from "@/lib/timesheet-service";
-import { Contract } from "@/lib/contract-service";
+import { Project, Contract } from "@/lib/timesheet-service";
 import { Customer } from "@/lib/customer-service";
 import { User } from "@/lib/user-service";
 
