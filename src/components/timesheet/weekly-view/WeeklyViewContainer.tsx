@@ -15,15 +15,17 @@ import LoadingState from "./LoadingState";
 import ErrorState from "./ErrorState";
 import WeeklyViewContent from "./WeeklyViewContent";
 import WeeklyViewDialogs from "./WeeklyViewDialogs";
+import { isAdmin } from "@/utils/roles";
 
 interface WeeklyViewContainerProps {
   viewAsUserId?: string | null;
 }
 
 const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId }) => {
-  const { user, session } = useAuth();
+  const { user, session, userRole } = useAuth();
   const isMobile = useIsMobile();
   const { getTransitionClass } = useSmoothTransitions();
+  const [isAdminUser, setIsAdminUser] = React.useState(false);
 
   const {
     viewMode,
@@ -58,6 +60,17 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
   const { handleDragEnd } = useEntryOperations(weekDates, entries, () => fetchData(), user?.id);
 
   const [editingEntry, setEditingEntry] = React.useState<TimesheetEntry | undefined>(undefined);
+
+  // Check admin status
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const adminStatus = await isAdmin(user);
+        setIsAdminUser(adminStatus);
+      }
+    };
+    checkAdminStatus();
+  }, [user]);
 
   // Track user changes and viewAs changes to force state cleanup
   useEffect(() => {
@@ -114,6 +127,12 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
   // Determine the effective user ID for operations
   const effectiveUserId = viewAsUserId || user.id;
 
+  // Determine if dialogs should be shown
+  // Show dialogs if:
+  // 1. User is viewing their own timesheet (no viewAsUserId)
+  // 2. User is admin and viewing someone else's timesheet
+  const shouldShowDialogs = !viewAsUserId || isAdminUser;
+
   return (
     <ResponsiveContainer 
       className={getTransitionClass("space-y-4 w-full max-w-full")}
@@ -167,8 +186,8 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
         />
       )}
 
-      {/* Dialogs - Only show if viewing own timesheet */}
-      {!viewAsUserId && (
+      {/* Dialogs - Show for own timesheet or when admin is viewing others */}
+      {shouldShowDialogs && (
         <WeeklyViewDialogs
           userId={effectiveUserId}
           selectedDate={selectedDate}

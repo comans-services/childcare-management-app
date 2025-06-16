@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { 
@@ -23,6 +24,7 @@ import WeekendApprovalDialog from "./WeekendApprovalDialog";
 import { validateProjectBudget } from "@/lib/timesheet/validation/budget-validation-service";
 import { showBudgetToast, showBudgetSaveSuccess } from "@/lib/timesheet/budget-notification-service";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { isAdmin } from "@/utils/roles";
 
 // Import the components we've created
 import { timeEntryFormSchema, TimeEntryFormValues } from "./time-entry/schema";
@@ -64,21 +66,35 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   onSave,
   entries = [],
 }) => {
-  const { userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const isMobile = useIsMobile();
-  const isAdmin = userRole === "admin";
+  const [isAdminUser, setIsAdminUser] = useState(false);
   const [entryType, setEntryType] = useState<"project" | "contract">("project");
   const [weekendApprovalOpen, setWeekendApprovalOpen] = useState(false);
   const [budgetValidation, setBudgetValidation] = useState<BudgetValidation | null>(null);
   const [budgetChecking, setBudgetChecking] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
 
+  // Check admin status
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const adminStatus = await isAdmin(user);
+        setIsAdminUser(adminStatus);
+      }
+    };
+    checkAdminStatus();
+  }, [user]);
+
+  // Determine the target user ID - use the passed userId (could be different for admin editing)
+  const targetUserId = userId;
+  const isAdminEditingOther = isAdminUser && targetUserId !== user?.id;
+
   // Get working days validation - use the target user's ID for admin editing
   const weekStart = getWeekStart(date);
-  const targetUserId = existingEntry?.user_id || userId;
   const validation = useWorkingDaysValidation(targetUserId, entries, weekStart);
 
-  // Get weekend lock validation with admin override
+  // Get weekend lock validation with admin override for the target user
   const { validateWeekendEntry } = useWeekendLock(targetUserId);
 
   const form = useForm<TimeEntryFormValues>({
@@ -104,7 +120,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     setEntryType(watchedEntryType || "project");
   }, [watchedEntryType]);
 
-  // Budget validation for save blocking
+  // Budget validation for save blocking - use target user for admin editing
   const checkBudget = useCallback(async () => {
     if (watchedEntryType !== "project" || !watchedProjectId || !watchedHours || watchedHours <= 0) {
       setBudgetValidation(null);
@@ -120,7 +136,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
         projectId: watchedProjectId,
         hoursToAdd: Number(watchedHours),
         existingEntryId: existingEntry?.id,
-        userId
+        userId: targetUserId // Use target user for budget validation
       });
 
       setBudgetValidation(validation);
@@ -140,7 +156,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
       setBudgetChecking(false);
       setIsValidating(false);
     }
-  }, [watchedEntryType, watchedProjectId, watchedHours, existingEntry?.id, userId, userRole]);
+  }, [watchedEntryType, watchedProjectId, watchedHours, existingEntry?.id, targetUserId]);
 
   useEffect(() => {
     checkBudget();
@@ -179,7 +195,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
   // Budget validation - different messages for admin vs employee
   const showBudgetError = budgetValidation && !budgetValidation.isValid && !budgetValidation.canOverride;
-  const isEmployeeBudgetBlocked = budgetValidation && !budgetValidation.isValid && !isAdmin;
+  const isEmployeeBudgetBlocked = budgetValidation && !budgetValidation.isValid && !isAdminUser;
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
     // Priority validation order: working days first, then weekend, then budget
@@ -220,8 +236,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
         jira_task_id: values.jira_task_id || "",
         start_time: values.start_time || undefined,
         end_time: values.end_time || undefined,
-        // For admin editing: preserve the target user_id
-        user_id: existingEntry?.user_id || targetUserId,
+        // For admin editing: use the target user_id
+        user_id: targetUserId,
       };
 
       // Preserve related data from existing entry if available
@@ -295,6 +311,9 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
             2xl:col-span-2
           `}>
             <DialogTitle className="text-fluid-xl lg:text-fluid-2xl">
+              {isAdminEditingOther && (
+                <span className="text-orange-600 text-sm font-normal mr-2">[ADMIN EDIT]</span>
+              )}
               {existingEntry ? "Edit time entry" : "Add time"}
             </DialogTitle>
           </DialogHeader>
@@ -319,6 +338,16 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Admin edit indicator */}
+            {isAdminEditingOther && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-fluid-sm">
+                  You are editing another user's timesheet entry as an administrator.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Validation alerts */}
             {showWorkingDaysWarning && (
@@ -350,7 +379,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
             )}
 
             {/* Admin budget info */}
-            {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && isAdmin && budgetValidation && budgetValidation.totalBudget > 0 && (
+            {!showWorkingDaysWarning && !showWeekendWarning && !isEmployeeBudgetBlocked && isAdminUser && budgetValidation && budgetValidation.totalBudget > 0 && (
               <div className="p-3 lg:p-4 bg-gray-50 rounded-lg border">
                 <div className="flex items-center justify-between text-fluid-sm">
                   <span className="text-gray-600">Project Budget:</span>
@@ -380,7 +409,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
             )}
 
             {/* Weekend allowed info for admins */}
-            {isWeekendDate && canLogWeekend && isAdmin && (
+            {isWeekendDate && canLogWeekend && isAdminUser && (
               <Alert>
                 <Calendar className="h-4 w-4" />
                 <AlertDescription className="text-fluid-sm">
