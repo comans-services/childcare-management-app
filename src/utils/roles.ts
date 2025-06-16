@@ -35,9 +35,40 @@ export const isAdmin = async (user: Session["user"] | null | undefined): Promise
       cachedAdminIds.add(user.id);
       return true;
     }
-  } catch {
-    // ignore errors - default to false
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    // Don't throw error, just return false - this is defensive programming
   }
 
   return false;
+};
+
+/**
+ * Clear the admin cache - useful when user roles change
+ */
+export const clearAdminCache = (): void => {
+  cachedAdminIds.clear();
+};
+
+/**
+ * Get user role from database with fallback
+ */
+export const getUserRole = async (userId: string): Promise<string> => {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+    
+    if (error) {
+      console.error("Error fetching user role:", error);
+      return "employee"; // Default fallback
+    }
+    
+    return data?.role || "employee";
+  } catch (error) {
+    console.error("Error in getUserRole:", error);
+    return "employee"; // Default fallback
+  }
 };

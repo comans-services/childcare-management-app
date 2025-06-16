@@ -197,6 +197,11 @@ export const saveProject = async (projectData: Omit<Project, 'id' | 'hours_used'
   try {
     console.log("Saving project:", projectData);
     
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    
     const { data, error } = await supabase
       .from("projects")
       .insert([{
@@ -207,18 +212,19 @@ export const saveProject = async (projectData: Omit<Project, 'id' | 'hours_used'
         end_date: projectData.end_date,
         customer_id: projectData.customer_id,
         is_active: projectData.is_active ?? true,
-        is_internal: projectData.is_internal ?? false
+        is_internal: projectData.is_internal ?? false,
+        created_by: user.id
       }])
       .select()
       .single();
 
     if (error) {
       console.error("Error saving project:", error);
-      throw error;
+      throw new Error(`Failed to save project: ${error.message}`);
     }
 
     console.log("Project saved successfully:", data);
-    return data;
+    return { ...data, hours_used: 0 };
   } catch (error) {
     console.error("Error in saveProject:", error);
     throw error;
@@ -251,6 +257,11 @@ export const updateProjectStatus = async (projectId: string, isActive: boolean):
   try {
     console.log(`Updating project ${projectId} status to ${isActive ? 'active' : 'inactive'}`);
     
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    
     const { error } = await supabase
       .from("projects")
       .update({ is_active: isActive, updated_at: new Date().toISOString() })
@@ -258,7 +269,7 @@ export const updateProjectStatus = async (projectId: string, isActive: boolean):
 
     if (error) {
       console.error("Error updating project status:", error);
-      throw error;
+      throw new Error(`Failed to update project status: ${error.message}`);
     }
     
     console.log(`Project ${projectId} status updated successfully`);
