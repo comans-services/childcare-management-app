@@ -1,9 +1,9 @@
 
 // Main export file that re-exports all timesheet functionality
-import { Project, TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry, Contract } from "./timesheet/types";
+import { Project, TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry } from "./timesheet/types";
 import { ProjectAssignment, CreateProjectAssignment, ProjectWithAssignees } from "./project/assignment-types";
 import { ContractAssignment, CreateContractAssignment, ContractWithAssignees } from "./contract/assignment-types";
-import { ContractTimeEntry } from "./contract-service";
+import { Contract, ContractTimeEntry } from "./contract-service";
 import { 
   fetchUserProjects, 
   getProjectHoursUsed, 
@@ -84,4 +84,4 @@ export {
 };
 
 // Re-export user-specific contract function
-export { fetchUserContracts } from "./contract/user-contract-service";
+export { fetchUserContracts } from "./contract-service";
