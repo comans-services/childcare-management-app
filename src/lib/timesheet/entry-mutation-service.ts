@@ -54,11 +54,14 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     if (entry.entry_type === 'project' && entry.project_id) {
       console.log("=== BACKEND BUDGET VALIDATION ===");
       
+      // For budget validation, use the target user (could be different for admin editing)
+      const targetUserId = entry.user_id || user.id;
+      
       const budgetValidation = await validateProjectBudget({
         projectId: entry.project_id,
         hoursToAdd: entry.hours_logged,
         existingEntryId: entry.id,
-        userId: user.id
+        userId: targetUserId
       });
 
       console.log("Backend budget validation result:", budgetValidation);
@@ -82,7 +85,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     
     console.log("All validations passed, proceeding with save");
     
-    // Save the entry - audit trail is automatically created by the database function
+    // Save the entry - database triggers will handle user_id and user_full_name assignment
     let savedEntry: TimesheetEntry;
     const isUpdate = !!entry.id;
     

@@ -25,8 +25,14 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     start_time: entry.start_time || "",
     end_time: entry.end_time || "",
   };
+
+  // For admin editing: preserve the original user_id if it exists
+  // This allows admins to update entries for other users
+  if (entry.user_id) {
+    (dbEntry as any).user_id = entry.user_id;
+  }
   
-  // Update existing entry - RLS will ensure user can only update their own entries
+  // Update existing entry - RLS will ensure user can only update their own entries or admin can update any
   const { data, error } = await supabase
     .from("timesheet_entries")
     .update(dbEntry)
