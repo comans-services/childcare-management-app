@@ -195,6 +195,7 @@ export const fetchReportData = async (
         start_time: entry.start_time,
         end_time: entry.end_time,
         entry_type: 'project', // Legacy RPC only handles projects
+        user_full_name: entry.user_full_name, // Use cached user name
         // Transform flattened project data into nested format
         project: {
           id: entry.project_id,
@@ -202,10 +203,10 @@ export const fetchReportData = async (
           description: entry.project_description,
           customer_id: entry.project_customer_id
         },
-        // Transform flattened user data into nested format
+        // Transform flattened user data into nested format - fallback to cached name
         user: {
           id: entry.user_id,
-          full_name: entry.user_full_name,
+          full_name: entry.user_full_name || entry.user_full_name,
           email: entry.user_email,
           organization: entry.user_organization,
           time_zone: entry.user_time_zone

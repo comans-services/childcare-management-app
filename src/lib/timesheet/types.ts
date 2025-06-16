@@ -1,3 +1,4 @@
+
 // Define all the shared types for the timesheet functionality
 
 export interface Project {
@@ -34,6 +35,7 @@ export interface TimesheetEntry {
   start_time?: string;
   end_time?: string;
   entry_type: 'project' | 'contract';
+  user_full_name?: string; // Cached user name from database
   // Either project_id OR contract_id will be set, never both
   project_id?: string;
   contract_id?: string;

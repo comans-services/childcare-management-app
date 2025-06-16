@@ -67,7 +67,18 @@ export const getEntryDisplayName = (entry: TimesheetEntry) => {
   return "Unknown Entry";
 };
 
-export const formatUserName = (user?: { full_name?: string; email?: string }) => {
+export const formatUserName = (entry: TimesheetEntry) => {
+  // First try to use cached user_full_name from database
+  if (entry.user_full_name) {
+    const nameParts = entry.user_full_name.trim().split(" ");
+    if (nameParts.length > 1) {
+      return `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`;
+    }
+    return entry.user_full_name;
+  }
+  
+  // Fallback to user object (for legacy data)
+  const user = entry.user;
   if (!user) {
     return "Unknown";
   }
@@ -175,7 +186,7 @@ const EntryCard: React.FC<EntryCardProps> = ({
           
           <div className="flex items-center mt-1.5 mb-1.5 text-[10px] md:text-xs text-muted-foreground">
             <User className="h-3 w-3 mr-1 flex-shrink-0" aria-hidden="true" />
-            <span>{formatUserName(entry.user)}</span>
+            <span>{formatUserName(entry)}</span>
           </div>
           
           {entry.start_time && entry.end_time && (

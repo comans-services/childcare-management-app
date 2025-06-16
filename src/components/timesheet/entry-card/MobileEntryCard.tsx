@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Clock, FileText, Copy, User, Pencil, Trash2, Tag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { getEntryColor, getEntryDisplayName, formatUserName } from "./EntryCard";
+import { getEntryColor, getEntryDisplayName } from "./EntryCard";
 
 interface MobileEntryCardProps {
   entry: TimesheetEntry;
@@ -14,6 +14,38 @@ interface MobileEntryCardProps {
   onDeleteEntry: (entry: TimesheetEntry) => void;
   onEntryChange: () => void;
 }
+
+const formatUserName = (entry: TimesheetEntry) => {
+  // First try to use cached user_full_name from database
+  if (entry.user_full_name) {
+    const nameParts = entry.user_full_name.trim().split(" ");
+    if (nameParts.length > 1) {
+      return `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`;
+    }
+    return entry.user_full_name;
+  }
+  
+  // Fallback to user object (for legacy data)
+  const user = entry.user;
+  if (!user) {
+    return "Unknown";
+  }
+  
+  if (user.full_name) {
+    const nameParts = user.full_name.trim().split(" ");
+    if (nameParts.length > 1) {
+      return `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`;
+    }
+    return user.full_name;
+  }
+  
+  if (user.email) {
+    const emailUsername = user.email.split("@")[0];
+    return emailUsername;
+  }
+  
+  return "Unknown";
+};
 
 const MobileEntryCard: React.FC<MobileEntryCardProps> = ({
   entry,
@@ -81,7 +113,7 @@ const MobileEntryCard: React.FC<MobileEntryCardProps> = ({
         <div className="space-y-2 mb-3">
           <div className="flex items-center text-sm text-muted-foreground">
             <User className="h-4 w-4 mr-2 flex-shrink-0" />
-            <span>{formatUserName(entry.user)}</span>
+            <span>{formatUserName(entry)}</span>
           </div>
           
           {entry.jira_task_id && (
