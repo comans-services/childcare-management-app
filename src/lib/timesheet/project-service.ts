@@ -231,6 +231,42 @@ export const saveProject = async (projectData: Omit<Project, 'id' | 'hours_used'
   }
 };
 
+export const updateProject = async (projectId: string, projectData: Partial<Omit<Project, 'id' | 'hours_used'>>): Promise<Project> => {
+  try {
+    console.log("Updating project:", projectId, projectData);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    // Update the project data
+    const { data, error } = await supabase
+      .from("projects")
+      .update({
+        ...projectData,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", projectId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating project:", error);
+      throw new Error(`Failed to update project: ${error.message}`);
+    }
+
+    console.log("Project updated successfully:", data);
+    
+    // Fetch current hours used
+    const hours = await getProjectHoursUsed(projectId);
+    return { ...data, hours_used: hours };
+  } catch (error) {
+    console.error("Error in updateProject:", error);
+    throw error;
+  }
+};
+
 export const getProjectHoursUsed = async (projectId: string): Promise<number> => {
   try {
     const { data, error } = await supabase

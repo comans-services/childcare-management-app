@@ -3,11 +3,12 @@
 import { Project, TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry } from "./timesheet/types";
 import { ProjectAssignment, CreateProjectAssignment, ProjectWithAssignees } from "./project/assignment-types";
 import { ContractAssignment, CreateContractAssignment, ContractWithAssignees } from "./contract/assignment-types";
-import { Contract, ContractTimeEntry, fetchServices, fetchUserContracts } from "./contract-service";
+import { Contract, ContractTimeEntry, fetchServices, fetchUserContracts, updateContract } from "./contract-service";
 import { 
   fetchUserProjects, 
   getProjectHoursUsed, 
   updateProjectStatus,
+  updateProject,
   fetchProjects,
   fetchProjectsWithAssignees,
   saveProject
@@ -57,6 +58,7 @@ export {
   fetchProjects,
   fetchProjectsWithAssignees,
   saveProject,
+  updateProject,
   getProjectHoursUsed,
   updateProjectStatus,
   
@@ -84,5 +86,6 @@ export {
   
   // Contract related functions
   fetchServices,
-  fetchUserContracts
+  fetchUserContracts,
+  updateContract
 };
