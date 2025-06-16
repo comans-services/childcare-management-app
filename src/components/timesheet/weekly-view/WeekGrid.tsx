@@ -20,6 +20,7 @@ interface WeekGridProps {
   currentDate: Date;
   entries: TimesheetEntry[];
   projects: Project[];
+  userId: string;
   onEntryChange: () => void;
   onDragEnd: (result: DropResult) => void;
   onAddEntry?: (date: Date) => void;
@@ -32,6 +33,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
   currentDate,
   entries,
   projects,
+  userId,
   onEntryChange,
   onDragEnd,
   onAddEntry,
@@ -40,7 +42,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { validateWeekendEntry } = useWeekendLock(user?.id);
+  const { validateWeekendEntry } = useWeekendLock(userId);
   
   // Use the weekDates directly - the parent component already filters correctly
   // In day mode, weekDates will contain only the selected date
@@ -73,6 +75,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
           >
             <DayColumn
               date={date}
+              userId={userId}
               entries={entries}
               projects={projects}
               onEntryChange={onEntryChange}
@@ -103,6 +106,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
             >
               <DayColumn
                 date={date}
+                userId={userId}
                 entries={entries}
                 projects={projects}
                 onEntryChange={onEntryChange}

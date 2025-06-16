@@ -15,6 +15,7 @@ interface MobileWeekGridProps {
   currentDate: Date;
   entries: TimesheetEntry[];
   projects: Project[];
+  userId: string;
   onEntryChange: () => void;
   onAddEntry?: (date: Date) => void;
   onEditEntry?: (date: Date, entry: TimesheetEntry) => void;
@@ -26,6 +27,7 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
   currentDate,
   entries,
   projects,
+  userId,
   onEntryChange,
   onAddEntry,
   onEditEntry,
@@ -44,6 +46,7 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
           <MobileDayColumn
             key={date.toISOString()}
             date={date}
+            userId={userId}
             entries={entries}
             projects={projects}
             onEntryChange={onEntryChange}
@@ -67,6 +70,7 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
             >
               <MobileDayColumn
                 date={date}
+                userId={userId}
                 entries={entries}
                 projects={projects}
                 onEntryChange={onEntryChange}

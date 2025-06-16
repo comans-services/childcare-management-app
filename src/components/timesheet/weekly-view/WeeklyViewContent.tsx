@@ -15,6 +15,7 @@ interface WeeklyViewContentProps {
   viewMode: "calendar" | "list";
   entries: TimesheetEntry[];
   projects: Project[];
+  userId: string;
   onEntryChange: () => void;
   onAddEntry?: (date: Date, entry?: TimesheetEntry) => void;
   onEditEntry?: (date: Date, entry: TimesheetEntry) => void;
@@ -27,6 +28,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
   viewMode,
   entries,
   projects,
+  userId,
   onEntryChange,
   onAddEntry,
   onEditEntry,
@@ -66,6 +68,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
           <MobileWeekGrid
             weekDates={weekDates}
             currentDate={currentDate}
+            userId={userId}
             viewMode={gridViewMode}
             entries={entries}
             projects={projects}
@@ -77,6 +80,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
           <WeekGrid
             weekDates={weekDates}
             currentDate={currentDate}
+            userId={userId}
             viewMode={gridViewMode}
             entries={entries}
             projects={projects}

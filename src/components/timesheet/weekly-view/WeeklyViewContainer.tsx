@@ -176,6 +176,7 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
           viewMode={viewMode}
           entries={entries}
           projects={projects}
+          userId={effectiveUserId}
           onEntryChange={fetchData}
           onAddEntry={canEdit ? handleOpenEntryDialog : undefined}
           onEditEntry={canEdit ? handleOpenEntryDialog : undefined}
