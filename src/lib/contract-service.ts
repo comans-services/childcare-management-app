@@ -188,7 +188,7 @@ export const fetchContracts = async (filters?: {
 
 export const saveContract = async (contractData: Omit<Contract, 'id' | 'created_at' | 'updated_at'>, serviceIds?: string[]): Promise<Contract> => {
   try {
-    console.log("Saving contract:", contractData);
+    console.log("Creating new contract:", contractData);
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -205,8 +205,8 @@ export const saveContract = async (contractData: Omit<Contract, 'id' | 'created_
       .single();
 
     if (error) {
-      console.error("Error saving contract:", error);
-      throw new Error(`Failed to save contract: ${error.message}`);
+      console.error("Error creating contract:", error);
+      throw new Error(`Failed to create contract: ${error.message}`);
     }
 
     // Handle service associations if provided
@@ -226,7 +226,7 @@ export const saveContract = async (contractData: Omit<Contract, 'id' | 'created_
       }
     }
 
-    console.log("Contract saved successfully:", data);
+    console.log("Contract created successfully:", data);
     return data;
   } catch (error) {
     console.error("Error in saveContract:", error);
@@ -234,19 +234,20 @@ export const saveContract = async (contractData: Omit<Contract, 'id' | 'created_
   }
 };
 
-export const updateContract = async (contractId: string, updates: Partial<Contract>): Promise<Contract> => {
+export const updateContract = async (contractId: string, contractData: Partial<Omit<Contract, 'id' | 'created_at' | 'updated_at'>>, serviceIds?: string[]): Promise<Contract> => {
   try {
-    console.log("Updating contract:", contractId, updates);
+    console.log("Updating contract:", contractId, contractData);
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       throw new Error("User not authenticated");
     }
 
+    // Update the contract data
     const { data, error } = await supabase
       .from("contracts")
       .update({
-        ...updates,
+        ...contractData,
         updated_at: new Date().toISOString()
       })
       .eq("id", contractId)
@@ -256,6 +257,35 @@ export const updateContract = async (contractId: string, updates: Partial<Contra
     if (error) {
       console.error("Error updating contract:", error);
       throw new Error(`Failed to update contract: ${error.message}`);
+    }
+
+    // Handle service associations if provided
+    if (serviceIds !== undefined) {
+      // First, remove existing service associations
+      const { error: deleteError } = await supabase
+        .from("contract_services")
+        .delete()
+        .eq("contract_id", contractId);
+
+      if (deleteError) {
+        console.error("Error removing existing service associations:", deleteError);
+      }
+
+      // Then add new service associations
+      if (serviceIds.length > 0) {
+        const serviceAssociations = serviceIds.map(serviceId => ({
+          contract_id: contractId,
+          service_id: serviceId
+        }));
+
+        const { error: insertError } = await supabase
+          .from("contract_services")
+          .insert(serviceAssociations);
+
+        if (insertError) {
+          console.error("Error adding new service associations:", insertError);
+        }
+      }
     }
 
     console.log("Contract updated successfully:", data);

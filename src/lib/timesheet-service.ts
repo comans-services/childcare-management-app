@@ -3,7 +3,7 @@
 import { Project, TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry } from "./timesheet/types";
 import { ProjectAssignment, CreateProjectAssignment, ProjectWithAssignees } from "./project/assignment-types";
 import { ContractAssignment, CreateContractAssignment, ContractWithAssignees } from "./contract/assignment-types";
-import { Contract, ContractTimeEntry } from "./contract-service";
+import { Contract, ContractTimeEntry, fetchServices, fetchUserContracts } from "./contract-service";
 import { 
   fetchUserProjects, 
   getProjectHoursUsed, 
@@ -80,8 +80,9 @@ export {
   createContractAssignment,
   deleteContractAssignment,
   bulkAssignUsersToContract,
-  removeUserFromContract
+  removeUserFromContract,
+  
+  // Contract related functions
+  fetchServices,
+  fetchUserContracts
 };
-
-// Re-export user-specific contract function
-export { fetchUserContracts } from "./contract-service";

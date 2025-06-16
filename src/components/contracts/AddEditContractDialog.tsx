@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -41,7 +40,7 @@ import {
 import { format, addDays } from "date-fns";
 import { CalendarIcon, Loader2, FileText, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Contract, saveContract, fetchServices } from "@/lib/contract-service";
+import { Contract, saveContract, updateContract, fetchServices } from "@/lib/contract-service";
 import CustomerSelector from "../customers/CustomerSelector";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -248,25 +247,35 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
     }
   };
 
-  // Save contract mutation
+  // Save/Update contract mutation
   const saveContractMutation = useMutation({
     mutationFn: async (data: FormValues) => {
       const contractData = {
-        ...data,
         name: data.name,
+        description: data.description,
+        customer_id: data.customer_id,
         status: data.status,
         start_date: format(data.start_date, "yyyy-MM-dd"),
         end_date: format(data.end_date, "yyyy-MM-dd"),
-        id: existingContract?.id,
+        is_active: data.is_active,
       };
       
-      const savedContract = await saveContract(contractData, selectedServiceIds);
+      let savedContract: Contract;
+      
+      if (existingContract) {
+        // Update existing contract
+        console.log("Updating existing contract:", existingContract.id);
+        savedContract = await updateContract(existingContract.id, contractData, selectedServiceIds);
+      } else {
+        // Create new contract
+        console.log("Creating new contract");
+        savedContract = await saveContract(contractData, selectedServiceIds);
+      }
       
       // If a file is selected, upload it
       if (selectedFile) {
         const uploadSuccess = await uploadFile(selectedFile, savedContract.id);
         if (!uploadSuccess) {
-          // Even if upload fails, we still return the saved contract
           console.warn("Contract saved but file upload failed");
         }
       }
@@ -287,7 +296,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
       console.error("Error saving contract:", error);
       toast({
         title: "Error",
-        description: "Failed to save contract. Please try again.",
+        description: `Failed to ${existingContract ? "update" : "create"} contract. Please try again.`,
         variant: "destructive",
       });
     },

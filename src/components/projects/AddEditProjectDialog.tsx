@@ -97,12 +97,16 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
   // Create or update project mutation
   const mutation = useMutation({
     mutationFn: async (formData: FormValues) => {
-      if (!user) throw new Error("User not authenticated");
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+      
+      console.log(`${isEditing ? "Updating" : "Creating"} project with data:`, formData);
       
       const projectData = {
-        name: formData.name,
-        description: formData.description,
-        budget_hours: formData.budget_hours,
+        name: formData.name.trim(),
+        description: formData.description?.trim() || null,
+        budget_hours: Number(formData.budget_hours),
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
         customer_id: formData.is_internal ? null : (formData.customer_id || null),
@@ -110,8 +114,20 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
         updated_at: new Date().toISOString(),
       };
 
-      console.log('Saving project with customer_id:', projectData.customer_id);
-      console.log('Saving project with is_internal:', projectData.is_internal);
+      // Validate required fields
+      if (!projectData.name) {
+        throw new Error("Project name is required");
+      }
+      
+      if (projectData.budget_hours <= 0) {
+        throw new Error("Budget hours must be greater than 0");
+      }
+      
+      if (!projectData.is_internal && !projectData.customer_id) {
+        throw new Error("Customer selection is required for non-internal projects");
+      }
+
+      console.log('Final project data being saved:', projectData);
       
       // If editing, update existing project
       if (isEditing && existingProject) {
@@ -120,7 +136,12 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
           .update(projectData)
           .eq("id", existingProject.id);
         
-        if (error) throw error;
+        if (error) {
+          console.error("Project update error:", error);
+          throw new Error(`Failed to update project: ${error.message}`);
+        }
+        
+        console.log("Project updated successfully");
         return existingProject.id;
       } 
       // Otherwise create a new project
@@ -140,17 +161,23 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
         
         if (error) {
           console.error("Project creation error:", error);
-          throw error;
+          throw new Error(`Failed to create project: ${error.message}`);
         }
         
-        if (!data || data.length === 0) throw new Error("No data returned after project creation");
+        if (!data || data.length === 0) {
+          throw new Error("No data returned after project creation");
+        }
         
+        console.log("Project created successfully:", data[0]);
         return data[0].id;
       }
     },
     onSuccess: () => {
-      // Invalidate projects query to refresh the list
+      // Invalidate multiple queries to ensure all project data is refreshed
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-with-assignees"] });
+      
       toast({
         title: isEditing ? "Project updated" : "Project created",
         description: isEditing 
@@ -161,9 +188,10 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
     },
     onError: (error) => {
       console.error("Error saving project:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       toast({
         title: "Error",
-        description: `Failed to ${isEditing ? "update" : "create"} project. Please try again.`,
+        description: `Failed to ${isEditing ? "update" : "create"} project: ${errorMessage}`,
         variant: "destructive",
       });
     },
@@ -171,6 +199,35 @@ const AddEditProjectDialog: React.FC<AddEditProjectDialogProps> = ({
 
   const onSubmit = (data: FormValues) => {
     console.log('Form submitted with data:', data);
+    
+    // Additional client-side validation
+    if (!data.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Project name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (data.budget_hours <= 0) {
+      toast({
+        title: "Validation Error", 
+        description: "Budget hours must be greater than 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!data.is_internal && !data.customer_id) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a customer for non-internal projects.",
+        variant: "destructive", 
+      });
+      return;
+    }
+    
     mutation.mutate(data);
   };
 
