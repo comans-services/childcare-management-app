@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { 
@@ -74,12 +73,13 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const [budgetChecking, setBudgetChecking] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
 
-  // Get working days validation
+  // Get working days validation - use the target user's ID for admin editing
   const weekStart = getWeekStart(date);
-  const validation = useWorkingDaysValidation(userId, entries, weekStart);
+  const targetUserId = existingEntry?.user_id || userId;
+  const validation = useWorkingDaysValidation(targetUserId, entries, weekStart);
 
   // Get weekend lock validation with admin override
-  const { validateWeekendEntry } = useWeekendLock(userId);
+  const { validateWeekendEntry } = useWeekendLock(targetUserId);
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
@@ -220,6 +220,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
         jira_task_id: values.jira_task_id || "",
         start_time: values.start_time || undefined,
         end_time: values.end_time || undefined,
+        // For admin editing: preserve the target user_id
+        user_id: existingEntry?.user_id || targetUserId,
       };
 
       // Preserve related data from existing entry if available

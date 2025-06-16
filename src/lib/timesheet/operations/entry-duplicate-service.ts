@@ -1,12 +1,21 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry } from "../types";
+import { isAdmin } from "@/utils/roles";
 
 export const duplicateTimesheetEntry = async (entryId: string): Promise<TimesheetEntry> => {
   try {
     console.log(`Duplicating entry ${entryId}`);
     
-    // First get the original entry - RLS will ensure we only get user's own entries
+    // Get current user and check admin status
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error("Authentication required");
+    }
+
+    const userIsAdmin = await isAdmin(user);
+    
+    // First get the original entry - RLS will ensure appropriate access
     const { data: originalEntry, error: fetchError } = await supabase
       .from("timesheet_entries")
       .select("*")
@@ -22,7 +31,8 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
       throw new Error("Original entry not found or access denied");
     }
     
-    // Create a new entry with the same data but no user_id (trigger will set it)
+    // For admin users, preserve the original user_id for duplicating other users' entries
+    // For regular users, the trigger will set it to their own user_id
     const newEntryData = {
       entry_type: originalEntry.entry_type,
       project_id: originalEntry.project_id,
@@ -32,10 +42,12 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
       notes: originalEntry.notes ? `${originalEntry.notes} (copy)` : "(copy)",
       jira_task_id: originalEntry.jira_task_id,
       start_time: originalEntry.start_time,
-      end_time: originalEntry.end_time
+      end_time: originalEntry.end_time,
+      // Only set user_id if admin is duplicating another user's entry
+      ...(userIsAdmin && originalEntry.user_id !== user.id ? { user_id: originalEntry.user_id } : {})
     };
     
-    console.log("Creating duplicate entry (user_id will be auto-assigned by trigger):", newEntryData);
+    console.log("Creating duplicate entry:", newEntryData);
     
     const { data: newEntry, error: insertError } = await supabase
       .from("timesheet_entries")
