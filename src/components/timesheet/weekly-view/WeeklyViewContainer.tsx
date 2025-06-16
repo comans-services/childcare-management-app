@@ -9,6 +9,7 @@ import { useWeeklyNavigation } from "./hooks/useWeeklyNavigation";
 import { useWeeklyViewState } from "./hooks/useWeeklyViewState";
 import { useWeeklyViewData } from "./hooks/useWeeklyViewData";
 import { useEntryOperations } from "./hooks/useEntryOperations";
+import { isAdmin } from "@/utils/roles";
 import WeekNavigation from "./WeekNavigation";
 import MobileWeekNavigation from "./MobileWeekNavigation";
 import LoadingState from "./LoadingState";
@@ -24,6 +25,7 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
   const { user, session } = useAuth();
   const isMobile = useIsMobile();
   const { getTransitionClass } = useSmoothTransitions();
+  const [isAdminUser, setIsAdminUser] = React.useState(false);
 
   const {
     viewMode,
@@ -58,6 +60,17 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
   const { handleDragEnd } = useEntryOperations(weekDates, entries, () => fetchData(), user?.id);
 
   const [editingEntry, setEditingEntry] = React.useState<TimesheetEntry | undefined>(undefined);
+
+  // Check admin status
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const adminStatus = await isAdmin(user);
+        setIsAdminUser(adminStatus);
+      }
+    };
+    checkAdminStatus();
+  }, [user]);
 
   // Track user changes and viewAs changes to force state cleanup
   useEffect(() => {
@@ -113,6 +126,9 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
 
   // Determine the effective user ID for operations
   const effectiveUserId = viewAsUserId || user.id;
+  
+  // Determine if editing should be allowed
+  const canEdit = !viewAsUserId || isAdminUser;
 
   return (
     <ResponsiveContainer 
@@ -161,14 +177,14 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
           entries={entries}
           projects={projects}
           onEntryChange={fetchData}
-          onAddEntry={handleOpenEntryDialog}
-          onEditEntry={handleOpenEntryDialog}
+          onAddEntry={canEdit ? handleOpenEntryDialog : undefined}
+          onEditEntry={canEdit ? handleOpenEntryDialog : undefined}
           onDragEnd={handleDragEnd}
         />
       )}
 
-      {/* Dialogs - Only show if viewing own timesheet */}
-      {!viewAsUserId && (
+      {/* Dialogs - Show if viewing own timesheet OR if admin viewing another user's timesheet */}
+      {canEdit && (
         <WeeklyViewDialogs
           userId={effectiveUserId}
           selectedDate={selectedDate}
@@ -178,6 +194,7 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
           editingEntry={editingEntry}
           onSave={handleSaveEntry}
           entries={entries}
+          targetUserId={viewAsUserId} // Pass the target user ID for admin edits
         />
       )}
     </ResponsiveContainer>

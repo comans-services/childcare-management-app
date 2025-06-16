@@ -2,11 +2,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry, CreateTimesheetEntry } from "../types";
 
-export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
-  console.log("Creating new entry (user_id will be auto-assigned by trigger)");
+export const createTimesheetEntry = async (entry: TimesheetEntry, targetUserId?: string): Promise<TimesheetEntry> => {
+  console.log("Creating new entry (user_id will be auto-assigned by trigger unless admin override)");
   
   // Create a clean data object for the database operation
-  const dbEntry: CreateTimesheetEntry = {
+  const dbEntry: CreateTimesheetEntry & { user_id?: string } = {
     entry_type: entry.entry_type,
     project_id: entry.project_id || null,
     contract_id: entry.contract_id || null,
@@ -18,9 +18,15 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     end_time: entry.end_time || "",
   };
 
-  console.log("Database entry data (user_id will be auto-assigned by trigger):", dbEntry);
+  // If targetUserId is provided (admin editing another user), include it
+  if (targetUserId) {
+    dbEntry.user_id = targetUserId;
+    console.log("Admin creating entry for user:", targetUserId);
+  }
+
+  console.log("Database entry data:", dbEntry);
   
-  // Create new entry - trigger will automatically set user_id to auth.uid()
+  // Create new entry - trigger will handle user_id assignment based on role
   const { data, error } = await supabase
     .from("timesheet_entries")
     .insert(dbEntry)

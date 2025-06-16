@@ -9,7 +9,7 @@ import { duplicateTimesheetEntry } from "./operations/entry-duplicate-service";
 import { validateProjectBudget, getProjectHoursUsed } from "./validation/budget-validation-service";
 import { supabase } from "@/integrations/supabase/client";
 
-export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
+export const saveTimesheetEntry = async (entry: TimesheetEntry, targetUserId?: string): Promise<TimesheetEntry> => {
   try {
     console.log("=== STARTING ENTRY SAVE PROCESS ===");
     
@@ -49,7 +49,15 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
 
     console.log("User role:", userRole, "Is Admin:", isAdmin);
 
-    // Step 5: Critical budget validation for project entries
+    // Step 5: Determine effective user ID for the entry
+    const effectiveUserId = targetUserId || user.id;
+    
+    // Step 6: Security check - only admins can edit other users' entries
+    if (targetUserId && targetUserId !== user.id && !isAdmin) {
+      throw new Error("Permission denied: Only administrators can edit other users' timesheets");
+    }
+
+    // Step 7: Critical budget validation for project entries
     let budgetOverrideUsed = false;
     if (entry.entry_type === 'project' && entry.project_id) {
       console.log("=== BACKEND BUDGET VALIDATION ===");
@@ -58,7 +66,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
         projectId: entry.project_id,
         hoursToAdd: entry.hours_logged,
         existingEntryId: entry.id,
-        userId: user.id
+        userId: effectiveUserId // Use the effective user ID for budget calculation
       });
 
       console.log("Backend budget validation result:", budgetValidation);
@@ -88,10 +96,10 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     
     if (isUpdate) {
       console.log("=== UPDATING EXISTING ENTRY ===", entry.id);
-      savedEntry = await updateTimesheetEntry(entry);
+      savedEntry = await updateTimesheetEntry(entry, targetUserId);
     } else {
       console.log("=== CREATING NEW ENTRY ===");
-      savedEntry = await createTimesheetEntry(entry);
+      savedEntry = await createTimesheetEntry(entry, targetUserId);
     }
 
     // Budget override logging is now handled by the database function
