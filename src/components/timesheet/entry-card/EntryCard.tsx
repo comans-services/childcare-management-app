@@ -21,6 +21,20 @@ interface EntryCardProps {
   onDelete: (entry: TimesheetEntry) => void;
 }
 
+export const getEntryColor = (entry: TimesheetEntry) => {
+  if (entry.entry_type === 'contract') {
+    return "border-purple-200 bg-purple-50";
+  }
+  return "border-blue-200 bg-blue-50";
+};
+
+export const getEntryDisplayName = (entry: TimesheetEntry) => {
+  if (entry.entry_type === 'project') {
+    return entry.project?.name || "Unknown Project";
+  }
+  return entry.contract?.name || "Contract Work";
+};
+
 const EntryCard: React.FC<EntryCardProps> = ({
   entry,
   project,
@@ -56,10 +70,7 @@ const EntryCard: React.FC<EntryCardProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-medium text-gray-900 truncate">
-              {entry.entry_type === 'project' 
-                ? (project?.name || "Unknown Project")
-                : "Contract Work"
-              }
+              {getEntryDisplayName(entry)}
             </span>
             <span className="text-sm font-semibold text-primary">
               {entry.hours_logged}h

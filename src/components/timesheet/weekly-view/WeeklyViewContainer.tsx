@@ -89,18 +89,14 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
       {/* Show dialogs when user can perform operations (own timesheet or admin viewing others) */}
       {canPerformOperations && (
         <WeeklyViewDialogs
-          isDialogOpen={isDialogOpen}
-          editingEntry={editingEntry}
+          userId={targetUserId}
           selectedDate={selectedDate}
+          entryDialogOpen={isDialogOpen}
+          setEntryDialogOpen={setIsDialogOpen}
           projects={projects}
+          editingEntry={editingEntry}
+          onSave={handleSaveEntry}
           entries={entries}
-          deleteDialogState={deleteDialogState}
-          targetUserId={targetUserId}
-          onDialogOpenChange={setIsDialogOpen}
-          onSaveEntry={handleSaveEntry}
-          onDeleteEntry={handleDeleteEntry}
-          onDeleteDialogStateChange={setDeleteDialogState}
-          onEditingEntryChange={setEditingEntry}
         />
       )}
     </div>

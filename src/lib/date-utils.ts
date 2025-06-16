@@ -22,6 +22,11 @@ export const getCurrentWeekDates = (currentDate: Date = new Date()): Date[] => {
   return eachDayOfInterval({ start, end });
 };
 
+export const getWeekDates = (weekStartDate: Date): Date[] => {
+  const end = addDays(weekStartDate, 6); // End on Sunday (6 days after Monday)
+  return eachDayOfInterval({ start: weekStartDate, end });
+};
+
 export const getNextWeek = (currentDate: Date): Date => {
   return addDays(currentDate, 7);
 };

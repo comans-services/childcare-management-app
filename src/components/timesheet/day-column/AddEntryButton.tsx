@@ -5,13 +5,15 @@ import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AddEntryButtonProps {
-  onClick: () => void;
+  date: Date;
+  targetUserId: string;
+  onAddEntry: () => void;
   disabled?: boolean;
   className?: string;
 }
 
 const AddEntryButton: React.FC<AddEntryButtonProps> = ({ 
-  onClick, 
+  onAddEntry, 
   disabled = false,
   className 
 }) => {
@@ -19,7 +21,7 @@ const AddEntryButton: React.FC<AddEntryButtonProps> = ({
     <Button
       variant="outline"
       size="sm"
-      onClick={onClick}
+      onClick={onAddEntry}
       disabled={disabled}
       className={cn(
         "w-full border-dashed hover:bg-primary/5 hover:border-primary/30 transition-colors",

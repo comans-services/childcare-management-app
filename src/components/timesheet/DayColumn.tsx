@@ -77,7 +77,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
 
       {/* Progress Indicator */}
       <ProgressIndicator
-        totalHours={totalHours}
         targetUserId={targetUserId}
         date={date}
       />
