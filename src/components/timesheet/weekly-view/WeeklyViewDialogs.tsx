@@ -12,7 +12,6 @@ interface WeeklyViewDialogsProps {
   editingEntry: TimesheetEntry | undefined;
   onSave: (savedEntry?: TimesheetEntry) => void;
   entries: TimesheetEntry[];
-  targetUserId?: string | null; // For admin editing other users
 }
 
 const WeeklyViewDialogs: React.FC<WeeklyViewDialogsProps> = ({
@@ -24,7 +23,6 @@ const WeeklyViewDialogs: React.FC<WeeklyViewDialogsProps> = ({
   editingEntry,
   onSave,
   entries,
-  targetUserId,
 }) => {
   if (!selectedDate) return null;
 
@@ -38,7 +36,6 @@ const WeeklyViewDialogs: React.FC<WeeklyViewDialogsProps> = ({
       existingEntry={editingEntry}
       onSave={onSave}
       entries={entries}
-      targetUserId={targetUserId} // Pass target user ID for admin edits
     />
   );
 };

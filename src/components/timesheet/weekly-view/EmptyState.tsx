@@ -1,14 +1,10 @@
 
 import React from "react";
 
-interface EmptyStateProps {
-  message: string;
-}
-
-const EmptyState: React.FC<EmptyStateProps> = ({ message }) => {
+const EmptyState: React.FC = () => {
   return (
     <div className="text-center py-8 animate-in fade-in-50">
-      <p className="text-gray-500">{message}</p>
+      <p className="text-gray-500">No projects found. Please create a project first.</p>
     </div>
   );
 };

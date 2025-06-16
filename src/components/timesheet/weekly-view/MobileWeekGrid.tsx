@@ -12,22 +12,20 @@ import {
 
 interface MobileWeekGridProps {
   weekDates: Date[];
-  currentDate: Date;
+  userId: string;
   entries: TimesheetEntry[];
   projects: Project[];
-  userId: string;
   onEntryChange: () => void;
-  onAddEntry?: (date: Date) => void;
-  onEditEntry?: (date: Date, entry: TimesheetEntry) => void;
+  onAddEntry: (date: Date) => void;
+  onEditEntry: (date: Date, entry: TimesheetEntry) => void;
   viewMode: "today" | "week";
 }
 
 const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
   weekDates,
-  currentDate,
+  userId,
   entries,
   projects,
-  userId,
   onEntryChange,
   onAddEntry,
   onEditEntry,
@@ -50,8 +48,8 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
             entries={entries}
             projects={projects}
             onEntryChange={onEntryChange}
-            onAddEntry={onAddEntry ? () => onAddEntry(date) : undefined}
-            onEditEntry={onEditEntry ? (entry) => onEditEntry(date, entry) : undefined}
+            onAddEntry={() => onAddEntry(date)}
+            onEditEntry={(entry) => onEditEntry(date, entry)}
           />
         ))}
       </div>
@@ -74,8 +72,8 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
                 entries={entries}
                 projects={projects}
                 onEntryChange={onEntryChange}
-                onAddEntry={onAddEntry ? () => onAddEntry(date) : undefined}
-                onEditEntry={onEditEntry ? (entry) => onEditEntry(date, entry) : undefined}
+                onAddEntry={() => onAddEntry(date)}
+                onEditEntry={(entry) => onEditEntry(date, entry)}
               />
             </CarouselItem>
           ))}

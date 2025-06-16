@@ -17,23 +17,21 @@ import {
 
 interface WeekGridProps {
   weekDates: Date[];
-  currentDate: Date;
+  userId: string;
   entries: TimesheetEntry[];
   projects: Project[];
-  userId: string;
   onEntryChange: () => void;
   onDragEnd: (result: DropResult) => void;
-  onAddEntry?: (date: Date) => void;
-  onEditEntry?: (date: Date, entry: TimesheetEntry) => void;
+  onAddEntry: (date: Date) => void;
+  onEditEntry: (date: Date, entry: TimesheetEntry) => void;
   viewMode: "today" | "week";
 }
 
 const WeekGrid: React.FC<WeekGridProps> = ({
   weekDates,
-  currentDate,
+  userId,
   entries,
   projects,
-  userId,
   onEntryChange,
   onDragEnd,
   onAddEntry,
@@ -42,7 +40,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { validateWeekendEntry } = useWeekendLock(userId);
+  const { validateWeekendEntry } = useWeekendLock(user?.id);
   
   // Use the weekDates directly - the parent component already filters correctly
   // In day mode, weekDates will contain only the selected date
@@ -80,8 +78,8 @@ const WeekGrid: React.FC<WeekGridProps> = ({
               projects={projects}
               onEntryChange={onEntryChange}
               droppableId={index.toString()}
-              onAddEntry={onAddEntry ? () => onAddEntry(date) : undefined}
-              onEditEntry={onEditEntry ? (entry) => onEditEntry(date, entry) : undefined}
+              onAddEntry={() => onAddEntry(date)}
+              onEditEntry={(entry) => onEditEntry(date, entry)}
             />
           </div>
         );
@@ -111,8 +109,8 @@ const WeekGrid: React.FC<WeekGridProps> = ({
                 projects={projects}
                 onEntryChange={onEntryChange}
                 droppableId={index.toString()}
-                onAddEntry={onAddEntry ? () => onAddEntry(date) : undefined}
-                onEditEntry={onEditEntry ? (entry) => onEditEntry(date, entry) : undefined}
+                onAddEntry={() => onAddEntry(date)}
+                onEditEntry={(entry) => onEditEntry(date, entry)}
               />
             </CarouselItem>
           );

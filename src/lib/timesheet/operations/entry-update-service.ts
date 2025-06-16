@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry, CreateTimesheetEntry } from "../types";
 import { validateWeekendEntry } from "../validation/weekend-validation-service";
 
-export const updateTimesheetEntry = async (entry: TimesheetEntry, targetUserId?: string): Promise<TimesheetEntry> => {
+export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
   console.log(`Updating existing entry: ${entry.id}`);
   
   // For updates, re-validate weekend permissions as they might have changed
@@ -14,7 +14,7 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry, targetUserId?:
   }
   
   // Create a clean data object for the database operation
-  const dbEntry: CreateTimesheetEntry & { user_id?: string } = {
+  const dbEntry: CreateTimesheetEntry = {
     entry_type: entry.entry_type,
     project_id: entry.project_id || null,
     contract_id: entry.contract_id || null,
@@ -25,14 +25,8 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry, targetUserId?:
     start_time: entry.start_time || "",
     end_time: entry.end_time || "",
   };
-
-  // If targetUserId is provided (admin editing another user), include it
-  if (targetUserId) {
-    dbEntry.user_id = targetUserId;
-    console.log("Admin updating entry for user:", targetUserId);
-  }
   
-  // Update existing entry - RLS will ensure user can only update their own entries or admin can update any
+  // Update existing entry - RLS will ensure user can only update their own entries
   const { data, error } = await supabase
     .from("timesheet_entries")
     .update(dbEntry)
