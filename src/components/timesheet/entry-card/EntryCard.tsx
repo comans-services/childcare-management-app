@@ -1,141 +1,273 @@
 
 import React from "react";
-import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { TimesheetEntry, duplicateTimesheetEntry } from "@/lib/timesheet-service";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Edit2, Copy, Trash2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { duplicateTimesheetEntry } from "@/lib/timesheet-service";
+import { cn } from "@/lib/utils";
+import { Clock, FileText, GripVertical, Copy, User, Pencil, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
+
+// Color mapping for different project types
+export const PROJECT_COLORS: { [key: string]: string } = {
+  default: "bg-gray-100 border-gray-200 hover:bg-gray-50",
+  development: "bg-blue-50 border-blue-200 hover:bg-blue-100",
+  design: "bg-purple-50 border-purple-200 hover:bg-purple-100",
+  marketing: "bg-green-50 border-green-200 hover:bg-green-100",
+  management: "bg-amber-50 border-amber-200 hover:bg-amber-100",
+  support: "bg-rose-50 border-rose-200 hover:bg-rose-100",
+};
 
 interface EntryCardProps {
   entry: TimesheetEntry;
-  project?: Project;
-  canPerformOperations: boolean;
-  onEdit: (entry: TimesheetEntry) => void;
-  onDelete: (entry: TimesheetEntry) => void;
+  provided: any;
+  snapshot: any;
+  onEditEntry: (entry: TimesheetEntry) => void;
+  onDeleteEntry: (entry: TimesheetEntry) => void;
+  onEntryChange: () => void;
 }
 
-export const getEntryColor = (entry: TimesheetEntry) => {
-  if (entry.entry_type === 'contract') {
-    return "border-purple-200 bg-purple-50";
+export const getProjectColor = (project?: { name?: string }) => {
+  if (!project?.name) return PROJECT_COLORS.default;
+  
+  const name = project.name.toLowerCase();
+  
+  if (name.includes("dev") || name.includes("code")) {
+    return PROJECT_COLORS.development;
+  } else if (name.includes("design") || name.includes("ui") || name.includes("ux")) {
+    return PROJECT_COLORS.design;
+  } else if (name.includes("market") || name.includes("sales")) {
+    return PROJECT_COLORS.marketing;
+  } else if (name.includes("manage") || name.includes("lead") || name.includes("admin")) {
+    return PROJECT_COLORS.management;
+  } else if (name.includes("support") || name.includes("help") || name.includes("service")) {
+    return PROJECT_COLORS.support;
   }
-  return "border-blue-200 bg-blue-50";
+  
+  return PROJECT_COLORS.default;
 };
 
-export const getEntryDisplayName = (entry: TimesheetEntry) => {
-  if (entry.entry_type === 'project') {
-    return entry.project?.name || "Unknown Project";
+// New function to get color for any entry type
+export const getEntryColor = (entry: TimesheetEntry) => {
+  if (entry.entry_type === 'project' && entry.project) {
+    return getProjectColor(entry.project);
+  } else if (entry.entry_type === 'contract' && entry.contract) {
+    return getProjectColor({ name: entry.contract.name });
   }
-  return entry.contract?.name || "Contract Work";
+  return PROJECT_COLORS.default;
+};
+
+// New function to get display name for any entry type
+export const getEntryDisplayName = (entry: TimesheetEntry) => {
+  if (entry.entry_type === 'project' && entry.project) {
+    return entry.project.name;
+  } else if (entry.entry_type === 'contract' && entry.contract) {
+    return entry.contract.name;
+  }
+  return "Unknown Entry";
+};
+
+export const formatUserName = (entry: TimesheetEntry) => {
+  // First try to use cached user_full_name from database
+  if (entry.user_full_name) {
+    const nameParts = entry.user_full_name.trim().split(" ");
+    if (nameParts.length > 1) {
+      return `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`;
+    }
+    return entry.user_full_name;
+  }
+  
+  // Fallback to user object (for legacy data)
+  const user = entry.user;
+  if (!user) {
+    return "Unknown";
+  }
+  
+  if (user.full_name) {
+    const nameParts = user.full_name.trim().split(" ");
+    if (nameParts.length > 1) {
+      return `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`;
+    }
+    return user.full_name;
+  }
+  
+  if (user.email) {
+    const emailUsername = user.email.split("@")[0];
+    return emailUsername;
+  }
+  
+  return "Unknown";
 };
 
 const EntryCard: React.FC<EntryCardProps> = ({
   entry,
-  project,
-  canPerformOperations,
-  onEdit,
-  onDelete,
+  provided,
+  snapshot,
+  onEditEntry,
+  onDeleteEntry,
+  onEntryChange
 }) => {
-  const handleDuplicate = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const [isDuplicating, setIsDuplicating] = React.useState(false);
+  
+  const handleDuplicateEntry = async (entry: TimesheetEntry) => {
+    if (!entry.id) return;
     
     try {
-      await duplicateTimesheetEntry(entry.id!);
+      setIsDuplicating(true);
+      await duplicateTimesheetEntry(entry.id);
+      
       toast({
         title: "Entry duplicated",
-        description: "The timesheet entry has been duplicated successfully.",
+        description: "Time entry has been duplicated successfully.",
       });
       
-      // Trigger a page refresh to show the new entry
-      window.location.reload();
+      onEntryChange();
     } catch (error) {
       console.error("Error duplicating entry:", error);
       toast({
         title: "Error",
-        description: "Failed to duplicate the entry. Please try again.",
+        description: "Failed to duplicate time entry.",
         variant: "destructive",
       });
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium text-gray-900 truncate">
+    <div
+      ref={provided.innerRef}
+      {...provided.draggableProps}
+      className={cn(
+        "transition-all duration-300 hover:shadow-md animate-in fade-in-50",
+        snapshot.isDragging ? "opacity-80 scale-[1.02] shadow-lg z-10" : ""
+      )}
+    >
+      <Card 
+        className={cn(
+          "overflow-hidden transition-all duration-200 hover:-translate-y-0.5 border rounded-xl",
+          getEntryColor(entry)
+        )}
+      >
+        <CardContent className="p-3 md:p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div 
+                    {...provided.dragHandleProps} 
+                    className="cursor-grab opacity-70 hover:opacity-100 transition-opacity"
+                  >
+                    <GripVertical className="h-3 w-3 flex-shrink-0" aria-label="Drag to reorder" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Drag to reorder this entry</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <h3 className="font-semibold text-xs md:text-sm break-words whitespace-normal w-full">
               {getEntryDisplayName(entry)}
-            </span>
-            <span className="text-sm font-semibold text-primary">
-              {entry.hours_logged}h
-            </span>
+            </h3>
+          </div>
+
+          <div className="flex justify-between items-center mb-2">
+            <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
+              <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" aria-hidden="true" />
+              {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
+            </div>
+            
+            {entry.jira_task_id && (
+              <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block truncate max-w-[120px]">
+                {entry.jira_task_id}
+              </div>
+            )}
           </div>
           
-          {entry.notes && (
-            <p className="text-xs text-gray-600 truncate">
-              {entry.notes}
-            </p>
+          <div className="flex items-center mt-1.5 mb-1.5 text-[10px] md:text-xs text-muted-foreground">
+            <User className="h-3 w-3 mr-1 flex-shrink-0" aria-hidden="true" />
+            <span>{formatUserName(entry)}</span>
+          </div>
+          
+          {entry.start_time && entry.end_time && (
+            <div className="flex items-center mt-2 bg-background/20 p-1 rounded-md text-[10px] md:text-xs">
+              <Clock className="h-3 w-3 mr-1 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+              <span className="text-muted-foreground">
+                {entry.start_time} - {entry.end_time}
+              </span>
+            </div>
           )}
           
-          {entry.jira_task_id && (
-            <p className="text-xs text-blue-600 truncate">
-              Task: {entry.jira_task_id}
-            </p>
+          {entry.notes && (
+            <div className="flex items-start mt-2 bg-background/30 p-1.5 rounded-md">
+              <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1.5 flex-shrink-0" aria-hidden="true" />
+              <p className="text-[10px] md:text-xs text-muted-foreground break-words whitespace-normal w-full">
+                {entry.notes}
+              </p>
+            </div>
           )}
-        </div>
+          
+          <div className="flex justify-end mt-3 space-x-1 pt-1 border-t border-t-background/20">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-amber-50 hover:text-amber-600 transition-colors flex-shrink-0 hover:border-amber-100 hover:scale-110"
+                    onClick={() => handleDuplicateEntry(entry)}
+                    aria-label="Duplicate entry"
+                    disabled={isDuplicating}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Duplicate this entry</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-        {/* Actions menu - only show if user can perform operations */}
-        {canPerformOperations && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(entry);
-                }}
-                className="cursor-pointer"
-              >
-                <Edit2 className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleDuplicate}
-                className="cursor-pointer"
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(entry);
-                }}
-                className="cursor-pointer text-red-600 focus:text-red-600"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-green-50 hover:text-green-600 transition-colors flex-shrink-0 hover:border-green-100 hover:scale-110"
+                    onClick={() => onEditEntry(entry)}
+                    aria-label="Edit entry"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Edit this entry</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
+                    onClick={() => onDeleteEntry(entry)}
+                    aria-label="Delete entry"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete this entry</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

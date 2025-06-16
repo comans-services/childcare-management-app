@@ -1,58 +1,132 @@
 
 import React from "react";
-import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import DayColumn from "../DayColumn";
-import { getWeekDates } from "@/lib/date-utils";
+import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { isWeekend } from "@/lib/date-utils";
+import { useWeekendLock } from "@/hooks/useWeekendLock";
+import { useAuth } from "@/context/AuthContext";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui/carousel";
 
 interface WeekGridProps {
+  weekDates: Date[];
+  userId: string;
   entries: TimesheetEntry[];
   projects: Project[];
-  selectedDate: Date;
-  weekStartDate: Date;
-  workingDays: number;
-  targetUserId: string;
-  canPerformOperations: boolean;
-  onDateSelect: (date: Date) => void;
-  onEditEntry: (entry: TimesheetEntry) => void;
-  onDeleteEntry: (entry: TimesheetEntry) => void;
-  onDialogOpen: (open: boolean) => void;
+  onEntryChange: () => void;
+  onDragEnd: (result: DropResult) => void;
+  onAddEntry: (date: Date) => void;
+  onEditEntry: (date: Date, entry: TimesheetEntry) => void;
+  viewMode: "today" | "week";
 }
 
 const WeekGrid: React.FC<WeekGridProps> = ({
+  weekDates,
+  userId,
   entries,
   projects,
-  selectedDate,
-  weekStartDate,
-  workingDays,
-  targetUserId,
-  canPerformOperations,
-  onDateSelect,
+  onEntryChange,
+  onDragEnd,
+  onAddEntry,
   onEditEntry,
-  onDeleteEntry,
-  onDialogOpen,
+  viewMode,
 }) => {
-  const weekDates = getWeekDates(weekStartDate).slice(0, workingDays);
+  const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { validateWeekendEntry } = useWeekendLock(user?.id);
+  
+  // Use the weekDates directly - the parent component already filters correctly
+  // In day mode, weekDates will contain only the selected date
+  // In week mode, weekDates will contain the visible days (filtered by parent)
+  const displayDates = weekDates;
+
+  // Calculate dynamic grid columns based on number of visible days
+  const getGridColumns = () => {
+    if (viewMode === "today") return "grid-cols-1";
+    
+    const dayCount = displayDates.length;
+    if (dayCount === 5) return "grid-cols-1 md:grid-cols-5"; // Weekdays only
+    if (dayCount === 6) return "grid-cols-1 md:grid-cols-6"; // 6 days
+    return "grid-cols-1 md:grid-cols-7"; // Full week
+  };
+
+  const renderDesktopView = () => (
+    <div className={`grid gap-2 w-full overflow-hidden animate-in fade-in-50 ${getGridColumns()}`}>
+      {displayDates.map((date, index) => {
+        const isWeekendDay = isWeekend(date);
+        const weekendValidation = validateWeekendEntry(date);
+        const isWeekendBlocked = isWeekendDay && !weekendValidation.isValid;
+        
+        return (
+          <div 
+            key={date.toISOString()} 
+            className={`w-full min-w-0 max-w-full transition-all duration-200 ${
+              isWeekendBlocked ? 'opacity-75 scale-[0.98]' : ''
+            }`}
+          >
+            <DayColumn
+              date={date}
+              userId={userId}
+              entries={entries}
+              projects={projects}
+              onEntryChange={onEntryChange}
+              droppableId={index.toString()}
+              onAddEntry={() => onAddEntry(date)}
+              onEditEntry={(entry) => onEditEntry(date, entry)}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderMobileView = () => (
+    <Carousel className="w-full max-w-full animate-in fade-in-50">
+      <CarouselContent>
+        {displayDates.map((date, index) => {
+          const isWeekendDay = isWeekend(date);
+          const weekendValidation = validateWeekendEntry(date);
+          const isWeekendBlocked = isWeekendDay && !weekendValidation.isValid;
+          
+          return (
+            <CarouselItem 
+              key={date.toISOString()} 
+              className={`basis-full min-w-0 transition-all duration-200 ${
+                isWeekendBlocked ? 'opacity-75' : ''
+              }`}
+            >
+              <DayColumn
+                date={date}
+                userId={userId}
+                entries={entries}
+                projects={projects}
+                onEntryChange={onEntryChange}
+                droppableId={index.toString()}
+                onAddEntry={() => onAddEntry(date)}
+                onEditEntry={(entry) => onEditEntry(date, entry)}
+              />
+            </CarouselItem>
+          );
+        })}
+      </CarouselContent>
+      <div className="flex justify-center mt-2">
+        <CarouselPrevious className="relative static mr-2 translate-y-0 translate-x-0 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />
+        <CarouselNext className="relative static ml-2 translate-y-0 translate-x-0 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200" />
+      </div>
+    </Carousel>
+  );
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-7 gap-4 lg:gap-6">
-      {weekDates.map((date) => (
-        <DayColumn
-          key={date.toDateString()}
-          date={date}
-          entries={entries.filter(
-            (entry) => entry.entry_date === date.toISOString().split("T")[0]
-          )}
-          projects={projects}
-          isSelected={selectedDate?.toDateString() === date.toDateString()}
-          targetUserId={targetUserId}
-          canPerformOperations={canPerformOperations}
-          onDateSelect={onDateSelect}
-          onEditEntry={onEditEntry}
-          onDeleteEntry={onDeleteEntry}
-          onDialogOpen={onDialogOpen}
-        />
-      ))}
-    </div>
+    <DragDropContext onDragEnd={onDragEnd}>
+      {isMobile ? renderMobileView() : renderDesktopView()}
+    </DragDropContext>
   );
 };
 

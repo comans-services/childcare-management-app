@@ -1,105 +1,186 @@
 
-import React from "react";
+import React, { useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { TimesheetEntry } from "@/lib/timesheet-service";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ResponsiveContainer } from "@/components/common/ResponsiveContainer";
+import { useSmoothTransitions } from "@/hooks/useSmoothTransitions";
+import { useWeeklyNavigation } from "./hooks/useWeeklyNavigation";
 import { useWeeklyViewState } from "./hooks/useWeeklyViewState";
 import { useWeeklyViewData } from "./hooks/useWeeklyViewData";
-import { useWeeklyNavigation } from "./hooks/useWeeklyNavigation";
 import { useEntryOperations } from "./hooks/useEntryOperations";
-import WeeklyViewContent from "./WeeklyViewContent";
-import WeeklyViewDialogs from "./WeeklyViewDialogs";
+import WeekNavigation from "./WeekNavigation";
+import MobileWeekNavigation from "./MobileWeekNavigation";
 import LoadingState from "./LoadingState";
 import ErrorState from "./ErrorState";
+import WeeklyViewContent from "./WeeklyViewContent";
+import WeeklyViewDialogs from "./WeeklyViewDialogs";
 
 interface WeeklyViewContainerProps {
   viewAsUserId?: string | null;
 }
 
 const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId }) => {
-  const { user, userRole } = useAuth();
-  const isAdmin = userRole === "admin";
-  
-  // Determine the target user ID - either the selected user (for admin) or current user
-  const targetUserId = viewAsUserId || user?.id || "";
-  
-  // State management
+  const { user, session } = useAuth();
+  const isMobile = useIsMobile();
+  const { getTransitionClass } = useSmoothTransitions();
+
   const {
+    viewMode,
+    toggleViewMode,
+    lastUserId,
+    setLastUserId,
+    entryDialogOpen,
+    setEntryDialogOpen,
     selectedDate,
     setSelectedDate,
-    weekStartDate,
-    editingEntry,
-    setEditingEntry,
-    isDialogOpen,
-    setIsDialogOpen,
-    refreshKey,
-    setRefreshKey,
-    workingDays,
-    setWorkingDays,
-    deleteDialogState,
-    setDeleteDialogState,
+    clearDialogState,
   } = useWeeklyViewState();
 
-  // Data fetching
   const {
-    entries,
+    currentDate,
+    weekDates,
+    updateWeekDates,
+    navigateToPrevious,
+    navigateToNext,
+    navigateToCurrentWeek,
+  } = useWeeklyNavigation(viewMode);
+
+  const {
     projects,
-    isLoading,
+    entries,
+    loading,
     error,
-    refetch,
-  } = useWeeklyViewData(targetUserId, weekStartDate, refreshKey);
+    fetchData,
+    clearComponentState,
+  } = useWeeklyViewData(weekDates, viewAsUserId);
 
-  // Navigation
-  const { navigateWeek } = useWeeklyNavigation(setSelectedDate, setRefreshKey);
+  const { handleDragEnd } = useEntryOperations(weekDates, entries, () => fetchData(), user?.id);
 
-  // Entry operations
-  const { handleSaveEntry, handleDeleteEntry } = useEntryOperations(
-    targetUserId,
-    refetch,
-    setRefreshKey,
-    setIsDialogOpen,
-    setEditingEntry,
-    setDeleteDialogState
-  );
+  const [editingEntry, setEditingEntry] = React.useState<TimesheetEntry | undefined>(undefined);
 
-  // Loading and error states
-  if (isLoading) return <LoadingState />;
-  if (error) return <ErrorState error={error} onRetry={refetch} />;
+  // Track user changes and viewAs changes to force state cleanup
+  useEffect(() => {
+    const currentUserId = user?.id || null;
+    const currentViewAsUserId = viewAsUserId || null;
+    
+    // Create a composite key to track both authenticated user and viewing user changes
+    const currentCompositeKey = `${currentUserId}:${currentViewAsUserId}`;
+    
+    if (lastUserId !== currentCompositeKey) {
+      console.log(`User or viewAs changed from ${lastUserId} to ${currentCompositeKey}`);
+      clearComponentState();
+      clearDialogState();
+      setEditingEntry(undefined);
+      setLastUserId(currentCompositeKey);
+    }
+  }, [user?.id, viewAsUserId, lastUserId, clearComponentState, clearDialogState, setLastUserId]);
 
-  // Admin can perform all operations on any user's timesheet
-  // Regular users can only perform operations on their own timesheet
-  const canPerformOperations = !viewAsUserId || isAdmin;
+  // Update week dates when current date changes
+  useEffect(() => {
+    updateWeekDates();
+  }, [updateWeekDates]);
+
+  // Fetch data when dependencies change
+  useEffect(() => {
+    if (weekDates.length > 0 && user?.id && session) {
+      fetchData();
+    }
+  }, [fetchData, weekDates, user?.id, session]);
+
+  // Handler for opening the entry dialog
+  const handleOpenEntryDialog = useCallback((date: Date, entry?: TimesheetEntry) => {
+    setSelectedDate(date);
+    setEditingEntry(entry);
+    setEntryDialogOpen(true);
+  }, [setSelectedDate, setEntryDialogOpen]);
+
+  // Enhanced handler for saving an entry with real-time refresh
+  const handleSaveEntry = useCallback(async (savedEntry?: TimesheetEntry) => {
+    console.log("=== REFRESHING DATA AFTER ENTRY SAVE ===");
+    
+    await fetchData();
+    clearDialogState();
+    setEditingEntry(undefined);
+    
+    console.log("Data refresh completed after entry save");
+  }, [fetchData, clearDialogState]);
+
+  // Security validation
+  if (!user?.id || !session) {
+    return <div className="text-center text-gray-500">Please sign in to view your timesheet.</div>;
+  }
+
+  // Determine the effective user ID for operations
+  const effectiveUserId = viewAsUserId || user.id;
 
   return (
-    <div className="space-y-6">
-      <WeeklyViewContent
-        entries={entries}
-        projects={projects}
-        selectedDate={selectedDate}
-        weekStartDate={weekStartDate}
-        workingDays={workingDays}
-        targetUserId={targetUserId}
-        canPerformOperations={canPerformOperations}
-        onDateSelect={setSelectedDate}
-        onEditEntry={setEditingEntry}
-        onDeleteEntry={(entry) => setDeleteDialogState({ isOpen: true, entry })}
-        onDialogOpen={setIsDialogOpen}
-        onWorkingDaysChange={setWorkingDays}
-        onNavigateWeek={navigateWeek}
-      />
+    <ResponsiveContainer 
+      className={getTransitionClass("space-y-4 w-full max-w-full")}
+      onResize={(width) => {
+        console.log(`WeeklyView container resized to: ${width}px`);
+      }}
+    >
+      {/* Navigation */}
+      {isMobile ? (
+        <MobileWeekNavigation 
+          weekDates={weekDates}
+          currentDate={currentDate}
+          navigateToPrevious={navigateToPrevious}
+          navigateToNext={navigateToNext}
+          navigateToCurrentWeek={navigateToCurrentWeek}
+          error={error}
+          fetchData={fetchData}
+          viewMode={viewMode}
+          toggleViewMode={toggleViewMode}
+        />
+      ) : (
+        <WeekNavigation 
+          weekDates={weekDates}
+          currentDate={currentDate}
+          navigateToPrevious={navigateToPrevious}
+          navigateToNext={navigateToNext}
+          navigateToCurrentWeek={navigateToCurrentWeek}
+          error={error}
+          fetchData={fetchData}
+          viewMode={viewMode}
+          toggleViewMode={toggleViewMode}
+        />
+      )}
 
-      {/* Show dialogs when user can perform operations (own timesheet or admin viewing others) */}
-      {canPerformOperations && (
+      {/* Main Content */}
+      {loading ? (
+        <LoadingState />
+      ) : error ? (
+        <ErrorState error={error} onRetry={fetchData} />
+      ) : (
+        <WeeklyViewContent
+          weekDates={weekDates}
+          currentDate={currentDate}
+          viewMode={viewMode}
+          entries={entries}
+          projects={projects}
+          onEntryChange={fetchData}
+          onAddEntry={handleOpenEntryDialog}
+          onEditEntry={handleOpenEntryDialog}
+          onDragEnd={handleDragEnd}
+        />
+      )}
+
+      {/* Dialogs - Only show if viewing own timesheet */}
+      {!viewAsUserId && (
         <WeeklyViewDialogs
-          userId={targetUserId}
+          userId={effectiveUserId}
           selectedDate={selectedDate}
-          entryDialogOpen={isDialogOpen}
-          setEntryDialogOpen={setIsDialogOpen}
+          entryDialogOpen={entryDialogOpen}
+          setEntryDialogOpen={setEntryDialogOpen}
           projects={projects}
           editingEntry={editingEntry}
           onSave={handleSaveEntry}
           entries={entries}
         />
       )}
-    </div>
+    </ResponsiveContainer>
   );
 };
 
