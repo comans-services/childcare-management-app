@@ -16,8 +16,8 @@ interface WeeklyViewContentProps {
   entries: TimesheetEntry[];
   projects: Project[];
   onEntryChange: () => void;
-  onAddEntry?: (date: Date, entry?: TimesheetEntry) => void; // Optional for read-only mode
-  onEditEntry?: (date: Date, entry: TimesheetEntry) => void; // Optional for read-only mode
+  onAddEntry?: (date: Date, entry?: TimesheetEntry) => void;
+  onEditEntry?: (date: Date, entry: TimesheetEntry) => void;
   onDragEnd: (result: DropResult) => void;
 }
 
@@ -42,6 +42,9 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     return <EmptyState message="No time entries found for this week" />;
   }
 
+  // Convert viewMode to the format expected by grid components
+  const gridViewMode: "today" | "week" = viewMode === "list" ? "today" : "week";
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="space-y-6">
@@ -49,13 +52,11 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
         {isMobile ? (
           <MobileWeeklyHoursSummary 
             entries={entries} 
-            weekDates={weekDates}
             totalHours={weekTotalHours}
           />
         ) : (
           <WeeklyHoursSummary 
             entries={entries} 
-            weekDates={weekDates}
             totalHours={weekTotalHours}
           />
         )}
@@ -65,7 +66,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
           <MobileWeekGrid
             weekDates={weekDates}
             currentDate={currentDate}
-            viewMode={viewMode}
+            viewMode={gridViewMode}
             entries={entries}
             projects={projects}
             onEntryChange={onEntryChange}
@@ -76,10 +77,11 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
           <WeekGrid
             weekDates={weekDates}
             currentDate={currentDate}
-            viewMode={viewMode}
+            viewMode={gridViewMode}
             entries={entries}
             projects={projects}
             onEntryChange={onEntryChange}
+            onDragEnd={onDragEnd}
             onAddEntry={onAddEntry}
             onEditEntry={onEditEntry}
           />

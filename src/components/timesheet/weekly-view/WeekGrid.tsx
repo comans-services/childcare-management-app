@@ -17,19 +17,19 @@ import {
 
 interface WeekGridProps {
   weekDates: Date[];
-  userId: string;
+  currentDate: Date;
   entries: TimesheetEntry[];
   projects: Project[];
   onEntryChange: () => void;
   onDragEnd: (result: DropResult) => void;
-  onAddEntry: (date: Date) => void;
-  onEditEntry: (date: Date, entry: TimesheetEntry) => void;
+  onAddEntry?: (date: Date) => void;
+  onEditEntry?: (date: Date, entry: TimesheetEntry) => void;
   viewMode: "today" | "week";
 }
 
 const WeekGrid: React.FC<WeekGridProps> = ({
   weekDates,
-  userId,
+  currentDate,
   entries,
   projects,
   onEntryChange,
@@ -73,13 +73,12 @@ const WeekGrid: React.FC<WeekGridProps> = ({
           >
             <DayColumn
               date={date}
-              userId={userId}
               entries={entries}
               projects={projects}
               onEntryChange={onEntryChange}
               droppableId={index.toString()}
-              onAddEntry={() => onAddEntry(date)}
-              onEditEntry={(entry) => onEditEntry(date, entry)}
+              onAddEntry={onAddEntry ? () => onAddEntry(date) : undefined}
+              onEditEntry={onEditEntry ? (entry) => onEditEntry(date, entry) : undefined}
             />
           </div>
         );
@@ -104,13 +103,12 @@ const WeekGrid: React.FC<WeekGridProps> = ({
             >
               <DayColumn
                 date={date}
-                userId={userId}
                 entries={entries}
                 projects={projects}
                 onEntryChange={onEntryChange}
                 droppableId={index.toString()}
-                onAddEntry={() => onAddEntry(date)}
-                onEditEntry={(entry) => onEditEntry(date, entry)}
+                onAddEntry={onAddEntry ? () => onAddEntry(date) : undefined}
+                onEditEntry={onEditEntry ? (entry) => onEditEntry(date, entry) : undefined}
               />
             </CarouselItem>
           );
