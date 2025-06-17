@@ -25,12 +25,14 @@ interface ProjectAssignmentDialogProps {
   project: Project | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  readOnly?: boolean;
 }
 
 const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
   project,
   open,
   onOpenChange,
+  readOnly = false,
 }) => {
   const queryClient = useQueryClient();
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -126,9 +128,14 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] h-[600px] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Manage Project Assignments</DialogTitle>
+          <DialogTitle>
+            {readOnly ? "View Project Assignments" : "Manage Project Assignments"}
+          </DialogTitle>
           <DialogDescription>
-            Assign users to "{project?.name}" project. Only assigned users can log time to this project.
+            {readOnly 
+              ? `View users assigned to "${project?.name}" project.`
+              : `Assign users to "${project?.name}" project. Only assigned users can log time to this project.`
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -137,8 +144,8 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
             <div className="space-y-4 p-1">
               <ProjectAssigneeSelector
                 selectedUserIds={selectedUserIds}
-                onSelectionChange={setSelectedUserIds}
-                disabled={assignUsersMutation.isPending}
+                onSelectionChange={readOnly ? () => {} : setSelectedUserIds}
+                disabled={assignUsersMutation.isPending || readOnly}
               />
             </div>
           </ScrollArea>
@@ -146,11 +153,13 @@ const ProjectAssignmentDialog: React.FC<ProjectAssignmentDialogProps> = ({
 
         <DialogFooter className="flex-shrink-0">
           <Button variant="outline" onClick={handleCancel} disabled={assignUsersMutation.isPending}>
-            Cancel
+            {readOnly ? "Close" : "Cancel"}
           </Button>
-          <Button onClick={handleSave} disabled={assignUsersMutation.isPending}>
-            {assignUsersMutation.isPending ? "Saving..." : "Save Changes"}
-          </Button>
+          {!readOnly && (
+            <Button onClick={handleSave} disabled={assignUsersMutation.isPending}>
+              {assignUsersMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
