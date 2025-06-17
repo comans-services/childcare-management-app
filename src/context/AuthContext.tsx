@@ -2,11 +2,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { AuthContextProps } from "./auth/authTypes";
+import { AuthContextType } from "./auth/authTypes";
 import { validateSession } from "./auth/authUtils";
 import { signInOperation, signOutOperation, changePasswordOperation, fetchUserRole } from "./auth/authOperations";
 
-const AuthContext = createContext<AuthContextProps>({
+const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   userRole: null,
