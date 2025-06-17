@@ -2,11 +2,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { AuthContextProps } from "./auth/authTypes";
+import { AuthContextType } from "./auth/authTypes";
 import { validateSession } from "./auth/authUtils";
 import { signInOperation, signOutOperation, changePasswordOperation, fetchUserRole } from "./auth/authOperations";
 
-const AuthContext = createContext<AuthContextProps>({
+const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   userRole: null,
@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextProps>({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<"employee" | "admin" | null>(null);
+  const [userRole, setUserRole] = useState<"employee" | "manager" | "admin" | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Clear all user-related state
@@ -95,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleUserRoleFetch = async (userId: string) => {
     const userData = await fetchUserRole(userId);
     if (userData) {
-      setUserRole(userData.role as "employee" | "admin" || "employee");
+      setUserRole(userData.role as "employee" | "manager" | "admin" || "employee");
       
       // Update user profile with email if missing
       if (!userData.email && user?.email) {

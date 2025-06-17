@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw, Building } from "lucide-react";
+import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw, Building, Eye, Info } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Project } from "@/lib/timesheet/types";
@@ -13,9 +12,10 @@ import AddEditProjectDialog from "@/components/projects/AddEditProjectDialog";
 import DeleteProjectDialog from "@/components/projects/DeleteProjectDialog";
 import { Input } from "@/components/ui/input";
 import ImportButton from "@/components/common/ImportButton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ProjectsPage = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isDeleteProjectOpen, setIsDeleteProjectOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -23,6 +23,10 @@ const ProjectsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showActiveOnly, setShowActiveOnly] = useState(true);
   const [showInternalOnly, setShowInternalOnly] = useState(false);
+
+  // Determine if user has read-only access (manager role)
+  const isReadOnly = userRole === "manager";
+  const isAdmin = userRole === "admin";
 
   const { 
     data: projects = [], 
@@ -51,16 +55,41 @@ const ProjectsPage = () => {
   }, [error]);
 
   const handleEditProject = (project: Project) => {
+    if (isReadOnly) {
+      toast({
+        title: "View Only Access",
+        description: "You have read-only access to projects. Contact an administrator to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
     setEditingProject(project);
     setIsAddProjectOpen(true);
   };
   
   const handleDeleteClick = (project: Project) => {
+    if (isReadOnly) {
+      toast({
+        title: "View Only Access",
+        description: "You have read-only access to projects. Contact an administrator to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
     setProjectToDelete(project);
     setIsDeleteProjectOpen(true);
   };
 
   const handleToggleStatus = async (project: Project) => {
+    if (isReadOnly) {
+      toast({
+        title: "View Only Access",
+        description: "You have read-only access to projects. Contact an administrator to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const newStatus = !project.is_active;
       await updateProjectStatus(project.id, newStatus);
@@ -115,23 +144,61 @@ const ProjectsPage = () => {
 
   return (
     <div className="container-responsive max-w-none">
+      {/* View-only access alert for managers */}
+      {isReadOnly && (
+        <Alert className="mb-fluid-md border-blue-200 bg-blue-50">
+          <Eye className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            You have <strong>view-only access</strong> to projects. You can browse all project information, budgets, and assignments, but cannot create, edit, or delete projects. Contact an administrator if you need to make changes.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header with better responsive layout */}
       <div className="mb-fluid-md">
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-fluid-sm">
           <div className="min-w-0 flex-1">
-            <h1 className="text-fluid-2xl font-bold truncate">Projects</h1>
-            <p className="text-fluid-sm text-gray-600 mt-1">Manage and monitor project budgets</p>
+            <h1 className="text-fluid-2xl font-bold truncate">
+              Projects {isReadOnly && <span className="text-muted-foreground text-base font-normal">(View Only)</span>}
+            </h1>
+            <p className="text-fluid-sm text-gray-600 mt-1">
+              {isReadOnly ? "Browse project budgets and monitor progress" : "Manage and monitor project budgets"}
+            </p>
           </div>
           
-          {/* Action buttons with smart responsive behavior */}
-          <div className="flex flex-wrap gap-2 lg:flex-nowrap lg:gap-3">
-            <ImportButton
-              entityType="projects"
-              onImportComplete={refetch}
-              variant="outline"
-              className="flex-shrink-0"
-            />
-            
+          {/* Action buttons with smart responsive behavior - hide for read-only users */}
+          {!isReadOnly && (
+            <div className="flex flex-wrap gap-2 lg:flex-nowrap lg:gap-3">
+              <ImportButton
+                entityType="projects"
+                onImportComplete={refetch}
+                variant="outline"
+                className="flex-shrink-0"
+              />
+              
+              <Button 
+                onClick={() => refetch()}
+                variant="outline"
+                title="Refresh projects"
+                className="flex-shrink-0"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">Refresh</span>
+              </Button>
+              
+              <Button 
+                onClick={() => setIsAddProjectOpen(true)} 
+                className="flex items-center gap-2 flex-shrink-0"
+              >
+                <PlusCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Project</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            </div>
+          )}
+          
+          {/* Refresh button for read-only users */}
+          {isReadOnly && (
             <Button 
               onClick={() => refetch()}
               variant="outline"
@@ -141,16 +208,7 @@ const ProjectsPage = () => {
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline ml-2">Refresh</span>
             </Button>
-            
-            <Button 
-              onClick={() => setIsAddProjectOpen(true)} 
-              className="flex items-center gap-2 flex-shrink-0"
-            >
-              <PlusCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Project</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -307,7 +365,9 @@ const ProjectsPage = () => {
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="min-w-0 flex-1">
             <CardTitle className="text-fluid-lg">All Projects</CardTitle>
-            <CardDescription className="text-fluid-sm">Manage your project budgets and timelines</CardDescription>
+            <CardDescription className="text-fluid-sm">
+              {isReadOnly ? "Browse project budgets and timelines" : "Manage your project budgets and timelines"}
+            </CardDescription>
           </div>
           <div className="flex items-center space-x-2 flex-shrink-0">
             {projects.length > 0 && (
@@ -328,39 +388,47 @@ const ProjectsPage = () => {
               onEdit={handleEditProject} 
               onDelete={handleDeleteClick}
               onToggleStatus={handleToggleStatus}
+              readOnly={isReadOnly}
             />
           ) : (
             <div className="p-8 text-center">
               <BarChart3 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <p className="text-gray-500 mb-4">No projects found</p>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsAddProjectOpen(true)}
-                >
-                  Add Your First Project
-                </Button>
-                <div className="text-sm text-muted-foreground">
-                  or <ImportButton entityType="projects" onImportComplete={refetch} variant="ghost" size="sm" />
+              {!isReadOnly && (
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsAddProjectOpen(true)}
+                  >
+                    Add Your First Project
+                  </Button>
+                  <div className="text-sm text-muted-foreground">
+                    or <ImportButton entityType="projects" onImportComplete={refetch} variant="ghost" size="sm" />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
       
-      <AddEditProjectDialog 
-        isOpen={isAddProjectOpen} 
-        onClose={closeAddEditDialog} 
-        existingProject={editingProject}
-      />
-      
-      {projectToDelete && (
-        <DeleteProjectDialog 
-          isOpen={isDeleteProjectOpen}
-          onClose={closeDeleteDialog}
-          project={projectToDelete}
-        />
+      {/* Only show dialogs for admin users */}
+      {!isReadOnly && (
+        <>
+          <AddEditProjectDialog 
+            isOpen={isAddProjectOpen} 
+            onClose={closeAddEditDialog} 
+            existingProject={editingProject}
+          />
+          
+          {projectToDelete && (
+            <DeleteProjectDialog 
+              isOpen={isDeleteProjectOpen}
+              onClose={closeDeleteDialog}
+              project={projectToDelete}
+            />
+          )}
+        </>
       )}
     </div>
   );
