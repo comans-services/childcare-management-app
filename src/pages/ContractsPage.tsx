@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Clock, AlertTriangle, CheckCircle, Search, FileText, Filter, RefreshCw } from "lucide-react";
+import { PlusCircle, Clock, AlertTriangle, CheckCircle, Search, FileText, Filter, RefreshCw, Eye } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Contract, fetchContracts } from "@/lib/contract-service";
@@ -14,9 +14,10 @@ import ContractFilters from "@/components/contracts/ContractFilters";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import ImportButton from "@/components/common/ImportButton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ContractsPage = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [isAddContractOpen, setIsAddContractOpen] = useState(false);
   const [isDeleteContractOpen, setIsDeleteContractOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
@@ -30,6 +31,10 @@ const ContractsPage = () => {
   });
   
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Determine if user has read-only access (manager role)
+  const isReadOnly = userRole === "manager";
+  const isAdmin = userRole === "admin";
 
   const { 
     data: contracts = [], 
@@ -82,11 +87,27 @@ const ContractsPage = () => {
   };
 
   const handleEditContract = (contract: Contract) => {
+    if (isReadOnly) {
+      toast({
+        title: "View Only Access",
+        description: "You have read-only access to contracts. Contact an administrator to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
     setEditingContract(contract);
     setIsAddContractOpen(true);
   };
   
   const handleDeleteClick = (contract: Contract) => {
+    if (isReadOnly) {
+      toast({
+        title: "View Only Access",
+        description: "You have read-only access to contracts. Contact an administrator to make changes.",
+        variant: "destructive",
+      });
+      return;
+    }
     setContractToDelete(contract);
     setIsDeleteContractOpen(true);
   };
@@ -121,19 +142,55 @@ const ContractsPage = () => {
 
   return (
     <div className="container mx-auto">
+      {/* View-only access alert for managers */}
+      {isReadOnly && (
+        <Alert className="mb-6 border-blue-200 bg-blue-50">
+          <Eye className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            You have <strong>view-only access</strong> to contracts. You can browse all contract information, status, and assignments, but cannot create, edit, or delete contracts. Contact an administrator if you need to make changes.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Contracts</h1>
-          <p className="text-gray-600">Manage and monitor service contracts</p>
+          <h1 className="text-2xl font-bold">
+            Contracts {isReadOnly && <span className="text-muted-foreground text-base font-normal">(View Only)</span>}
+          </h1>
+          <p className="text-gray-600">
+            {isReadOnly ? "Browse and monitor service contracts" : "Manage and monitor service contracts"}
+          </p>
         </div>
         
-        <div className="flex gap-2">
-          <ImportButton
-            entityType="contracts"
-            onImportComplete={refetch}
-            variant="outline"
-          />
-          
+        {/* Action buttons - hide for read-only users */}
+        {!isReadOnly && (
+          <div className="flex gap-2">
+            <ImportButton
+              entityType="contracts"
+              onImportComplete={refetch}
+              variant="outline"
+            />
+            
+            <Button 
+              onClick={() => refetch()}
+              variant="outline"
+              title="Refresh contracts"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            
+            <Button 
+              onClick={() => setIsAddContractOpen(true)} 
+              className="flex items-center gap-2"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Add Contract
+            </Button>
+          </div>
+        )}
+
+        {/* Refresh button for read-only users */}
+        {isReadOnly && (
           <Button 
             onClick={() => refetch()}
             variant="outline"
@@ -141,15 +198,7 @@ const ContractsPage = () => {
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
-          
-          <Button 
-            onClick={() => setIsAddContractOpen(true)} 
-            className="flex items-center gap-2"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Add Contract
-          </Button>
-        </div>
+        )}
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-2 items-center">
@@ -247,7 +296,9 @@ const ContractsPage = () => {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>All Contracts</CardTitle>
-            <CardDescription>Manage your customer service contracts</CardDescription>
+            <CardDescription>
+              {isReadOnly ? "Browse your customer service contracts" : "Manage your customer service contracts"}
+            </CardDescription>
           </div>
           <div className="flex items-center space-x-2">
             {contracts.length > 0 && (
@@ -266,40 +317,48 @@ const ContractsPage = () => {
             <ContractList 
               contracts={contracts} 
               onEdit={handleEditContract} 
-              onDelete={handleDeleteClick} 
+              onDelete={handleDeleteClick}
+              readOnly={isReadOnly}
             />
           ) : (
             <div className="p-8 text-center">
               <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <p className="text-gray-500 mb-4">No contracts found</p>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsAddContractOpen(true)}
-                >
-                  Add Your First Contract
-                </Button>
-                <div className="text-sm text-muted-foreground">
-                  or <ImportButton entityType="contracts" onImportComplete={refetch} variant="ghost" size="sm" />
+              {!isReadOnly && (
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsAddContractOpen(true)}
+                  >
+                    Add Your First Contract
+                  </Button>
+                  <div className="text-sm text-muted-foreground">
+                    or <ImportButton entityType="contracts" onImportComplete={refetch} variant="ghost" size="sm" />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
       
-      <AddEditContractDialog 
-        isOpen={isAddContractOpen} 
-        onClose={closeAddEditDialog} 
-        existingContract={editingContract}
-      />
-      
-      {contractToDelete && (
-        <DeleteContractDialog 
-          isOpen={isDeleteContractOpen}
-          onClose={closeDeleteDialog}
-          contract={contractToDelete}
-        />
+      {/* Only show dialogs for admin users */}
+      {!isReadOnly && (
+        <>
+          <AddEditContractDialog 
+            isOpen={isAddContractOpen} 
+            onClose={closeAddEditDialog} 
+            existingContract={editingContract}
+          />
+          
+          {contractToDelete && (
+            <DeleteContractDialog 
+              isOpen={isDeleteContractOpen}
+              onClose={closeDeleteDialog}
+              contract={contractToDelete}
+            />
+          )}
+        </>
       )}
     </div>
   );

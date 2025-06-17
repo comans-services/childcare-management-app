@@ -38,9 +38,9 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
   const navigationItems = [
     { to: "/", icon: Home, label: "Home", showForAll: true },
     { to: "/timesheet", icon: Calendar, label: "Timesheet", showForAll: true },
-    { to: "/projects", icon: FolderKanban, label: "Projects", managerOrAbove: true },
+    { to: "/contracts", icon: FileText, label: "Contracts", managerOrAbove: true },
+    { to: "/projects", icon: FolderKanban, label: "Projects", adminOnly: true },
     { to: "/customers", icon: Users, label: "Customers", adminOnly: true },
-    { to: "/contracts", icon: FileText, label: "Contracts", adminOnly: true },
     { to: "/reports", icon: BarChart, label: "Reports", adminOnly: true },
     { to: "/team", icon: UserPlus, label: "Team", adminOnly: true },
     { to: "/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },

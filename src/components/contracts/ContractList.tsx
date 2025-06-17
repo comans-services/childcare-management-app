@@ -18,7 +18,8 @@ import {
   Clock,
   Users,
   Building,
-  FileText
+  FileText,
+  Eye
 } from "lucide-react";
 import { Contract } from "@/lib/contract-service";
 import { formatDate } from "@/lib/date-utils";
@@ -28,12 +29,14 @@ interface ContractListProps {
   contracts: Contract[];
   onEdit: (contract: Contract) => void;
   onDelete: (contract: Contract) => void;
+  readOnly?: boolean;
 }
 
 const ContractList: React.FC<ContractListProps> = ({ 
   contracts, 
   onEdit, 
-  onDelete 
+  onDelete,
+  readOnly = false
 }) => {
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
@@ -47,6 +50,9 @@ const ContractList: React.FC<ContractListProps> = ({
 
   const handleDoubleRightClick = (contract: Contract, event: React.MouseEvent) => {
     event.preventDefault(); // Prevent context menu
+    
+    // Only allow editing if not read-only
+    if (readOnly) return;
     
     const currentTime = Date.now();
     const timeDiff = currentTime - lastRightClickTime.current;
@@ -168,33 +174,47 @@ const ContractList: React.FC<ContractListProps> = ({
             </CardContent>
             
             <CardFooter className="pt-3 flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleManageAssignments(contract)}
-                className="flex items-center gap-1"
-              >
-                <Users className="h-4 w-4" />
-                Assign
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(contract)}
-                className="flex items-center gap-1"
-              >
-                <Edit className="h-4 w-4" />
-                Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onDelete(contract)}
-                className="flex items-center gap-1 text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
+              {!readOnly ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleManageAssignments(contract)}
+                    className="flex items-center gap-1"
+                  >
+                    <Users className="h-4 w-4" />
+                    Assign
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEdit(contract)}
+                    className="flex items-center gap-1"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDelete(contract)}
+                    className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleManageAssignments(contract)}
+                  className="flex items-center gap-1"
+                >
+                  <Eye className="h-4 w-4" />
+                  View Assignments
+                </Button>
+              )}
             </CardFooter>
           </Card>
         ))}
@@ -204,6 +224,7 @@ const ContractList: React.FC<ContractListProps> = ({
         contract={selectedContract}
         open={assignmentDialogOpen}
         onOpenChange={setAssignmentDialogOpen}
+        readOnly={readOnly}
       />
     </>
   );

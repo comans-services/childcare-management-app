@@ -40,12 +40,12 @@ const App = () => (
               
               {/* Manager-level routes (manager + admin access) */}
               <Route element={<ManagerRoute />}>
-                <Route path="projects" element={<ProjectsPage />} />
+                <Route path="contracts" element={<ContractsPage />} />
               </Route>
               
               {/* Admin-only routes protected by AdminRoute */}
               <Route element={<AdminRoute />}>
-                <Route path="contracts" element={<ContractsPage />} />
+                <Route path="projects" element={<ProjectsPage />} />
                 <Route path="customers" element={<CustomersPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="team" element={<TeamPage />} />

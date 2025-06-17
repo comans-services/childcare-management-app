@@ -22,8 +22,7 @@ import {
   BarChart3,
   Power,
   PowerOff,
-  Home,
-  Eye
+  Home
 } from "lucide-react";
 import { Project } from "@/lib/timesheet/types";
 import { formatDate } from "@/lib/date-utils";
@@ -34,15 +33,13 @@ interface ProjectListProps {
   onEdit: (project: Project) => void;
   onDelete: (project: Project) => void;
   onToggleStatus: (project: Project) => void;
-  readOnly?: boolean;
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({ 
   projects, 
   onEdit, 
   onDelete,
-  onToggleStatus,
-  readOnly = false
+  onToggleStatus
 }) => {
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -56,9 +53,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
 
   const handleDoubleRightClick = (project: Project, event: React.MouseEvent) => {
     event.preventDefault(); // Prevent context menu
-    
-    // Only allow editing if not read-only
-    if (readOnly) return;
     
     const currentTime = Date.now();
     const timeDiff = currentTime - lastRightClickTime.current;
@@ -209,85 +203,67 @@ const ProjectList: React.FC<ProjectListProps> = ({
             
             {/* Enhanced footer with smart button layout */}
             <CardFooter className="pt-3 flex-shrink-0">
-              {/* Primary actions - conditional based on read-only mode */}
+              {/* Primary actions */}
               <div className="flex flex-wrap gap-2 w-full">
-                {!readOnly && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onToggleStatus(project)}
-                      className={`
-                        flex items-center gap-1 text-xs flex-shrink-0
-                        ${project.is_active 
-                          ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50' 
-                          : 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                        }
-                      `}
-                    >
-                      {project.is_active ? (
-                        <>
-                          <PowerOff className="h-3 w-3" />
-                          <span className="hidden lg:inline">Deactivate</span>
-                        </>
-                      ) : (
-                        <>
-                          <Power className="h-3 w-3" />
-                          <span className="hidden lg:inline">Activate</span>
-                        </>
-                      )}
-                    </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onToggleStatus(project)}
+                  className={`
+                    flex items-center gap-1 text-xs flex-shrink-0
+                    ${project.is_active 
+                      ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50' 
+                      : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                    }
+                  `}
+                >
+                  {project.is_active ? (
+                    <>
+                      <PowerOff className="h-3 w-3" />
+                      <span className="hidden lg:inline">Deactivate</span>
+                    </>
+                  ) : (
+                    <>
+                      <Power className="h-3 w-3" />
+                      <span className="hidden lg:inline">Activate</span>
+                    </>
+                  )}
+                </Button>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleManageAssignments(project)}
-                      className="flex items-center gap-1 text-xs flex-shrink-0 hover:bg-blue-50"
-                    >
-                      <Users className="h-3 w-3" />
-                      <span className="hidden lg:inline">Assign</span>
-                    </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleManageAssignments(project)}
+                  className="flex items-center gap-1 text-xs flex-shrink-0 hover:bg-blue-50"
+                >
+                  <Users className="h-3 w-3" />
+                  <span className="hidden lg:inline">Assign</span>
+                </Button>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onEdit(project)}
-                      className="flex items-center gap-1 text-xs flex-shrink-0 hover:bg-gray-50"
-                    >
-                      <Edit className="h-3 w-3" />
-                      <span className="hidden lg:inline">Edit</span>
-                    </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(project)}
+                  className="flex items-center gap-1 text-xs flex-shrink-0 hover:bg-gray-50"
+                >
+                  <Edit className="h-3 w-3" />
+                  <span className="hidden lg:inline">Edit</span>
+                </Button>
 
-                    {/* Secondary action with responsive visibility */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onDelete(project)}
-                      className="
-                        flex items-center gap-1 text-xs flex-shrink-0
-                        text-red-600 hover:text-red-700 hover:bg-red-50
-                        ml-auto
-                      "
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      <span className="hidden xl:inline">Delete</span>
-                    </Button>
-                  </>
-                )}
-
-                {/* Read-only actions for managers */}
-                {readOnly && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleManageAssignments(project)}
-                    className="flex items-center gap-1 text-xs flex-shrink-0 hover:bg-blue-50"
-                  >
-                    <Eye className="h-3 w-3" />
-                    <span className="hidden lg:inline">View Assignments</span>
-                    <span className="lg:hidden">View</span>
-                  </Button>
-                )}
+                {/* Secondary action with responsive visibility */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDelete(project)}
+                  className="
+                    flex items-center gap-1 text-xs flex-shrink-0
+                    text-red-600 hover:text-red-700 hover:bg-red-50
+                    ml-auto
+                  "
+                >
+                  <Trash2 className="h-3 w-3" />
+                  <span className="hidden xl:inline">Delete</span>
+                </Button>
               </div>
             </CardFooter>
           </Card>
@@ -298,7 +274,6 @@ const ProjectList: React.FC<ProjectListProps> = ({
         project={selectedProject}
         open={assignmentDialogOpen}
         onOpenChange={setAssignmentDialogOpen}
-        readOnly={readOnly}
       />
     </>
   );
