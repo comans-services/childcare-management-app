@@ -25,12 +25,14 @@ interface ContractAssignmentDialogProps {
   contract: Contract | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  readOnly?: boolean;
 }
 
 const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
   contract,
   open,
   onOpenChange,
+  readOnly = false,
 }) => {
   const queryClient = useQueryClient();
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -54,7 +56,7 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
 
   const assignUsersMutation = useMutation({
     mutationFn: async () => {
-      if (!contract) return;
+      if (!contract || readOnly) return;
 
       const currentUserIds = assignments.map((a: ContractAssignment) => a.user_id);
       const usersToAdd = selectedUserIds.filter(id => !currentUserIds.includes(id));
@@ -90,13 +92,17 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
   });
 
   const handleSave = () => {
-    assignUsersMutation.mutate();
+    if (!readOnly) {
+      assignUsersMutation.mutate();
+    }
   };
 
   const handleCancel = () => {
-    // Reset to original assignments
-    const originalUserIds = assignments.map((assignment: ContractAssignment) => assignment.user_id);
-    setSelectedUserIds(originalUserIds);
+    // Reset to original assignments only if not read-only
+    if (!readOnly) {
+      const originalUserIds = assignments.map((assignment: ContractAssignment) => assignment.user_id);
+      setSelectedUserIds(originalUserIds);
+    }
     onOpenChange(false);
   };
 
@@ -104,9 +110,14 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] h-[600px] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Manage Contract Assignments</DialogTitle>
+          <DialogTitle>
+            {readOnly ? "View Contract Assignments" : "Manage Contract Assignments"}
+          </DialogTitle>
           <DialogDescription>
-            Assign users to "{contract?.name}" contract. Only assigned users can log time to this contract.
+            {readOnly 
+              ? `View users assigned to "${contract?.name}" contract.`
+              : `Assign users to "${contract?.name}" contract. Only assigned users can log time to this contract.`
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -115,20 +126,28 @@ const ContractAssignmentDialog: React.FC<ContractAssignmentDialogProps> = ({
             <div className="space-y-4 p-1">
               <ContractAssigneeSelector
                 selectedUserIds={selectedUserIds}
-                onSelectionChange={setSelectedUserIds}
-                disabled={assignUsersMutation.isPending}
+                onSelectionChange={readOnly ? () => {} : setSelectedUserIds}
+                disabled={assignUsersMutation.isPending || readOnly}
               />
             </div>
           </ScrollArea>
         </div>
 
         <DialogFooter className="flex-shrink-0">
-          <Button variant="outline" onClick={handleCancel} disabled={assignUsersMutation.isPending}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={assignUsersMutation.isPending}>
-            {assignUsersMutation.isPending ? "Saving..." : "Save Changes"}
-          </Button>
+          {readOnly ? (
+            <Button onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={handleCancel} disabled={assignUsersMutation.isPending}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={assignUsersMutation.isPending}>
+                {assignUsersMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
