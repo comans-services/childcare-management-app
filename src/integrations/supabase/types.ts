@@ -175,15 +175,7 @@ export type Database = {
           updated_at?: string
           uploaded_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_contracts_customer"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       customers: {
         Row: {

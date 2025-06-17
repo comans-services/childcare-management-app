@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Sheet,
@@ -32,13 +33,12 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
 
   // Define which navigation items are available for each role
   const isAdmin = userRole === "admin";
-  const isManager = userRole === "manager";
-  const isManagerOrAbove = isAdmin || isManager;
+  const isEmployee = userRole === "employee";
 
   const navigationItems = [
     { to: "/", icon: Home, label: "Home", showForAll: true },
     { to: "/timesheet", icon: Calendar, label: "Timesheet", showForAll: true },
-    { to: "/projects", icon: FolderKanban, label: "Projects", managerOrAbove: true },
+    { to: "/projects", icon: FolderKanban, label: "Projects", adminOnly: true },
     { to: "/customers", icon: Users, label: "Customers", adminOnly: true },
     { to: "/contracts", icon: FileText, label: "Contracts", adminOnly: true },
     { to: "/reports", icon: BarChart, label: "Reports", adminOnly: true },
@@ -47,9 +47,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
   ];
 
   const filteredItems = navigationItems.filter(item => 
-    item.showForAll || 
-    (item.managerOrAbove && isManagerOrAbove) ||
-    (item.adminOnly && isAdmin)
+    item.showForAll || (item.adminOnly && isAdmin)
   );
 
   return (

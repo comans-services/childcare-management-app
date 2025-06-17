@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw, Building, Eye } from "lucide-react";
+import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw, Building } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Project } from "@/lib/timesheet/types";
@@ -13,7 +13,6 @@ import AddEditProjectDialog from "@/components/projects/AddEditProjectDialog";
 import DeleteProjectDialog from "@/components/projects/DeleteProjectDialog";
 import { Input } from "@/components/ui/input";
 import ImportButton from "@/components/common/ImportButton";
-import { isAdmin } from "@/utils/roles";
 
 const ProjectsPage = () => {
   const { user } = useAuth();
@@ -24,31 +23,6 @@ const ProjectsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showActiveOnly, setShowActiveOnly] = useState(true);
   const [showInternalOnly, setShowInternalOnly] = useState(false);
-  const [isAdminUser, setIsAdminUser] = useState(false);
-  const [hasCheckedAdmin, setHasCheckedAdmin] = useState(false);
-
-  // Check if user is admin for edit permissions
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) {
-        setIsAdminUser(false);
-        setHasCheckedAdmin(true);
-        return;
-      }
-
-      try {
-        const adminStatus = await isAdmin(user);
-        setIsAdminUser(adminStatus);
-        setHasCheckedAdmin(true);
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-        setIsAdminUser(false);
-        setHasCheckedAdmin(true);
-      }
-    };
-
-    checkAdminStatus();
-  }, [user]);
 
   const { 
     data: projects = [], 
@@ -77,41 +51,16 @@ const ProjectsPage = () => {
   }, [error]);
 
   const handleEditProject = (project: Project) => {
-    if (!isAdminUser) {
-      toast({
-        title: "Access denied",
-        description: "Only administrators can edit projects.",
-        variant: "destructive",
-      });
-      return;
-    }
     setEditingProject(project);
     setIsAddProjectOpen(true);
   };
   
   const handleDeleteClick = (project: Project) => {
-    if (!isAdminUser) {
-      toast({
-        title: "Access denied",
-        description: "Only administrators can delete projects.",
-        variant: "destructive",
-      });
-      return;
-    }
     setProjectToDelete(project);
     setIsDeleteProjectOpen(true);
   };
 
   const handleToggleStatus = async (project: Project) => {
-    if (!isAdminUser) {
-      toast({
-        title: "Access denied",
-        description: "Only administrators can modify project status.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const newStatus = !project.is_active;
       await updateProjectStatus(project.id, newStatus);
@@ -171,50 +120,18 @@ const ProjectsPage = () => {
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-fluid-sm">
           <div className="min-w-0 flex-1">
             <h1 className="text-fluid-2xl font-bold truncate">Projects</h1>
-            <p className="text-fluid-sm text-gray-600 mt-1">
-              {isAdminUser ? "Manage and monitor project budgets" : "View project information and budgets"}
-            </p>
-            {!isAdminUser && hasCheckedAdmin && (
-              <div className="flex items-center gap-2 mt-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-md">
-                <Eye className="h-4 w-4" />
-                <span>View-only mode: You can view projects but cannot edit them</span>
-              </div>
-            )}
+            <p className="text-fluid-sm text-gray-600 mt-1">Manage and monitor project budgets</p>
           </div>
           
-          {/* Action buttons with smart responsive behavior - only show for admins */}
-          {isAdminUser && (
-            <div className="flex flex-wrap gap-2 lg:flex-nowrap lg:gap-3">
-              <ImportButton
-                entityType="projects"
-                onImportComplete={refetch}
-                variant="outline"
-                className="flex-shrink-0"
-              />
-              
-              <Button 
-                onClick={() => refetch()}
-                variant="outline"
-                title="Refresh projects"
-                className="flex-shrink-0"
-              >
-                <RefreshCw className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">Refresh</span>
-              </Button>
-              
-              <Button 
-                onClick={() => setIsAddProjectOpen(true)} 
-                className="flex items-center gap-2 flex-shrink-0"
-              >
-                <PlusCircle className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Project</span>
-                <span className="sm:hidden">Add</span>
-              </Button>
-            </div>
-          )}
-          
-          {/* Non-admin users get refresh button only */}
-          {!isAdminUser && (
+          {/* Action buttons with smart responsive behavior */}
+          <div className="flex flex-wrap gap-2 lg:flex-nowrap lg:gap-3">
+            <ImportButton
+              entityType="projects"
+              onImportComplete={refetch}
+              variant="outline"
+              className="flex-shrink-0"
+            />
+            
             <Button 
               onClick={() => refetch()}
               variant="outline"
@@ -224,7 +141,16 @@ const ProjectsPage = () => {
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline ml-2">Refresh</span>
             </Button>
-          )}
+            
+            <Button 
+              onClick={() => setIsAddProjectOpen(true)} 
+              className="flex items-center gap-2 flex-shrink-0"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">Add Project</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -381,9 +307,7 @@ const ProjectsPage = () => {
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="min-w-0 flex-1">
             <CardTitle className="text-fluid-lg">All Projects</CardTitle>
-            <CardDescription className="text-fluid-sm">
-              {isAdminUser ? "Manage your project budgets and timelines" : "View project budgets and timelines"}
-            </CardDescription>
+            <CardDescription className="text-fluid-sm">Manage your project budgets and timelines</CardDescription>
           </div>
           <div className="flex items-center space-x-2 flex-shrink-0">
             {projects.length > 0 && (
@@ -404,47 +328,39 @@ const ProjectsPage = () => {
               onEdit={handleEditProject} 
               onDelete={handleDeleteClick}
               onToggleStatus={handleToggleStatus}
-              readOnly={!isAdminUser}
             />
           ) : (
             <div className="p-8 text-center">
               <BarChart3 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <p className="text-gray-500 mb-4">No projects found</p>
-              {isAdminUser && (
-                <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsAddProjectOpen(true)}
-                  >
-                    Add Your First Project
-                  </Button>
-                  <div className="text-sm text-muted-foreground">
-                    or <ImportButton entityType="projects" onImportComplete={refetch} variant="ghost" size="sm" />
-                  </div>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsAddProjectOpen(true)}
+                >
+                  Add Your First Project
+                </Button>
+                <div className="text-sm text-muted-foreground">
+                  or <ImportButton entityType="projects" onImportComplete={refetch} variant="ghost" size="sm" />
                 </div>
-              )}
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
       
-      {/* Only show dialogs for admins */}
-      {isAdminUser && (
-        <>
-          <AddEditProjectDialog 
-            isOpen={isAddProjectOpen} 
-            onClose={closeAddEditDialog} 
-            existingProject={editingProject}
-          />
-          
-          {projectToDelete && (
-            <DeleteProjectDialog 
-              isOpen={isDeleteProjectOpen}
-              onClose={closeDeleteDialog}
-              project={projectToDelete}
-            />
-          )}
-        </>
+      <AddEditProjectDialog 
+        isOpen={isAddProjectOpen} 
+        onClose={closeAddEditDialog} 
+        existingProject={editingProject}
+      />
+      
+      {projectToDelete && (
+        <DeleteProjectDialog 
+          isOpen={isDeleteProjectOpen}
+          onClose={closeDeleteDialog}
+          project={projectToDelete}
+        />
       )}
     </div>
   );
