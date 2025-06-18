@@ -126,8 +126,28 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
           </TableHeader>
           <TableBody>
             {reportData.map((entry) => {
-              const project = projectMap.get(entry.project_id);
               const employee = userMap.get(entry.user_id);
+              
+              // Determine what to show for project/contract columns based on entry type
+              const getProjectName = () => {
+                if (entry.entry_type === 'project' && entry.project_id) {
+                  const project = projectMap.get(entry.project_id);
+                  return project?.name || 'Unknown Project';
+                } else if (entry.entry_type === 'contract' && entry.contract_id) {
+                  return 'N/A (Contract Entry)';
+                }
+                return 'Unknown';
+              };
+
+              const getContractName = () => {
+                if (entry.entry_type === 'contract' && entry.contract_id) {
+                  const contract = contractMap.get(entry.contract_id);
+                  return contract?.name || 'Unknown Contract';
+                } else if (entry.entry_type === 'project' && entry.project_id) {
+                  return 'N/A (Project Entry)';
+                }
+                return 'Unknown';
+              };
               
               return (
                 <TableRow key={entry.id}>
@@ -135,10 +155,8 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
                   <TableCell>{employee?.full_name || 'Unknown Employee'}</TableCell>
                   {filters.includeEmployeeIds && <TableCell>{employee?.employee_id || '-'}</TableCell>}
                   {filters.includeEmployeeIds && <TableCell>{employee?.employee_card_id || '-'}</TableCell>}
-                  {filters.includeProject && <TableCell>{project?.name || 'Unknown Project'}</TableCell>}
-                  {filters.includeContract && <TableCell>
-                    {project?.customer_id ? contractMap.get(project.customer_id)?.name || 'No Contract' : 'No Contract'}
-                  </TableCell>}
+                  {filters.includeProject && <TableCell>{getProjectName()}</TableCell>}
+                  {filters.includeContract && <TableCell>{getContractName()}</TableCell>}
                   <TableCell>{entry.hours_logged}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.jira_task_id || '-'}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.notes || '-'}</TableCell>
