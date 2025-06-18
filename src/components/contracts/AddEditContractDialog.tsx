@@ -71,6 +71,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [originalServiceIds, setOriginalServiceIds] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -110,7 +111,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
   // When the dialog opens or existingContract changes, set form values
   useEffect(() => {
     if (existingContract && isOpen) {
-      form.reset({
+      const formValues = {
         name: existingContract.name,
         description: existingContract.description || "",
         customer_id: existingContract.customer_id || null,
@@ -118,14 +119,14 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         end_date: existingContract.end_date ? new Date(existingContract.end_date) : addDays(new Date(), 365),
         status: existingContract.status || 'active',
         is_active: existingContract.is_active !== false,
-      });
+      };
+      
+      form.reset(formValues);
       
       // Set selected services if the contract has any
-      if (existingContract.services && existingContract.services.length > 0) {
-        setSelectedServiceIds(existingContract.services.map(service => service.id));
-      } else {
-        setSelectedServiceIds([]);
-      }
+      const serviceIds = existingContract.services?.map(service => service.id) || [];
+      setSelectedServiceIds(serviceIds);
+      setOriginalServiceIds(serviceIds);
       
       // Clear any selected file when opening dialog
       setSelectedFile(null);
@@ -133,16 +134,19 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
       setUploadProgress(0);
     } else if (isOpen) {
       // Reset form for a new contract
-      form.reset({
+      const defaultValues = {
         name: "",
         description: "",
         customer_id: null,
         start_date: new Date(),
         end_date: addDays(new Date(), 365),
-        status: 'active',
+        status: 'active' as const,
         is_active: true,
-      });
+      };
+      
+      form.reset(defaultValues);
       setSelectedServiceIds([]);
+      setOriginalServiceIds([]);
       setSelectedFile(null);
       setFileError(null);
       setUploadProgress(0);
@@ -316,6 +320,48 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
     saveContractMutation.mutate(values);
   };
 
+  // Handle cancel - reset all state before closing
+  const handleCancel = () => {
+    // Reset form to original values
+    if (existingContract) {
+      const originalValues = {
+        name: existingContract.name,
+        description: existingContract.description || "",
+        customer_id: existingContract.customer_id || null,
+        start_date: existingContract.start_date ? new Date(existingContract.start_date) : new Date(),
+        end_date: existingContract.end_date ? new Date(existingContract.end_date) : addDays(new Date(), 365),
+        status: existingContract.status || 'active',
+        is_active: existingContract.is_active !== false,
+      };
+      form.reset(originalValues);
+    } else {
+      // Reset to default values for new contract
+      form.reset({
+        name: "",
+        description: "",
+        customer_id: null,
+        start_date: new Date(),
+        end_date: addDays(new Date(), 365),
+        status: 'active',
+        is_active: true,
+      });
+    }
+    
+    // Reset service selection
+    setSelectedServiceIds(originalServiceIds);
+    
+    // Clear file selection
+    setSelectedFile(null);
+    setFileError(null);
+    setUploadProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    
+    // Close dialog
+    onClose();
+  };
+
   // Access the mutation's isPending state
   const isSaving = saveContractMutation.isPending;
 
@@ -346,7 +392,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -681,7 +727,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
               <Button
                 type="button"
                 variant="outline"
-                onClick={onClose}
+                onClick={handleCancel}
                 disabled={saveContractMutation.isPending}
               >
                 Cancel
