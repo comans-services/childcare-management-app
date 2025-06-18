@@ -1,3 +1,4 @@
+
 import { TimesheetEntry, Project } from "./timesheet-service";
 import { Contract } from "./contract-service";
 import { User } from "./user-service";
@@ -43,8 +44,28 @@ const formatReportData = (
   users.forEach(user => userMap.set(user.id, user));
 
   return reportData.map(entry => {
-    const project = projectMap.get(entry.project_id);
     const employee = userMap.get(entry.user_id);
+    
+    // Use the same logic as ReportDataTable for project/contract names
+    const getProjectName = () => {
+      if (entry.entry_type === 'project' && entry.project) {
+        // Use the project data from RPC response first, fall back to map lookup
+        return entry.project.name || projectMap.get(entry.project_id!)?.name || 'Unknown Project';
+      } else if (entry.entry_type === 'contract' && entry.contract_id) {
+        return 'N/A (Contract Entry)';
+      }
+      return 'Unknown';
+    };
+
+    const getContractName = () => {
+      if (entry.entry_type === 'contract' && entry.contract) {
+        // Use the contract data from RPC response first, fall back to map lookup
+        return entry.contract.name || contractMap.get(entry.contract_id!)?.name || 'Unknown Contract';
+      } else if (entry.entry_type === 'project' && entry.project_id) {
+        return 'N/A (Project Entry)';
+      }
+      return 'Unknown';
+    };
     
     const baseData = {
       Date: formatDateDisplay(new Date(entry.entry_date)),
@@ -57,11 +78,11 @@ const formatReportData = (
     } : {};
 
     const projectData = filters.includeProject ? {
-      Project: project?.name || 'Unknown Project'
+      Project: getProjectName()
     } : {};
 
     const contractData = filters.includeContract ? {
-      Contract: project?.customer_id ? contractMap.get(project.customer_id)?.name || 'No Contract' : 'No Contract'
+      Contract: getContractName()
     } : {};
 
     const remainingData = {
