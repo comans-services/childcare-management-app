@@ -44,12 +44,10 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
   }, [reportData]);
 
   // Calculate column count for skeleton and totals row
-  const baseColumns = 3; // Date, Employee, Hours
-  const projectColumns = filters.includeProject ? 1 : 0;
-  const contractColumns = filters.includeContract ? 1 : 0;
+  const baseColumns = 4; // Date, Employee, Project/Contract, Hours
   const employeeIdColumns = filters.includeEmployeeIds ? 2 : 0; // Employee ID, Employee Card ID
   const taskColumns = 2; // Jira Task ID, Notes
-  const totalColumns = baseColumns + projectColumns + contractColumns + employeeIdColumns + taskColumns;
+  const totalColumns = baseColumns + employeeIdColumns + taskColumns;
 
   if (isLoading) {
     return (
@@ -61,8 +59,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
               <TableHead>Employee</TableHead>
               {filters.includeEmployeeIds && <TableHead>Employee ID</TableHead>}
               {filters.includeEmployeeIds && <TableHead>Employee Card ID</TableHead>}
-              {filters.includeProject && <TableHead>Project</TableHead>}
-              {filters.includeContract && <TableHead>Contract</TableHead>}
+              <TableHead>Project/Contract</TableHead>
               <TableHead>Hours</TableHead>
               <TableHead>Jira Task ID</TableHead>
               <TableHead>Notes</TableHead>
@@ -75,8 +72,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
                 <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                 {filters.includeEmployeeIds && <TableCell><Skeleton className="h-4 w-20" /></TableCell>}
                 {filters.includeEmployeeIds && <TableCell><Skeleton className="h-4 w-20" /></TableCell>}
-                {filters.includeProject && <TableCell><Skeleton className="h-4 w-32" /></TableCell>}
-                {filters.includeContract && <TableCell><Skeleton className="h-4 w-32" /></TableCell>}
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-full" /></TableCell>
@@ -117,8 +113,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
               <TableHead>Employee</TableHead>
               {filters.includeEmployeeIds && <TableHead>Employee ID</TableHead>}
               {filters.includeEmployeeIds && <TableHead>Employee Card ID</TableHead>}
-              {filters.includeProject && <TableHead>Project</TableHead>}
-              {filters.includeContract && <TableHead>Contract</TableHead>}
+              <TableHead>Project/Contract</TableHead>
               <TableHead>Hours</TableHead>
               <TableHead>Jira Task ID</TableHead>
               <TableHead>Notes</TableHead>
@@ -128,22 +123,23 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
             {reportData.map((entry) => {
               const employee = userMap.get(entry.user_id);
               
+              // Get project or contract name based on entry type
+              const getProjectContractName = () => {
+                if (entry.entry_type === 'project' && entry.project?.name) {
+                  return entry.project.name;
+                } else if (entry.entry_type === 'contract' && entry.contract?.name) {
+                  return entry.contract.name;
+                }
+                return '-';
+              };
+              
               return (
                 <TableRow key={entry.id}>
                   <TableCell>{formatDateDisplay(new Date(entry.entry_date))}</TableCell>
                   <TableCell>{employee?.full_name || 'Unknown Employee'}</TableCell>
                   {filters.includeEmployeeIds && <TableCell>{employee?.employee_id || '-'}</TableCell>}
                   {filters.includeEmployeeIds && <TableCell>{employee?.employee_card_id || '-'}</TableCell>}
-                  {filters.includeProject && (
-                    <TableCell>
-                      {entry.entry_type === 'project' && entry.project?.name ? entry.project.name : '-'}
-                    </TableCell>
-                  )}
-                  {filters.includeContract && (
-                    <TableCell>
-                      {entry.entry_type === 'contract' && entry.contract?.name ? entry.contract.name : '-'}
-                    </TableCell>
-                  )}
+                  <TableCell>{getProjectContractName()}</TableCell>
                   <TableCell>{entry.hours_logged}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.jira_task_id || '-'}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.notes || '-'}</TableCell>
@@ -155,8 +151,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
               <TableCell></TableCell>
               {filters.includeEmployeeIds && <TableCell></TableCell>}
               {filters.includeEmployeeIds && <TableCell></TableCell>}
-              {filters.includeProject && <TableCell></TableCell>}
-              {filters.includeContract && <TableCell></TableCell>}
+              <TableCell></TableCell>
               <TableCell>{totalHours.toFixed(1)}</TableCell>
               <TableCell></TableCell>
               <TableCell></TableCell>
