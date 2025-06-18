@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +6,7 @@ import { PlusCircle, Clock, AlertTriangle, CheckCircle, Search, FileText, Filter
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Contract, fetchContracts } from "@/lib/contract-service";
+import { removeFileFromBallDoggettContract } from "@/utils/remove-contract-file";
 import ContractList from "@/components/contracts/ContractList";
 import AddEditContractDialog from "@/components/contracts/AddEditContractDialog";
 import DeleteContractDialog from "@/components/contracts/DeleteContractDialog";
@@ -51,6 +51,33 @@ const ContractsPage = () => {
     }),
     enabled: !!user
   });
+
+  // Auto-remove file from Ball & Doggett contract on component mount
+  useEffect(() => {
+    const removeFile = async () => {
+      if (user && !isReadOnly) {
+        try {
+          const removed = await removeFileFromBallDoggettContract();
+          if (removed) {
+            toast({
+              title: "File Removed",
+              description: "File attachment has been removed from Ball & Doggett Pty Ltd {CASPAK} contract.",
+            });
+            refetch(); // Refresh the contracts list
+          }
+        } catch (error) {
+          console.error("Error removing file:", error);
+          toast({
+            title: "Error",
+            description: "Failed to remove file attachment. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    removeFile();
+  }, [user, isReadOnly, refetch]);
 
   useEffect(() => {
     if (error) {

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Contract {
@@ -383,6 +382,68 @@ export const deleteContractFile = async (filePath: string): Promise<void> => {
     console.log("File deleted successfully");
   } catch (error) {
     console.error("Error in deleteContractFile:", error);
+    throw error;
+  }
+};
+
+export const removeContractFile = async (contractId: string): Promise<void> => {
+  try {
+    console.log("Removing file from contract:", contractId);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    // Get the current contract to find the file path
+    const { data: contract, error: fetchError } = await supabase
+      .from('contracts')
+      .select('file_url, file_id')
+      .eq('id', contractId)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching contract:", fetchError);
+      throw new Error(`Failed to fetch contract: ${fetchError.message}`);
+    }
+
+    // If there's a file, try to delete it from storage
+    if (contract?.file_url && contract?.file_id) {
+      // Extract the file path from the URL or use the file_id
+      const filePath = contract.file_url.split('/').pop();
+      if (filePath) {
+        const { error: storageError } = await supabase.storage
+          .from('contracts')
+          .remove([filePath]);
+        
+        if (storageError) {
+          console.warn("Could not delete file from storage:", storageError);
+          // Don't fail the operation if storage deletion fails
+        }
+      }
+    }
+
+    // Update the contract record to remove file information
+    const { error: updateError } = await supabase
+      .from('contracts')
+      .update({
+        file_id: null,
+        file_name: null,
+        file_type: null,
+        file_size: null,
+        file_url: null,
+        uploaded_at: null
+      })
+      .eq('id', contractId);
+
+    if (updateError) {
+      console.error("Error updating contract:", updateError);
+      throw new Error(`Failed to remove file from contract: ${updateError.message}`);
+    }
+
+    console.log("File removed from contract successfully");
+  } catch (error) {
+    console.error("Error in removeContractFile:", error);
     throw error;
   }
 };
