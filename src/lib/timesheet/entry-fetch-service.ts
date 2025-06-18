@@ -183,9 +183,6 @@ export const fetchReportData = async (
       
       // Transform the flattened RPC response into the expected nested format
       const transformedData = (data ?? []).map((entry: any) => {
-        // Determine entry type based on which ID is present
-        const entryType = entry.project_id ? 'project' : 'contract';
-        
         return {
           id: entry.id,
           user_id: entry.user_id,
@@ -199,16 +196,16 @@ export const fetchReportData = async (
           jira_task_id: entry.jira_task_id,
           start_time: entry.start_time,
           end_time: entry.end_time,
-          entry_type: entryType, // Use correct entry type based on which ID is present
+          entry_type: entry.entry_type, // Use the entry_type from database
           user_full_name: entry.user_full_name,
           // Transform flattened project/contract data into nested format
-          project: entryType === 'project' ? {
+          project: entry.entry_type === 'project' ? {
             id: entry.project_id,
             name: entry.project_name,
             description: entry.project_description,
             customer_id: entry.project_customer_id
           } : undefined,
-          contract: entryType === 'contract' ? {
+          contract: entry.entry_type === 'contract' ? {
             id: entry.contract_id,
             name: entry.project_name, // The RPC function uses project_name for both
             description: entry.project_description,
