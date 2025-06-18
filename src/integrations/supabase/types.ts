@@ -659,18 +659,30 @@ export type Database = {
         Returns: undefined
       }
       timesheet_entries_report: {
-        Args: {
-          p_start_date: string
-          p_end_date: string
-          p_user_id?: string
-          p_project_id?: string
-          p_customer_id?: string
-          p_contract_id?: string
-        }
+        Args:
+          | {
+              p_start_date: string
+              p_end_date: string
+              p_user_id?: string
+              p_project_id?: string
+              p_customer_id?: string
+              p_contract_id?: string
+            }
+          | {
+              p_start_date: string
+              p_end_date: string
+              p_user_id?: string
+              p_project_id?: string
+              p_customer_id?: string
+              p_contract_id?: string
+              p_include_projects?: boolean
+              p_include_contracts?: boolean
+            }
         Returns: {
           id: string
           user_id: string
           project_id: string
+          contract_id: string
           entry_date: string
           hours_logged: number
           notes: string

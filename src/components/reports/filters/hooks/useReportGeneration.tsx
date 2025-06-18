@@ -50,12 +50,14 @@ export const useReportGeneration = ({
     
     try {
       if (filters.reportType === 'timesheet') {
-        // Handle timesheet reports
+        // Handle timesheet reports with entry type filtering
         const normalizedFilters = {
           userId: normalizeSelectValue(filters.userId),
           projectId: filters.includeProject ? normalizeSelectValue(filters.projectId) : null,
           customerId: normalizeSelectValue(filters.customerId),
-          contractId: filters.includeContract ? normalizeSelectValue(filters.contractId) : null
+          contractId: filters.includeContract ? normalizeSelectValue(filters.contractId) : null,
+          includeProjects: filters.includeProject,
+          includeContracts: filters.includeContract
         };
         
         console.log("Normalized timesheet filters:", normalizedFilters);

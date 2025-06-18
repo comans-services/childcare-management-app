@@ -128,6 +128,8 @@ export const fetchReportData = async (
     projectId?: string | null;
     customerId?: string | null;
     contractId?: string | null;
+    includeProjects?: boolean;
+    includeContracts?: boolean;
   } = {}
 ): Promise<TimesheetEntry[]> => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -151,7 +153,9 @@ export const fetchReportData = async (
     userId: normalizeFilterValue(filters.userId),
     projectId: normalizeFilterValue(filters.projectId),
     customerId: normalizeFilterValue(filters.customerId),
-    contractId: normalizeFilterValue(filters.contractId)
+    contractId: normalizeFilterValue(filters.contractId),
+    includeProjects: filters.includeProjects ?? true,
+    includeContracts: filters.includeContracts ?? true
   };
 
   console.log("Normalized filters:", normalizedFilters);
@@ -166,7 +170,9 @@ export const fetchReportData = async (
       p_user_id: normalizedFilters.userId,
       p_project_id: normalizedFilters.projectId,
       p_customer_id: normalizedFilters.customerId,
-      p_contract_id: normalizedFilters.contractId
+      p_contract_id: normalizedFilters.contractId,
+      p_include_projects: normalizedFilters.includeProjects,
+      p_include_contracts: normalizedFilters.includeContracts
     };
     
     console.log("RPC Parameters:", rpcParams);
