@@ -1,17 +1,16 @@
+
 import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DateRangeFilter } from "./filters/DateRangeFilter";
 import { SelectFilters } from "./filters/SelectFilters";
 import { FilterActions } from "./filters/FilterActions";
 import { FilterToggles } from "./filters/FilterToggles";
-import { fetchProjects, Project, Contract, fetchUserContracts, fetchAllContracts } from "@/lib/timesheet-service";
+import { fetchProjects, Project, Contract, fetchUserContracts } from "@/lib/timesheet-service";
 import { fetchCustomers, Customer } from "@/lib/customer-service";
 import { fetchUsers, User } from "@/lib/user-service";
 import { getAuditActionTypes } from "@/lib/audit/audit-service";
 import { useReportGeneration } from "./filters/hooks/useReportGeneration";
 import { ReportFiltersType } from "@/pages/ReportsPage";
-import { useAuth } from "@/context/AuthContext";
-import { isAdmin } from "@/utils/roles";
 
 interface ReportFiltersProps {
   filters: ReportFiltersType;
@@ -36,7 +35,6 @@ const ReportFilters = ({
   setUsers,
   setIsLoading,
 }: ReportFiltersProps) => {
-  const { user } = useAuth();
   const [projects, setProjectsLocal] = React.useState<Project[]>([]);
   const [contracts, setContractsLocal] = React.useState<Contract[]>([]);
   const [customers, setCustomersLocal] = React.useState<Customer[]>([]);
@@ -54,12 +52,9 @@ const ReportFilters = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Check if user is admin to determine which contract fetch function to use
-        const userIsAdmin = user ? await isAdmin(user) : false;
-        
         const [projectsData, contractsData, customersData, usersData, actionTypesData] = await Promise.all([
           fetchProjects(),
-          userIsAdmin ? fetchAllContracts() : fetchUserContracts(), // Use fetchAllContracts for admins
+          fetchUserContracts(),
           fetchCustomers(),
           fetchUsers(),
           getAuditActionTypes()
@@ -82,7 +77,7 @@ const ReportFilters = ({
     };
 
     loadData();
-  }, [setProjects, setContracts, setCustomers, setUsers, user]);
+  }, [setProjects, setContracts, setCustomers, setUsers]);
 
   return (
     <Card>

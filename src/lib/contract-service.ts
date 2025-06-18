@@ -185,52 +185,6 @@ export const fetchContracts = async (filters?: {
   }
 };
 
-export const fetchAllContracts = async (): Promise<Contract[]> => {
-  try {
-    console.log("Fetching all contracts...");
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
-
-    const { data, error } = await supabase
-      .from("contracts")
-      .select(`
-        *,
-        customers(name)
-      `)
-      .eq('is_active', true)
-      .order("name", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching all contracts:", error);
-      throw error;
-    }
-
-    // Transform data to include customer_name and calculate days_until_expiry
-    const transformedData = (data || []).map((contract: any) => {
-      const endDate = new Date(contract.end_date);
-      const today = new Date();
-      const timeDiff = endDate.getTime() - today.getTime();
-      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-      return {
-        ...contract,
-        customer_name: contract.customers?.name,
-        days_until_expiry: daysDiff,
-        services: [] // Will be populated separately if needed
-      };
-    });
-
-    console.log(`Fetched ${transformedData.length} contracts (all)`);
-    return transformedData;
-  } catch (error) {
-    console.error("Error in fetchAllContracts:", error);
-    throw error;
-  }
-};
-
 export const saveContract = async (contractData: Omit<Contract, 'id' | 'created_at' | 'updated_at'>, serviceIds?: string[]): Promise<Contract> => {
   try {
     console.log("Creating new contract:", contractData);

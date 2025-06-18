@@ -16,10 +16,7 @@ export const FilterToggles = ({ filters, setFilters }: FilterTogglesProps) => {
       ...prev,
       includeProject: checked,
       // Clear project filter when disabled
-      projectId: checked ? prev.projectId : null,
-      // Make mutually exclusive: disable contract when enabling project
-      includeContract: checked ? false : prev.includeContract,
-      contractId: checked ? null : prev.contractId
+      projectId: checked ? prev.projectId : null
     }));
   };
 
@@ -28,10 +25,7 @@ export const FilterToggles = ({ filters, setFilters }: FilterTogglesProps) => {
       ...prev,
       includeContract: checked,
       // Clear contract filter when disabled
-      contractId: checked ? prev.contractId : null,
-      // Make mutually exclusive: disable project when enabling contract
-      includeProject: checked ? false : prev.includeProject,
-      projectId: checked ? null : prev.projectId
+      contractId: checked ? prev.contractId : null
     }));
   };
 
@@ -72,49 +66,39 @@ export const FilterToggles = ({ filters, setFilters }: FilterTogglesProps) => {
 
       {/* Show timesheet-specific toggles only for timesheet reports */}
       {filters.reportType === 'timesheet' && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-6">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="include-project"
-                checked={filters.includeProject}
-                onCheckedChange={handleProjectToggle}
-              />
-              <Label htmlFor="include-project" className="cursor-pointer text-sm font-medium">
-                Filter by Project
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="include-contract"
-                checked={filters.includeContract}
-                onCheckedChange={handleContractToggle}
-              />
-              <Label htmlFor="include-contract" className="cursor-pointer text-sm font-medium">
-                Filter by Contract
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="include-employee-ids"
-                checked={filters.includeEmployeeIds}
-                onCheckedChange={handleEmployeeIdsToggle}
-              />
-              <Label htmlFor="include-employee-ids" className="cursor-pointer text-sm font-medium">
-                Include Employee IDs
-              </Label>
-            </div>
+        <div className="flex flex-wrap gap-6">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="include-project"
+              checked={filters.includeProject}
+              onCheckedChange={handleProjectToggle}
+            />
+            <Label htmlFor="include-project" className="cursor-pointer text-sm font-medium">
+              Filter by Project
+            </Label>
           </div>
-          
-          {/* Show helpful text about mutual exclusivity */}
-          {(filters.includeProject || filters.includeContract) && (
-            <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-              💡 {filters.includeProject ? 'Project filter' : 'Contract filter'} is active. 
-              {filters.includeProject ? ' Contract filtering is disabled.' : ' Project filtering is disabled.'}
-            </div>
-          )}
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="include-contract"
+              checked={filters.includeContract}
+              onCheckedChange={handleContractToggle}
+            />
+            <Label htmlFor="include-contract" className="cursor-pointer text-sm font-medium">
+              Filter by Contract
+            </Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="include-employee-ids"
+              checked={filters.includeEmployeeIds}
+              onCheckedChange={handleEmployeeIdsToggle}
+            />
+            <Label htmlFor="include-employee-ids" className="cursor-pointer text-sm font-medium">
+              Include Employee IDs
+            </Label>
+          </div>
         </div>
       )}
     </div>

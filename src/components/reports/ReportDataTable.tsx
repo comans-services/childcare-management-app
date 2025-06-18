@@ -128,16 +128,25 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
             {reportData.map((entry) => {
               const employee = userMap.get(entry.user_id);
               
-              // Simplified logic: Trust the database function's filtering
-              // The database function now properly handles entry_type filtering
+              // Determine what to show for project/contract columns based on entry type
               const getProjectName = () => {
-                return (entry as any).project_name || 'Unknown';
+                if (entry.entry_type === 'project' && entry.project_id) {
+                  const project = projectMap.get(entry.project_id);
+                  return project?.name || 'Unknown Project';
+                } else if (entry.entry_type === 'contract' && entry.contract_id) {
+                  return 'N/A (Contract Entry)';
+                }
+                return 'Unknown';
               };
 
               const getContractName = () => {
-                // When contract filtering is active, all entries should be contract entries
-                // Trust the database function to return only contract entries
-                return (entry as any).project_name || 'Unknown Contract';
+                if (entry.entry_type === 'contract' && entry.contract_id) {
+                  const contract = contractMap.get(entry.contract_id);
+                  return contract?.name || 'Unknown Contract';
+                } else if (entry.entry_type === 'project' && entry.project_id) {
+                  return 'N/A (Project Entry)';
+                }
+                return 'Unknown';
               };
               
               return (

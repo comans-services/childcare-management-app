@@ -1,3 +1,4 @@
+
 // Main export file that re-exports all timesheet functionality
 import { Project, TimesheetEntry, CreateTimesheetEntry, UpdateTimesheetEntry } from "./timesheet/types";
 import { ProjectAssignment, CreateProjectAssignment, ProjectWithAssignees } from "./project/assignment-types";
@@ -34,9 +35,6 @@ import {
   bulkAssignUsersToContract,
   removeUserFromContract
 } from "./contract/assignment-service";
-
-// Export the new function from contract-service
-export { fetchAllContracts } from "./contract-service";
 
 // Re-export all types and functions
 export type { 
