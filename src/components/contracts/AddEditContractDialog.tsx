@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -110,6 +111,8 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
 
   // When the dialog opens or existingContract changes, set form values
   useEffect(() => {
+    console.log("Dialog state changed - isOpen:", isOpen, "existingContract:", existingContract?.name);
+    
     if (existingContract && isOpen) {
       const formValues = {
         name: existingContract.name,
@@ -121,12 +124,14 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         is_active: existingContract.is_active !== false,
       };
       
+      console.log("Setting form values for existing contract:", formValues);
       form.reset(formValues);
       
       // Set selected services if the contract has any
       const serviceIds = existingContract.services?.map(service => service.id) || [];
+      console.log("Setting service IDs:", serviceIds);
       setSelectedServiceIds(serviceIds);
-      setOriginalServiceIds(serviceIds);
+      setOriginalServiceIds([...serviceIds]); // Create a copy
       
       // Clear any selected file when opening dialog
       setSelectedFile(null);
@@ -134,6 +139,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
       setUploadProgress(0);
     } else if (isOpen) {
       // Reset form for a new contract
+      console.log("Setting default values for new contract");
       const defaultValues = {
         name: "",
         description: "",
@@ -322,6 +328,10 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
 
   // Handle cancel - reset all state before closing
   const handleCancel = () => {
+    console.log("Cancel button clicked");
+    console.log("Current selectedServiceIds:", selectedServiceIds);
+    console.log("Original selectedServiceIds:", originalServiceIds);
+    
     // Reset form to original values
     if (existingContract) {
       const originalValues = {
@@ -330,25 +340,29 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
         customer_id: existingContract.customer_id || null,
         start_date: existingContract.start_date ? new Date(existingContract.start_date) : new Date(),
         end_date: existingContract.end_date ? new Date(existingContract.end_date) : addDays(new Date(), 365),
-        status: existingContract.status || 'active',
+        status: (existingContract.status || 'active') as 'active' | 'expired' | 'pending_renewal' | 'renewed',
         is_active: existingContract.is_active !== false,
       };
+      console.log("Resetting form to original values:", originalValues);
       form.reset(originalValues);
     } else {
       // Reset to default values for new contract
-      form.reset({
+      const defaultValues = {
         name: "",
         description: "",
         customer_id: null,
         start_date: new Date(),
         end_date: addDays(new Date(), 365),
-        status: 'active',
+        status: 'active' as const,
         is_active: true,
-      });
+      };
+      console.log("Resetting form to default values:", defaultValues);
+      form.reset(defaultValues);
     }
     
-    // Reset service selection
-    setSelectedServiceIds(originalServiceIds);
+    // Reset service selection to original state
+    console.log("Resetting service selection to:", originalServiceIds);
+    setSelectedServiceIds([...originalServiceIds]);
     
     // Clear file selection
     setSelectedFile(null);
@@ -358,6 +372,7 @@ const AddEditContractDialog: React.FC<AddEditContractDialogProps> = ({
       fileInputRef.current.value = "";
     }
     
+    console.log("Closing dialog");
     // Close dialog
     onClose();
   };
