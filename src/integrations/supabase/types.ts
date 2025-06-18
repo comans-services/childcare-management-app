@@ -671,6 +671,7 @@ export type Database = {
           id: string
           user_id: string
           project_id: string
+          contract_id: string
           entry_date: string
           hours_logged: number
           notes: string

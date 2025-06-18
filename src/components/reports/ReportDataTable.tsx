@@ -128,25 +128,21 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
             {reportData.map((entry) => {
               const employee = userMap.get(entry.user_id);
               
-              // Determine what to show for project/contract columns based on entry type
+              // Get the actual project or contract name based on entry type and data
               const getProjectName = () => {
                 if (entry.entry_type === 'project' && entry.project_id) {
-                  const project = projectMap.get(entry.project_id);
-                  return project?.name || 'Unknown Project';
-                } else if (entry.entry_type === 'contract' && entry.contract_id) {
-                  return 'N/A (Contract Entry)';
+                  // Use the nested project data first, fallback to map lookup
+                  return entry.project?.name || projectMap.get(entry.project_id)?.name || 'Unknown Project';
                 }
-                return 'Unknown';
+                return null; // Don't show anything for non-project entries
               };
 
               const getContractName = () => {
                 if (entry.entry_type === 'contract' && entry.contract_id) {
-                  const contract = contractMap.get(entry.contract_id);
-                  return contract?.name || 'Unknown Contract';
-                } else if (entry.entry_type === 'project' && entry.project_id) {
-                  return 'N/A (Project Entry)';
+                  // Use the nested contract data first, fallback to map lookup
+                  return entry.contract?.name || contractMap.get(entry.contract_id)?.name || 'Unknown Contract';
                 }
-                return 'Unknown';
+                return null; // Don't show anything for non-contract entries
               };
               
               return (
@@ -155,8 +151,8 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
                   <TableCell>{employee?.full_name || 'Unknown Employee'}</TableCell>
                   {filters.includeEmployeeIds && <TableCell>{employee?.employee_id || '-'}</TableCell>}
                   {filters.includeEmployeeIds && <TableCell>{employee?.employee_card_id || '-'}</TableCell>}
-                  {filters.includeProject && <TableCell>{getProjectName()}</TableCell>}
-                  {filters.includeContract && <TableCell>{getContractName()}</TableCell>}
+                  {filters.includeProject && <TableCell>{getProjectName() || '-'}</TableCell>}
+                  {filters.includeContract && <TableCell>{getContractName() || '-'}</TableCell>}
                   <TableCell>{entry.hours_logged}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.jira_task_id || '-'}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.notes || '-'}</TableCell>

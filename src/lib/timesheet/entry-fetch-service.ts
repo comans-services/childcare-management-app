@@ -182,43 +182,48 @@ export const fetchReportData = async (
       console.log("RPC Success - entries found:", data?.length || 0);
       
       // Transform the flattened RPC response into the expected nested format
-      const transformedData = (data ?? []).map((entry: any) => ({
-        id: entry.id,
-        user_id: entry.user_id,
-        project_id: entry.project_id,
-        contract_id: entry.contract_id,
-        entry_date: entry.entry_date,
-        hours_logged: entry.hours_logged,
-        created_at: entry.created_at,
-        updated_at: entry.updated_at,
-        notes: entry.notes,
-        jira_task_id: entry.jira_task_id,
-        start_time: entry.start_time,
-        end_time: entry.end_time,
-        entry_type: entry.project_id ? 'project' : 'contract', // Determine type based on which ID is present
-        user_full_name: entry.user_full_name, // Use cached user name
-        // Transform flattened project/contract data into nested format
-        project: entry.project_id ? {
-          id: entry.project_id,
-          name: entry.project_name,
-          description: entry.project_description,
-          customer_id: entry.project_customer_id
-        } : undefined,
-        contract: entry.contract_id ? {
-          id: entry.contract_id,
-          name: entry.project_name, // The RPC function uses project_name for both
-          description: entry.project_description,
-          customer_id: entry.project_customer_id
-        } : undefined,
-        // Transform flattened user data into nested format - fallback to cached name
-        user: {
-          id: entry.user_id,
-          full_name: entry.user_full_name || entry.user_full_name,
-          email: entry.user_email,
-          organization: entry.user_organization,
-          time_zone: entry.user_time_zone
-        }
-      }));
+      const transformedData = (data ?? []).map((entry: any) => {
+        // Determine entry type based on which ID is present
+        const entryType = entry.project_id ? 'project' : 'contract';
+        
+        return {
+          id: entry.id,
+          user_id: entry.user_id,
+          project_id: entry.project_id,
+          contract_id: entry.contract_id,
+          entry_date: entry.entry_date,
+          hours_logged: entry.hours_logged,
+          created_at: entry.created_at,
+          updated_at: entry.updated_at,
+          notes: entry.notes,
+          jira_task_id: entry.jira_task_id,
+          start_time: entry.start_time,
+          end_time: entry.end_time,
+          entry_type: entryType, // Use correct entry type based on which ID is present
+          user_full_name: entry.user_full_name,
+          // Transform flattened project/contract data into nested format
+          project: entryType === 'project' ? {
+            id: entry.project_id,
+            name: entry.project_name,
+            description: entry.project_description,
+            customer_id: entry.project_customer_id
+          } : undefined,
+          contract: entryType === 'contract' ? {
+            id: entry.contract_id,
+            name: entry.project_name, // The RPC function uses project_name for both
+            description: entry.project_description,
+            customer_id: entry.project_customer_id
+          } : undefined,
+          // Transform flattened user data into nested format
+          user: {
+            id: entry.user_id,
+            full_name: entry.user_full_name,
+            email: entry.user_email,
+            organization: entry.user_organization,
+            time_zone: entry.user_time_zone
+          }
+        };
+      });
       
       console.log("Transformed data sample:", transformedData[0]);
       console.log("Final filter verification - applied filters:", normalizedFilters);
