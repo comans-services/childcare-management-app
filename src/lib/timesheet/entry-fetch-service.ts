@@ -212,7 +212,7 @@ export const fetchReportData = async (
         } : undefined,
         contract: entry.contract_id ? {
           id: entry.contract_id,
-          name: entry.project_name, // The RPC function uses project_name for both
+          name: entry.project_name, // RPC returns contract name in project_name field for contract entries
           description: entry.project_description,
           customer_id: entry.project_customer_id
         } : undefined,

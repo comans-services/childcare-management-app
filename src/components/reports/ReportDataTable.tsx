@@ -130,9 +130,9 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
               
               // Determine what to show for project/contract columns based on entry type
               const getProjectName = () => {
-                if (entry.entry_type === 'project' && entry.project_id) {
-                  const project = projectMap.get(entry.project_id);
-                  return project?.name || 'Unknown Project';
+                if (entry.entry_type === 'project' && entry.project) {
+                  // Use the project data from RPC response first, fall back to map lookup
+                  return entry.project.name || projectMap.get(entry.project_id!)?.name || 'Unknown Project';
                 } else if (entry.entry_type === 'contract' && entry.contract_id) {
                   return 'N/A (Contract Entry)';
                 }
@@ -140,9 +140,9 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
               };
 
               const getContractName = () => {
-                if (entry.entry_type === 'contract' && entry.contract_id) {
-                  const contract = contractMap.get(entry.contract_id);
-                  return contract?.name || 'Unknown Contract';
+                if (entry.entry_type === 'contract' && entry.contract) {
+                  // Use the contract data from RPC response first, fall back to map lookup
+                  return entry.contract.name || contractMap.get(entry.contract_id!)?.name || 'Unknown Contract';
                 } else if (entry.entry_type === 'project' && entry.project_id) {
                   return 'N/A (Project Entry)';
                 }
