@@ -180,7 +180,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
                   // Use the project data from RPC response first, fall back to map lookup
                   return entry.project.name || projectMap.get(entry.project_id!)?.name || 'Unknown Project';
                 } else if (entry.entry_type === 'contract' && entry.contract_id) {
-                  return 'N/A (Contract Entry)';
+                  return '-';
                 }
                 return 'Unknown';
               };
@@ -190,7 +190,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
                   // Use the contract data from RPC response first, fall back to map lookup
                   return entry.contract.name || contractMap.get(entry.contract_id!)?.name || 'Unknown Contract';
                 } else if (entry.entry_type === 'project' && entry.project_id) {
-                  return 'N/A (Project Entry)';
+                  return '-';
                 }
                 return 'Unknown';
               };
