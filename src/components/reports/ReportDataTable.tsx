@@ -7,7 +7,9 @@ import { ReportFiltersType } from "@/pages/ReportsPage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileX, Filter } from "lucide-react";
+import { FileX, Filter, ArrowUp, ArrowDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ReportDataTableProps {
   reportData: TimesheetEntry[];
@@ -18,7 +20,11 @@ interface ReportDataTableProps {
   isLoading: boolean;
 }
 
+type SortOrder = 'asc' | 'desc' | null;
+
 const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLoading }: ReportDataTableProps) => {
+  const [dateSortOrder, setDateSortOrder] = React.useState<SortOrder>(null);
+
   // Create maps for quick lookups
   const projectMap = React.useMemo(() => {
     const map = new Map<string, Project>();
@@ -38,10 +44,37 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
     return map;
   }, [users]);
 
+  // Sort data by date when sort order changes
+  const sortedReportData = React.useMemo(() => {
+    if (!dateSortOrder) return reportData;
+
+    return [...reportData].sort((a, b) => {
+      const dateA = new Date(a.entry_date);
+      const dateB = new Date(b.entry_date);
+      
+      if (dateSortOrder === 'asc') {
+        return dateA.getTime() - dateB.getTime();
+      } else {
+        return dateB.getTime() - dateA.getTime();
+      }
+    });
+  }, [reportData, dateSortOrder]);
+
   // Calculate totals
   const totalHours = React.useMemo(() => {
     return reportData.reduce((sum, entry) => sum + entry.hours_logged, 0);
   }, [reportData]);
+
+  // Handle date column header click
+  const handleDateSort = () => {
+    if (dateSortOrder === null) {
+      setDateSortOrder('asc');
+    } else if (dateSortOrder === 'asc') {
+      setDateSortOrder('desc');
+    } else {
+      setDateSortOrder(null);
+    }
+  };
 
   // Calculate column count for skeleton and totals row
   const baseColumns = 3; // Date, Employee, Hours
@@ -113,7 +146,20 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
+              <TableHead className="p-0">
+                <Button
+                  variant="ghost"
+                  onClick={handleDateSort}
+                  className={cn(
+                    "h-12 w-full justify-start font-medium text-muted-foreground hover:text-foreground",
+                    dateSortOrder && "text-foreground"
+                  )}
+                >
+                  Date
+                  {dateSortOrder === 'asc' && <ArrowUp className="ml-2 h-4 w-4" />}
+                  {dateSortOrder === 'desc' && <ArrowDown className="ml-2 h-4 w-4" />}
+                </Button>
+              </TableHead>
               <TableHead>Employee</TableHead>
               {filters.includeEmployeeIds && <TableHead>Employee ID</TableHead>}
               {filters.includeEmployeeIds && <TableHead>Employee Card ID</TableHead>}
@@ -125,7 +171,7 @@ const ReportDataTable = ({ reportData, projects, contracts, users, filters, isLo
             </TableRow>
           </TableHeader>
           <TableBody>
-            {reportData.map((entry) => {
+            {sortedReportData.map((entry) => {
               const employee = userMap.get(entry.user_id);
               
               // Determine what to show for project/contract columns based on entry type
