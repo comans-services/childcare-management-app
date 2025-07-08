@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { formatDate, getWeekStart } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
@@ -8,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { isWeekend } from "@/lib/date-utils";
+import { sortEntriesByTime } from "@/lib/time-sorting-utils";
 import DayHeader from "./DayHeader";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,13 +48,16 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
 
   const formattedColumnDate = formatDate(date);
 
-  const dayEntries = entries.filter(entry => {
-    if (typeof entry.entry_date === 'string') {
-      const entryDate = entry.entry_date.substring(0, 10);
-      return entryDate === formattedColumnDate;
-    }
-    return false;
-  });
+  // Filter entries for this day and sort by time
+  const dayEntries = sortEntriesByTime(
+    entries.filter(entry => {
+      if (typeof entry.entry_date === 'string') {
+        const entryDate = entry.entry_date.substring(0, 10);
+        return entryDate === formattedColumnDate;
+      }
+      return false;
+    })
+  );
 
   const totalHours = dayEntries.reduce(
     (sum, entry) => sum + entry.hours_logged,
@@ -202,7 +205,7 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
           </div>
         )}
 
-        {/* Entries */}
+        {/* Entries - now sorted by time */}
         <ScrollArea className="max-h-[60vh]">
           <div className="px-3 pb-3 space-y-3">
             {dayEntries.map((entry) => (

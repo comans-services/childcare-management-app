@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { formatDate, getWeekStart } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
@@ -8,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { isWeekend } from "@/lib/date-utils";
+import { sortEntriesByTime } from "@/lib/time-sorting-utils";
 import DayHeader from "./day-column/DayHeader";
 import EntryList from "./day-column/EntryList";
 import DeleteConfirmDialog from "./day-column/DeleteConfirmDialog";
@@ -50,14 +50,17 @@ const DayColumn: React.FC<DayColumnProps> = ({
 
   const formattedColumnDate = formatDate(date);
 
-  const dayEntries = entries.filter(entry => {
-    if (typeof entry.entry_date === 'string') {
-      const entryDate = entry.entry_date.substring(0, 10);
-      const matches = entryDate === formattedColumnDate;
-      return matches;
-    }
-    return false;
-  });
+  // Filter entries for this day and sort by time
+  const dayEntries = sortEntriesByTime(
+    entries.filter(entry => {
+      if (typeof entry.entry_date === 'string') {
+        const entryDate = entry.entry_date.substring(0, 10);
+        const matches = entryDate === formattedColumnDate;
+        return matches;
+      }
+      return false;
+    })
+  );
 
   const totalHours = dayEntries.reduce(
     (sum, entry) => sum + entry.hours_logged,
