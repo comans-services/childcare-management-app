@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { Project } from "@/lib/timesheet/types";
 import { saveProject, updateProject } from "@/lib/timesheet/project-service";
 import CustomerSelector from "@/components/customers/CustomerSelector";
@@ -89,14 +89,14 @@ const AddEditProjectForm = ({ existingProject, onSuccess, onCancel }: AddEditPro
     try {
       setIsSubmitting(true);
       
-      // Ensure all required fields are present for the Project type
+      // Ensure all required fields are present and convert empty strings to null
       const projectData: Omit<Project, 'id' | 'hours_used'> = {
         name: data.name,
-        description: data.description,
+        description: data.description || undefined,
         budget_hours: hasBudgetLimit ? data.budget_hours : 0,
-        start_date: data.start_date,
-        end_date: data.end_date,
-        customer_id: data.customer_id,
+        start_date: data.start_date || null,
+        end_date: data.end_date || null,
+        customer_id: data.customer_id || null,
         is_internal: data.is_internal,
         has_budget_limit: hasBudgetLimit,
       };
