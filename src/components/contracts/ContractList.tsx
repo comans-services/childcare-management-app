@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import { 
   Card, 
@@ -42,6 +43,8 @@ const ContractList: React.FC<ContractListProps> = ({
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const lastRightClickTime = useRef<number>(0);
   const lastRightClickedContract = useRef<string | null>(null);
+  const lastLeftClickTime = useRef<number>(0);
+  const lastLeftClickedContract = useRef<string | null>(null);
 
   const handleManageAssignments = (contract: Contract) => {
     setSelectedContract(contract);
@@ -65,6 +68,24 @@ const ContractList: React.FC<ContractListProps> = ({
     } else {
       lastRightClickTime.current = currentTime;
       lastRightClickedContract.current = contract.id;
+    }
+  };
+
+  const handleDoubleLeftClick = (contract: Contract, event: React.MouseEvent) => {
+    // Only allow editing if not read-only
+    if (readOnly) return;
+    
+    const currentTime = Date.now();
+    const timeDiff = currentTime - lastLeftClickTime.current;
+    
+    // Check if this is a double left-click (within 500ms and same contract)
+    if (timeDiff < 500 && lastLeftClickedContract.current === contract.id) {
+      onEdit(contract);
+      lastLeftClickTime.current = 0; // Reset to prevent triple clicks
+      lastLeftClickedContract.current = null;
+    } else {
+      lastLeftClickTime.current = currentTime;
+      lastLeftClickedContract.current = contract.id;
     }
   };
 
@@ -105,6 +126,7 @@ const ContractList: React.FC<ContractListProps> = ({
             key={contract.id} 
             className="hover:shadow-md transition-shadow cursor-pointer"
             onContextMenu={(e) => handleDoubleRightClick(contract, e)}
+            onClick={(e) => handleDoubleLeftClick(contract, e)}
           >
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
@@ -179,7 +201,10 @@ const ContractList: React.FC<ContractListProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleManageAssignments(contract)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleManageAssignments(contract);
+                    }}
                     className="flex items-center gap-1"
                   >
                     <Users className="h-4 w-4" />
@@ -188,7 +213,10 @@ const ContractList: React.FC<ContractListProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onEdit(contract)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(contract);
+                    }}
                     className="flex items-center gap-1"
                   >
                     <Edit className="h-4 w-4" />
@@ -197,7 +225,10 @@ const ContractList: React.FC<ContractListProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onDelete(contract)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(contract);
+                    }}
                     className="flex items-center gap-1 text-red-600 hover:text-red-700"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -208,7 +239,10 @@ const ContractList: React.FC<ContractListProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleManageAssignments(contract)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleManageAssignments(contract);
+                  }}
                   className="flex items-center gap-1"
                 >
                   <Eye className="h-4 w-4" />

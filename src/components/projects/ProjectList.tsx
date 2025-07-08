@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,24 @@ interface ProjectListProps {
 }
 
 const ProjectList = ({ projects, onEdit, onDelete, onToggleStatus }: ProjectListProps) => {
+  const lastLeftClickTime = useRef<number>(0);
+  const lastLeftClickedProject = useRef<string | null>(null);
+
+  const handleDoubleLeftClick = (project: Project, event: React.MouseEvent) => {
+    const currentTime = Date.now();
+    const timeDiff = currentTime - lastLeftClickTime.current;
+    
+    // Check if this is a double left-click (within 500ms and same project)
+    if (timeDiff < 500 && lastLeftClickedProject.current === project.id) {
+      onEdit(project);
+      lastLeftClickTime.current = 0; // Reset to prevent triple clicks
+      lastLeftClickedProject.current = null;
+    } else {
+      lastLeftClickTime.current = currentTime;
+      lastLeftClickedProject.current = project.id;
+    }
+  };
+
   if (projects.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -27,7 +45,11 @@ const ProjectList = ({ projects, onEdit, onDelete, onToggleStatus }: ProjectList
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {projects.map((project) => (
-        <Card key={project.id} className="hover:shadow-md transition-shadow">
+        <Card 
+          key={project.id} 
+          className="hover:shadow-md transition-shadow cursor-pointer"
+          onClick={(e) => handleDoubleLeftClick(project, e)}
+        >
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
@@ -69,14 +91,20 @@ const ProjectList = ({ projects, onEdit, onDelete, onToggleStatus }: ProjectList
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onEdit(project)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(project);
+                  }}
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onToggleStatus(project)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleStatus(project);
+                  }}
                   className={project.is_active ? "text-amber-600" : "text-green-600"}
                 >
                   {project.is_active ? (
@@ -88,7 +116,10 @@ const ProjectList = ({ projects, onEdit, onDelete, onToggleStatus }: ProjectList
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onDelete(project)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(project);
+                  }}
                   className="text-red-600 hover:text-red-700"
                 >
                   <Trash2 className="h-4 w-4" />
