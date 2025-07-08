@@ -1,4 +1,3 @@
-
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay } from "date-fns";
 
 export const formatDate = (date: Date): string => {
@@ -71,4 +70,17 @@ export const getWeekStart = (date: Date): Date => {
   // Get ISO week Monday (week starts on Monday)
   const monday = startOfWeek(date, { weekStartsOn: 1 });
   return monday;
+};
+
+// Add holiday checking function
+export const isPublicHoliday = (date: Date): boolean => {
+  // This is a client-side helper that will be enhanced in later phases
+  // For now, it returns false as we'll use the server-side validation
+  // In Phase 2, we'll add proper client-side holiday detection
+  return false;
+};
+
+// Helper to format date for holiday API calls
+export const formatDateForHolidayAPI = (date: Date): string => {
+  return date.toISOString().split('T')[0];
 };

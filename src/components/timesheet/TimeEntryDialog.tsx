@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { 
@@ -18,6 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
+import { useHolidayLock } from "@/hooks/useHolidayLock";
 import { useAuth } from "@/context/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import WeekendApprovalDialog from "./WeekendApprovalDialog";
@@ -96,6 +96,9 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
   // Get weekend lock validation with admin override for the target user
   const { validateWeekendEntry } = useWeekendLock(targetUserId);
+  
+  // Get holiday lock validation with admin override for the target user
+  const { validateHolidayEntry } = useHolidayLock(targetUserId);
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
@@ -193,12 +196,37 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const canLogWeekend = weekendValidation.isValid;
   const showWeekendWarning = isWeekendDate && !canLogWeekend && isNewEntry;
 
+  // Holiday validation - check if date is a holiday and if user can log holiday entries
+  const [holidayValidation, setHolidayValidation] = useState<{ isValid: boolean; message?: string; holidayName?: string } | null>(null);
+  const [checkingHoliday, setCheckingHoliday] = useState(false);
+
+  useEffect(() => {
+    const checkHolidayStatus = async () => {
+      if (!isNewEntry) return; // Only validate for new entries
+      
+      setCheckingHoliday(true);
+      try {
+        const result = await validateHolidayEntry(date);
+        setHolidayValidation(result);
+      } catch (error) {
+        console.error("Error validating holiday:", error);
+        setHolidayValidation({ isValid: true }); // Fail open
+      } finally {
+        setCheckingHoliday(false);
+      }
+    };
+
+    checkHolidayStatus();
+  }, [date, validateHolidayEntry, isNewEntry]);
+
+  const showHolidayWarning = holidayValidation && !holidayValidation.isValid && isNewEntry;
+
   // Budget validation - different messages for admin vs employee
   const showBudgetError = budgetValidation && !budgetValidation.isValid && !budgetValidation.canOverride;
   const isEmployeeBudgetBlocked = budgetValidation && !budgetValidation.isValid && !isAdminUser;
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
-    // Priority validation order: working days first, then weekend, then budget
+    // Priority validation order: working days first, then weekend, then holiday, then budget
     if (isNewEntry && !canAddToThisDate) {
       toast({
         title: "Cannot add entry",
@@ -210,6 +238,15 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
     if (isNewEntry && showWeekendWarning) {
       setWeekendApprovalOpen(true);
+      return;
+    }
+
+    if (isNewEntry && showHolidayWarning) {
+      toast({
+        title: "Holiday Entry Not Allowed",
+        description: holidayValidation?.message || "Holiday entries are not permitted for this date.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -282,13 +319,16 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
 
   const isSaveDisabled = showWorkingDaysWarning || 
                         showWeekendWarning || 
+                        showHolidayWarning ||
                         isEmployeeBudgetBlocked || 
                         isValidating || 
-                        budgetChecking;
+                        budgetChecking ||
+                        checkingHoliday;
 
   const getSaveButtonText = () => {
-    if (isValidating || budgetChecking) return "Checking Budget...";
+    if (isValidating || budgetChecking || checkingHoliday) return "Validating...";
     if (isEmployeeBudgetBlocked) return "Budget Exceeded";
+    if (showHolidayWarning) return "Holiday Entry Blocked";
     return "Save";
   };
 
@@ -337,6 +377,11 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                   Weekend
                 </div>
               )}
+              {holidayValidation?.holidayName && (
+                <div className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                  {holidayValidation.holidayName}
+                </div>
+              )}
             </div>
 
             {/* Admin edit indicator */}
@@ -349,7 +394,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               </Alert>
             )}
 
-            {/* Validation alerts */}
+            {/* Validation alerts - priority order */}
             {showWorkingDaysWarning && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
@@ -368,7 +413,17 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
               </Alert>
             )}
 
-            {!showWorkingDaysWarning && !showWeekendWarning && isEmployeeBudgetBlocked && (
+            {!showWorkingDaysWarning && !showWeekendWarning && showHolidayWarning && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-fluid-sm">
+                  <div className="font-medium">Holiday Entry Blocked</div>
+                  <div>{holidayValidation?.message}</div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!showWorkingDaysWarning && !showWeekendWarning && !showHolidayWarning && isEmployeeBudgetBlocked && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
@@ -414,6 +469,16 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 <Calendar className="h-4 w-4" />
                 <AlertDescription className="text-fluid-sm">
                   Weekend entry allowed (Admin privilege).
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Holiday allowed info for admins */}
+            {holidayValidation?.holidayName && holidayValidation.isValid && isAdminUser && (
+              <Alert>
+                <Calendar className="h-4 w-4" />
+                <AlertDescription className="text-fluid-sm">
+                  Holiday entry allowed for {holidayValidation.holidayName} (Admin privilege).
                 </AlertDescription>
               </Alert>
             )}
@@ -465,10 +530,10 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 onClick={form.handleSubmit(handleSubmit)}
                 className={`
                   ${isMobile ? 'w-full' : 'px-8'} 
-                  ${isEmployeeBudgetBlocked ? 'bg-red-600 hover:bg-red-700' : ''}
+                  ${isEmployeeBudgetBlocked || showHolidayWarning ? 'bg-red-600 hover:bg-red-700' : ''}
                 `}
                 disabled={isSaveDisabled}
-                variant={isEmployeeBudgetBlocked ? "destructive" : "default"}
+                variant={isEmployeeBudgetBlocked || showHolidayWarning ? "destructive" : "default"}
               >
                 {getSaveButtonText()}
               </Button>

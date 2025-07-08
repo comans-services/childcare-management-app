@@ -359,6 +359,36 @@ export type Database = {
           },
         ]
       }
+      public_holidays: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          name: string
+          state: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          name: string
+          state?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          name?: string
+          state?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           created_at: string
@@ -517,6 +547,7 @@ export type Database = {
       }
       work_schedules: {
         Row: {
+          allow_holiday_entries: boolean
           allow_weekend_entries: boolean
           created_at: string
           created_by: string | null
@@ -530,6 +561,7 @@ export type Database = {
           working_days: number
         }
         Insert: {
+          allow_holiday_entries?: boolean
           allow_weekend_entries?: boolean
           created_at?: string
           created_by?: string | null
@@ -543,6 +575,7 @@ export type Database = {
           working_days?: number
         }
         Update: {
+          allow_holiday_entries?: boolean
           allow_weekend_entries?: boolean
           created_at?: string
           created_by?: string | null
@@ -614,6 +647,10 @@ export type Database = {
           most_common_reason: string
         }[]
       }
+      get_public_holiday_name: {
+        Args: { entry_date: string; target_state?: string }
+        Returns: string
+      }
       get_user_activities: {
         Args: { p_start_date?: string; p_end_date?: string; p_user_id?: string }
         Returns: {
@@ -648,6 +685,10 @@ export type Database = {
       }
       is_date_locked_for_user: {
         Args: { p_user_id: string; entry_date: string }
+        Returns: boolean
+      }
+      is_public_holiday: {
+        Args: { entry_date: string; target_state?: string }
         Returns: boolean
       }
       is_user_assigned_to_contract: {
