@@ -59,6 +59,7 @@ const AddEditProjectForm = ({ existingProject, onSuccess, onCancel }: AddEditPro
   });
 
   const isInternal = watch("is_internal");
+  const customerIdValue = watch("customer_id");
 
   useEffect(() => {
     if (existingProject) {
@@ -88,10 +89,16 @@ const AddEditProjectForm = ({ existingProject, onSuccess, onCancel }: AddEditPro
     try {
       setIsSubmitting(true);
       
-      const projectData = {
-        ...data,
-        has_budget_limit: hasBudgetLimit,
+      // Ensure all required fields are present for the Project type
+      const projectData: Omit<Project, 'id' | 'hours_used'> = {
+        name: data.name,
+        description: data.description,
         budget_hours: hasBudgetLimit ? data.budget_hours : 0,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        customer_id: data.customer_id,
+        is_internal: data.is_internal,
+        has_budget_limit: hasBudgetLimit,
       };
 
       if (existingProject) {
@@ -202,8 +209,8 @@ const AddEditProjectForm = ({ existingProject, onSuccess, onCancel }: AddEditPro
         <div className="space-y-2">
           <Label>Customer</Label>
           <CustomerSelector
-            value={watch("customer_id") || ""}
-            onValueChange={(value) => setValue("customer_id", value)}
+            selectedCustomerId={customerIdValue || null}
+            onSelectCustomer={(customerId) => setValue("customer_id", customerId || "")}
           />
         </div>
       )}
