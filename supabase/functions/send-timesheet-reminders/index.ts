@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { Resend } from "npm:resend@2.0.0";
@@ -70,44 +71,62 @@ const serve_handler = async (req: Request): Promise<Response> => {
         logged_days: 0
       }));
     } else {
-      // Query database for users with missing timesheet entries
-      console.log('Querying database for users with missing timesheet entries');
-      
-      const { data: missingUsers, error: dbError } = await supabase
-        .rpc('get_users_missing_timesheet_entries', {
-          p_week_start_date: weekStartDate || null
-        });
+      // Determine recipient selection based on reminder type
+      if (templateType === 'monday') {
+        // Monday reminders: Only send to users with missing timesheet entries
+        console.log('Querying database for users with missing timesheet entries (Monday reminder)');
+        
+        const { data: missingUsers, error: dbError } = await supabase
+          .rpc('get_users_missing_timesheet_entries', {
+            p_week_start_date: weekStartDate || null
+          });
 
-      if (dbError) {
-        console.error('Database error:', dbError);
-        throw new Error(`Database query failed: ${dbError.message}`);
-      }
+        if (dbError) {
+          console.error('Database error:', dbError);
+          throw new Error(`Database query failed: ${dbError.message}`);
+        }
 
-      usersToRemind = missingUsers || [];
-      console.log(`Found ${usersToRemind.length} users with missing timesheet entries`);
+        usersToRemind = missingUsers || [];
+        console.log(`Found ${usersToRemind.length} users with missing timesheet entries`);
+      } else {
+        // Friday, Monthly Morning, and Monthly Evening: Send to ALL users
+        console.log(`Querying database for all users (${templateType} reminder)`);
+        
+        const { data: allUsers, error: dbError } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, organization, time_zone')
+          .not('email', 'is', null);
 
-      // For evening monthly reminders, only send if users still have missing entries
-      if (templateType === 'monthly-evening' && usersToRemind.length === 0) {
-        console.log('No users with missing entries for evening reminder, skipping');
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'No users require evening timesheet reminders - all timesheets complete',
-            emailsSent: 0
-          }),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders },
-          }
-        );
+        if (dbError) {
+          console.error('Database error:', dbError);
+          throw new Error(`Database query failed: ${dbError.message}`);
+        }
+
+        // Transform the data to match the expected format
+        usersToRemind = (allUsers || []).map(user => ({
+          user_id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          organization: user.organization,
+          time_zone: user.time_zone,
+          expected_days: 0,
+          logged_days: 0,
+          missing_days: 0
+        }));
+        
+        console.log(`Found ${usersToRemind.length} total users for ${templateType} reminder`);
       }
     }
 
     if (usersToRemind.length === 0) {
+      const message = templateType === 'monday' 
+        ? 'No users require timesheet reminders at this time'
+        : 'No users found to send reminders to';
+        
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'No users require timesheet reminders at this time',
+          message,
           emailsSent: 0
         }),
         {
