@@ -45,7 +45,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
   // Determine the effective user ID for schedule and weekend permissions
   const effectiveUserId = viewAsUserId || user?.id;
 
-  // Get weekend permissions for the effective user
+  // Get weekend permissions for the effective user - NOW USING shouldShowWeekendColumns for UI
   const { shouldShowWeekendColumns } = useWeekendLock(effectiveUserId);
 
   // Get current week's schedule using the effective user ID
@@ -55,13 +55,13 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     effectiveHours: weeklyTarget,
   } = useSimpleWeeklySchedule(effectiveUserId || "", weekStartDate);
 
-  // Determine which dates to display in the grid
+  // Determine which dates to display in the grid with NEW weekend filtering logic
   const displayDates = useMemo(() => {
     if (viewMode === "today") {
       return [currentDate];
     }
     
-    // In week mode, filter out weekends based on shouldShowWeekendColumns
+    // In week mode, filter out weekends based on shouldShowWeekendColumns (affects ALL users including admins)
     if (!shouldShowWeekendColumns) {
       return weekDates.filter(date => !isWeekend(date));
     }
@@ -69,61 +69,34 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     return weekDates;
   }, [viewMode, currentDate, weekDates, shouldShowWeekendColumns]);
 
-  // All entries for calculation (includes weekends even when columns are hidden)
-  const calculationEntries = useMemo(() => {
-    if (viewMode === "today") {
-      const todayDateString = currentDate.toISOString().substring(0, 10);
-      return entries.filter(entry => {
-        const entryDateString = String(entry.entry_date).substring(0, 10);
-        return entryDateString === todayDateString;
-      });
-    }
-    
-    // For week mode, include ALL entries from the week for calculation
-    const weekDateStrings = weekDates.map(date => date.toISOString().substring(0, 10));
-    return entries.filter(entry => {
-      const entryDateString = String(entry.entry_date).substring(0, 10);
-      return weekDateStrings.includes(entryDateString);
-    });
-  }, [entries, viewMode, currentDate, weekDates]);
-
-  // Display entries for UI rendering - show entries for dates that are actually displayed
-  const displayEntries = useMemo(() => {
-    if (viewMode === "today") {
-      const todayDateString = currentDate.toISOString().substring(0, 10);
-      return entries.filter(entry => {
-        const entryDateString = String(entry.entry_date).substring(0, 10);
-        return entryDateString === todayDateString;
-      });
-    }
-    
-    // For week mode, show entries for dates that are actually being displayed
-    // This includes weekend entries if weekend columns are shown
+  // Filter entries based on the view mode and displayed dates
+  const filteredEntries = useMemo(() => {
     const displayDateStrings = displayDates.map(date => date.toISOString().substring(0, 10));
+    
     return entries.filter(entry => {
       const entryDateString = String(entry.entry_date).substring(0, 10);
       return displayDateStrings.includes(entryDateString);
     });
-  }, [entries, viewMode, currentDate, displayDates]);
+  }, [entries, displayDates]);
 
-  // Calculate total hours using ALL entries (calculationEntries), not just display entries
+  // Calculate total hours for the current view
   const totalHours = useMemo(() => {
-    return calculationEntries.reduce((sum, entry) => {
+    return filteredEntries.reduce((sum, entry) => {
       const hoursLogged = Number(entry.hours_logged) || 0;
       return sum + hoursLogged;
     }, 0);
-  }, [calculationEntries]);
+  }, [filteredEntries]);
 
-  // Calculate unique days worked using ALL entries for accuracy
+  // Calculate unique days worked
   const totalDaysWorked = useMemo(() => {
     const uniqueDatesWorked = new Set(
-      calculationEntries.map(entry => {
+      filteredEntries.map(entry => {
         const entryDateString = String(entry.entry_date);
         return entryDateString.substring(0, 10);
       })
     );
     return uniqueDatesWorked.size;
-  }, [calculationEntries]);
+  }, [filteredEntries]);
 
   // Calculate the target based on view mode and visible days
   const workingDaysTarget = useMemo(() => {
@@ -141,8 +114,8 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
 
   return (
     <>
-      {/* Hours Summary - Uses calculationEntries for accurate totals */}
-      {calculationEntries.length > 0 && (
+      {/* Hours Summary */}
+      {filteredEntries.length > 0 && (
         <LazyContent
           fallback={<div className="h-20 bg-gray-100 rounded-lg animate-pulse" />}
           priority={true}
@@ -151,19 +124,19 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
             <MobileWeeklyHoursSummary 
               totalHours={totalHours}
               weeklyTarget={weeklyTarget}
-              entries={calculationEntries}
+              entries={entries}
             />
           ) : (
             <WeeklyHoursSummary 
               totalHours={totalHours}
               weeklyTarget={weeklyTarget}
-              entries={calculationEntries}
+              entries={entries}
             />
           )}
         </LazyContent>
       )}
 
-      {/* Week/Day Grid - Uses displayEntries for UI rendering */}
+      {/* Week/Day Grid */}
       <LazyContent
         fallback={
           <div className={`grid gap-2 ${viewMode === "today" ? "grid-cols-1" : `grid-cols-1 md:grid-cols-${Math.min(displayDates.length, 7)}`}`}>
@@ -179,7 +152,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
           <MobileWeekGrid
             weekDates={displayDates}
             userId={effectiveUserId || ""}
-            entries={displayEntries}
+            entries={entries}
             projects={projects}
             onEntryChange={onEntryChange}
             onAddEntry={onAddEntry}
@@ -190,7 +163,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
           <WeekGrid
             weekDates={displayDates}
             userId={effectiveUserId || ""}
-            entries={displayEntries}
+            entries={entries}
             projects={projects}
             onEntryChange={onEntryChange}
             onDragEnd={onDragEnd}
@@ -201,8 +174,8 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
         )}
       </LazyContent>
 
-      {/* Progress Bar - Uses calculationEntries for accurate progress */}
-      {calculationEntries.length > 0 && (
+      {/* Progress Bar */}
+      {filteredEntries.length > 0 && (
         <LazyContent
           fallback={<div className="h-4 bg-gray-100 rounded animate-pulse" />}
           priority={true}
@@ -214,7 +187,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
         </LazyContent>
       )}
 
-      {/* Weekend Hidden Indicator */}
+      {/* Weekend Hidden Indicator - NOW APPLIES TO ALL USERS INCLUDING ADMINS */}
       {viewMode === "week" && !shouldShowWeekendColumns && (
         <div className="text-center text-sm text-muted-foreground mt-2">
           Weekend columns are hidden. Toggle weekend entries to show weekend days.
