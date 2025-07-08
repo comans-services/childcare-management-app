@@ -69,7 +69,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     return weekDates;
   }, [viewMode, currentDate, weekDates, shouldShowWeekendColumns]);
 
-  // Filter entries based on the view mode and displayed dates
+  // Filter entries for UI display based on the view mode and displayed dates
   const filteredEntries = useMemo(() => {
     const displayDateStrings = displayDates.map(date => date.toISOString().substring(0, 10));
     
@@ -79,30 +79,48 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     });
   }, [entries, displayDates]);
 
-  // Calculate total hours for the current view
+  // Calculate entries for totals and progress - use all entries in the current week regardless of weekend display settings
+  const calculationEntries = useMemo(() => {
+    if (viewMode === "today") {
+      const todayString = currentDate.toISOString().substring(0, 10);
+      return entries.filter(entry => {
+        const entryDateString = String(entry.entry_date).substring(0, 10);
+        return entryDateString === todayString;
+      });
+    }
+    
+    // For week mode, use ALL entries from the week dates for calculations
+    const weekDateStrings = weekDates.map(date => date.toISOString().substring(0, 10));
+    return entries.filter(entry => {
+      const entryDateString = String(entry.entry_date).substring(0, 10);
+      return weekDateStrings.includes(entryDateString);
+    });
+  }, [entries, viewMode, currentDate, weekDates]);
+
+  // Calculate total hours using all entries (including weekends)
   const totalHours = useMemo(() => {
-    return filteredEntries.reduce((sum, entry) => {
+    return calculationEntries.reduce((sum, entry) => {
       const hoursLogged = Number(entry.hours_logged) || 0;
       return sum + hoursLogged;
     }, 0);
-  }, [filteredEntries]);
+  }, [calculationEntries]);
 
-  // Calculate unique days worked
+  // Calculate unique days worked using all entries (including weekends)
   const totalDaysWorked = useMemo(() => {
     const uniqueDatesWorked = new Set(
-      filteredEntries.map(entry => {
+      calculationEntries.map(entry => {
         const entryDateString = String(entry.entry_date);
         return entryDateString.substring(0, 10);
       })
     );
     return uniqueDatesWorked.size;
-  }, [filteredEntries]);
+  }, [calculationEntries]);
 
-  // Calculate the target based on view mode and visible days
+  // Calculate the target based on view mode and working days
   const workingDaysTarget = useMemo(() => {
     if (viewMode === "today") return 1;
-    return displayDates.length; // Use actual visible days count
-  }, [viewMode, displayDates.length]);
+    return workingDays; // Use the working days from schedule, not display dates
+  }, [viewMode, workingDays]);
 
   if (!user?.id) {
     return <div className="text-center text-gray-500">Please sign in to view your timesheet.</div>;
@@ -114,8 +132,8 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
 
   return (
     <>
-      {/* Hours Summary */}
-      {filteredEntries.length > 0 && (
+      {/* Hours Summary - use calculation entries for accurate totals */}
+      {calculationEntries.length > 0 && (
         <LazyContent
           fallback={<div className="h-20 bg-gray-100 rounded-lg animate-pulse" />}
           priority={true}
@@ -136,7 +154,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
         </LazyContent>
       )}
 
-      {/* Week/Day Grid */}
+      {/* Week/Day Grid - use filtered entries for display */}
       <LazyContent
         fallback={
           <div className={`grid gap-2 ${viewMode === "today" ? "grid-cols-1" : `grid-cols-1 md:grid-cols-${Math.min(displayDates.length, 7)}`}`}>
@@ -174,8 +192,8 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
         )}
       </LazyContent>
 
-      {/* Progress Bar */}
-      {filteredEntries.length > 0 && (
+      {/* Progress Bar - use calculation entries for accurate progress */}
+      {calculationEntries.length > 0 && (
         <LazyContent
           fallback={<div className="h-4 bg-gray-100 rounded animate-pulse" />}
           priority={true}
