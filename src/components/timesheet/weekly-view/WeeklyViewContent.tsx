@@ -45,7 +45,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
   // Determine the effective user ID for schedule and weekend permissions
   const effectiveUserId = viewAsUserId || user?.id;
 
-  // Get weekend permissions for the effective user - NOW USING shouldShowWeekendColumns for UI
+  // Get weekend permissions for the effective user
   const { shouldShowWeekendColumns } = useWeekendLock(effectiveUserId);
 
   // Get current week's schedule using the effective user ID
@@ -55,13 +55,13 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     effectiveHours: weeklyTarget,
   } = useSimpleWeeklySchedule(effectiveUserId || "", weekStartDate);
 
-  // Determine which dates to display in the grid with NEW weekend filtering logic
+  // Determine which dates to display in the grid
   const displayDates = useMemo(() => {
     if (viewMode === "today") {
       return [currentDate];
     }
     
-    // In week mode, filter out weekends based on shouldShowWeekendColumns (affects ALL users including admins)
+    // In week mode, filter out weekends based on shouldShowWeekendColumns
     if (!shouldShowWeekendColumns) {
       return weekDates.filter(date => !isWeekend(date));
     }
@@ -69,7 +69,6 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     return weekDates;
   }, [viewMode, currentDate, weekDates, shouldShowWeekendColumns]);
 
-  // FIXED: Separate display filtering from calculation logic
   // All entries for calculation (includes weekends even when columns are hidden)
   const calculationEntries = useMemo(() => {
     if (viewMode === "today") {
@@ -88,17 +87,26 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     });
   }, [entries, viewMode, currentDate, weekDates]);
 
-  // Display entries for UI rendering (respects weekend column visibility)
+  // Display entries for UI rendering - show entries for dates that are actually displayed
   const displayEntries = useMemo(() => {
-    const displayDateStrings = displayDates.map(date => date.toISOString().substring(0, 10));
+    if (viewMode === "today") {
+      const todayDateString = currentDate.toISOString().substring(0, 10);
+      return entries.filter(entry => {
+        const entryDateString = String(entry.entry_date).substring(0, 10);
+        return entryDateString === todayDateString;
+      });
+    }
     
+    // For week mode, show entries for dates that are actually being displayed
+    // This includes weekend entries if weekend columns are shown
+    const displayDateStrings = displayDates.map(date => date.toISOString().substring(0, 10));
     return entries.filter(entry => {
       const entryDateString = String(entry.entry_date).substring(0, 10);
       return displayDateStrings.includes(entryDateString);
     });
-  }, [entries, displayDates]);
+  }, [entries, viewMode, currentDate, displayDates]);
 
-  // FIXED: Calculate total hours using ALL entries (calculationEntries), not just display entries
+  // Calculate total hours using ALL entries (calculationEntries), not just display entries
   const totalHours = useMemo(() => {
     return calculationEntries.reduce((sum, entry) => {
       const hoursLogged = Number(entry.hours_logged) || 0;
@@ -133,7 +141,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
 
   return (
     <>
-      {/* Hours Summary - FIXED: Now uses calculationEntries for accurate totals */}
+      {/* Hours Summary - Uses calculationEntries for accurate totals */}
       {calculationEntries.length > 0 && (
         <LazyContent
           fallback={<div className="h-20 bg-gray-100 rounded-lg animate-pulse" />}
@@ -206,7 +214,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
         </LazyContent>
       )}
 
-      {/* Weekend Hidden Indicator - NOW APPLIES TO ALL USERS INCLUDING ADMINS */}
+      {/* Weekend Hidden Indicator */}
       {viewMode === "week" && !shouldShowWeekendColumns && (
         <div className="text-center text-sm text-muted-foreground mt-2">
           Weekend columns are hidden. Toggle weekend entries to show weekend days.
