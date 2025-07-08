@@ -69,8 +69,27 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     return weekDates;
   }, [viewMode, currentDate, weekDates, shouldShowWeekendColumns]);
 
-  // Filter entries based on the view mode and displayed dates
-  const filteredEntries = useMemo(() => {
+  // FIXED: Separate display filtering from calculation logic
+  // All entries for calculation (includes weekends even when columns are hidden)
+  const calculationEntries = useMemo(() => {
+    if (viewMode === "today") {
+      const todayDateString = currentDate.toISOString().substring(0, 10);
+      return entries.filter(entry => {
+        const entryDateString = String(entry.entry_date).substring(0, 10);
+        return entryDateString === todayDateString;
+      });
+    }
+    
+    // For week mode, include ALL entries from the week for calculation
+    const weekDateStrings = weekDates.map(date => date.toISOString().substring(0, 10));
+    return entries.filter(entry => {
+      const entryDateString = String(entry.entry_date).substring(0, 10);
+      return weekDateStrings.includes(entryDateString);
+    });
+  }, [entries, viewMode, currentDate, weekDates]);
+
+  // Display entries for UI rendering (respects weekend column visibility)
+  const displayEntries = useMemo(() => {
     const displayDateStrings = displayDates.map(date => date.toISOString().substring(0, 10));
     
     return entries.filter(entry => {
@@ -79,24 +98,24 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     });
   }, [entries, displayDates]);
 
-  // Calculate total hours for the current view
+  // FIXED: Calculate total hours using ALL entries (calculationEntries), not just display entries
   const totalHours = useMemo(() => {
-    return filteredEntries.reduce((sum, entry) => {
+    return calculationEntries.reduce((sum, entry) => {
       const hoursLogged = Number(entry.hours_logged) || 0;
       return sum + hoursLogged;
     }, 0);
-  }, [filteredEntries]);
+  }, [calculationEntries]);
 
-  // Calculate unique days worked
+  // Calculate unique days worked using ALL entries for accuracy
   const totalDaysWorked = useMemo(() => {
     const uniqueDatesWorked = new Set(
-      filteredEntries.map(entry => {
+      calculationEntries.map(entry => {
         const entryDateString = String(entry.entry_date);
         return entryDateString.substring(0, 10);
       })
     );
     return uniqueDatesWorked.size;
-  }, [filteredEntries]);
+  }, [calculationEntries]);
 
   // Calculate the target based on view mode and visible days
   const workingDaysTarget = useMemo(() => {
@@ -114,8 +133,8 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
 
   return (
     <>
-      {/* Hours Summary */}
-      {filteredEntries.length > 0 && (
+      {/* Hours Summary - FIXED: Now uses calculationEntries for accurate totals */}
+      {calculationEntries.length > 0 && (
         <LazyContent
           fallback={<div className="h-20 bg-gray-100 rounded-lg animate-pulse" />}
           priority={true}
@@ -124,19 +143,19 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
             <MobileWeeklyHoursSummary 
               totalHours={totalHours}
               weeklyTarget={weeklyTarget}
-              entries={entries}
+              entries={calculationEntries}
             />
           ) : (
             <WeeklyHoursSummary 
               totalHours={totalHours}
               weeklyTarget={weeklyTarget}
-              entries={entries}
+              entries={calculationEntries}
             />
           )}
         </LazyContent>
       )}
 
-      {/* Week/Day Grid */}
+      {/* Week/Day Grid - Uses displayEntries for UI rendering */}
       <LazyContent
         fallback={
           <div className={`grid gap-2 ${viewMode === "today" ? "grid-cols-1" : `grid-cols-1 md:grid-cols-${Math.min(displayDates.length, 7)}`}`}>
@@ -152,7 +171,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
           <MobileWeekGrid
             weekDates={displayDates}
             userId={effectiveUserId || ""}
-            entries={entries}
+            entries={displayEntries}
             projects={projects}
             onEntryChange={onEntryChange}
             onAddEntry={onAddEntry}
@@ -163,7 +182,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
           <WeekGrid
             weekDates={displayDates}
             userId={effectiveUserId || ""}
-            entries={entries}
+            entries={displayEntries}
             projects={projects}
             onEntryChange={onEntryChange}
             onDragEnd={onDragEnd}
@@ -174,8 +193,8 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
         )}
       </LazyContent>
 
-      {/* Progress Bar */}
-      {filteredEntries.length > 0 && (
+      {/* Progress Bar - Uses calculationEntries for accurate progress */}
+      {calculationEntries.length > 0 && (
         <LazyContent
           fallback={<div className="h-4 bg-gray-100 rounded animate-pulse" />}
           priority={true}
