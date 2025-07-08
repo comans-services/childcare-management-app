@@ -311,6 +311,7 @@ export type Database = {
           customer_id: string | null
           description: string | null
           end_date: string | null
+          has_budget_limit: boolean
           id: string
           is_active: boolean | null
           is_internal: boolean | null
@@ -325,6 +326,7 @@ export type Database = {
           customer_id?: string | null
           description?: string | null
           end_date?: string | null
+          has_budget_limit?: boolean
           id?: string
           is_active?: boolean | null
           is_internal?: boolean | null
@@ -339,6 +341,7 @@ export type Database = {
           customer_id?: string | null
           description?: string | null
           end_date?: string | null
+          has_budget_limit?: boolean
           id?: string
           is_active?: boolean | null
           is_internal?: boolean | null

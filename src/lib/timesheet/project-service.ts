@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "./types";
 import { ProjectWithAssignees } from "../project/assignment-types";
@@ -30,7 +29,7 @@ export const fetchUserProjects = async (): Promise<Project[]> => {
     // Filter projects by the assigned project IDs
     const { data, error } = await supabase
       .from("projects")
-      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id, is_internal")
+      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id, is_internal, has_budget_limit")
       .in('id', projectIds)
       .order("is_active", { ascending: false })
       .order("name", { ascending: true });
@@ -71,7 +70,7 @@ export const fetchProjects = async (filters?: {
     
     let query = supabase
       .from("projects")
-      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id, is_internal");
+      .select("id, name, description, budget_hours, start_date, end_date, is_active, customer_id, is_internal, has_budget_limit");
 
     // Apply active filter
     if (filters?.activeOnly) {
@@ -128,7 +127,7 @@ export const fetchProjectsWithAssignees = async (filters?: {
     let query = supabase
       .from("projects")
       .select(`
-        id, name, description, budget_hours, start_date, end_date, is_active, customer_id, is_internal,
+        id, name, description, budget_hours, start_date, end_date, is_active, customer_id, is_internal, has_budget_limit,
         project_assignments!inner(
           user:profiles!project_assignments_user_id_fkey(id, full_name, email)
         )
@@ -180,6 +179,7 @@ export const fetchProjectsWithAssignees = async (filters?: {
           is_active: project.is_active,
           customer_id: project.customer_id,
           is_internal: project.is_internal,
+          has_budget_limit: project.has_budget_limit,
           hours_used: hours,
           assignees: assignees
         };
@@ -213,6 +213,7 @@ export const saveProject = async (projectData: Omit<Project, 'id' | 'hours_used'
         customer_id: projectData.customer_id,
         is_active: projectData.is_active ?? true,
         is_internal: projectData.is_internal ?? false,
+        has_budget_limit: projectData.has_budget_limit ?? true,
         created_by: user.id
       }])
       .select()

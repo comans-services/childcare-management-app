@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw, Building } from "lucide-react";
+import { PlusCircle, Clock, BarChart3, Users, Search, Filter, RefreshCw, Building, Infinity } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Project } from "@/lib/timesheet/types";
@@ -98,14 +98,21 @@ const ProjectsPage = () => {
     const activeProjects = projects.filter(p => p.is_active).length;
     const internalProjects = projects.filter(p => p.is_internal).length;
     const clientProjects = projects.filter(p => !p.is_internal).length;
-    const totalBudgetHours = projects.reduce((sum, p) => sum + (p.budget_hours || 0), 0);
-    const avgBudgetHours = totalProjects > 0 ? totalBudgetHours / totalProjects : 0;
+    const budgetLimitedProjects = projects.filter(p => p.has_budget_limit !== false).length;
+    const unlimitedBudgetProjects = projects.filter(p => p.has_budget_limit === false).length;
+    
+    // Only calculate budget stats for projects with budget limits
+    const projectsWithBudgets = projects.filter(p => p.has_budget_limit !== false);
+    const totalBudgetHours = projectsWithBudgets.reduce((sum, p) => sum + (p.budget_hours || 0), 0);
+    const avgBudgetHours = projectsWithBudgets.length > 0 ? totalBudgetHours / projectsWithBudgets.length : 0;
     
     return {
       totalProjects,
       activeProjects,
       internalProjects,
       clientProjects,
+      budgetLimitedProjects,
+      unlimitedBudgetProjects,
       totalBudgetHours,
       avgBudgetHours: Math.round(avgBudgetHours)
     };
@@ -257,13 +264,13 @@ const ProjectsPage = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-fluid-lg flex items-center gap-2">
                   <Clock className="h-5 w-5 text-orange-600" />
-                  <span className="truncate">Total Budget</span>
+                  <span className="truncate">Budget Limited</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-fluid-xl font-bold text-orange-600">{stats.totalBudgetHours}h</div>
+                <div className="text-fluid-xl font-bold text-orange-600">{stats.budgetLimitedProjects}</div>
                 <p className="text-fluid-xs text-muted-foreground mt-1">
-                  Across all projects
+                  With budget limits
                 </p>
               </CardContent>
             </Card>
@@ -272,14 +279,14 @@ const ProjectsPage = () => {
             <Card className="hover:shadow-md transition-shadow hidden 3xl:block">
               <CardHeader className="pb-3">
                 <CardTitle className="text-fluid-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-indigo-600" />
-                  <span className="truncate">Avg Budget</span>
+                  <Infinity className="h-5 w-5 text-indigo-600" />
+                  <span className="truncate">Unlimited</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-fluid-xl font-bold text-indigo-600">{stats.avgBudgetHours}h</div>
+                <div className="text-fluid-xl font-bold text-indigo-600">{stats.unlimitedBudgetProjects}</div>
                 <p className="text-fluid-xs text-muted-foreground mt-1">
-                  Per project
+                  No budget limits
                 </p>
               </CardContent>
             </Card>
@@ -287,16 +294,14 @@ const ProjectsPage = () => {
             <Card className="hover:shadow-md transition-shadow hidden 3xl:block">
               <CardHeader className="pb-3">
                 <CardTitle className="text-fluid-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-pink-600" />
-                  <span className="truncate">Status</span>
+                  <BarChart3 className="h-5 w-5 text-pink-600" />
+                  <span className="truncate">Avg Budget</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-fluid-xl font-bold text-pink-600">
-                  {Math.round((stats.activeProjects / stats.totalProjects) * 100)}%
-                </div>
+                <div className="text-fluid-xl font-bold text-pink-600">{stats.avgBudgetHours}h</div>
                 <p className="text-fluid-xs text-muted-foreground mt-1">
-                  Active rate
+                  Per limited project
                 </p>
               </CardContent>
             </Card>
