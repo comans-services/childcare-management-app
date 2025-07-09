@@ -87,7 +87,7 @@ const HolidayManagement: React.FC = () => {
           id,
           user_id,
           allow_holiday_entries,
-          profiles (
+          profiles!inner (
             full_name,
             email
           )
@@ -96,11 +96,11 @@ const HolidayManagement: React.FC = () => {
 
       if (error) throw error;
       
-      return data.map(item => ({
+      return data?.map(item => ({
         id: item.id,
         user_id: item.user_id,
         allow_holiday_entries: item.allow_holiday_entries,
-        profiles: item.profiles,
+        profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles,
       })) as UserHolidayPermission[];
     },
   });
