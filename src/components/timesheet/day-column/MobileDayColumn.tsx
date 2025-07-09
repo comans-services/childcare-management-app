@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { formatDate, getWeekStart } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,7 +6,6 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
-import { useHolidayLock } from "@/hooks/useHolidayLock";
 import { isWeekend } from "@/lib/date-utils";
 import { sortEntriesByTime } from "@/lib/time-sorting-utils";
 import DayHeader from "./DayHeader";
@@ -39,7 +37,6 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<TimesheetEntry | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [holidayInfo, setHolidayInfo] = useState<{ isHoliday: boolean; holidayName?: string }>({ isHoliday: false });
   const dailyTarget = 8;
 
   // Get working days validation
@@ -49,20 +46,7 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
   // Get weekend lock validation
   const { validateWeekendEntry } = useWeekendLock(userId);
 
-  // Get holiday lock validation
-  const { validateHolidayEntry, canCreateHolidayEntries, checkIfHoliday, isAdmin } = useHolidayLock(userId);
-
   const formattedColumnDate = formatDate(date);
-
-  // Check if date is a holiday
-  useEffect(() => {
-    const checkHoliday = async () => {
-      const result = await checkIfHoliday(date);
-      setHolidayInfo(result);
-    };
-    
-    checkHoliday();
-  }, [date, checkIfHoliday]);
 
   // Filter entries for this day and sort by time
   const dayEntries = sortEntriesByTime(
@@ -98,10 +82,6 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
   const weekendValidation = validateWeekendEntry(date);
   const isWeekendBlocked = isWeekendDay && !weekendValidation.isValid;
 
-  // Holiday-specific validation
-  const isHolidayDate = holidayInfo.isHoliday;
-  const isHolidayBlocked = isHolidayDate && !canCreateHolidayEntries && !isAdmin;
-
   const handleDeleteClick = (entry: TimesheetEntry) => {
     setEntryToDelete(entry);
     setDeleteConfirmOpen(true);
@@ -133,7 +113,7 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
     }
   };
 
-  const handleAddEntry = async () => {
+  const handleAddEntry = () => {
     if (!canAddToThisDay) {
       toast({
         title: "Cannot add entry",
@@ -152,32 +132,17 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
       return;
     }
 
-    // Check holiday validation
-    if (isHolidayDate) {
-      const holidayValidation = await validateHolidayEntry(date);
-      if (!holidayValidation.isValid) {
-        toast({
-          title: "Holiday Entry Blocked",
-          description: holidayValidation.message || "Holiday entries are not allowed.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     onAddEntry();
   };
 
-  const isDayBlocked = (!canAddToThisDay && !hasEntries) || (isWeekendBlocked && !hasEntries) || (isHolidayBlocked && !hasEntries);
+  const isDayBlocked = (!canAddToThisDay && !hasEntries) || (isWeekendBlocked && !hasEntries);
 
   return (
     <Card className={cn(
       "h-full shadow-sm transition-all duration-200",
       isDayBlocked && "bg-gray-50 border-dashed opacity-75",
-      isHolidayBlocked && !hasEntries && "bg-red-50 border-red-200 border-dashed",
-      isWeekendBlocked && !isHolidayDate && !hasEntries && "bg-red-50 border-red-200 border-dashed",
-      isHolidayDate && !isHolidayBlocked && "bg-purple-50",
-      isWeekendDay && !isWeekendBlocked && !isHolidayDate && "bg-blue-50"
+      isWeekendBlocked && !hasEntries && "bg-red-50 border-red-200 border-dashed",
+      isWeekendDay && !isWeekendBlocked && "bg-blue-50"
     )}>
       <CardContent className="p-0">
         <DayHeader date={date} />
@@ -215,7 +180,7 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
           </Button>
         </div>
 
-        {/* Enhanced Status Messages */}
+        {/* Status Messages */}
         {!canAddToThisDay && !hasEntries && (
           <div className="px-3 pb-3">
             <div className="text-xs text-center p-2 bg-amber-50 rounded border border-amber-200 text-amber-800">
@@ -224,25 +189,7 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
           </div>
         )}
 
-        {isHolidayBlocked && !hasEntries && (
-          <div className="px-3 pb-3">
-            <div className="text-xs text-center p-2 bg-red-50 rounded border border-red-200 text-red-800">
-              <div className="font-medium">{holidayInfo.holidayName}</div>
-              <div>Holiday entries disabled</div>
-            </div>
-          </div>
-        )}
-
-        {isHolidayDate && !isHolidayBlocked && !hasEntries && (
-          <div className="px-3 pb-3">
-            <div className="text-xs text-center p-2 bg-purple-50 rounded border border-purple-200 text-purple-800">
-              <div className="font-medium">{holidayInfo.holidayName}</div>
-              <div>{isAdmin ? "Admin can create entries" : "Holiday entries allowed"}</div>
-            </div>
-          </div>
-        )}
-
-        {isWeekendBlocked && !isHolidayDate && !hasEntries && (
+        {isWeekendBlocked && !hasEntries && (
           <div className="px-3 pb-3">
             <div className="text-xs text-center p-2 bg-red-50 rounded border border-red-200 text-red-800">
               Weekend entries disabled
@@ -250,7 +197,7 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
           </div>
         )}
 
-        {isWeekendDay && !isWeekendBlocked && !isHolidayDate && !hasEntries && (
+        {isWeekendDay && !isWeekendBlocked && !hasEntries && (
           <div className="px-3 pb-3">
             <div className="text-xs text-center p-2 bg-blue-50 rounded border border-blue-200 text-blue-800">
               Weekend day

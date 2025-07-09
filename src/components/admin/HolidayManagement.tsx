@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,10 +42,8 @@ interface UserHolidayPermission {
   id: string;
   user_id: string;
   allow_holiday_entries: boolean;
-  profiles: {
-    full_name?: string;
-    email: string;
-  } | null;
+  full_name?: string;
+  email: string;
 }
 
 const HolidayManagement: React.FC = () => {
@@ -52,6 +51,7 @@ const HolidayManagement: React.FC = () => {
   const [newHolidayName, setNewHolidayName] = useState("");
   const [newHolidayDate, setNewHolidayDate] = useState("");
   const [newHolidayDescription, setNewHolidayDescription] = useState("");
+  const [globalOverride, setGlobalOverride] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -86,7 +86,7 @@ const HolidayManagement: React.FC = () => {
           id,
           user_id,
           allow_holiday_entries,
-          profiles!work_schedules_user_id_fkey (
+          profiles (
             full_name,
             email
           )
@@ -95,7 +95,13 @@ const HolidayManagement: React.FC = () => {
 
       if (error) throw error;
       
-      return data;
+      return data.map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        allow_holiday_entries: item.allow_holiday_entries,
+        full_name: item.profiles?.full_name,
+        email: item.profiles?.email || "No email",
+      })) as UserHolidayPermission[];
     },
   });
 
@@ -375,11 +381,11 @@ const HolidayManagement: React.FC = () => {
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="font-medium">
-                        {user.profiles?.full_name || "No name"}
+                        {user.full_name || "No name"}
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {user.profiles?.email || "No email"}
+                      {user.email}
                     </TableCell>
                     <TableCell>
                       <Badge variant={user.allow_holiday_entries ? "default" : "secondary"}>
