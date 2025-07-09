@@ -42,10 +42,10 @@ interface UserHolidayPermission {
   id: string;
   user_id: string;
   allow_holiday_entries: boolean;
-  profiles?: {
+  profiles: {
     full_name?: string;
     email: string;
-  };
+  } | null;
 }
 
 const HolidayManagement: React.FC = () => {
@@ -96,7 +96,7 @@ const HolidayManagement: React.FC = () => {
 
       if (error) throw error;
       
-      return data as UserHolidayPermission[];
+      return data;
     },
   });
 
