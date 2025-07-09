@@ -4,13 +4,17 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchUserById, User } from "@/lib/user-service";
 import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileForm from "@/components/settings/ProfileForm";
 import PasswordChangeForm from "@/components/settings/PasswordChangeForm";
+import HolidayManagement from "@/components/admin/HolidayManagement";
+import { isAdmin } from "@/utils/roles";
 
 const SettingsPage = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdminUser, setIsAdminUser] = useState(false);
   
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -22,6 +26,10 @@ const SettingsPage = () => {
         if (userData) {
           setProfile(userData);
         }
+        
+        // Check if user is admin
+        const adminStatus = await isAdmin(user);
+        setIsAdminUser(adminStatus);
       } catch (error) {
         console.error("Error loading user profile:", error);
         toast({
@@ -48,33 +56,50 @@ const SettingsPage = () => {
         <p className="text-gray-600">Manage your account settings</p>
       </div>
 
-      <div className="space-y-6">
-        {isLoading ? (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <Skeleton className="h-10 w-28" />
+      {isLoading ? (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-10 w-full" />
           </div>
-        ) : (
-          <>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-28" />
+        </div>
+      ) : (
+        <Tabs defaultValue="profile" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
+            {isAdminUser && (
+              <TabsTrigger value="holidays">Holiday Management</TabsTrigger>
+            )}
+          </TabsList>
+          
+          <TabsContent value="profile">
             <ProfileForm 
               profile={profile} 
               onProfileUpdate={handleProfileUpdate} 
             />
+          </TabsContent>
+          
+          <TabsContent value="security">
             <PasswordChangeForm />
-          </>
-        )}
-      </div>
+          </TabsContent>
+          
+          {isAdminUser && (
+            <TabsContent value="holidays">
+              <HolidayManagement />
+            </TabsContent>
+          )}
+        </Tabs>
+      )}
     </div>
   );
 };
