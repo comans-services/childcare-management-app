@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -101,7 +100,7 @@ const HolidayManagement: React.FC = () => {
         id: item.id,
         user_id: item.user_id,
         allow_holiday_entries: item.allow_holiday_entries,
-        profiles: item.profiles as { full_name: string | null; email: string } | null,
+        profiles: item.profiles,
       })) as UserHolidayPermission[];
     },
   });
