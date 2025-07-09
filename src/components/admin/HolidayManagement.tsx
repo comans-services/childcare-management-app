@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,8 +42,10 @@ interface UserHolidayPermission {
   id: string;
   user_id: string;
   allow_holiday_entries: boolean;
-  full_name?: string;
-  email: string;
+  profiles: {
+    full_name: string | null;
+    email: string;
+  } | null;
 }
 
 const HolidayManagement: React.FC = () => {
@@ -98,8 +101,7 @@ const HolidayManagement: React.FC = () => {
         id: item.id,
         user_id: item.user_id,
         allow_holiday_entries: item.allow_holiday_entries,
-        full_name: item.profiles?.full_name,
-        email: item.profiles?.email || "No email",
+        profiles: item.profiles as { full_name: string | null; email: string } | null,
       })) as UserHolidayPermission[];
     },
   });
@@ -380,11 +382,11 @@ const HolidayManagement: React.FC = () => {
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="font-medium">
-                        {user.full_name || "No name"}
+                        {user.profiles?.full_name || "No name"}
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {user.email}
+                      {user.profiles?.email || "No email"}
                     </TableCell>
                     <TableCell>
                       <Badge variant={user.allow_holiday_entries ? "default" : "secondary"}>

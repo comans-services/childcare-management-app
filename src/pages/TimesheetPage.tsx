@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import WeeklyView from "@/components/timesheet/WeeklyView";
 import TimerComponent from "@/components/timesheet/TimerComponent";
 import UserSelector from "@/components/timesheet/UserSelector";
+import HolidayLegend from "@/components/timesheet/HolidayLegend";
 import { Button } from "@/components/ui/button";
 import { TrashIcon } from "lucide-react";
 import { deleteAllTimesheetEntries } from "@/lib/timesheet-service";
@@ -149,6 +150,9 @@ const TimesheetPage = () => {
           <TimerComponent />
         </div>
       )}
+
+      {/* Holiday Legend */}
+      <HolidayLegend />
 
       {/* Weekly overview card with expanded width for larger screens */}
       <Card className="mb-6 lg:mb-8 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary w-full">
