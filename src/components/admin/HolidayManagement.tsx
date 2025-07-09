@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,27 +53,31 @@ const HolidayManagement: React.FC = () => {
   const [newHolidayName, setNewHolidayName] = useState("");
   const [newHolidayDate, setNewHolidayDate] = useState("");
   const [newHolidayDescription, setNewHolidayDescription] = useState("");
-  const [globalOverride, setGlobalOverride] = useState(false);
   
   const queryClient = useQueryClient();
 
-  // Fetch upcoming holidays
-  const { data: holidays, isLoading: holidaysLoading } = useQuery({
+  // Fetch all holidays from current year and next year
+  const { data: holidays, isLoading: holidaysLoading, error: holidaysError } = useQuery({
     queryKey: ["admin-holidays"],
     queryFn: async () => {
-      const currentDate = new Date();
-      const nextYear = new Date();
-      nextYear.setFullYear(currentDate.getFullYear() + 1);
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+      
+      console.log(`Fetching holidays for years ${currentYear} and ${nextYear}`);
       
       const { data, error } = await supabase
         .from("public_holidays")
         .select("*")
-        .gte("date", formatDate(currentDate))
-        .lte("date", formatDate(nextYear))
+        .in("year", [currentYear, nextYear])
         .eq("state", "VIC")
         .order("date", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching holidays:", error);
+        throw error;
+      }
+      
+      console.log("Fetched holidays:", data);
       return data as Holiday[];
     },
   });
@@ -194,8 +199,15 @@ const HolidayManagement: React.FC = () => {
     });
   };
 
-  const upcomingHolidays = holidays?.slice(0, 10) || [];
-  const totalHolidaysThisYear = holidays?.filter(h => h.year === new Date().getFullYear()).length || 0;
+  const currentYear = new Date().getFullYear();
+  const allHolidays = holidays || [];
+  const upcomingHolidays = allHolidays.filter(h => new Date(h.date) >= new Date()).slice(0, 15);
+  const currentYearHolidays = allHolidays.filter(h => h.year === currentYear);
+  const nextYearHolidays = allHolidays.filter(h => h.year === currentYear + 1);
+
+  if (holidaysError) {
+    console.error("Holiday fetch error:", holidaysError);
+  }
 
   return (
     <div className="space-y-6">
@@ -277,25 +289,46 @@ const HolidayManagement: React.FC = () => {
         </Dialog>
       </div>
 
+      {/* Debug Information */}
+      {holidaysError && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-4">
+            <p className="text-red-600 text-sm">
+              Error loading holidays: {holidaysError.message}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Upcoming Holidays</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{upcomingHolidays.length}</div>
-            <p className="text-xs text-muted-foreground">Next 12 months</p>
+            <p className="text-xs text-muted-foreground">From today onwards</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">This Year Total</CardTitle>
+            <CardTitle className="text-sm font-medium">{currentYear} Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalHolidaysThisYear}</div>
-            <p className="text-xs text-muted-foreground">Victoria public holidays</p>
+            <div className="text-2xl font-bold">{currentYearHolidays.length}</div>
+            <p className="text-xs text-muted-foreground">Current year holidays</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">{currentYear + 1} Total</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{nextYearHolidays.length}</div>
+            <p className="text-xs text-muted-foreground">Next year holidays</p>
           </CardContent>
         </Card>
         
@@ -314,20 +347,20 @@ const HolidayManagement: React.FC = () => {
         </Card>
       </div>
 
-      {/* Upcoming Holidays */}
+      {/* All Holidays List */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Upcoming Victoria Public Holidays
+            Victoria Public Holidays ({currentYear} - {currentYear + 1})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {holidaysLoading ? (
             <div className="text-center py-4">Loading holidays...</div>
-          ) : upcomingHolidays.length > 0 ? (
+          ) : allHolidays.length > 0 ? (
             <div className="space-y-2">
-              {upcomingHolidays.map((holiday) => (
+              {allHolidays.map((holiday) => (
                 <div
                   key={holiday.id}
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
@@ -335,18 +368,33 @@ const HolidayManagement: React.FC = () => {
                   <div>
                     <div className="font-medium">{holiday.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      {formatDateDisplay(new Date(holiday.date))}
+                      {formatDateDisplay(new Date(holiday.date))} • {holiday.year}
                     </div>
                   </div>
-                  <Badge variant="secondary">
-                    {holiday.state}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {holiday.state}
+                    </Badge>
+                    {new Date(holiday.date) < new Date() && (
+                      <Badge variant="outline">Past</Badge>
+                    )}
+                    {new Date(holiday.date) >= new Date() && (
+                      <Badge variant="default">Upcoming</Badge>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              No upcoming holidays found
+            <div className="text-center py-8">
+              <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No holidays found</h3>
+              <p className="text-muted-foreground mb-4">
+                No Victoria public holidays found for {currentYear} - {currentYear + 1}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Debug: Query executed successfully but returned empty results.
+              </p>
             </div>
           )}
         </CardContent>
