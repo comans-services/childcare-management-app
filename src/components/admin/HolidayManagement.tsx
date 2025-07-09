@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,7 +86,7 @@ const HolidayManagement: React.FC = () => {
           id,
           user_id,
           allow_holiday_entries,
-          profiles (
+          profiles!work_schedules_user_id_fkey (
             full_name,
             email
           )
