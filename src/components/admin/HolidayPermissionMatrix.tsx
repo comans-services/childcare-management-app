@@ -6,7 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Calendar, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Users, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -32,8 +39,15 @@ interface HolidayPermissionMatrix {
   permission_source: string;
 }
 
+interface Holiday {
+  id: string;
+  name: string;
+  date: string;
+}
+
 const HolidayPermissionMatrix: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedHolidayId, setSelectedHolidayId] = useState<string>("");
   const queryClient = useQueryClient();
 
   // Fetch holiday permission matrix
@@ -48,6 +62,40 @@ const HolidayPermissionMatrix: React.FC = () => {
       return data as HolidayPermissionMatrix[];
     },
   });
+
+  // Get unique holidays for dropdown
+  const holidays: Holiday[] = React.useMemo(() => {
+    if (!permissionMatrix) return [];
+    
+    const uniqueHolidays = new Map<string, Holiday>();
+    permissionMatrix.forEach(item => {
+      if (!uniqueHolidays.has(item.holiday_id)) {
+        uniqueHolidays.set(item.holiday_id, {
+          id: item.holiday_id,
+          name: item.holiday_name,
+          date: item.holiday_date
+        });
+      }
+    });
+    
+    return Array.from(uniqueHolidays.values()).sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+  }, [permissionMatrix]);
+
+  // Get users for selected holiday
+  const selectedHolidayUsers = React.useMemo(() => {
+    if (!permissionMatrix || !selectedHolidayId) return [];
+    
+    return permissionMatrix.filter(item => item.holiday_id === selectedHolidayId);
+  }, [permissionMatrix, selectedHolidayId]);
+
+  // Set first holiday as default when holidays load
+  React.useEffect(() => {
+    if (holidays.length > 0 && !selectedHolidayId) {
+      setSelectedHolidayId(holidays[0].id);
+    }
+  }, [holidays, selectedHolidayId]);
 
   // Toggle specific permission mutation
   const togglePermissionMutation = useMutation({
@@ -154,22 +202,7 @@ const HolidayPermissionMatrix: React.FC = () => {
     return <div className="text-center py-4">Loading permission matrix...</div>;
   }
 
-  // Group by holiday for better display
-  const holidayGroups = permissionMatrix?.reduce((acc, item) => {
-    const key = `${item.holiday_id}-${item.holiday_name}-${item.holiday_date}`;
-    if (!acc[key]) {
-      acc[key] = {
-        holiday: {
-          id: item.holiday_id,
-          name: item.holiday_name,
-          date: item.holiday_date,
-        },
-        users: []
-      };
-    }
-    acc[key].users.push(item);
-    return acc;
-  }, {} as Record<string, any>) || {};
+  const selectedHoliday = holidays.find(h => h.id === selectedHolidayId);
 
   return (
     <Card>
@@ -178,17 +211,35 @@ const HolidayPermissionMatrix: React.FC = () => {
           <Calendar className="h-5 w-5" />
           Holiday Permission Matrix ({selectedYear})
         </CardTitle>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="year-select">Year:</Label>
-          <select 
-            id="year-select"
-            value={selectedYear} 
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="px-3 py-1 border rounded"
-          >
-            <option value={2025}>2025</option>
-            <option value={2026}>2026</option>
-          </select>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="year-select">Year:</Label>
+            <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2025">2025</SelectItem>
+                <SelectItem value="2026">2026</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Label htmlFor="holiday-select">Holiday:</Label>
+            <Select value={selectedHolidayId} onValueChange={setSelectedHolidayId}>
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Select a holiday" />
+              </SelectTrigger>
+              <SelectContent>
+                {holidays.map((holiday) => (
+                  <SelectItem key={holiday.id} value={holiday.id}>
+                    {holiday.name} - {new Date(holiday.date).toLocaleDateString()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -199,14 +250,17 @@ const HolidayPermissionMatrix: React.FC = () => {
           </TabsList>
           
           <TabsContent value="matrix" className="space-y-6">
-            {Object.entries(holidayGroups).map(([key, group]) => (
-              <div key={key} className="border rounded-lg p-4">
+            {selectedHoliday && (
+              <div className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-semibold">{group.holiday.name}</h3>
+                    <h3 className="font-semibold">{selectedHoliday.name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(group.holiday.date).toLocaleDateString()}
+                      {new Date(selectedHoliday.date).toLocaleDateString()}
                     </p>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {selectedHolidayUsers.length} users configured
                   </div>
                 </div>
                 
@@ -221,7 +275,7 @@ const HolidayPermissionMatrix: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {group.users.map((user: HolidayPermissionMatrix) => (
+                    {selectedHolidayUsers.map((user: HolidayPermissionMatrix) => (
                       <TableRow key={`${user.user_id}-${user.holiday_id}`}>
                         <TableCell className="font-medium">
                           {user.user_name}
@@ -270,7 +324,13 @@ const HolidayPermissionMatrix: React.FC = () => {
                   </TableBody>
                 </Table>
               </div>
-            ))}
+            )}
+            
+            {!selectedHoliday && holidays.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No holidays found for {selectedYear}. Please add holidays in the Holiday Management tab first.
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="summary">
