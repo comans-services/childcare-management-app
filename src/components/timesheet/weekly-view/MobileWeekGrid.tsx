@@ -2,6 +2,7 @@
 import React from "react";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
 import MobileDayColumn from "../day-column/MobileDayColumn";
+import HolidayLegend from "./HolidayLegend";
 import {
   Carousel,
   CarouselContent,
@@ -40,6 +41,7 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
     // Single day view for day mode
     return (
       <div className="w-full animate-in fade-in-50">
+        <HolidayLegend />
         {displayDates.map((date) => (
           <MobileDayColumn
             key={date.toISOString()}
@@ -59,6 +61,7 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
   // Carousel view for week mode
   return (
     <div className="w-full animate-in fade-in-50">
+      <HolidayLegend />
       <Carousel className="w-full">
         <CarouselContent className="ml-0 pl-4">
           {displayDates.map((date) => (

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { formatDate, getWeekStart } from "@/lib/date-utils";
 import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-service";
@@ -6,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
+import { useHolidayLock } from "@/hooks/useHolidayLock";
 import { isWeekend } from "@/lib/date-utils";
 import { sortEntriesByTime } from "@/lib/time-sorting-utils";
 import DayHeader from "./day-column/DayHeader";
@@ -13,7 +15,7 @@ import EntryList from "./day-column/EntryList";
 import DeleteConfirmDialog from "./day-column/DeleteConfirmDialog";
 import AddEntryButton from "./day-column/AddEntryButton";
 import DayTotalHours from "./day-column/DayTotalHours";
-import ProgressIndicator from "./day-column/ProgressIndicator";
+import { useEffect, useState as useStateHook } from "react";
 
 interface DayColumnProps {
   date: Date;
@@ -39,6 +41,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<TimesheetEntry | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [holidayInfo, setHolidayInfo] = useStateHook<{ isHoliday: boolean; holidayName?: string }>({ isHoliday: false });
   const dailyTarget = 8;
 
   // Get working days validation
@@ -48,7 +51,20 @@ const DayColumn: React.FC<DayColumnProps> = ({
   // Get weekend lock validation
   const { validateWeekendEntry } = useWeekendLock(userId);
 
+  // Get holiday lock validation
+  const { validateHolidayEntry, canCreateHolidayEntries, checkIfHoliday, isAdmin } = useHolidayLock(userId);
+
   const formattedColumnDate = formatDate(date);
+
+  // Check if date is a holiday
+  useEffect(() => {
+    const checkHoliday = async () => {
+      const result = await checkIfHoliday(date);
+      setHolidayInfo(result);
+    };
+    
+    checkHoliday();
+  }, [date, checkIfHoliday]);
 
   // Filter entries for this day and sort by time
   const dayEntries = sortEntriesByTime(
@@ -69,13 +85,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
 
   const dayProgress = Math.min((totalHours / dailyTarget) * 100, 100);
 
-  const getProgressColor = () => {
-    if (dayProgress < 30) return "bg-amber-500";
-    if (dayProgress < 70) return "bg-blue-500";
-    if (dayProgress < 100) return "bg-emerald-500";
-    return "bg-violet-500";
-  };
-
   // Check if this day can accept new entries (working days + weekend validation)
   const canAddToThisDay = validation.canAddToDate(date);
   const hasEntries = dayEntries.length > 0;
@@ -84,6 +93,10 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const isWeekendDay = isWeekend(date);
   const weekendValidation = validateWeekendEntry(date);
   const isWeekendBlocked = isWeekendDay && !weekendValidation.isValid;
+
+  // Holiday-specific validation
+  const isHolidayDate = holidayInfo.isHoliday;
+  const isHolidayBlocked = isHolidayDate && !canCreateHolidayEntries && !isAdmin;
 
   const handleDeleteClick = (entry: TimesheetEntry) => {
     setEntryToDelete(entry);
@@ -116,8 +129,8 @@ const DayColumn: React.FC<DayColumnProps> = ({
     }
   };
 
-  // Enhanced add entry handler with both working days and weekend validation
-  const handleAddEntry = () => {
+  // Enhanced add entry handler with holiday validation
+  const handleAddEntry = async () => {
     if (!canAddToThisDay) {
       toast({
         title: "Cannot add entry",
@@ -136,11 +149,24 @@ const DayColumn: React.FC<DayColumnProps> = ({
       return;
     }
 
+    // Check holiday validation
+    if (isHolidayDate) {
+      const holidayValidation = await validateHolidayEntry(date);
+      if (!holidayValidation.isValid) {
+        toast({
+          title: "Holiday Entry Blocked",
+          description: holidayValidation.message || "Holiday entries are not allowed.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     onAddEntry();
   };
 
   // Determine if day should be visually blocked
-  const isDayBlocked = (!canAddToThisDay && !hasEntries) || (isWeekendBlocked && !hasEntries);
+  const isDayBlocked = (!canAddToThisDay && !hasEntries) || (isWeekendBlocked && !hasEntries) || (isHolidayBlocked && !hasEntries);
 
   return (
     <div className="flex flex-col h-full min-w-0 w-full max-w-full">
@@ -150,10 +176,14 @@ const DayColumn: React.FC<DayColumnProps> = ({
         "h-full flex-grow overflow-hidden bg-background border border-t-0 rounded-b-md shadow-sm",
         // Enhanced visual styling for blocked days
         isDayBlocked && "bg-gray-50 border-dashed opacity-75",
+        // Special holiday styling when blocked
+        isHolidayBlocked && !hasEntries && "bg-red-50 border-red-200 border-dashed",
         // Special weekend styling when blocked
         isWeekendBlocked && !hasEntries && "bg-red-50 border-red-200 border-dashed",
+        // Holiday day indicator (subtle for allowed holiday days)
+        isHolidayDate && !isHolidayBlocked && "bg-purple-50",
         // Weekend day indicator (subtle for allowed weekend days)
-        isWeekendDay && !isWeekendBlocked && "bg-blue-50"
+        isWeekendDay && !isWeekendBlocked && !isHolidayDate && "bg-blue-50"
       )}>
         <ScrollArea className="h-[50vh] md:h-[60vh]">
           <div className="flex flex-col p-2 space-y-2 min-w-0">
@@ -172,13 +202,27 @@ const DayColumn: React.FC<DayColumnProps> = ({
               </div>
             )}
 
-            {isWeekendBlocked && !hasEntries && (
+            {isHolidayBlocked && !hasEntries && (
+              <div className="text-xs text-red-600 text-center p-2 bg-red-50 rounded border border-red-200">
+                <div className="font-medium">{holidayInfo.holidayName}</div>
+                <div>Holiday entries disabled</div>
+              </div>
+            )}
+
+            {isHolidayDate && !isHolidayBlocked && !hasEntries && (
+              <div className="text-xs text-purple-600 text-center p-2 bg-purple-50 rounded border border-purple-200">
+                <div className="font-medium">{holidayInfo.holidayName}</div>
+                <div>{isAdmin ? "Admin can create entries" : "Holiday entries allowed"}</div>
+              </div>
+            )}
+
+            {isWeekendBlocked && !isHolidayDate && !hasEntries && (
               <div className="text-xs text-red-600 text-center p-2 bg-red-50 rounded border border-red-200">
                 Weekend entries disabled
               </div>
             )}
 
-            {isWeekendDay && !isWeekendBlocked && !hasEntries && (
+            {isWeekendDay && !isWeekendBlocked && !isHolidayDate && !hasEntries && (
               <div className="text-xs text-blue-600 text-center p-2 bg-blue-50 rounded border border-blue-200">
                 Weekend day
               </div>
