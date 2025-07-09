@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Plus, Settings, Users } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import HolidayPermissionMatrix from "./HolidayPermissionMatrix";
 
 interface Holiday {
   id: string;
@@ -219,7 +221,7 @@ const HolidayManagement: React.FC = () => {
             Holiday Management
           </h2>
           <p className="text-muted-foreground">
-            Manage public holidays and user permissions for holiday entries
+            Manage public holidays and configure granular user permissions
           </p>
         </div>
         
@@ -289,180 +291,183 @@ const HolidayManagement: React.FC = () => {
         </Dialog>
       </div>
 
-      {/* Debug Information */}
-      {holidaysError && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-4">
-            <p className="text-red-600 text-sm">
-              Error loading holidays: {holidaysError.message}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Main Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="permissions">General Permissions</TabsTrigger>
+          <TabsTrigger value="specific">Specific Permissions</TabsTrigger>
+        </TabsList>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Holidays</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{upcomingHolidays.length}</div>
-            <p className="text-xs text-muted-foreground">From today onwards</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">{currentYear} Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{currentYearHolidays.length}</div>
-            <p className="text-xs text-muted-foreground">Current year holidays</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="overview" className="space-y-6">
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Upcoming Holidays</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{upcomingHolidays.length}</div>
+                <p className="text-xs text-muted-foreground">From today onwards</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">{currentYear} Total</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{currentYearHolidays.length}</div>
+                <p className="text-xs text-muted-foreground">Current year holidays</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">{currentYear + 1} Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{nextYearHolidays.length}</div>
-            <p className="text-xs text-muted-foreground">Next year holidays</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Users with Holiday Access</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {userPermissions?.filter(u => u.allow_holiday_entries).length || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Out of {userPermissions?.length || 0} total users
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* All Holidays List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Victoria Public Holidays ({currentYear} - {currentYear + 1})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {holidaysLoading ? (
-            <div className="text-center py-4">Loading holidays...</div>
-          ) : allHolidays.length > 0 ? (
-            <div className="space-y-2">
-              {allHolidays.map((holiday) => (
-                <div
-                  key={holiday.id}
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                >
-                  <div>
-                    <div className="font-medium">{holiday.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {formatDateDisplay(new Date(holiday.date))} • {holiday.year}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">
-                      {holiday.state}
-                    </Badge>
-                    {new Date(holiday.date) < new Date() && (
-                      <Badge variant="outline">Past</Badge>
-                    )}
-                    {new Date(holiday.date) >= new Date() && (
-                      <Badge variant="default">Upcoming</Badge>
-                    )}
-                  </div>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">{currentYear + 1} Total</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{nextYearHolidays.length}</div>
+                <p className="text-xs text-muted-foreground">Next year holidays</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Users with Holiday Access</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {userPermissions?.filter(u => u.allow_holiday_entries).length || 0}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No holidays found</h3>
-              <p className="text-muted-foreground mb-4">
-                No Victoria public holidays found for {currentYear} - {currentYear + 1}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Debug: Query executed successfully but returned empty results.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <p className="text-xs text-muted-foreground">
+                  Out of {userPermissions?.length || 0} total users
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* User Holiday Permissions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            User Holiday Permissions
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Control which users can create timesheet entries on public holidays
-          </p>
-        </CardHeader>
-        <CardContent>
-          {permissionsLoading ? (
-            <div className="text-center py-4">Loading user permissions...</div>
-          ) : userPermissions && userPermissions.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Holiday Entries Allowed</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {userPermissions.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="font-medium">
-                        {user.profiles?.full_name || "No name"}
+          {/* All Holidays List */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Victoria Public Holidays ({currentYear} - {currentYear + 1})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {holidaysLoading ? (
+                <div className="text-center py-4">Loading holidays...</div>
+              ) : allHolidays.length > 0 ? (
+                <div className="space-y-2">
+                  {allHolidays.map((holiday) => (
+                    <div
+                      key={holiday.id}
+                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    >
+                      <div>
+                        <div className="font-medium">{holiday.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatDateDisplay(new Date(holiday.date))} • {holiday.year}
+                        </div>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {user.profiles?.email || "No email"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.allow_holiday_entries ? "default" : "secondary"}>
-                        {user.allow_holiday_entries ? "Allowed" : "Blocked"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={user.allow_holiday_entries}
-                          onCheckedChange={() => handlePermissionToggle(user.user_id, user.allow_holiday_entries)}
-                          disabled={updatePermissionMutation.isPending}
-                        />
-                        <Label className="text-sm">
-                          {user.allow_holiday_entries ? "Allow" : "Block"}
-                        </Label>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">
+                          {holiday.state}
+                        </Badge>
+                        {new Date(holiday.date) < new Date() && (
+                          <Badge variant="outline">Past</Badge>
+                        )}
+                        {new Date(holiday.date) >= new Date() && (
+                          <Badge variant="default">Upcoming</Badge>
+                        )}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              No users found
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No holidays found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    No Victoria public holidays found for {currentYear} - {currentYear + 1}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="permissions">
+          {/* User Holiday Permissions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                General Holiday Permissions
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Control the default holiday entry permissions for each user. These can be overridden on a per-holiday basis.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {permissionsLoading ? (
+                <div className="text-center py-4">Loading user permissions...</div>
+              ) : userPermissions && userPermissions.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Holiday Entries Allowed</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userPermissions.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="font-medium">
+                            {user.profiles?.full_name || "No name"}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.profiles?.email || "No email"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={user.allow_holiday_entries ? "default" : "secondary"}>
+                            {user.allow_holiday_entries ? "Allowed" : "Blocked"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={user.allow_holiday_entries}
+                              onCheckedChange={() => handlePermissionToggle(user.user_id, user.allow_holiday_entries)}
+                              disabled={updatePermissionMutation.isPending}
+                            />
+                            <Label className="text-sm">
+                              {user.allow_holiday_entries ? "Allow" : "Block"}
+                            </Label>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  No users found
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="specific">
+          <HolidayPermissionMatrix />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

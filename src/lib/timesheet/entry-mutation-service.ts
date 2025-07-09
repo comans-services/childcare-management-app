@@ -1,6 +1,7 @@
 
 import { TimesheetEntry } from "./types";
 import { validateWeekendEntry } from "./validation/weekend-validation-service";
+import { validateHolidayEntry } from "./validation/holiday-validation-service";
 import { validateEntryData, validateProjectBudgetForEntry } from "./validation/entry-validation-service";
 import { createTimesheetEntry } from "./operations/entry-create-service";
 import { updateTimesheetEntry } from "./operations/entry-update-service";
@@ -24,7 +25,14 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       throw new Error(weekendValidation.message || "Weekend entry not allowed");
     }
 
-    // Step 3: Get current user for admin override checks
+    // Step 3: Enhanced server-side holiday validation
+    const holidayValidation = await validateHolidayEntry(entry.entry_date);
+    if (!holidayValidation.isValid) {
+      console.error("Holiday validation failed:", holidayValidation.message);
+      throw new Error(holidayValidation.message || "Holiday entry not allowed");
+    }
+
+    // Step 4: Get current user for admin override checks
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.error("Authentication error during entry save:", authError);
@@ -33,11 +41,11 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
 
     console.log("=== AUTHENTICATED USER ===", user.id);
 
-    // Step 4: Check if user is admin for enhanced permissions
+    // Step 5: Check if user is admin for enhanced permissions
     const userIsAdmin = await isAdmin(user);
     console.log("User is admin:", userIsAdmin);
 
-    // Step 5: Critical budget validation for project entries
+    // Step 6: Critical budget validation for project entries
     let budgetOverrideUsed = false;
     if (entry.entry_type === 'project' && entry.project_id) {
       console.log("=== BACKEND BUDGET VALIDATION ===");

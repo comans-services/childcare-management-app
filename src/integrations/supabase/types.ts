@@ -479,6 +479,47 @@ export type Database = {
           },
         ]
       }
+      user_holiday_permissions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          holiday_id: string
+          id: string
+          is_allowed: boolean
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          holiday_id: string
+          id?: string
+          is_allowed?: boolean
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          holiday_id?: string
+          id?: string
+          is_allowed?: boolean
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_holiday_permissions_holiday_id_fkey"
+            columns: ["holiday_id"]
+            isOneToOne: false
+            referencedRelation: "public_holidays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_work_schedules: {
         Row: {
           created_at: string
@@ -617,6 +658,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_user_holiday_permission: {
+        Args: {
+          p_user_id: string
+          p_holiday_date: string
+          p_target_state?: string
+        }
+        Returns: {
+          is_allowed: boolean
+          permission_source: string
+          holiday_name: string
+          message: string
+        }[]
+      }
       get_audit_action_types: {
         Args: Record<PropertyKey, never>
         Returns: string[]
@@ -645,6 +699,21 @@ export type Database = {
           earliest_lock_date: string
           latest_lock_date: string
           most_common_reason: string
+        }[]
+      }
+      get_holiday_permission_matrix: {
+        Args: { p_year?: number }
+        Returns: {
+          holiday_id: string
+          holiday_name: string
+          holiday_date: string
+          user_id: string
+          user_name: string
+          user_email: string
+          specific_permission: boolean
+          general_permission: boolean
+          effective_permission: boolean
+          permission_source: string
         }[]
       }
       get_public_holiday_name: {

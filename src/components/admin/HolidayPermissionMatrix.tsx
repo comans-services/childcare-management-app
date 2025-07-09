@@ -1,0 +1,321 @@
+
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users, Calendar, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface HolidayPermissionMatrix {
+  holiday_id: string;
+  holiday_name: string;
+  holiday_date: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  specific_permission: boolean | null;
+  general_permission: boolean;
+  effective_permission: boolean;
+  permission_source: string;
+}
+
+const HolidayPermissionMatrix: React.FC = () => {
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const queryClient = useQueryClient();
+
+  // Fetch holiday permission matrix
+  const { data: permissionMatrix, isLoading } = useQuery({
+    queryKey: ["holiday-permission-matrix", selectedYear],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_holiday_permission_matrix', {
+        p_year: selectedYear
+      });
+
+      if (error) throw error;
+      return data as HolidayPermissionMatrix[];
+    },
+  });
+
+  // Toggle specific permission mutation
+  const togglePermissionMutation = useMutation({
+    mutationFn: async ({ userId, holidayId, currentPermission }: { 
+      userId: string; 
+      holidayId: string; 
+      currentPermission: boolean | null;
+    }) => {
+      if (currentPermission === null) {
+        // Create new specific permission
+        const { error } = await supabase
+          .from("user_holiday_permissions")
+          .insert({
+            user_id: userId,
+            holiday_id: holidayId,
+            is_allowed: true,
+          });
+        if (error) throw error;
+      } else {
+        // Update existing specific permission
+        const { error } = await supabase
+          .from("user_holiday_permissions")
+          .update({ is_allowed: !currentPermission })
+          .eq("user_id", userId)
+          .eq("holiday_id", holidayId);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Permission Updated",
+        description: "Holiday permission has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["holiday-permission-matrix"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update permission. " + error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove specific permission mutation
+  const removePermissionMutation = useMutation({
+    mutationFn: async ({ userId, holidayId }: { userId: string; holidayId: string }) => {
+      const { error } = await supabase
+        .from("user_holiday_permissions")
+        .delete()
+        .eq("user_id", userId)
+        .eq("holiday_id", holidayId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Permission Removed",
+        description: "Specific holiday permission has been removed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["holiday-permission-matrix"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to remove permission. " + error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getPermissionIcon = (source: string, effective: boolean) => {
+    if (source === 'admin_override') {
+      return <CheckCircle className="h-4 w-4 text-blue-600" />;
+    }
+    if (effective) {
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
+    }
+    return <XCircle className="h-4 w-4 text-red-600" />;
+  };
+
+  const getPermissionBadge = (source: string, effective: boolean) => {
+    if (source === 'admin_override') {
+      return <Badge variant="default" className="bg-blue-100 text-blue-800">Admin Override</Badge>;
+    }
+    if (source === 'specific_permission') {
+      return effective ? 
+        <Badge variant="default" className="bg-green-100 text-green-800">Specific Allow</Badge> :
+        <Badge variant="destructive" className="bg-red-100 text-red-800">Specific Block</Badge>;
+    }
+    return effective ? 
+      <Badge variant="secondary" className="bg-gray-100 text-gray-800">General Allow</Badge> :
+      <Badge variant="outline" className="bg-gray-50 text-gray-600">General Block</Badge>;
+  };
+
+  const handleTogglePermission = (userId: string, holidayId: string, currentPermission: boolean | null) => {
+    togglePermissionMutation.mutate({ userId, holidayId, currentPermission });
+  };
+
+  const handleRemovePermission = (userId: string, holidayId: string) => {
+    removePermissionMutation.mutate({ userId, holidayId });
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-4">Loading permission matrix...</div>;
+  }
+
+  // Group by holiday for better display
+  const holidayGroups = permissionMatrix?.reduce((acc, item) => {
+    const key = `${item.holiday_id}-${item.holiday_name}-${item.holiday_date}`;
+    if (!acc[key]) {
+      acc[key] = {
+        holiday: {
+          id: item.holiday_id,
+          name: item.holiday_name,
+          date: item.holiday_date,
+        },
+        users: []
+      };
+    }
+    acc[key].users.push(item);
+    return acc;
+  }, {} as Record<string, any>) || {};
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          Holiday Permission Matrix ({selectedYear})
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="year-select">Year:</Label>
+          <select 
+            id="year-select"
+            value={selectedYear} 
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className="px-3 py-1 border rounded"
+          >
+            <option value={2025}>2025</option>
+            <option value={2026}>2026</option>
+          </select>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="matrix">
+          <TabsList>
+            <TabsTrigger value="matrix">Permission Matrix</TabsTrigger>
+            <TabsTrigger value="summary">Summary</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="matrix" className="space-y-6">
+            {Object.entries(holidayGroups).map(([key, group]) => (
+              <div key={key} className="border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-semibold">{group.holiday.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(group.holiday.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {group.users.map((user: HolidayPermissionMatrix) => (
+                      <TableRow key={`${user.user_id}-${user.holiday_id}`}>
+                        <TableCell className="font-medium">
+                          {user.user_name}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.user_email}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getPermissionIcon(user.permission_source, user.effective_permission)}
+                            {user.effective_permission ? 'Allowed' : 'Blocked'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getPermissionBadge(user.permission_source, user.effective_permission)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {user.permission_source !== 'admin_override' && (
+                              <>
+                                <Switch
+                                  checked={user.specific_permission ?? user.general_permission}
+                                  onCheckedChange={() => handleTogglePermission(
+                                    user.user_id, 
+                                    user.holiday_id, 
+                                    user.specific_permission
+                                  )}
+                                  disabled={togglePermissionMutation.isPending}
+                                />
+                                {user.specific_permission !== null && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleRemovePermission(user.user_id, user.holiday_id)}
+                                    disabled={removePermissionMutation.isPending}
+                                  >
+                                    Reset
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ))}
+          </TabsContent>
+          
+          <TabsContent value="summary">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Total Permissions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {permissionMatrix?.filter(p => p.specific_permission !== null).length || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Specific overrides set</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Allowed Users</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {permissionMatrix?.filter(p => p.effective_permission).length || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Can work on holidays</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Admin Overrides</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {permissionMatrix?.filter(p => p.permission_source === 'admin_override').length || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Admin users</p>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default HolidayPermissionMatrix;
