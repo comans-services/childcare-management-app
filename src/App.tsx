@@ -19,6 +19,8 @@ import ReportsPage from "@/pages/ReportsPage";
 import TeamPage from "@/pages/TeamPage";
 import WorkSchedulePage from "@/pages/WorkSchedulePage";
 import HolidayManagementPage from "@/pages/HolidayManagementPage";
+import LeaveApplicationPage from "@/pages/LeaveApplicationPage";
+import LeaveManagementPage from "@/pages/LeaveManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
@@ -37,6 +39,7 @@ const App = () => (
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="timesheet" element={<TimesheetPage />} />
+              <Route path="leave-application" element={<LeaveApplicationPage />} />
               <Route path="settings" element={<SettingsPage />} />
               
               {/* Manager-level routes (manager + admin access) */}
@@ -52,6 +55,7 @@ const App = () => (
                 <Route path="team" element={<TeamPage />} />
                 <Route path="work-schedule" element={<WorkSchedulePage />} />
                 <Route path="holidays" element={<HolidayManagementPage />} />
+                <Route path="leave-management" element={<LeaveManagementPage />} />
               </Route>
             </Route>
             

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
-import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, UserPlus, Clock, CalendarCheck } from "lucide-react";
+import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, UserPlus, Clock, CalendarCheck, Plane } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -39,6 +39,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
   const navigationItems = [
     { to: "/", icon: Home, label: "Home", showForAll: true },
     { to: "/timesheet", icon: Calendar, label: "Timesheet", showForAll: true },
+    { to: "/leave-application", icon: Plane, label: "Leave Application", showForAll: true },
     { to: "/contracts", icon: FileText, label: "Contracts", managerOrAbove: true },
     { to: "/projects", icon: FolderKanban, label: "Projects", adminOnly: true },
     { to: "/customers", icon: Users, label: "Customers", adminOnly: true },
@@ -46,6 +47,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
     { to: "/team", icon: UserPlus, label: "Team", adminOnly: true },
     { to: "/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },
     { to: "/holidays", icon: CalendarCheck, label: "Holiday Management", adminOnly: true },
+    { to: "/leave-management", icon: CalendarCheck, label: "Leave Management", adminOnly: true },
   ];
 
   const filteredItems = navigationItems.filter(item => 
