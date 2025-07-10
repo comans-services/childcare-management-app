@@ -1,25 +1,23 @@
-
 import React, { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getAllUsers, User, updateUser } from "@/lib/user-service";
+import { fetchUsers, User, deleteUser } from "@/lib/user-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
-  Pencil, 
+  Edit, 
   Trash2, 
-  Mail, 
-  Building, 
   Clock, 
+  Mail, 
+  Building2, 
   CreditCard, 
-  IdCard,
-  Calendar
+  User as UserIcon,
+  Globe
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import AddEditUserDialog from "./AddEditUserDialog";
-import { deleteUser } from "@/lib/user-service";
 import { toast } from "@/hooks/use-toast";
+import AddEditUserDialog from "./AddEditUserDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +38,7 @@ const TeamList: React.FC = () => {
 
   const { data: users = [], isLoading, refetch } = useQuery({
     queryKey: ["users"],
-    queryFn: getAllUsers,
+    queryFn: fetchUsers,
   });
 
   const handleEditUser = useCallback((user: User) => {
@@ -62,7 +60,7 @@ const TeamList: React.FC = () => {
     } catch (error) {
       console.error("Error deleting user:", error);
       toast({
-        title: "Error",
+        title: "Error deleting user",
         description: "Failed to delete user. Please try again.",
         variant: "destructive",
       });
@@ -77,24 +75,10 @@ const TeamList: React.FC = () => {
     navigate(`/timesheet?userId=${userId}`);
   }, [navigate]);
 
-  const handleUserSaved = useCallback(async (userData: any) => {
-    try {
-      await updateUser(userData.id, userData);
-      toast({
-        title: "User updated",
-        description: `${userData.full_name || userData.email} has been updated successfully.`,
-      });
-      refetch();
-      setIsDialogOpen(false);
-      setEditingUser(null);
-    } catch (error) {
-      console.error("Error updating user:", error);
-      toast({
-        title: "Error updating user",
-        description: "Failed to update user. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const handleUserSaved = useCallback(() => {
+    refetch();
+    setIsDialogOpen(false);
+    setEditingUser(null);
   }, [refetch]);
 
   const getInitials = (user: User) => {
@@ -115,17 +99,7 @@ const TeamList: React.FC = () => {
         return "destructive";
       case "manager":
         return "default";
-      default:
-        return "secondary";
-    }
-  };
-
-  const getEmploymentTypeBadgeVariant = (type: string) => {
-    switch (type) {
-      case "full-time":
-        return "default";
-      case "part-time":
-        return "outline";
+      case "employee":
       default:
         return "secondary";
     }
@@ -137,7 +111,7 @@ const TeamList: React.FC = () => {
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {users.map((user) => (
           <Card key={user.id} className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="pb-3">
@@ -148,62 +122,58 @@ const TeamList: React.FC = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <CardTitle className="text-lg font-semibold truncate">
-                    {user.full_name || "No Name"}
+                  <CardTitle className="text-lg truncate">
+                    {user.full_name || "Unnamed User"}
                   </CardTitle>
-                  <div className="flex gap-2 mt-1 flex-wrap">
+                  <div className="flex items-center gap-2 mt-1">
                     <Badge variant={getRoleBadgeVariant(user.role || "employee")}>
                       {(user.role || "employee").charAt(0).toUpperCase() + (user.role || "employee").slice(1)}
                     </Badge>
                     {user.employment_type && (
-                      <Badge variant={getEmploymentTypeBadgeVariant(user.employment_type)}>
-                        {user.employment_type === "full-time" ? "Full-time" : "Part-time"}
+                      <Badge variant="outline" className="text-xs">
+                        {user.employment_type.replace("-", " ")}
                       </Badge>
                     )}
                   </div>
                 </div>
               </div>
             </CardHeader>
-            
             <CardContent className="space-y-3">
-              {/* Contact Information */}
               {user.email && (
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Mail className="h-4 w-4 flex-shrink-0" />
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
                   <span className="truncate">{user.email}</span>
                 </div>
               )}
               
               {user.organization && (
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Building className="h-4 w-4 flex-shrink-0" />
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Building2 className="h-4 w-4 mr-2 flex-shrink-0" />
                   <span className="truncate">{user.organization}</span>
                 </div>
               )}
-              
-              {user.time_zone && (
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Clock className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{user.time_zone}</span>
+
+              {user.employee_id && (
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <UserIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span>ID: {user.employee_id}</span>
                 </div>
               )}
 
-              {/* Employee IDs */}
-              {user.employee_id && (
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <IdCard className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">ID: {user.employee_id}</span>
-                </div>
-              )}
-              
               {user.employee_card_id && (
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <CreditCard className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">Card: {user.employee_card_id}</span>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <CreditCard className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span>Card: {user.employee_card_id}</span>
                 </div>
               )}
-              
-              {/* Action Buttons */}
+
+              {user.time_zone && (
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Globe className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span>{user.time_zone}</span>
+                </div>
+              )}
+
               <div className="flex gap-2 pt-2">
                 <Button
                   variant="outline"
@@ -211,25 +181,23 @@ const TeamList: React.FC = () => {
                   onClick={() => handleEditUser(user)}
                   className="flex-1"
                 >
-                  <Pencil className="h-4 w-4 mr-1" />
+                  <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
-                
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleManageTimesheet(user.id)}
                   className="flex-1"
                 >
-                  <Calendar className="h-4 w-4 mr-1" />
+                  <Clock className="h-4 w-4 mr-1" />
                   Timesheet
                 </Button>
-                
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setUserToDelete(user)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  className="hover:bg-destructive hover:text-destructive-foreground"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -258,7 +226,7 @@ const TeamList: React.FC = () => {
             <AlertDialogTitle>Delete Team Member</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete {userToDelete?.full_name || userToDelete?.email}? 
-              This action cannot be undone and will remove all associated data including timesheet entries.
+              This action cannot be undone and will remove all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -266,7 +234,7 @@ const TeamList: React.FC = () => {
             <AlertDialogAction
               onClick={handleDeleteUser}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>

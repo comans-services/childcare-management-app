@@ -50,6 +50,7 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
 
   const {
     projects,
+    contracts,
     entries,
     loading,
     error,
@@ -194,6 +195,7 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
           entryDialogOpen={entryDialogOpen}
           setEntryDialogOpen={setEntryDialogOpen}
           projects={projects}
+          contracts={contracts}
           editingEntry={editingEntry}
           onSave={handleSaveEntry}
           entries={entries}

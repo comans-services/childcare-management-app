@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { TimesheetEntry, Project, saveTimesheetEntry } from "@/lib/timesheet-service";
+import { Contract } from "@/lib/contract-service";
 import { formatDate, getWeekStart, isWeekend } from "@/lib/date-utils";
 import { toast } from "@/hooks/use-toast";
 import { Calendar, AlertTriangle, AlertCircle } from "lucide-react";
@@ -40,6 +41,7 @@ interface TimeEntryDialogProps {
   userId: string;
   date: Date;
   projects: Project[];
+  contracts?: Contract[];
   existingEntry?: TimesheetEntry;
   onSave: (entry?: TimesheetEntry) => void;
   entries: TimesheetEntry[];
@@ -62,6 +64,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   userId,
   date,
   projects,
+  contracts = [],
   existingEntry,
   onSave,
   entries = [],
@@ -390,6 +393,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-fluid-sm">
                   You are editing another user's timesheet entry as an administrator.
+                  Only projects and contracts assigned to this user are available.
                 </AlertDescription>
               </Alert>
             )}
@@ -497,7 +501,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 {entryType === "project" ? (
                   <ProjectSelector control={form.control} projects={projects} />
                 ) : (
-                  <ContractSelector control={form.control} />
+                  <ContractSelector control={form.control} contracts={contracts} />
                 )}
                 
                 <TimeInput control={form.control} />
