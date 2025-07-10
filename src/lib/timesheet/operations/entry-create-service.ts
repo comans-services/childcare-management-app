@@ -16,12 +16,10 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     jira_task_id: entry.jira_task_id || "",
     start_time: entry.start_time || "",
     end_time: entry.end_time || "",
+    user_id: entry.user_id, // Include user_id for admin editing - trigger handles validation
   };
 
-  // CRITICAL: Always include user_id for admin editing
-  // The trigger will validate admin permissions and either preserve or override this value
   if (entry.user_id) {
-    (dbEntry as any).user_id = entry.user_id;
     console.log("Admin editing: target user_id =", entry.user_id);
   }
 

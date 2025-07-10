@@ -58,7 +58,7 @@ export interface ContractTimeEntry extends Omit<TimesheetEntry, 'entry_type' | '
   user_id: string;
 }
 
-// Type for creating new entries - user_id is omitted since trigger handles it
+// Type for creating new entries - user_id is optional for admin editing
 export interface CreateTimesheetEntry {
   entry_date: string;
   hours_logged: number;
@@ -69,6 +69,7 @@ export interface CreateTimesheetEntry {
   entry_type: 'project' | 'contract';
   project_id?: string;
   contract_id?: string;
+  user_id?: string; // Optional for admin editing - trigger handles validation
 }
 
 // Type for updating entries - user_id should not be changed
