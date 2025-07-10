@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useMediaQuery } from "@/hooks/use-mobile";
@@ -35,6 +34,17 @@ const TimesheetPage = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
+
+  // Check for URL parameters to set initial user selection
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userIdParam = urlParams.get('userId');
+    if (userIdParam && isAdminUser) {
+      setSelectedUserId(userIdParam);
+      // Clean up URL without causing page reload
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [isAdminUser]);
 
   // Check admin status
   useEffect(() => {

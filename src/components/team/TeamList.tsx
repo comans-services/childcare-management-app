@@ -1,264 +1,252 @@
-
-import React, { useState, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchUsers, User, updateUser } from "@/lib/user-service";
-import { useAuth } from "@/context/AuthContext";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import React, { useState, useCallback } from "react";
+import { User } from "@/lib/user-service";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { 
+  Pencil, 
+  Trash2, 
+  Mail, 
+  Building, 
+  Clock, 
+  CreditCard, 
+  IdCard,
+  Calendar
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import AddEditUserDialog from "./AddEditUserDialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Edit, RefreshCw } from "lucide-react";
+import { deleteUser } from "@/lib/user-service";
+import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-const TeamList = () => {
-  const { user, userRole } = useAuth();
-  const queryClient = useQueryClient();
+interface TeamListProps {
+  users: User[];
+  onUserUpdated: () => void;
+}
+
+const TeamList: React.FC<TeamListProps> = ({ users, onUserUpdated }) => {
+  const navigate = useNavigate();
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const lastRightClickTime = useRef<number>(0);
-  const lastRightClickedUser = useRef<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: users, isLoading, error, refetch } = useQuery({
-    queryKey: ["users", refreshTrigger],
-    queryFn: fetchUsers,
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  });
+  const handleEditUser = useCallback((user: User) => {
+    setEditingUser(user);
+    setIsDialogOpen(true);
+  }, []);
 
-  const updateUserMutation = useMutation({
-    mutationFn: updateUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+  const handleDeleteUser = useCallback(async () => {
+    if (!userToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteUser(userToDelete.id);
       toast({
-        title: "User updated",
-        description: "The user has been successfully updated.",
+        title: "User deleted",
+        description: `${userToDelete.full_name || userToDelete.email} has been removed from the team.`,
       });
-      setEditingUser(null);
-    },
-    onError: (error) => {
+      onUserUpdated();
+    } catch (error) {
+      console.error("Error deleting user:", error);
       toast({
-        title: "Failed to update user",
-        description: error.message,
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
         variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setIsDeleting(false);
+      setUserToDelete(null);
+    }
+  }, [userToDelete, onUserUpdated]);
 
-  const handleEditUser = (user: User) => {
-    console.log("Editing user:", user);
-    setEditingUser(user);
+  const handleManageTimesheet = useCallback((userId: string) => {
+    // Navigate to timesheet page with user selection
+    navigate(`/timesheet?userId=${userId}`);
+  }, [navigate]);
+
+  const getInitials = (user: User) => {
+    if (user.full_name) {
+      return user.full_name
+        .split(" ")
+        .map(name => name.charAt(0))
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return user.email?.charAt(0).toUpperCase() || "U";
   };
 
-  const handleDoubleRightClick = (user: User, event: React.MouseEvent) => {
-    event.preventDefault(); // Prevent context menu
-    
-    const currentTime = Date.now();
-    const timeDiff = currentTime - lastRightClickTime.current;
-    
-    // Check if this is a double right-click (within 500ms and same user)
-    if (timeDiff < 500 && lastRightClickedUser.current === user.id) {
-      handleEditUser(user);
-      lastRightClickTime.current = 0; // Reset to prevent triple clicks
-      lastRightClickedUser.current = null;
-    } else {
-      lastRightClickTime.current = currentTime;
-      lastRightClickedUser.current = user.id;
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "destructive";
+      case "manager":
+        return "default";
+      default:
+        return "secondary";
     }
   };
 
-  const handleUserUpdate = (user: User) => {
-    console.log("Updating user:", user);
-    updateUserMutation.mutate(user);
+  const getEmploymentTypeBadgeVariant = (type: string) => {
+    switch (type) {
+      case "full-time":
+        return "default";
+      case "part-time":
+        return "outline";
+      default:
+        return "secondary";
+    }
   };
-
-  const handleRefresh = () => {
-    console.log("Refreshing team list...");
-    setRefreshTrigger(prev => prev + 1);
-    queryClient.invalidateQueries({ queryKey: ["users"] });
-    refetch();
-  };
-
-  const handleForceRefresh = async () => {
-    console.log("Force refreshing team data...");
-    setRefreshTrigger(prev => prev + 1);
-    queryClient.removeQueries({ queryKey: ["users"] });
-    await refetch();
-    toast({
-      title: "Refreshed",
-      description: "Team member data has been refreshed",
-    });
-  };
-
-  React.useEffect(() => {
-    console.log("Current user email:", user?.email);
-    console.log("Team members loaded:", users?.length);
-    console.log("Team members data:", users);
-  }, [user, users]);
-
-  const isAdmin = userRole === "admin";
-
-  if (error) {
-    return (
-      <div className="p-6 text-center">
-        <p className="text-red-500">Error loading team members.</p>
-        <p className="text-sm mt-2 text-red-400">{(error as Error).message}</p>
-        <Button 
-          onClick={handleRefresh} 
-          className="mt-4"
-          variant="outline"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Try Again
-        </Button>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div>
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Employee ID</TableHead>
-                <TableHead>Employee Card ID</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Employment</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Organization</TableHead>
-                <TableHead>Time Zone</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array(5).fill(null).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-16" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="overflow-x-auto">
-      <div className="flex justify-end mb-4 px-4">
-        <Button 
-          onClick={handleForceRefresh}
-          variant="outline"
-          size="sm"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh List
-        </Button>
+    <>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {users.map((user) => (
+          <Card key={user.id} className="hover:shadow-lg transition-shadow duration-200">
+            <CardHeader className="pb-3">
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                    {getInitials(user)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-lg font-semibold truncate">
+                    {user.full_name || "No Name"}
+                  </CardTitle>
+                  <div className="flex gap-2 mt-1 flex-wrap">
+                    <Badge variant={getRoleBadgeVariant(user.role || "employee")}>
+                      {(user.role || "employee").charAt(0).toUpperCase() + (user.role || "employee").slice(1)}
+                    </Badge>
+                    {user.employment_type && (
+                      <Badge variant={getEmploymentTypeBadgeVariant(user.employment_type)}>
+                        {user.employment_type === "full-time" ? "Full-time" : "Part-time"}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-3">
+              {/* Contact Information */}
+              {user.email && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <Mail className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{user.email}</span>
+                </div>
+              )}
+              
+              {user.organization && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <Building className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{user.organization}</span>
+                </div>
+              )}
+              
+              {user.time_zone && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <Clock className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{user.time_zone}</span>
+                </div>
+              )}
+
+              {/* Employee IDs */}
+              {user.employee_id && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <IdCard className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">ID: {user.employee_id}</span>
+                </div>
+              )}
+              
+              {user.employee_card_id && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <CreditCard className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">Card: {user.employee_card_id}</span>
+                </div>
+              )}
+              
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditUser(user)}
+                  className="flex-1"
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleManageTimesheet(user.id)}
+                  className="flex-1"
+                >
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Timesheet
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUserToDelete(user)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Employee ID</TableHead>
-            <TableHead>Employee Card ID</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Employment</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Organization</TableHead>
-            <TableHead>Time Zone</TableHead>
-            {isAdmin && <TableHead>Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users && users.length > 0 ? (
-            users.map((user) => (
-              <TableRow 
-                key={user.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onContextMenu={(e) => handleDoubleRightClick(user, e)}
-              >
-                <TableCell className="font-medium">{user.full_name || "Not set"}</TableCell>
-                <TableCell>
-                  <span className="text-sm text-gray-600 font-mono">
-                    {user.employee_id || "Not assigned"}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm text-gray-600 font-mono">
-                    {user.employee_card_id || "Not assigned"}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {user.role || "employee"}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    user.employment_type === 'full-time' ? 'bg-blue-100 text-blue-800' : 
-                    'bg-orange-100 text-orange-800'
-                  }`}>
-                    {user.employment_type === 'full-time' ? 'Full-time' : 'Part-time'}
-                  </span>
-                </TableCell>
-                <TableCell>{user.email || "No email available"}</TableCell>
-                <TableCell>{user.organization || "N/A"}</TableCell>
-                <TableCell>{user.time_zone || "N/A"}</TableCell>
-                {isAdmin && (
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditUser(user)}
-                      className="flex items-center"
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-8">
-                No team members found. {!isAdmin && "Contact an administrator to add team members."}
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-
+      {/* Edit User Dialog */}
       <AddEditUserDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
         user={editingUser}
-        isOpen={!!editingUser}
-        onClose={() => setEditingUser(null)}
-        onSave={handleUserUpdate}
-        isNewUser={false}
+        onUserSaved={() => {
+          onUserUpdated();
+          setEditingUser(null);
+        }}
       />
-    </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Team Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {userToDelete?.full_name || userToDelete?.email}? 
+              This action cannot be undone and will remove all associated data including timesheet entries.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
