@@ -1,5 +1,7 @@
+
 import React, { useState, useCallback } from "react";
-import { User } from "@/lib/user-service";
+import { useQuery } from "@tanstack/react-query";
+import { getAllUsers, User, updateUser } from "@/lib/user-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,17 +31,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface TeamListProps {
-  users: User[];
-  onUserUpdated: () => void;
-}
-
-const TeamList: React.FC<TeamListProps> = ({ users, onUserUpdated }) => {
+const TeamList: React.FC = () => {
   const navigate = useNavigate();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const { data: users = [], isLoading, refetch } = useQuery({
+    queryKey: ["users"],
+    queryFn: getAllUsers,
+  });
 
   const handleEditUser = useCallback((user: User) => {
     setEditingUser(user);
@@ -56,7 +58,7 @@ const TeamList: React.FC<TeamListProps> = ({ users, onUserUpdated }) => {
         title: "User deleted",
         description: `${userToDelete.full_name || userToDelete.email} has been removed from the team.`,
       });
-      onUserUpdated();
+      refetch();
     } catch (error) {
       console.error("Error deleting user:", error);
       toast({
@@ -68,12 +70,32 @@ const TeamList: React.FC<TeamListProps> = ({ users, onUserUpdated }) => {
       setIsDeleting(false);
       setUserToDelete(null);
     }
-  }, [userToDelete, onUserUpdated]);
+  }, [userToDelete, refetch]);
 
   const handleManageTimesheet = useCallback((userId: string) => {
     // Navigate to timesheet page with user selection
     navigate(`/timesheet?userId=${userId}`);
   }, [navigate]);
+
+  const handleUserSaved = useCallback(async (userData: any) => {
+    try {
+      await updateUser(userData.id, userData);
+      toast({
+        title: "User updated",
+        description: `${userData.full_name || userData.email} has been updated successfully.`,
+      });
+      refetch();
+      setIsDialogOpen(false);
+      setEditingUser(null);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast({
+        title: "Error updating user",
+        description: "Failed to update user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [refetch]);
 
   const getInitials = (user: User) => {
     if (user.full_name) {
@@ -108,6 +130,10 @@ const TeamList: React.FC<TeamListProps> = ({ users, onUserUpdated }) => {
         return "secondary";
     }
   };
+
+  if (isLoading) {
+    return <div className="p-4">Loading team members...</div>;
+  }
 
   return (
     <>
@@ -215,13 +241,14 @@ const TeamList: React.FC<TeamListProps> = ({ users, onUserUpdated }) => {
 
       {/* Edit User Dialog */}
       <AddEditUserDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        user={editingUser}
-        onUserSaved={() => {
-          onUserUpdated();
+        isOpen={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false);
           setEditingUser(null);
         }}
+        onSave={handleUserSaved}
+        user={editingUser}
+        isNewUser={false}
       />
 
       {/* Delete Confirmation Dialog */}
