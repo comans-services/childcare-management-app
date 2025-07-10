@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { 
@@ -347,8 +348,8 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
       
       // SUCCESS MESSAGE WITH USER CONFIRMATION
       if (isAdminEditingOther) {
-        // Enhanced success message for admin edits
-        const targetUserName = entryData.user?.full_name || entryData.user?.email || "selected user";
+        // Enhanced success message for admin edits - using savedEntry data which is in scope
+        const targetUserName = savedEntry.user?.full_name || savedEntry.user?.email || "selected user";
         toast({
           title: `Entry ${existingEntry ? 'Updated' : 'Created'} Successfully`,
           description: `Time entry has been ${existingEntry ? 'updated' : 'logged'} for ${targetUserName} (ID: ${targetUserId.slice(0, 8)}...)`,
@@ -362,7 +363,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     } catch (error) {
       console.error("=== ENTRY SAVE ERROR ===");
       console.error("Error saving entry:", error);
-      console.error("Entry data that failed:", entryData);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to save your entry.",
