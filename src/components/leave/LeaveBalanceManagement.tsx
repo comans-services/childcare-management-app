@@ -78,7 +78,7 @@ const LeaveBalanceManagement = () => {
           <TableBody>
             {balances.map((balance) => (
               <TableRow key={balance.id}>
-                <TableCell>{balance.user_id}</TableCell>
+                <TableCell>{balance.user?.full_name || balance.user?.email || 'Unknown User'}</TableCell>
                 <TableCell>{balance.leave_type?.name}</TableCell>
                 <TableCell>
                   {editingId === balance.id ? (

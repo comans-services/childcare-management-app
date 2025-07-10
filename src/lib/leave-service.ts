@@ -18,6 +18,10 @@ export interface LeaveBalance {
   used_days: number;
   remaining_days: number;
   leave_type?: LeaveType;
+  user?: {
+    full_name: string;
+    email: string;
+  };
 }
 
 export interface LeaveApplication {
@@ -75,7 +79,8 @@ export const fetchUserLeaveBalances = async (userId?: string): Promise<LeaveBala
     .from('leave_balances')
     .select(`
       *,
-      leave_type:leave_types(*)
+      leave_type:leave_types(*),
+      user:profiles!leave_balances_user_id_fkey(full_name, email)
     `)
     .eq('year', currentYear)
     .order('created_at');
