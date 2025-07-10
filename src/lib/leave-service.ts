@@ -78,7 +78,7 @@ export const fetchUserLeaveBalances = async (userId?: string): Promise<LeaveBala
       leave_type:leave_types(*)
     `)
     .eq('year', currentYear)
-    .order('leave_type.name');
+    .order('created_at');
 
   if (userId) {
     query = query.eq('user_id', userId);
