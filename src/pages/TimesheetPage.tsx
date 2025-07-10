@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useMediaQuery } from "@/hooks/use-mobile";
@@ -77,14 +76,6 @@ const TimesheetPage = () => {
   const selectedUser = selectedUserId ? users.find(u => u.id === selectedUserId) : null;
   const displayUserName = selectedUser?.full_name || selectedUser?.email || "My";
 
-  console.log("=== TIMESHEET PAGE DEBUG ===");
-  console.log("Current user ID:", user?.id);
-  console.log("Selected user ID:", selectedUserId);
-  console.log("Target user ID:", targetUserId);
-  console.log("Is admin user:", isAdminUser);
-  console.log("Selected user object:", selectedUser);
-  console.log("Display user name:", displayUserName);
-
   // Redirect if no user is authenticated
   if (!user) {
     return (
@@ -121,10 +112,6 @@ const TimesheetPage = () => {
   };
 
   const handleUserChange = (userId: string | null) => {
-    console.log("=== USER CHANGE DEBUG ===");
-    console.log("Previous selected user ID:", selectedUserId);
-    console.log("New selected user ID:", userId);
-    
     setSelectedUserId(userId);
     setRefreshKey(prev => prev + 1); // Force refresh when switching users
   };
@@ -141,12 +128,6 @@ const TimesheetPage = () => {
             {selectedUserId ? `View and manage ${displayUserName.toLowerCase()}'s working hours` : "Track and manage your working hours"}
             <span className="hidden sm:inline"> - {effectiveDays} days</span>
           </p>
-          {/* DEBUG INFO FOR ADMIN USERS */}
-          {isAdminUser && (
-            <div className="mt-2 text-xs text-gray-500">
-              Debug: Current User: {user?.email} | Target User ID: {targetUserId}
-            </div>
-          )}
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
@@ -195,7 +176,7 @@ const TimesheetPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
-          {/* Pass viewAsUserId to WeeklyView - CRITICAL for admin editing */}
+          {/* Pass viewAsUserId to WeeklyView */}
           <WeeklyView key={refreshKey} viewAsUserId={selectedUserId} />
         </CardContent>
       </Card>

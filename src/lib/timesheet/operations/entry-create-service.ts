@@ -3,21 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry, CreateTimesheetEntry } from "../types";
 
 export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
-  console.log("=== CREATE TIMESHEET ENTRY SERVICE DEBUG ===");
-  console.log("Input entry:", entry);
-  console.log("Entry user_id:", entry.user_id);
-  
-  // Get current authenticated user for admin validation
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    console.error("Authentication error during entry creation:", authError);
-    throw new Error("Authentication required");
-  }
-  
-  console.log("=== AUTHENTICATED USER ===");
-  console.log("Current user ID:", user.id);
-  console.log("Target user ID:", entry.user_id);
-  console.log("Is admin editing other user:", entry.user_id !== user.id);
+  console.log("Creating new entry - user_id will be handled by trigger with admin override logic");
   
   // Create a clean data object for the database operation
   const dbEntry: CreateTimesheetEntry = {
@@ -32,45 +18,27 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     end_time: entry.end_time || "",
   };
 
-  // CRITICAL: Always include user_id - this is essential for admin editing
+  // CRITICAL: Always include user_id for admin editing
+  // The trigger will validate admin permissions and either preserve or override this value
   if (entry.user_id) {
     (dbEntry as any).user_id = entry.user_id;
-    console.log("=== CRITICAL DEBUG ===");
-    console.log("Setting user_id in database entry:", entry.user_id);
-    console.log("This should be the TARGET user, not the current admin user");
-  } else {
-    console.error("ERROR: No user_id provided in entry data - this will cause issues");
-    throw new Error("User ID is required for timesheet entry creation");
+    console.log("Admin editing: target user_id =", entry.user_id);
   }
 
-  console.log("=== FINAL DATABASE ENTRY ===");
-  console.log("Database entry with user_id:", dbEntry);
-  console.log("About to insert with user_id:", (dbEntry as any).user_id);
+  console.log("Database entry data:", dbEntry);
   
-  // Create new entry - trigger will handle user_id validation and assignment
+  // Create new entry - trigger will handle user_id assignment and validation
   const { data, error } = await supabase
     .from("timesheet_entries")
     .insert(dbEntry)
     .select();
 
   if (error) {
-    console.error("=== DATABASE ERROR ===");
-    console.error("Database error creating timesheet entry:", error);
-    console.error("Entry data that failed:", dbEntry);
+    console.error("Error creating timesheet entry:", error);
     throw error;
   }
   
-  console.log("=== DATABASE SUCCESS ===");
-  console.log("Entry created successfully in database:", data?.[0]);
-  console.log("Created entry user_id:", data?.[0]?.user_id);
-  console.log("Expected user_id:", entry.user_id);
-  
-  if (data?.[0]?.user_id !== entry.user_id) {
-    console.error("=== CRITICAL ERROR ===");
-    console.error("Database returned different user_id than expected!");
-    console.error("Expected:", entry.user_id);
-    console.error("Got:", data?.[0]?.user_id);
-  }
+  console.log("Entry created successfully:", data?.[0]);
   
   // Return entry with preserved related data
   const newEntry = data?.[0] as TimesheetEntry;

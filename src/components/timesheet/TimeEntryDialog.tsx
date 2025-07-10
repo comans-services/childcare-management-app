@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { 
@@ -90,17 +89,9 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     checkAdminStatus();
   }, [user]);
 
-  // CRITICAL DEBUG LOGGING - Determine the target user ID
+  // Determine the target user ID - use the passed userId (could be different for admin editing)
   const targetUserId = userId;
   const isAdminEditingOther = isAdminUser && targetUserId !== user?.id;
-
-  console.log("=== TIME ENTRY DIALOG CRITICAL DEBUG ===");
-  console.log("Dialog Props userId (target):", userId);
-  console.log("Current authenticated user ID:", user?.id);
-  console.log("Target user ID for entry:", targetUserId);
-  console.log("Is admin user:", isAdminUser);
-  console.log("Is admin editing other user:", isAdminEditingOther);
-  console.log("Existing entry:", existingEntry);
 
   // Get working days validation - use the target user's ID for admin editing
   const weekStart = getWeekStart(date);
@@ -238,12 +229,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
   const isEmployeeBudgetBlocked = budgetValidation && !budgetValidation.isValid && !isAdminUser;
 
   const handleSubmit = async (values: TimeEntryFormValues) => {
-    console.log("=== HANDLE SUBMIT CRITICAL DEBUG ===");
-    console.log("Form values:", values);
-    console.log("Target user ID for new entry:", targetUserId);
-    console.log("Current user ID:", user?.id);
-    console.log("Is admin editing other:", isAdminEditingOther);
-
     // Priority validation order: working days first, then weekend, then holiday, then budget
     if (isNewEntry && !canAddToThisDate) {
       toast({
@@ -279,7 +264,7 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
     }
 
     try {
-      // CRITICAL FIX: Create unified entry data with CORRECT user_id
+      // Create unified entry data
       const entryData: TimesheetEntry = {
         id: existingEntry?.id,
         entry_type: values.entry_type,
@@ -291,28 +276,9 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
         jira_task_id: values.jira_task_id || "",
         start_time: values.start_time || undefined,
         end_time: values.end_time || undefined,
-        // CRITICAL: Always use the target user ID (from props, NOT current user)
+        // For admin editing: use the target user_id
         user_id: targetUserId,
       };
-
-      console.log("=== ENTRY DATA BEFORE SAVE - CRITICAL ===");
-      console.log("Entry data being created:", entryData);
-      console.log("Entry user_id (MUST be target user):", entryData.user_id);
-      console.log("Target user ID from props:", targetUserId);
-      console.log("Current user ID (admin):", user?.id);
-      console.log("These should be different if admin is editing for someone else");
-
-      // Validate that we have the correct user_id
-      if (!entryData.user_id) {
-        console.error("CRITICAL ERROR: No user_id in entry data!");
-        throw new Error("User ID is required for timesheet entry");
-      }
-
-      if (isAdminEditingOther && entryData.user_id === user?.id) {
-        console.error("CRITICAL ERROR: Admin entry has admin's user_id instead of target user_id!");
-        console.error("This will cause the entry to appear in admin's timesheet");
-        throw new Error("Invalid user ID for admin entry creation");
-      }
 
       // Preserve related data from existing entry if available
       if (existingEntry) {
@@ -327,41 +293,17 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
         }
       }
       
-      console.log("=== ATTEMPTING TO SAVE ENTRY ===");
-      console.log("Final entry data:", entryData);
+      console.log("Attempting to save entry:", entryData);
       const savedEntry = await saveTimesheetEntry(entryData);
-      console.log("=== ENTRY SAVE COMPLETED ===");
-      console.log("Saved entry:", savedEntry);
-      console.log("Saved entry user_id:", savedEntry.user_id);
-      
-      // Verify the saved entry has the correct user_id
-      if (savedEntry.user_id !== targetUserId) {
-        console.error("=== CRITICAL SAVE ERROR ===");
-        console.error("Saved entry has wrong user_id!");
-        console.error("Expected:", targetUserId);
-        console.error("Got:", savedEntry.user_id);
-      }
+      console.log("Entry saved successfully:", savedEntry);
       
       // Show success notification with budget info
       const selectedProject = projects.find(p => p.id === values.project_id);
       showBudgetSaveSuccess(!!existingEntry, budgetValidation || undefined, selectedProject?.name);
       
-      // SUCCESS MESSAGE WITH USER CONFIRMATION
-      if (isAdminEditingOther) {
-        // Enhanced success message for admin edits - using savedEntry data which is in scope
-        const targetUserName = savedEntry.user?.full_name || savedEntry.user?.email || "selected user";
-        toast({
-          title: `Entry ${existingEntry ? 'Updated' : 'Created'} Successfully`,
-          description: `Time entry has been ${existingEntry ? 'updated' : 'logged'} for ${targetUserName} (ID: ${targetUserId.slice(0, 8)}...)`,
-        });
-        console.log("=== ADMIN SUCCESS CONFIRMATION ===");
-        console.log(`Entry ${existingEntry ? 'updated' : 'created'} for user:`, targetUserId);
-      }
-      
       onSave(savedEntry);
       onOpenChange(false);
     } catch (error) {
-      console.error("=== ENTRY SAVE ERROR ===");
       console.error("Error saving entry:", error);
       toast({
         title: "Error",
@@ -413,16 +355,9 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
           `}>
             <DialogTitle className="text-fluid-xl lg:text-fluid-2xl">
               {isAdminEditingOther && (
-                <div className="text-orange-600 text-sm font-normal mb-2 p-2 bg-orange-50 rounded">
-                  🔧 ADMIN MODE: Creating entry for target user ID: {targetUserId.slice(0, 8)}...
-                </div>
+                <span className="text-orange-600 text-sm font-normal mr-2">[ADMIN EDIT]</span>
               )}
               {existingEntry ? "Edit time entry" : "Add time"}
-              {isAdminEditingOther && (
-                <div className="text-sm font-normal text-muted-foreground mt-1">
-                  Target User: {targetUserId}
-                </div>
-              )}
             </DialogTitle>
           </DialogHeader>
           
@@ -459,7 +394,6 @@ const TimeEntryDialog: React.FC<TimeEntryDialogProps> = ({
                 <AlertDescription className="text-fluid-sm">
                   You are editing another user's timesheet entry as an administrator.
                   Only projects and contracts assigned to this user are available.
-                  <div className="mt-2 font-medium">Target User ID: {targetUserId}</div>
                 </AlertDescription>
               </Alert>
             )}

@@ -7,9 +7,7 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     throw new Error("Entry ID is required for update");
   }
 
-  console.log("=== UPDATE TIMESHEET ENTRY SERVICE DEBUG ===");
-  console.log("Input entry:", entry);
-  console.log("Entry user_id:", entry.user_id);
+  console.log("Updating entry:", entry.id, "for user:", entry.user_id);
 
   // Create update object without id
   const updateData = {
@@ -25,7 +23,7 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     user_id: entry.user_id // Include user_id for admin editing - trigger will validate
   };
 
-  console.log("Update data being sent to database:", updateData);
+  console.log("Update data:", updateData);
 
   const { data, error } = await supabase
     .from("timesheet_entries")
@@ -34,12 +32,11 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     .select();
 
   if (error) {
-    console.error("Database error updating timesheet entry:", error);
+    console.error("Error updating timesheet entry:", error);
     throw error;
   }
 
-  console.log("Entry updated successfully in database:", data?.[0]);
-  console.log("Updated entry user_id:", data?.[0]?.user_id);
+  console.log("Entry updated successfully:", data?.[0]);
 
   // Return updated entry with preserved related data
   const updatedEntry = data?.[0] as TimesheetEntry;
