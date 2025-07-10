@@ -220,6 +220,201 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_application_attachments: {
+        Row: {
+          application_id: string
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          uploaded_at: string
+        }
+        Insert: {
+          application_id: string
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          uploaded_at?: string
+        }
+        Update: {
+          application_id?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_application_attachments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "leave_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_applications: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          business_days_count: number
+          created_at: string
+          end_date: string
+          id: string
+          leave_type_id: string
+          manager_comments: string | null
+          reason: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["leave_status"]
+          submitted_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          business_days_count: number
+          created_at?: string
+          end_date: string
+          id?: string
+          leave_type_id: string
+          manager_comments?: string | null
+          reason?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          business_days_count?: number
+          created_at?: string
+          end_date?: string
+          id?: string
+          leave_type_id?: string
+          manager_comments?: string | null
+          reason?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_applications_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_balances: {
+        Row: {
+          created_at: string
+          id: string
+          leave_type_id: string
+          remaining_days: number | null
+          total_days: number
+          updated_at: string
+          used_days: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          leave_type_id: string
+          remaining_days?: number | null
+          total_days?: number
+          updated_at?: string
+          used_days?: number
+          user_id: string
+          year?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          leave_type_id?: string
+          remaining_days?: number | null
+          total_days?: number
+          updated_at?: string
+          used_days?: number
+          user_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_balances_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_types: {
+        Row: {
+          created_at: string
+          default_balance_days: number
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          requires_attachment: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_balance_days?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          requires_attachment?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_balance_days?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          requires_attachment?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -658,6 +853,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_business_days: {
+        Args: { start_date: string; end_date: string; target_state?: string }
+        Returns: number
+      }
       check_user_holiday_permission: {
         Args: {
           p_user_id: string
@@ -772,6 +971,15 @@ export type Database = {
         Args: { entry_date: string }
         Returns: boolean
       }
+      lock_leave_dates: {
+        Args: {
+          p_user_id: string
+          p_start_date: string
+          p_end_date: string
+          p_application_id: string
+        }
+        Returns: undefined
+      }
       log_report_generation_secure: {
         Args: { p_report_type: string; p_filters: Json; p_result_count: number }
         Returns: undefined
@@ -819,9 +1027,14 @@ export type Database = {
           user_employee_card_id: string
         }[]
       }
+      unlock_leave_dates: {
+        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Returns: undefined
+      }
     }
     Enums: {
       employment_status: "full-time" | "part-time"
+      leave_status: "pending" | "approved" | "rejected" | "cancelled"
       user_role: "employee" | "manager" | "admin"
     }
     CompositeTypes: {
@@ -951,6 +1164,7 @@ export const Constants = {
   public: {
     Enums: {
       employment_status: ["full-time", "part-time"],
+      leave_status: ["pending", "approved", "rejected", "cancelled"],
       user_role: ["employee", "manager", "admin"],
     },
   },
