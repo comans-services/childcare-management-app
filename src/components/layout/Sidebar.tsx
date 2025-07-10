@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Sheet,
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
-import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, UserPlus, Clock } from "lucide-react";
+import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, UserPlus, Clock, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -44,6 +45,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
     { to: "/reports", icon: BarChart, label: "Reports", adminOnly: true },
     { to: "/team", icon: UserPlus, label: "Team", adminOnly: true },
     { to: "/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },
+    { to: "/holidays", icon: CalendarCheck, label: "Holiday Management", adminOnly: true },
   ];
 
   const filteredItems = navigationItems.filter(item => 

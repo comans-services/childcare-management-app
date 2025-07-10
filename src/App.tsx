@@ -18,6 +18,7 @@ import CustomersPage from "@/pages/CustomersPage";
 import ReportsPage from "@/pages/ReportsPage";
 import TeamPage from "@/pages/TeamPage";
 import WorkSchedulePage from "@/pages/WorkSchedulePage";
+import HolidayManagementPage from "@/pages/HolidayManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
@@ -50,6 +51,7 @@ const App = () => (
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="team" element={<TeamPage />} />
                 <Route path="work-schedule" element={<WorkSchedulePage />} />
+                <Route path="holidays" element={<HolidayManagementPage />} />
               </Route>
             </Route>
             
