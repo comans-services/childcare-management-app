@@ -63,13 +63,17 @@ const HolidayPermissionMatrix: React.FC = () => {
     },
   });
 
-  // Get unique holidays for dropdown
+  // Get unique holidays for dropdown, filtering out past holidays
   const holidays: Holiday[] = React.useMemo(() => {
     if (!permissionMatrix) return [];
     
+    const today = new Date();
     const uniqueHolidays = new Map<string, Holiday>();
+    
     permissionMatrix.forEach(item => {
-      if (!uniqueHolidays.has(item.holiday_id)) {
+      const holidayDate = new Date(item.holiday_date);
+      // Only include holidays that are today or in the future
+      if (holidayDate >= today && !uniqueHolidays.has(item.holiday_id)) {
         uniqueHolidays.set(item.holiday_id, {
           id: item.holiday_id,
           name: item.holiday_name,
@@ -94,6 +98,13 @@ const HolidayPermissionMatrix: React.FC = () => {
   React.useEffect(() => {
     if (holidays.length > 0 && !selectedHolidayId) {
       setSelectedHolidayId(holidays[0].id);
+    }
+  }, [holidays, selectedHolidayId]);
+
+  // Clear selected holiday if it's no longer available (past holiday)
+  React.useEffect(() => {
+    if (selectedHolidayId && !holidays.find(h => h.id === selectedHolidayId)) {
+      setSelectedHolidayId(holidays.length > 0 ? holidays[0].id : "");
     }
   }, [holidays, selectedHolidayId]);
 
@@ -326,9 +337,9 @@ const HolidayPermissionMatrix: React.FC = () => {
               </div>
             )}
             
-            {!selectedHoliday && holidays.length === 0 && (
+            {holidays.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                No holidays found for {selectedYear}. Please add holidays in the Holiday Management tab first.
+                No upcoming holidays found for {selectedYear}. All holidays for this year may have already passed.
               </div>
             )}
           </TabsContent>
