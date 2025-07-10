@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry, CreateTimesheetEntry } from "../types";
 
 export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
-  console.log("Creating new entry - user_id will be handled by trigger with admin override logic");
+  console.log("=== CREATE TIMESHEET ENTRY SERVICE DEBUG ===");
+  console.log("Input entry:", entry);
+  console.log("Entry user_id:", entry.user_id);
   
   // Create a clean data object for the database operation
   const dbEntry: CreateTimesheetEntry = {
@@ -22,10 +24,14 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
   // The trigger will validate admin permissions and either preserve or override this value
   if (entry.user_id) {
     (dbEntry as any).user_id = entry.user_id;
-    console.log("Admin editing: target user_id =", entry.user_id);
+    console.log("=== CRITICAL DEBUG ===");
+    console.log("Setting user_id in database entry:", entry.user_id);
+    console.log("Database entry with user_id:", dbEntry);
+  } else {
+    console.warn("WARNING: No user_id provided in entry data");
   }
 
-  console.log("Database entry data:", dbEntry);
+  console.log("Final database entry data:", dbEntry);
   
   // Create new entry - trigger will handle user_id assignment and validation
   const { data, error } = await supabase
@@ -34,11 +40,12 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     .select();
 
   if (error) {
-    console.error("Error creating timesheet entry:", error);
+    console.error("Database error creating timesheet entry:", error);
     throw error;
   }
   
-  console.log("Entry created successfully:", data?.[0]);
+  console.log("Entry created successfully in database:", data?.[0]);
+  console.log("Created entry user_id:", data?.[0]?.user_id);
   
   // Return entry with preserved related data
   const newEntry = data?.[0] as TimesheetEntry;

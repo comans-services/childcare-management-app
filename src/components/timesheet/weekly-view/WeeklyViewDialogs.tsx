@@ -27,13 +27,19 @@ const WeeklyViewDialogs: React.FC<WeeklyViewDialogsProps> = ({
   onSave,
   entries,
 }) => {
+  console.log("=== WEEKLY VIEW DIALOGS DEBUG ===");
+  console.log("Dialog userId prop:", userId);
+  console.log("Selected date:", selectedDate);
+  console.log("Entry dialog open:", entryDialogOpen);
+  console.log("Editing entry:", editingEntry);
+
   if (!selectedDate) return null;
 
   return (
     <TimeEntryDialog
       open={entryDialogOpen}
       onOpenChange={setEntryDialogOpen}
-      userId={userId}
+      userId={userId} // CRITICAL: This must be the target user ID for admin editing
       date={selectedDate}
       projects={projects}
       contracts={contracts}
