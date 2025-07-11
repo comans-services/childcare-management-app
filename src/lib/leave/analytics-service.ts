@@ -48,7 +48,8 @@ export class LeaveAnalyticsService {
         .from('leave_applications')
         .select(`
           *,
-          leave_type:leave_types(name)
+          leave_type:leave_types(name),
+          user:profiles!leave_applications_user_id_fkey(employment_type)
         `)
         .gte('start_date', startDate)
         .lte('end_date', endDate);
@@ -64,7 +65,10 @@ export class LeaveAnalyticsService {
         throw error;
       }
 
-      const applications = data || [];
+      // Filter for full-time employees only
+      const applications = (data || []).filter(app => 
+        app.user?.employment_type === 'full-time'
+      );
       const approved = applications.filter(app => app.status === 'approved');
       const rejected = applications.filter(app => app.status === 'rejected');
       const pending = applications.filter(app => app.status === 'pending');
@@ -125,7 +129,8 @@ export class LeaveAnalyticsService {
         .from('leave_balances')
         .select(`
           *,
-          leave_type:leave_types(name)
+          leave_type:leave_types(name),
+          user:profiles!leave_balances_user_id_fkey(employment_type)
         `)
         .eq('year', targetYear);
 
@@ -140,7 +145,10 @@ export class LeaveAnalyticsService {
         throw error;
       }
 
-      const balances = data || [];
+      // Filter for full-time employees only
+      const balances = (data || []).filter(balance => 
+        balance.user?.employment_type === 'full-time'
+      );
       
       const totalAllocated = balances.reduce((sum, balance) => sum + Number(balance.total_days), 0);
       const totalUsed = balances.reduce((sum, balance) => sum + Number(balance.used_days), 0);
@@ -198,7 +206,10 @@ export class LeaveAnalyticsService {
     try {
       const { data, error } = await supabase
         .from('leave_applications')
-        .select('*')
+        .select(`
+          *,
+          user:profiles!leave_applications_user_id_fkey(employment_type)
+        `)
         .gte('start_date', startDate)
         .lte('end_date', endDate)
         .order('start_date');
@@ -208,7 +219,10 @@ export class LeaveAnalyticsService {
         throw error;
       }
 
-      const applications = data || [];
+      // Filter for full-time employees only
+      const applications = (data || []).filter(app => 
+        app.user?.employment_type === 'full-time'
+      );
       
       // Group applications by period
       const periods = applications.reduce((acc, app) => {
@@ -269,7 +283,7 @@ export class LeaveAnalyticsService {
         .from('leave_applications')
         .select(`
           *,
-          user:profiles!leave_applications_user_id_fkey(full_name, email),
+          user:profiles!leave_applications_user_id_fkey(full_name, email, employment_type),
           leave_type:leave_types(name)
         `)
         .eq('status', 'approved')
@@ -282,7 +296,10 @@ export class LeaveAnalyticsService {
         throw error;
       }
 
-      return (data || []).map(app => ({
+      // Filter for full-time employees only and map data
+      return (data || [])
+        .filter(app => app.user?.employment_type === 'full-time')
+        .map(app => ({
         id: app.id,
         title: `${app.user?.full_name || app.user?.email} - ${app.leave_type?.name}`,
         start: app.start_date,
