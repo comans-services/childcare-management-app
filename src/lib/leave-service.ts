@@ -7,6 +7,8 @@ export interface LeaveType {
   requires_attachment: boolean;
   default_balance_days: number;
   is_active: boolean;
+  max_carry_over_days?: number;
+  carry_over_expiry_months?: number;
 }
 
 export interface LeaveBalance {

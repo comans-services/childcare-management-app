@@ -331,6 +331,67 @@ export type Database = {
           },
         ]
       }
+      leave_balance_operations: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          details: Json | null
+          id: string
+          leave_type_id: string | null
+          operation_type: string
+          reason: string | null
+          user_id: string | null
+          year: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          id?: string
+          leave_type_id?: string | null
+          operation_type: string
+          reason?: string | null
+          user_id?: string | null
+          year: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          details?: Json | null
+          id?: string
+          leave_type_id?: string | null
+          operation_type?: string
+          reason?: string | null
+          user_id?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_balance_operations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balance_operations_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balance_operations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_balances: {
         Row: {
           created_at: string
@@ -384,31 +445,37 @@ export type Database = {
       }
       leave_types: {
         Row: {
+          carry_over_expiry_months: number | null
           created_at: string
           default_balance_days: number
           description: string | null
           id: string
           is_active: boolean
+          max_carry_over_days: number | null
           name: string
           requires_attachment: boolean
           updated_at: string
         }
         Insert: {
+          carry_over_expiry_months?: number | null
           created_at?: string
           default_balance_days?: number
           description?: string | null
           id?: string
           is_active?: boolean
+          max_carry_over_days?: number | null
           name: string
           requires_attachment?: boolean
           updated_at?: string
         }
         Update: {
+          carry_over_expiry_months?: number | null
           created_at?: string
           default_balance_days?: number
           description?: string | null
           id?: string
           is_active?: boolean
+          max_carry_over_days?: number | null
           name?: string
           requires_attachment?: boolean
           updated_at?: string
@@ -983,6 +1050,10 @@ export type Database = {
       log_report_generation_secure: {
         Args: { p_report_type: string; p_filters: Json; p_result_count: number }
         Returns: undefined
+      }
+      perform_annual_reset: {
+        Args: { p_year?: number; p_user_id?: string; p_leave_type_id?: string }
+        Returns: Json
       }
       timesheet_entries_report: {
         Args:

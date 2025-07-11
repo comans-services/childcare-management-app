@@ -8,6 +8,7 @@ import ReportCharts from "@/components/reports/ReportCharts";
 import ReportDataTable from "@/components/reports/ReportDataTable";
 import AuditLogsTable from "@/components/reports/AuditLogsTable";
 import TimesheetLockManager from "@/components/reports/TimesheetLockManager";
+import LeaveReports from "@/components/leave/LeaveReports";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -201,6 +202,7 @@ const ReportsPage = () => {
       <Tabs defaultValue="reports" className="w-full">
         <TabsList>
           <TabsTrigger value="reports">Time Reports</TabsTrigger>
+          <TabsTrigger value="leave-reports">Leave Reports</TabsTrigger>
           <TabsTrigger value="locks" className="flex items-center gap-2">
             <Lock className="h-4 w-4" />
             Timesheet Locks
@@ -249,6 +251,20 @@ const ReportsPage = () => {
               ) : (
                 <AuditLogsTable auditData={auditData} users={users} isLoading={isLoading} />
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="leave-reports" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Leave Reports</CardTitle>
+              <CardDescription>
+                Generate comprehensive leave reports and analytics
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LeaveReports />
             </CardContent>
           </Card>
         </TabsContent>

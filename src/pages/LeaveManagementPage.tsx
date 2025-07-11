@@ -4,6 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminApprovalInterface from "@/components/leave/AdminApprovalInterface";
 import LeaveBalanceManagement from "@/components/leave/LeaveBalanceManagement";
 import LeaveHistoryTable from "@/components/leave/LeaveHistoryTable";
+import LeaveBalanceOperations from "@/components/leave/LeaveBalanceOperations";
+import TeamLeaveCalendar from "@/components/leave/TeamLeaveCalendar";
+import LeaveAnalyticsDashboard from "@/components/leave/LeaveAnalyticsDashboard";
 import { Badge } from "@/components/ui/badge";
 
 const LeaveManagementPage = () => {
@@ -23,6 +26,9 @@ const LeaveManagementPage = () => {
         <TabsList>
           <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
           <TabsTrigger value="balances">Leave Balances</TabsTrigger>
+          <TabsTrigger value="operations">Balance Operations</TabsTrigger>
+          <TabsTrigger value="calendar">Team Calendar</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="all-history">All Applications</TabsTrigger>
         </TabsList>
 
@@ -52,6 +58,28 @@ const LeaveManagementPage = () => {
               <LeaveBalanceManagement />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="operations" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Leave Balance Operations</CardTitle>
+              <CardDescription>
+                Manage annual resets, carry-over rules, and balance adjustments
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LeaveBalanceOperations />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="calendar" className="space-y-6">
+          <TeamLeaveCalendar />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <LeaveAnalyticsDashboard />
         </TabsContent>
 
         <TabsContent value="all-history" className="space-y-6">
