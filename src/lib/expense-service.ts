@@ -245,30 +245,57 @@ export const deleteExpense = async (expenseId: string): Promise<void> => {
 
 // Submit expense for approval
 export const submitExpense = async (expenseId: string): Promise<Expense> => {
-  return updateExpense(expenseId, {
+  const result = await updateExpense(expenseId, {
     status: 'submitted',
     submitted_at: new Date().toISOString()
   });
+
+  // Send notification email to admins
+  try {
+    await sendExpenseNotification('expense_submitted', expenseId);
+  } catch (error) {
+    console.error('Failed to send submission notification:', error);
+  }
+
+  return result;
 };
 
 // Approve expense (admin only)
 export const approveExpense = async (expenseId: string, approverId: string, notes?: string): Promise<Expense> => {
-  return updateExpense(expenseId, {
+  const result = await updateExpense(expenseId, {
     status: 'approved',
     approved_at: new Date().toISOString(),
     approved_by: approverId,
     notes: notes ? `${notes}\n\n[Previous notes: ${await getExpenseNotes(expenseId)}]` : undefined
   });
+
+  // Send notification email
+  try {
+    await sendExpenseNotification('expense_approved', expenseId);
+  } catch (error) {
+    console.error('Failed to send approval notification:', error);
+  }
+
+  return result;
 };
 
 // Reject expense (admin only)
 export const rejectExpense = async (expenseId: string, approverId: string, reason: string, notes?: string): Promise<Expense> => {
-  return updateExpense(expenseId, {
+  const result = await updateExpense(expenseId, {
     status: 'rejected',
     approved_by: approverId,
     rejection_reason: reason,
     notes: notes ? `${notes}\n\n[Previous notes: ${await getExpenseNotes(expenseId)}]` : undefined
   });
+
+  // Send notification email
+  try {
+    await sendExpenseNotification('expense_rejected', expenseId);
+  } catch (error) {
+    console.error('Failed to send rejection notification:', error);
+  }
+
+  return result;
 };
 
 // Helper function to get existing notes
@@ -391,6 +418,135 @@ export const fetchExpenseAttachments = async (expenseId: string): Promise<Expens
     return data || [];
   } catch (error) {
     console.error("Error in fetchExpenseAttachments:", error);
+    throw error;
+  }
+};
+
+// Send expense notification emails
+export const sendExpenseNotification = async (
+  type: 'expense_submitted' | 'expense_approved' | 'expense_rejected' | 'expense_reminder',
+  expenseId: string,
+  recipientEmail?: string,
+  message?: string
+): Promise<void> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-expense-notifications', {
+      body: {
+        type,
+        expenseId,
+        recipientEmail,
+        message
+      }
+    });
+
+    if (error) {
+      console.error('Error sending expense notification:', error);
+      throw error;
+    }
+
+    console.log('Expense notification sent successfully:', data);
+  } catch (error) {
+    console.error('Error in sendExpenseNotification:', error);
+    throw error;
+  }
+};
+
+// Advanced expense filtering and search
+export const searchExpenses = async (filters: {
+  search?: string;
+  category?: string;
+  status?: string;
+  user?: string;
+  startDate?: string;
+  endDate?: string;
+  minAmount?: number;
+  maxAmount?: number;
+}): Promise<Expense[]> => {
+  try {
+    let query = supabase
+      .from("expenses")
+      .select(`
+        *,
+        category:expense_categories(*),
+        subcategory:expense_subcategories(*),
+        user_name:profiles!expenses_user_id_fkey(full_name),
+        approved_by_name:profiles!expenses_approved_by_fkey(full_name)
+      `)
+      .order("created_at", { ascending: false });
+
+    // Apply filters
+    if (filters.category) {
+      query = query.eq("category_id", filters.category);
+    }
+
+    if (filters.status) {
+      query = query.eq("status", filters.status);
+    }
+
+    if (filters.user) {
+      query = query.eq("user_id", filters.user);
+    }
+
+    if (filters.startDate) {
+      query = query.gte("expense_date", filters.startDate);
+    }
+
+    if (filters.endDate) {
+      query = query.lte("expense_date", filters.endDate);
+    }
+
+    if (filters.minAmount) {
+      query = query.gte("amount", filters.minAmount);
+    }
+
+    if (filters.maxAmount) {
+      query = query.lte("amount", filters.maxAmount);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error searching expenses:", error);
+      throw error;
+    }
+
+    // Apply text search filter client-side for better UX
+    let results = data || [];
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      results = results.filter(expense => 
+        expense.description?.toLowerCase().includes(searchTerm) ||
+        expense.notes?.toLowerCase().includes(searchTerm) ||
+        expense.category?.name?.toLowerCase().includes(searchTerm) ||
+        expense.subcategory?.name?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    return results;
+  } catch (error) {
+    console.error("Error in searchExpenses:", error);
+    throw error;
+  }
+};
+
+// Get expense audit trail
+export const getExpenseAuditTrail = async (expenseId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("audit_logs")
+      .select("*")
+      .eq("entity_name", "Expense")
+      .ilike("description", `%${expenseId}%`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching expense audit trail:", error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Error in getExpenseAuditTrail:", error);
     throw error;
   }
 };

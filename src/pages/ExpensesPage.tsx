@@ -13,6 +13,10 @@ import {
   approveExpense,
   rejectExpense 
 } from "@/lib/expense-service";
+import ExpenseFilters from "@/components/expenses/ExpenseFilters";
+import MobileExpenseCard from "@/components/expenses/MobileExpenseCard";
+import { useExpenseFilters } from "@/hooks/useExpenseFilters";
+import { useMobile } from "@/hooks/use-mobile";
 import ExpenseForm from "@/components/expenses/ExpenseForm";
 import ExpenseList from "@/components/expenses/ExpenseList";
 import ExpenseApprovalDialog from "@/components/expenses/ExpenseApprovalDialog";
@@ -22,6 +26,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const ExpensesPage = () => {
   const { user, userRole } = useAuth();
   const queryClient = useQueryClient();
+  const isMobile = useMobile();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
@@ -39,6 +44,27 @@ const ExpensesPage = () => {
     queryFn: () => fetchUserExpenses(isAdmin ? undefined : user?.id),
     enabled: !!user
   });
+
+  // Use expense filters hook
+  const {
+    filters,
+    setFilters,
+    filteredExpenses,
+    resetFilters,
+    exportFilteredExpenses
+  } = useExpenseFilters(expenses);
+
+  // Get unique users for admin filter
+  const userOptions = useMemo(() => {
+    const uniqueUsers = expenses.reduce((acc, expense) => {
+      if (expense.user_id && expense.user_name) {
+        acc[expense.user_id] = expense.user_name;
+      }
+      return acc;
+    }, {} as Record<string, string>);
+
+    return Object.entries(uniqueUsers).map(([id, name]) => ({ id, name }));
+  }, [expenses]);
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -178,11 +204,11 @@ const ExpensesPage = () => {
 
   // Calculate stats
   const calculateStats = () => {
-    const totalExpenses = expenses.length;
-    const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const pendingExpenses = expenses.filter(e => e.status === 'submitted').length;
-    const approvedExpenses = expenses.filter(e => e.status === 'approved').length;
-    const rejectedExpenses = expenses.filter(e => e.status === 'rejected').length;
+    const totalExpenses = filteredExpenses.length;
+    const totalAmount = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const pendingExpenses = filteredExpenses.filter(e => e.status === 'submitted').length;
+    const approvedExpenses = filteredExpenses.filter(e => e.status === 'approved').length;
+    const rejectedExpenses = filteredExpenses.filter(e => e.status === 'rejected').length;
     
     return {
       totalExpenses,
@@ -201,6 +227,8 @@ const ExpensesPage = () => {
       currency: 'AUD'
     }).format(amount);
   };
+
+  const { useMemo } = React;
 
   return (
     <div className="container mx-auto">
@@ -235,8 +263,18 @@ const ExpensesPage = () => {
         </div>
       </div>
 
+      {/* Advanced Filters */}
+      <ExpenseFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        onExport={exportFilteredExpenses}
+        onReset={resetFilters}
+        userOptions={userOptions}
+        showUserFilter={isAdmin}
+      />
+
       {/* Stats Cards */}
-      {!isLoading && expenses.length > 0 && (
+      {!isLoading && filteredExpenses.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardHeader className="pb-2">
@@ -297,7 +335,7 @@ const ExpensesPage = () => {
             {isAdmin ? "All Employee Expenses" : "Your Expenses"}
           </CardTitle>
           <CardDescription>
-            {isLoading ? "Loading..." : `${expenses.length} expense${expenses.length !== 1 ? 's' : ''} found`}
+            {isLoading ? "Loading..." : `${filteredExpenses.length} expense${filteredExpenses.length !== 1 ? 's' : ''} found`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -305,21 +343,41 @@ const ExpensesPage = () => {
             <div className="flex justify-center p-6">
               <Clock className="h-6 w-6 animate-spin text-gray-500" />
             </div>
-          ) : expenses.length > 0 ? (
-            <ExpenseList
-              expenses={expenses}
-              onEdit={handleEditExpense}
-              onDelete={handleDeleteExpense}
-              onSubmit={!isAdmin ? handleSubmitExpense : undefined}
-              onApprove={isAdmin ? handleApproveExpense : undefined}
-              onReject={isAdmin ? handleRejectExpense : undefined}
-              showUserColumn={isAdmin}
-            />
+          ) : filteredExpenses.length > 0 ? (
+            isMobile ? (
+              <div className="space-y-4">
+                {filteredExpenses.map((expense) => (
+                  <MobileExpenseCard
+                    key={expense.id}
+                    expense={expense}
+                    onEdit={handleEditExpense}
+                    onDelete={handleDeleteExpense}
+                    onSubmit={!isAdmin ? handleSubmitExpense : undefined}
+                    onApprove={isAdmin ? handleApproveExpense : undefined}
+                    onReject={isAdmin ? handleRejectExpense : undefined}
+                    showUserColumn={isAdmin}
+                  />
+                ))}
+              </div>
+            ) : (
+              <ExpenseList
+                expenses={filteredExpenses}
+                onEdit={handleEditExpense}
+                onDelete={handleDeleteExpense}
+                onSubmit={!isAdmin ? handleSubmitExpense : undefined}
+                onApprove={isAdmin ? handleApproveExpense : undefined}
+                onReject={isAdmin ? handleRejectExpense : undefined}
+                showUserColumn={isAdmin}
+              />
+            )
           ) : (
             <div className="p-8 text-center">
               <DollarSign className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <p className="text-gray-500 mb-4">
-                {isAdmin ? "No expenses found" : "No expenses yet"}
+                {Object.values(filters).some(v => v !== "" && v !== undefined) 
+                  ? "No expenses match your current filters" 
+                  : isAdmin ? "No expenses found" : "No expenses yet"
+                }
               </p>
               {!isAdmin && (
                 <Button onClick={handleCreateExpense}>
