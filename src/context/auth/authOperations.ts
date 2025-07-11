@@ -112,7 +112,7 @@ export const fetchUserRole = async (userId: string) => {
     
     const { data, error } = await supabase
       .from("profiles")
-      .select("role, email")
+      .select("role, email, employment_type")
       .eq("id", userId)
       .single();
 
@@ -122,7 +122,7 @@ export const fetchUserRole = async (userId: string) => {
     }
 
     if (data) {
-      console.log(`User role fetched: ${data.role} for ${data.email}`);
+      console.log(`User role fetched: ${data.role} for ${data.email}, employment: ${data.employment_type}`);
       return data;
     }
     

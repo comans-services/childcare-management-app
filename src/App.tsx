@@ -9,6 +9,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import AdminRoute from "@/routes/AdminRoute";
 import ManagerRoute from "@/routes/ManagerRoute";
+import FullTimeRoute from "@/routes/FullTimeRoute";
 import AuthPage from "@/pages/AuthPage";
 import Dashboard from "@/pages/Index";
 import TimesheetPage from "@/pages/TimesheetPage";
@@ -39,8 +40,12 @@ const App = () => (
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="timesheet" element={<TimesheetPage />} />
-              <Route path="leave-application" element={<LeaveApplicationPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              
+              {/* Full-time employee routes */}
+              <Route element={<FullTimeRoute />}>
+                <Route path="leave-application" element={<LeaveApplicationPage />} />
+              </Route>
               
               {/* Manager-level routes (manager + admin access) */}
               <Route element={<ManagerRoute />}>

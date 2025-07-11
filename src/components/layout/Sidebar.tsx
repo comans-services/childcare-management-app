@@ -16,6 +16,7 @@ import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, User
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useEmploymentType } from "@/hooks/useEmploymentType";
 
 const SIDEBAR_STORAGE_KEY = "sidebar-collapsed";
 
@@ -24,6 +25,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
   onToggleCollapse?: () => void; 
 }) => {
   const { user, userRole, signOut } = useAuth();
+  const { isFullTime } = useEmploymentType();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -39,7 +41,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
   const navigationItems = [
     { to: "/", icon: Home, label: "Home", showForAll: true },
     { to: "/timesheet", icon: Calendar, label: "Timesheet", showForAll: true },
-    { to: "/leave-application", icon: Plane, label: "Leave Application", showForAll: true },
+    { to: "/leave-application", icon: Plane, label: "Leave Application", fullTimeOnly: true },
     { to: "/contracts", icon: FileText, label: "Contracts", managerOrAbove: true },
     { to: "/projects", icon: FolderKanban, label: "Projects", adminOnly: true },
     { to: "/customers", icon: Users, label: "Customers", adminOnly: true },
@@ -53,7 +55,8 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
   const filteredItems = navigationItems.filter(item => 
     item.showForAll || 
     (item.managerOrAbove && isManagerOrAbove) ||
-    (item.adminOnly && isAdmin)
+    (item.adminOnly && isAdmin) ||
+    (item.fullTimeOnly && isFullTime)
   );
 
   return (

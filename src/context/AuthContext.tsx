@@ -10,6 +10,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   userRole: null,
+  employmentType: null,
   signIn: async () => {},
   signOut: async () => {},
   changePassword: async () => {},
@@ -20,6 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<"employee" | "manager" | "admin" | null>(null);
+  const [employmentType, setEmploymentType] = useState<"full-time" | "part-time" | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Clear all user-related state
@@ -28,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
     setUser(null);
     setUserRole(null);
+    setEmploymentType(null);
   };
 
   useEffect(() => {
@@ -96,6 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userData = await fetchUserRole(userId);
     if (userData) {
       setUserRole(userData.role as "employee" | "manager" | "admin" || "employee");
+      setEmploymentType(userData.employment_type as "full-time" | "part-time" || "full-time");
       
       // Update user profile with email if missing
       if (!userData.email && user?.email) {
@@ -130,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         user,
         userRole,
+        employmentType,
         signIn,
         signOut,
         changePassword,
