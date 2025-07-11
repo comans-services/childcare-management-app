@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
-import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, UserPlus, Clock, CalendarCheck, Plane } from "lucide-react";
+import { Home, Calendar, Users, Settings, FileText, FolderKanban, BarChart, UserPlus, Clock, CalendarCheck, Plane, Receipt } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -41,6 +41,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
   const navigationItems = [
     { to: "/", icon: Home, label: "Home", showForAll: true },
     { to: "/timesheet", icon: Calendar, label: "Timesheet", showForAll: true },
+    { to: "/expenses", icon: Receipt, label: "Expenses", showForAll: true },
     { to: "/leave-application", icon: Plane, label: "Leave Application", fullTimeOnly: true },
     { to: "/contracts", icon: FileText, label: "Contracts", managerOrAbove: true },
     { to: "/projects", icon: FolderKanban, label: "Projects", adminOnly: true },

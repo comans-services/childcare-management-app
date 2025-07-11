@@ -22,6 +22,7 @@ import WorkSchedulePage from "@/pages/WorkSchedulePage";
 import HolidayManagementPage from "@/pages/HolidayManagementPage";
 import LeaveApplicationPage from "@/pages/LeaveApplicationPage";
 import LeaveManagementPage from "@/pages/LeaveManagementPage";
+import ExpensesPage from "@/pages/ExpensesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
@@ -46,6 +47,9 @@ const App = () => (
               <Route element={<FullTimeRoute />}>
                 <Route path="leave-application" element={<LeaveApplicationPage />} />
               </Route>
+              
+              {/* Authenticated user routes */}
+              <Route path="expenses" element={<ExpensesPage />} />
               
               {/* Manager-level routes (manager + admin access) */}
               <Route element={<ManagerRoute />}>
