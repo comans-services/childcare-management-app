@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, TrendingDown } from "lucide-react";
+import { Calendar, Clock, TrendingDown, Briefcase } from "lucide-react";
 import { LeaveBalance, fetchUserLeaveBalances } from "@/lib/leave-service";
 import { useToast } from "@/hooks/use-toast";
+import { useEmploymentType } from "@/hooks/useEmploymentType";
 
 interface LeaveBalanceDisplayProps {
   userId?: string;
@@ -14,6 +15,7 @@ const LeaveBalanceDisplay = ({ userId }: LeaveBalanceDisplayProps) => {
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { isFullTime } = useEmploymentType();
 
   useEffect(() => {
     const loadLeaveBalances = async () => {
@@ -54,6 +56,23 @@ const LeaveBalanceDisplay = ({ userId }: LeaveBalanceDisplayProps) => {
           </Card>
         ))}
       </div>
+    );
+  }
+
+  // Show part-time employee message if not full-time
+  if (!isFullTime) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="text-center space-y-2">
+            <Briefcase className="h-12 w-12 text-muted-foreground mx-auto" />
+            <h3 className="text-lg font-medium">Leave Balances Not Available</h3>
+            <p className="text-muted-foreground">
+              Leave balances are only available for full-time employees.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 

@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit } from "lucide-react";
+import { Edit, Briefcase } from "lucide-react";
 import { LeaveBalance, fetchUserLeaveBalances, updateLeaveBalance } from "@/lib/leave-service";
 import { useToast } from "@/hooks/use-toast";
 import UserSelector from "@/components/timesheet/UserSelector";
+import { supabase } from "@/integrations/supabase/client";
 
 const LeaveBalanceManagement = () => {
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
@@ -14,6 +15,7 @@ const LeaveBalanceManagement = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userEmploymentType, setUserEmploymentType] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -27,6 +29,21 @@ const LeaveBalanceManagement = () => {
   const loadUserBalances = async (userId: string) => {
     setLoading(true);
     try {
+      // First check if user is full-time
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('employment_type')
+        .eq('id', userId)
+        .single();
+
+      setUserEmploymentType(userProfile?.employment_type || null);
+
+      if (userProfile?.employment_type !== 'full-time') {
+        setBalances([]);
+        setLoading(false);
+        return;
+      }
+
       const data = await fetchUserLeaveBalances(userId);
       setBalances(data);
     } catch (error) {
@@ -90,6 +107,18 @@ const LeaveBalanceManagement = () => {
         <Card>
           <CardContent className="p-6 text-center">
             Loading leave balances...
+          </CardContent>
+        </Card>
+      ) : userEmploymentType === 'part-time' ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="space-y-2">
+              <Briefcase className="h-12 w-12 text-muted-foreground mx-auto" />
+              <h3 className="text-lg font-medium">Leave Balances Not Available</h3>
+              <p className="text-muted-foreground">
+                Leave balances are only available for full-time employees.
+              </p>
+            </div>
           </CardContent>
         </Card>
       ) : balances.length === 0 ? (

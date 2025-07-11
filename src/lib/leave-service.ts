@@ -21,6 +21,7 @@ export interface LeaveBalance {
   user?: {
     full_name: string;
     email: string;
+    employment_type: 'full-time' | 'part-time';
   };
 }
 
@@ -80,7 +81,7 @@ export const fetchUserLeaveBalances = async (userId?: string): Promise<LeaveBala
     .select(`
       *,
       leave_type:leave_types(*),
-      user:profiles!leave_balances_user_id_fkey(full_name, email)
+      user:profiles!leave_balances_user_id_fkey(full_name, email, employment_type)
     `)
     .eq('year', currentYear)
     .order('created_at');
@@ -96,7 +97,12 @@ export const fetchUserLeaveBalances = async (userId?: string): Promise<LeaveBala
     throw error;
   }
 
-  return data || [];
+  // Filter out balances for non-full-time employees
+  const filteredData = (data || []).filter(balance => 
+    balance.user?.employment_type === 'full-time'
+  );
+
+  return filteredData;
 };
 
 export const updateLeaveBalance = async (
