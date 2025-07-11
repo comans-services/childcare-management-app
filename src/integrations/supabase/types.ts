@@ -220,6 +220,201 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_attachments: {
+        Row: {
+          expense_id: string
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          uploaded_at: string
+        }
+        Insert: {
+          expense_id: string
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          uploaded_at?: string
+        }
+        Update: {
+          expense_id?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_attachments_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      expense_subcategories: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          category_id: string
+          created_at: string
+          description: string | null
+          expense_date: string
+          id: string
+          notes: string | null
+          receipt_url: string | null
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["expense_status"]
+          subcategory_id: string | null
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          category_id: string
+          created_at?: string
+          description?: string | null
+          expense_date: string
+          id?: string
+          notes?: string | null
+          receipt_url?: string | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["expense_status"]
+          subcategory_id?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          expense_date?: string
+          id?: string
+          notes?: string | null
+          receipt_url?: string | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["expense_status"]
+          subcategory_id?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "expense_subcategories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_application_attachments: {
         Row: {
           application_id: string
@@ -1022,6 +1217,10 @@ export type Database = {
         Args: { p_user_id: string; entry_date: string }
         Returns: boolean
       }
+      is_expense_editable: {
+        Args: { expense_id: string }
+        Returns: boolean
+      }
       is_public_holiday: {
         Args: { entry_date: string; target_state?: string }
         Returns: boolean
@@ -1105,6 +1304,7 @@ export type Database = {
     }
     Enums: {
       employment_status: "full-time" | "part-time"
+      expense_status: "draft" | "submitted" | "approved" | "rejected"
       leave_status: "pending" | "approved" | "rejected" | "cancelled"
       user_role: "employee" | "manager" | "admin"
     }
@@ -1235,6 +1435,7 @@ export const Constants = {
   public: {
     Enums: {
       employment_status: ["full-time", "part-time"],
+      expense_status: ["draft", "submitted", "approved", "rejected"],
       leave_status: ["pending", "approved", "rejected", "cancelled"],
       user_role: ["employee", "manager", "admin"],
     },
