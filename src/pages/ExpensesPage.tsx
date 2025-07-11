@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
 import ExpenseFilters from "@/components/expenses/ExpenseFilters";
 import MobileExpenseCard from "@/components/expenses/MobileExpenseCard";
 import { useExpenseFilters } from "@/hooks/useExpenseFilters";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import ExpenseForm from "@/components/expenses/ExpenseForm";
 import ExpenseList from "@/components/expenses/ExpenseList";
 import ExpenseApprovalDialog from "@/components/expenses/ExpenseApprovalDialog";
@@ -26,7 +26,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const ExpensesPage = () => {
   const { user, userRole } = useAuth();
   const queryClient = useQueryClient();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
@@ -228,7 +228,7 @@ const ExpensesPage = () => {
     }).format(amount);
   };
 
-  const { useMemo } = React;
+  
 
   return (
     <div className="container mx-auto">
