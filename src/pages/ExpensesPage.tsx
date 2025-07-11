@@ -251,15 +251,13 @@ const ExpensesPage = () => {
             <RefreshCw className="h-4 w-4" />
           </Button>
           
-          {!isAdmin && (
-            <Button 
-              onClick={handleCreateExpense} 
-              className="flex items-center gap-2"
-            >
-              <PlusCircle className="h-4 w-4" />
-              Add Expense
-            </Button>
-          )}
+          <Button 
+            onClick={handleCreateExpense} 
+            className="flex items-center gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Add Expense
+          </Button>
         </div>
       </div>
 
@@ -379,11 +377,9 @@ const ExpensesPage = () => {
                   : isAdmin ? "No expenses found" : "No expenses yet"
                 }
               </p>
-              {!isAdmin && (
-                <Button onClick={handleCreateExpense}>
-                  Create Your First Expense
-                </Button>
-              )}
+              <Button onClick={handleCreateExpense}>
+                Create Your First Expense
+              </Button>
             </div>
           )}
         </CardContent>
