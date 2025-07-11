@@ -271,60 +271,6 @@ const ExpensesPage = () => {
         showUserFilter={isAdmin}
       />
 
-      {/* Stats Cards */}
-      {!isLoading && filteredExpenses.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Total Amount</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(stats.totalAmount)}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {stats.totalExpenses} expense{stats.totalExpenses !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Pending</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.pendingExpenses}</div>
-              <p className="text-sm text-muted-foreground">
-                Awaiting approval
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Approved</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.approvedExpenses}</div>
-              <p className="text-sm text-muted-foreground">
-                Ready for reimbursement
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Rejected</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.rejectedExpenses}</div>
-              <p className="text-sm text-muted-foreground">
-                Need attention
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Expenses List */}
       <Card>
