@@ -252,21 +252,98 @@ export const submitExpense = async (expenseId: string): Promise<Expense> => {
 };
 
 // Approve expense (admin only)
-export const approveExpense = async (expenseId: string, approverId: string): Promise<Expense> => {
+export const approveExpense = async (expenseId: string, approverId: string, notes?: string): Promise<Expense> => {
   return updateExpense(expenseId, {
     status: 'approved',
     approved_at: new Date().toISOString(),
-    approved_by: approverId
+    approved_by: approverId,
+    notes: notes ? `${notes}\n\n[Previous notes: ${await getExpenseNotes(expenseId)}]` : undefined
   });
 };
 
 // Reject expense (admin only)
-export const rejectExpense = async (expenseId: string, approverId: string, reason: string): Promise<Expense> => {
+export const rejectExpense = async (expenseId: string, approverId: string, reason: string, notes?: string): Promise<Expense> => {
   return updateExpense(expenseId, {
     status: 'rejected',
     approved_by: approverId,
-    rejection_reason: reason
+    rejection_reason: reason,
+    notes: notes ? `${notes}\n\n[Previous notes: ${await getExpenseNotes(expenseId)}]` : undefined
   });
+};
+
+// Helper function to get existing notes
+const getExpenseNotes = async (expenseId: string): Promise<string> => {
+  try {
+    const { data, error } = await supabase
+      .from("expenses")
+      .select("notes")
+      .eq("id", expenseId)
+      .single();
+    
+    if (error) return "";
+    return data?.notes || "";
+  } catch {
+    return "";
+  }
+};
+
+// Get expense statistics for admin dashboard
+export const getExpenseStatistics = async (startDate?: string, endDate?: string) => {
+  try {
+    let query = supabase
+      .from("expenses")
+      .select(`
+        id,
+        amount,
+        status,
+        expense_date,
+        user_id,
+        category:expense_categories(name),
+        user_name:profiles!expenses_user_id_fkey(full_name)
+      `);
+
+    if (startDate) {
+      query = query.gte("expense_date", startDate);
+    }
+    if (endDate) {
+      query = query.lte("expense_date", endDate);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching expense statistics:", error);
+      throw error;
+    }
+
+    const stats = {
+      totalAmount: data?.reduce((sum, expense) => sum + expense.amount, 0) || 0,
+      totalCount: data?.length || 0,
+      byStatus: {
+        draft: data?.filter(e => e.status === 'draft').length || 0,
+        submitted: data?.filter(e => e.status === 'submitted').length || 0,
+        approved: data?.filter(e => e.status === 'approved').length || 0,
+        rejected: data?.filter(e => e.status === 'rejected').length || 0,
+      },
+      byCategory: data?.reduce((acc, expense) => {
+        const category = expense.category?.[0]?.name || 'Unknown';
+        acc[category] = (acc[category] || 0) + expense.amount;
+        return acc;
+      }, {} as Record<string, number>) || {},
+      byUser: data?.reduce((acc, expense) => {
+        const user = expense.user_name?.[0]?.full_name || 'Unknown User';
+        acc[user] = (acc[user] || 0) + expense.amount;
+        return acc;
+      }, {} as Record<string, number>) || {},
+      approvedAmount: data?.filter(e => e.status === 'approved').reduce((sum, e) => sum + e.amount, 0) || 0,
+      pendingAmount: data?.filter(e => e.status === 'submitted').reduce((sum, e) => sum + e.amount, 0) || 0,
+    };
+
+    return stats;
+  } catch (error) {
+    console.error("Error in getExpenseStatistics:", error);
+    throw error;
+  }
 };
 
 // Upload receipt file

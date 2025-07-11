@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal, Edit, Trash2, Send, Eye } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Send, Eye, CheckCircle, XCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Expense } from "@/lib/expense-service";
 import { useAuth } from "@/context/AuthContext";
@@ -14,6 +14,8 @@ interface ExpenseListProps {
   onDelete: (expense: Expense) => void;
   onSubmit?: (expense: Expense) => void;
   onView?: (expense: Expense) => void;
+  onApprove?: (expense: Expense) => void;
+  onReject?: (expense: Expense) => void;
   showUserColumn?: boolean;
 }
 
@@ -23,6 +25,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   onDelete,
   onSubmit,
   onView,
+  onApprove,
+  onReject,
   showUserColumn = false
 }) => {
   const { userRole } = useAuth();
@@ -162,6 +166,21 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                         <DropdownMenuItem onClick={() => onSubmit(expense)}>
                           <Send className="mr-2 h-4 w-4" />
                           Submit for Approval
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {/* Admin approval actions */}
+                      {isAdmin && expense.status === 'submitted' && onApprove && (
+                        <DropdownMenuItem onClick={() => onApprove(expense)}>
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Approve
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {isAdmin && expense.status === 'submitted' && onReject && (
+                        <DropdownMenuItem onClick={() => onReject(expense)}>
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Reject
                         </DropdownMenuItem>
                       )}
                       

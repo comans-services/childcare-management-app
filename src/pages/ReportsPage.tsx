@@ -9,6 +9,7 @@ import ReportDataTable from "@/components/reports/ReportDataTable";
 import AuditLogsTable from "@/components/reports/AuditLogsTable";
 import TimesheetLockManager from "@/components/reports/TimesheetLockManager";
 import LeaveReports from "@/components/leave/LeaveReports";
+import ExpenseReportCharts from "@/components/reports/ExpenseReportCharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { Contract } from "@/lib/contract-service";
 import { Customer } from "@/lib/customer-service";
 import { User } from "@/lib/user-service";
 import { AuditLogEntry, fetchAuditLogs } from "@/lib/audit/audit-service";
+import { getExpenseStatistics } from "@/lib/expense-service";
 import { toast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/date-utils";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export-utils";
@@ -32,7 +34,7 @@ export type ReportFiltersType = {
   includeProject: boolean;
   includeContract: boolean;
   includeEmployeeIds: boolean;
-  reportType: 'timesheet' | 'audit';
+  reportType: 'timesheet' | 'audit' | 'expenses';
   actionType?: string | null;
 };
 
@@ -59,6 +61,7 @@ const ReportsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState<TimesheetEntry[]>([]);
   const [auditData, setAuditData] = useState<AuditLogEntry[]>([]);
+  const [expenseData, setExpenseData] = useState<any>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -202,6 +205,7 @@ const ReportsPage = () => {
       <Tabs defaultValue="reports" className="w-full">
         <TabsList>
           <TabsTrigger value="reports">Time Reports</TabsTrigger>
+          <TabsTrigger value="expenses">Expense Reports</TabsTrigger>
           <TabsTrigger value="leave-reports">Leave Reports</TabsTrigger>
           <TabsTrigger value="locks" className="flex items-center gap-2">
             <Lock className="h-4 w-4" />
@@ -255,6 +259,26 @@ const ReportsPage = () => {
           </Card>
         </TabsContent>
         
+        <TabsContent value="expenses" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Expense Reports</CardTitle>
+              <CardDescription>
+                Comprehensive expense analytics and insights
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {expenseData ? (
+                <ExpenseReportCharts data={expenseData} />
+              ) : (
+                <div className="p-8 text-center text-muted-foreground">
+                  <p>Loading expense data...</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="leave-reports" className="mt-4">
           <Card>
             <CardHeader>

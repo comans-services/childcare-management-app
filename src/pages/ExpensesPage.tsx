@@ -9,10 +9,13 @@ import {
   Expense, 
   fetchUserExpenses, 
   deleteExpense, 
-  submitExpense 
+  submitExpense,
+  approveExpense,
+  rejectExpense 
 } from "@/lib/expense-service";
 import ExpenseForm from "@/components/expenses/ExpenseForm";
 import ExpenseList from "@/components/expenses/ExpenseList";
+import ExpenseApprovalDialog from "@/components/expenses/ExpenseApprovalDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -22,6 +25,7 @@ const ExpensesPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+  const [approvingExpense, setApprovingExpense] = useState<Expense | null>(null);
 
   const isAdmin = userRole === 'admin';
 
@@ -77,6 +81,50 @@ const ExpensesPage = () => {
     }
   });
 
+  // Approve mutation
+  const approveMutation = useMutation({
+    mutationFn: ({ expenseId, notes }: { expenseId: string; notes?: string }) => 
+      approveExpense(expenseId, user!.id, notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      setApprovingExpense(null);
+      toast({
+        title: "Expense approved",
+        description: "The expense has been approved successfully"
+      });
+    },
+    onError: (error) => {
+      console.error("Error approving expense:", error);
+      toast({
+        title: "Error",
+        description: "Failed to approve expense. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Reject mutation
+  const rejectMutation = useMutation({
+    mutationFn: ({ expenseId, reason, notes }: { expenseId: string; reason: string; notes?: string }) => 
+      rejectExpense(expenseId, user!.id, reason, notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      setApprovingExpense(null);
+      toast({
+        title: "Expense rejected",
+        description: "The expense has been rejected"
+      });
+    },
+    onError: (error) => {
+      console.error("Error rejecting expense:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reject expense. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleCreateExpense = () => {
     setEditingExpense(null);
     setIsFormOpen(true);
@@ -99,6 +147,22 @@ const ExpensesPage = () => {
 
   const handleSubmitExpense = (expense: Expense) => {
     submitMutation.mutate(expense.id);
+  };
+
+  const handleApproveExpense = (expense: Expense) => {
+    setApprovingExpense(expense);
+  };
+
+  const handleRejectExpense = (expense: Expense) => {
+    setApprovingExpense(expense);
+  };
+
+  const handleApprovalDialogApprove = (expenseId: string, notes?: string) => {
+    approveMutation.mutate({ expenseId, notes });
+  };
+
+  const handleApprovalDialogReject = (expenseId: string, reason: string, notes?: string) => {
+    rejectMutation.mutate({ expenseId, reason, notes });
   };
 
   const handleFormSuccess = () => {
@@ -247,6 +311,8 @@ const ExpensesPage = () => {
               onEdit={handleEditExpense}
               onDelete={handleDeleteExpense}
               onSubmit={!isAdmin ? handleSubmitExpense : undefined}
+              onApprove={isAdmin ? handleApproveExpense : undefined}
+              onReject={isAdmin ? handleRejectExpense : undefined}
               showUserColumn={isAdmin}
             />
           ) : (
@@ -280,6 +346,16 @@ const ExpensesPage = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Approval Dialog */}
+      <ExpenseApprovalDialog
+        expense={approvingExpense}
+        isOpen={!!approvingExpense}
+        onClose={() => setApprovingExpense(null)}
+        onApprove={handleApprovalDialogApprove}
+        onReject={handleApprovalDialogReject}
+        isLoading={approveMutation.isPending || rejectMutation.isPending}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog 
