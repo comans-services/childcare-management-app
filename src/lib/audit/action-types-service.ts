@@ -39,6 +39,27 @@ const getFallbackActionTypes = (): string[] => {
     'member_updated',
     'member_deleted',
     'report_generated',
-    'audit_report_generated'
+    'audit_report_generated',
+    // Leave application actions
+    'leave_application_created',
+    'leave_application_updated',
+    'leave_application_cancelled',
+    'leave_application_approved',
+    'leave_application_rejected',
+    // Leave balance actions
+    'leave_balance_created',
+    'leave_balance_updated',
+    'leave_balance_deleted',
+    // Holiday permission actions
+    'holiday_permission_granted',
+    'holiday_permission_revoked',
+    'holiday_permission_updated',
+    // Custom holiday actions
+    'custom_holiday_created',
+    'custom_holiday_updated',
+    'custom_holiday_deleted',
+    // Document actions
+    'document_uploaded',
+    'document_deleted'
   ];
 };

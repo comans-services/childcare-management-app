@@ -74,6 +74,24 @@ export class DocumentService {
         throw new Error(`Failed to save attachment: ${dbError.message}`);
       }
 
+      // Log document upload to audit trail
+      try {
+        await this.logDocumentAudit(
+          'document_uploaded',
+          user.id,
+          applicationId,
+          file.name,
+          {
+            file_size: file.size,
+            file_type: file.type,
+            file_url: publicUrl,
+            attachment_id: attachment.id
+          }
+        );
+      } catch (auditError) {
+        console.warn('Failed to log document upload audit:', auditError);
+      }
+
       return attachment;
     } catch (error) {
       console.error('Error in DocumentService.uploadDocument:', error);
@@ -131,6 +149,27 @@ export class DocumentService {
       // Delete from storage
       if (filePath) {
         await this.deleteFileFromStorage(filePath);
+      }
+
+      // Log document deletion to audit trail before deleting
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await this.logDocumentAudit(
+            'document_deleted',
+            user.id,
+            attachment.application_id,
+            attachment.file_name,
+            {
+              file_size: attachment.file_size,
+              file_type: attachment.file_type,
+              file_url: attachment.file_url,
+              attachment_id: attachment.id
+            }
+          );
+        }
+      } catch (auditError) {
+        console.warn('Failed to log document deletion audit:', auditError);
       }
 
       // Delete from database
@@ -290,6 +329,67 @@ export class DocumentService {
     } catch (error) {
       console.error('Error in DocumentService.canAccessDocument:', error);
       return false;
+    }
+  }
+
+  /**
+   * Log document actions to audit trail
+   */
+  private static async logDocumentAudit(
+    action: 'document_uploaded' | 'document_deleted',
+    userId: string,
+    applicationId: string,
+    fileName: string,
+    details: Record<string, any>
+  ): Promise<void> {
+    try {
+      // Get user display name
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', userId)
+        .single();
+
+      const userDisplayName = userProfile?.full_name || userProfile?.email || 'Unknown User';
+
+      // Get leave application details for context
+      const { data: application } = await supabase
+        .from('leave_applications')
+        .select(`
+          *,
+          leave_type:leave_types(name),
+          applicant:profiles!leave_applications_user_id_fkey(full_name, email)
+        `)
+        .eq('id', applicationId)
+        .single();
+
+      const leaveTypeName = application?.leave_type?.name || 'Unknown Leave Type';
+      const applicantName = application?.applicant?.full_name || application?.applicant?.email || 'Unknown User';
+
+      const description = action === 'document_uploaded'
+        ? `Uploaded document "${fileName}" for ${applicantName}'s ${leaveTypeName} application`
+        : `Deleted document "${fileName}" for ${applicantName}'s ${leaveTypeName} application`;
+
+      // Insert audit log
+      await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: userId,
+          user_name: userDisplayName,
+          action,
+          entity_name: 'Leave Application Document',
+          description,
+          details: {
+            ...details,
+            application_id: applicationId,
+            leave_type_name: leaveTypeName,
+            applicant_name: applicantName,
+            file_name: fileName
+          }
+        });
+    } catch (error) {
+      console.error('Error logging document audit:', error);
+      throw error;
     }
   }
 }

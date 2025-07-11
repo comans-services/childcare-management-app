@@ -76,8 +76,8 @@ export class ApprovalService {
         updatedApplication = await LeaveApplicationService.reject(applicationId, comments || 'Application rejected');
       }
 
-      // Log approval action
-      await this.logApprovalAction(applicationId, decision, user.id, comments);
+      // Log detailed approval action
+      await this.logDetailedApprovalAction(updatedApplication, decision, user.id, comments);
 
       return updatedApplication;
     } catch (error) {
@@ -401,6 +401,84 @@ export class ApprovalService {
       });
     } catch (error) {
       console.error('Error logging approval action:', error);
+      // Don't throw here, as this is just for logging
+    }
+  }
+
+  /**
+   * Log detailed approval action with enhanced context
+   */
+  private static async logDetailedApprovalAction(
+    application: LeaveApplication,
+    decision: 'approved' | 'rejected',
+    approverId: string,
+    comments?: string
+  ): Promise<void> {
+    try {
+      // Get approver details
+      const { data: approver } = await supabase
+        .from('profiles')
+        .select('full_name, email, role')
+        .eq('id', approverId)
+        .single();
+
+      const approverName = approver?.full_name || approver?.email || 'Unknown';
+      const approverRole = approver?.role || 'unknown';
+
+      // Get applicant details
+      const { data: applicant } = await supabase
+        .from('profiles')
+        .select('full_name, email, organization')
+        .eq('id', application.user_id)
+        .single();
+
+      const applicantName = applicant?.full_name || applicant?.email || 'Unknown';
+
+      // Get leave type details
+      const { data: leaveType } = await supabase
+        .from('leave_types')
+        .select('name')
+        .eq('id', application.leave_type_id)
+        .single();
+
+      const leaveTypeName = leaveType?.name || 'Unknown Leave Type';
+
+      // Create enhanced audit log entry
+      const action = decision === 'approved' ? 'leave_application_approved' : 'leave_application_rejected';
+      const description = `${decision === 'approved' ? 'Approved' : 'Rejected'} ${leaveTypeName} application for ${applicantName} from ${application.start_date} to ${application.end_date} (${application.business_days_count} business days)`;
+
+      await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: approverId,
+          user_name: approverName,
+          action,
+          entity_name: 'Leave Application',
+          description,
+          details: {
+            application_id: application.id,
+            applicant_id: application.user_id,
+            applicant_name: applicantName,
+            applicant_organization: applicant?.organization,
+            approver_id: approverId,
+            approver_name: approverName,
+            approver_role: approverRole,
+            leave_type_id: application.leave_type_id,
+            leave_type_name: leaveTypeName,
+            start_date: application.start_date,
+            end_date: application.end_date,
+            business_days_count: application.business_days_count,
+            manager_comments: comments,
+            approved_at: application.approved_at,
+            decision,
+            business_impact: {
+              days_affected: application.business_days_count,
+              leave_period: `${application.start_date} to ${application.end_date}`
+            }
+          }
+        });
+    } catch (error) {
+      console.error('Error logging detailed approval action:', error);
       // Don't throw here, as this is just for logging
     }
   }
