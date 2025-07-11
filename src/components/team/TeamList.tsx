@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchUsers, User, deleteUser } from "@/lib/user-service";
+import { fetchUsers, User, deleteUser, updateUser } from "@/lib/user-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ const TeamList: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const { data: users = [], isLoading, refetch } = useQuery({
     queryKey: ["users"],
@@ -75,11 +76,30 @@ const TeamList: React.FC = () => {
     navigate(`/timesheet?userId=${userId}`);
   }, [navigate]);
 
-  const handleUserSaved = useCallback(() => {
-    refetch();
-    setIsDialogOpen(false);
-    setEditingUser(null);
-  }, [refetch]);
+  const handleUserSaved = useCallback(async (userData: User) => {
+    if (!editingUser) return;
+    
+    setIsUpdating(true);
+    try {
+      await updateUser(userData);
+      toast({
+        title: "User updated",
+        description: `${userData.full_name || userData.email} has been updated successfully.`,
+      });
+      refetch();
+      setIsDialogOpen(false);
+      setEditingUser(null);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast({
+        title: "Error updating user",
+        description: "Failed to update user. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [editingUser, refetch]);
 
   const getInitials = (user: User) => {
     if (user.full_name) {
