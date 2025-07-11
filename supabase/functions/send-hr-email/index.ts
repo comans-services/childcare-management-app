@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -10,6 +9,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+interface EmailRequest {
+  type: string;
+  data: any;
+}
+
 interface HRIssueRequest {
   userEmail: string;
   userName: string;
@@ -17,55 +21,86 @@ interface HRIssueRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log('HR Email function called');
+
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { userEmail, userName, issueDescription }: HRIssueRequest = await req.json();
+    const body = await req.json();
 
-    if (!userEmail || !issueDescription) {
-      throw new Error("Missing required fields");
+    // Handle legacy HR issue format
+    if (body.userEmail && body.issueDescription) {
+      return handleHRIssue(body as HRIssueRequest);
+    }
+
+    // Handle new leave management emails
+    const { type, data }: EmailRequest = body;
+    console.log('Email type:', type);
+
+    let emailContent, subject, recipients = [];
+
+    switch (type) {
+      case 'new_leave_application':
+        subject = `New Leave Application from ${data.applicant_name}`;
+        recipients = ["belinda.comeau@comansservices.com.au"];
+        emailContent = `<h1>New Leave Application</h1><p>From: ${data.applicant_name}</p><p>Type: ${data.leave_type}</p><p>Dates: ${data.start_date} to ${data.end_date}</p>`;
+        break;
+
+      case 'leave_decision':
+        subject = `Leave Application ${data.status}`;
+        recipients = [data.applicant_email];
+        emailContent = `<h1>Leave Application ${data.status}</h1><p>Your leave application has been ${data.status}</p>`;
+        break;
+
+      case 'balance_update':
+        subject = 'Leave Balance Updated';
+        recipients = [data.user_email];
+        emailContent = `<h1>Leave Balance Update</h1><p>Hello ${data.user_name}, your leave balances have been updated.</p>`;
+        break;
+
+      default:
+        throw new Error(`Unknown email type: ${type}`);
     }
 
     const emailResponse = await resend.emails.send({
-      from: "Timesheet System <onboarding@resend.dev>",
-      to: ["belinda.comeau@comansservices.com.au"],
-      subject: "Timesheet System - HR Issue Report",
-      html: `
-        <h1>Timesheet HR Issue Report</h1>
-        <h2>Issue Details:</h2>
-        <p><strong>Reported by:</strong> ${userName} (${userEmail})</p>
-        <p><strong>Date Submitted:</strong> ${new Date().toLocaleString()}</p>
-        <hr />
-        <h3>Issue Description:</h3>
-        <p>${issueDescription.replace(/\n/g, "<br />")}</p>
-        <hr />
-        <p><i>This is an automated message from the Timesheet System. Please respond directly to the user's email address if needed.</i></p>
-      `,
-      reply_to: userEmail,
+      from: "HR System <onboarding@resend.dev>",
+      to: recipients,
+      subject: subject,
+      html: emailContent,
     });
-
-    console.log("Email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
     console.error("Error in send-hr-email function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
+
+async function handleHRIssue(data: HRIssueRequest): Promise<Response> {
+  const emailResponse = await resend.emails.send({
+    from: "Timesheet System <onboarding@resend.dev>",
+    to: ["belinda.comeau@comansservices.com.au"],
+    subject: "Timesheet System - HR Issue Report",
+    html: `
+      <h1>Timesheet HR Issue Report</h1>
+      <p><strong>Reported by:</strong> ${data.userName} (${data.userEmail})</p>
+      <p><strong>Issue:</strong> ${data.issueDescription}</p>
+    `,
+    reply_to: data.userEmail,
+  });
+
+  return new Response(JSON.stringify(emailResponse), {
+    status: 200,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+}
 
 serve(handler);
