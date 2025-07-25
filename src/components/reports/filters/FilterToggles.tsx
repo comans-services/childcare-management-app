@@ -39,34 +39,12 @@ export const FilterToggles = ({ filters, setFilters }: FilterTogglesProps) => {
   const handleReportTypeChange = (value: string) => {
     setFilters(prev => ({
       ...prev,
-      reportType: value as 'timesheet' | 'audit' | 'leave',
+      reportType: value as 'timesheet' | 'audit',
       // Clear action type when switching away from audit
-      actionType: value === 'audit' ? prev.actionType : null,
-      // Set default leave report type when switching to leave
-      leaveReportType: value === 'leave' ? 'usage' : prev.leaveReportType
+      actionType: value === 'audit' ? prev.actionType : null
     }));
   };
 
-  const handleLeaveReportTypeChange = (value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      leaveReportType: value as 'usage' | 'balance' | 'calendar' | 'trends' | 'summary'
-    }));
-  };
-
-  const handleLeaveYearChange = (value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      leaveYear: parseInt(value)
-    }));
-  };
-
-  const handleLeaveGroupByChange = (value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      leaveGroupBy: value as 'month' | 'quarter'
-    }));
-  };
 
   return (
     <div className="space-y-4">
@@ -83,7 +61,6 @@ export const FilterToggles = ({ filters, setFilters }: FilterTogglesProps) => {
           <SelectContent>
             <SelectItem value="timesheet">Timesheet Reports</SelectItem>
             <SelectItem value="audit">Audit Logs</SelectItem>
-            <SelectItem value="leave">Leave Reports</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -123,74 +100,6 @@ export const FilterToggles = ({ filters, setFilters }: FilterTogglesProps) => {
               Include Employee IDs
             </Label>
           </div>
-        </div>
-      )}
-
-      {/* Show leave-specific options only for leave reports */}
-      {filters.reportType === 'leave' && (
-        <div className="space-y-4">
-          <div className="w-full md:w-auto">
-            <label className="text-sm font-medium mb-2 block">Leave Report Type</label>
-            <Select
-              value={filters.leaveReportType || 'usage'}
-              onValueChange={handleLeaveReportTypeChange}
-            >
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Select leave report type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="usage">Usage Analytics</SelectItem>
-                <SelectItem value="balance">Balance Report</SelectItem>
-                <SelectItem value="calendar">Team Calendar</SelectItem>
-                <SelectItem value="trends">Trends Analysis</SelectItem>
-                <SelectItem value="summary">Summary Report</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Show year selector for balance reports */}
-          {filters.leaveReportType === 'balance' && (
-            <div className="w-full md:w-auto">
-              <label className="text-sm font-medium mb-2 block">Year</label>
-              <Select
-                value={filters.leaveYear?.toString() || new Date().getFullYear().toString()}
-                onValueChange={handleLeaveYearChange}
-              >
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 5 }, (_, i) => {
-                    const year = new Date().getFullYear() - 2 + i;
-                    return (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Show group by selector for trends */}
-          {filters.leaveReportType === 'trends' && (
-            <div className="w-full md:w-auto">
-              <label className="text-sm font-medium mb-2 block">Group By</label>
-              <Select
-                value={filters.leaveGroupBy || 'month'}
-                onValueChange={handleLeaveGroupByChange}
-              >
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Select grouping" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="month">Monthly</SelectItem>
-                  <SelectItem value="quarter">Quarterly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
         </div>
       )}
     </div>

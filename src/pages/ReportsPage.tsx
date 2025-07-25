@@ -8,11 +8,6 @@ import ReportCharts from "@/components/reports/ReportCharts";
 import ReportDataTable from "@/components/reports/ReportDataTable";
 import AuditLogsTable from "@/components/reports/AuditLogsTable";
 import TimesheetLockManager from "@/components/reports/TimesheetLockManager";
-import LeaveUsageTable from "@/components/reports/leave/LeaveUsageTable";
-import LeaveBalanceTable from "@/components/reports/leave/LeaveBalanceTable";
-import LeaveCalendarTable from "@/components/reports/leave/LeaveCalendarTable";
-import LeaveTrendsTable from "@/components/reports/leave/LeaveTrendsTable";
-import LeaveSummaryTable from "@/components/reports/leave/LeaveSummaryTable";
 import ExpenseReportCharts from "@/components/reports/ExpenseReportCharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -38,11 +33,8 @@ export type ReportFiltersType = {
   includeProject: boolean;
   includeContract: boolean;
   includeEmployeeIds: boolean;
-  reportType: 'timesheet' | 'audit' | 'leave' | 'expenses';
+  reportType: 'timesheet' | 'audit' | 'expenses';
   actionType?: string | null;
-  leaveReportType?: 'usage' | 'balance' | 'calendar' | 'trends' | 'summary';
-  leaveYear?: number;
-  leaveGroupBy?: 'month' | 'quarter';
 };
 
 const ReportsPage = () => {
@@ -68,7 +60,6 @@ const ReportsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState<TimesheetEntry[]>([]);
   const [auditData, setAuditData] = useState<AuditLogEntry[]>([]);
-  const [leaveData, setLeaveData] = useState<any>(null);
   const [expenseData, setExpenseData] = useState<any>(null);
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -86,10 +77,7 @@ const ReportsPage = () => {
     includeContract: false,
     includeEmployeeIds: false,
     reportType: 'timesheet',
-    actionType: null,
-    leaveReportType: 'usage',
-    leaveYear: new Date().getFullYear(),
-    leaveGroupBy: 'month'
+    actionType: null
   });
 
   // Load expense data when component mounts
@@ -120,7 +108,6 @@ const ReportsPage = () => {
   const isExportDisabled = () => {
     if (filters.reportType === 'timesheet') return reportData.length === 0;
     if (filters.reportType === 'audit') return auditData.length === 0;
-    if (filters.reportType === 'leave') return !leaveData;
     return true;
   };
 
@@ -261,9 +248,7 @@ const ReportsPage = () => {
               <CardDescription>
                 {filters.reportType === 'timesheet' 
                   ? 'Create custom timesheet reports for your team' 
-                  : filters.reportType === 'audit'
-                  ? 'View comprehensive audit logs of all user actions including deletions'
-                  : 'Generate comprehensive leave reports and analytics'
+                  : 'View comprehensive audit logs of all user actions including deletions'
                 }
               </CardDescription>
             </CardHeader>
@@ -273,7 +258,6 @@ const ReportsPage = () => {
                 setFilters={setFilters} 
                 setReportData={setReportData} 
                 setAuditData={setAuditData}
-                setLeaveData={setLeaveData}
                 setProjects={setProjects} 
                 setContracts={setContracts} 
                 setCustomers={setCustomers} 
@@ -298,24 +282,6 @@ const ReportsPage = () => {
                 </Tabs>
               ) : filters.reportType === 'audit' ? (
                 <AuditLogsTable auditData={auditData} users={users} isLoading={isLoading} />
-              ) : filters.reportType === 'leave' ? (
-                <div className="space-y-4">
-                  {filters.leaveReportType === 'usage' && (
-                    <LeaveUsageTable data={leaveData} isLoading={isLoading} />
-                  )}
-                  {filters.leaveReportType === 'balance' && (
-                    <LeaveBalanceTable data={leaveData} isLoading={isLoading} />
-                  )}
-                  {filters.leaveReportType === 'calendar' && (
-                    <LeaveCalendarTable data={leaveData} isLoading={isLoading} />
-                  )}
-                  {filters.leaveReportType === 'trends' && (
-                    <LeaveTrendsTable data={leaveData} isLoading={isLoading} />
-                  )}
-                  {filters.leaveReportType === 'summary' && (
-                    <LeaveSummaryTable data={leaveData} isLoading={isLoading} />
-                  )}
-                </div>
               ) : null}
             </CardContent>
           </Card>

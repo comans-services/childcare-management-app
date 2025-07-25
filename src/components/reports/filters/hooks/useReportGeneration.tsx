@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchReportData } from "@/lib/timesheet-service";
 import { fetchAuditLogs, logReportGeneration } from "@/lib/audit/audit-service";
-import { LeaveAnalyticsService } from "@/lib/leave/analytics-service";
 import { toast } from "@/hooks/use-toast";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
@@ -11,7 +10,6 @@ interface UseReportGenerationProps {
   filters: ReportFiltersType;
   setReportData: React.Dispatch<React.SetStateAction<any[]>>;
   setAuditData: React.Dispatch<React.SetStateAction<any[]>>;
-  setLeaveData: React.Dispatch<React.SetStateAction<any>>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -19,7 +17,6 @@ export const useReportGeneration = ({
   filters,
   setReportData,
   setAuditData,
-  setLeaveData,
   setIsLoading
 }: UseReportGenerationProps) => {
   const { user } = useAuth();
@@ -70,7 +67,6 @@ export const useReportGeneration = ({
         console.log("Timesheet report data received:", reportData);
         setReportData(reportData);
         setAuditData([]); // Clear audit data when generating timesheet report
-        setLeaveData(null); // Clear leave data when generating timesheet report
         
         // Log report generation to audit trail using secure database function
         await logReportGeneration({
@@ -114,7 +110,6 @@ export const useReportGeneration = ({
         console.log("Audit log data received:", auditData);
         setAuditData(auditData);
         setReportData([]); // Clear timesheet data when generating audit report
-        setLeaveData(null); // Clear leave data when generating audit report
         
         // Log audit report generation to audit trail using secure database function
         await logReportGeneration({
@@ -141,95 +136,11 @@ export const useReportGeneration = ({
             variant: "default"
           });
         }
-      } else if (filters.reportType === 'leave') {
-        // Handle leave reports using LeaveAnalyticsService
-        const leaveAnalytics = new LeaveAnalyticsService();
-        let leaveData;
-        
-        const userId = normalizeSelectValue(filters.userId);
-        
-        try {
-          switch (filters.leaveReportType) {
-            case 'usage':
-              leaveData = await LeaveAnalyticsService.getLeaveUsageAnalytics(
-                filters.startDate.toISOString().split('T')[0],
-                filters.endDate.toISOString().split('T')[0],
-                userId
-              );
-              break;
-            case 'balance':
-              leaveData = await LeaveAnalyticsService.getLeaveBalanceAnalytics(
-                filters.leaveYear || new Date().getFullYear(),
-                userId
-              );
-              break;
-            case 'calendar':
-              leaveData = await LeaveAnalyticsService.getTeamLeaveCalendar(
-                filters.startDate.toISOString().split('T')[0],
-                filters.endDate.toISOString().split('T')[0]
-              );
-              break;
-            case 'trends':
-              leaveData = await LeaveAnalyticsService.getLeaveTrends(
-                filters.startDate.toISOString().split('T')[0],
-                filters.endDate.toISOString().split('T')[0],
-                filters.leaveGroupBy || 'month'
-              );
-              break;
-            case 'summary':
-              // Get both usage and balance data for summary
-              const [usageData, balanceData] = await Promise.all([
-                LeaveAnalyticsService.getLeaveUsageAnalytics(
-                  filters.startDate.toISOString().split('T')[0],
-                  filters.endDate.toISOString().split('T')[0],
-                  userId
-                ),
-                LeaveAnalyticsService.getLeaveBalanceAnalytics(
-                  filters.leaveYear || new Date().getFullYear(),
-                  userId
-                )
-              ]);
-              leaveData = { usage: usageData, balance: balanceData };
-              break;
-            default:
-              throw new Error('Invalid leave report type');
-          }
-          
-          setLeaveData(leaveData);
-          setReportData([]); // Clear timesheet data when generating leave report
-          setAuditData([]); // Clear audit data when generating leave report
-          
-          // Log leave report generation to audit trail
-          await logReportGeneration({
-            reportType: 'leave',
-            filters: {
-              startDate: filters.startDate.toISOString().split('T')[0],
-              endDate: filters.endDate.toISOString().split('T')[0],
-              userId,
-              leaveReportType: filters.leaveReportType,
-              leaveYear: filters.leaveYear,
-              leaveGroupBy: filters.leaveGroupBy
-            },
-            resultCount: Array.isArray(leaveData) ? leaveData.length : 1
-          });
-          
-          toast({
-            title: "Leave report generated successfully",
-            description: `Generated ${filters.leaveReportType} report`,
-            variant: "default"
-          });
-          
-        } catch (leaveError) {
-          console.error("Error generating leave report:", leaveError);
-          setLeaveData(null);
-          throw leaveError;
-        }
       }
     } catch (error) {
       console.error("Error generating report:", error);
       setReportData([]);
       setAuditData([]);
-      setLeaveData(null);
       
       let errorMessage = "There was an error generating the report";
       if (error instanceof Error) {
