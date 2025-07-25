@@ -58,7 +58,14 @@ const ExpensesPage = () => {
   const userOptions = useMemo(() => {
     const uniqueUsers = expenses.reduce((acc, expense) => {
       if (expense.user_id && expense.user_name) {
-        acc[expense.user_id] = expense.user_name;
+        // user_name is an array with a profile object containing full_name
+        const fullName = Array.isArray(expense.user_name) 
+          ? expense.user_name[0]?.full_name 
+          : expense.user_name;
+        
+        if (fullName) {
+          acc[expense.user_id] = fullName;
+        }
       }
       return acc;
     }, {} as Record<string, string>);
