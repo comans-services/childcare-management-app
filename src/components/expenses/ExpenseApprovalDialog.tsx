@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Calendar, DollarSign, User, FileText } from "lucide-react";
 import { Expense } from "@/lib/expense-service";
+import { extractUserName } from "@/lib/expense-user-utils";
 
 interface ExpenseApprovalDialogProps {
   expense: Expense | null;
@@ -101,7 +102,7 @@ const ExpenseApprovalDialog: React.FC<ExpenseApprovalDialogProps> = ({
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-purple-600" />
                 <span className="font-semibold">Employee:</span>
-                <span>{expense.user_name || 'Unknown User'}</span>
+                <span>{extractUserName(expense.user_name)}</span>
               </div>
             </div>
 
