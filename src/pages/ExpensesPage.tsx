@@ -37,14 +37,14 @@ const ExpensesPage = () => {
 
   const isAdmin = userRole === 'admin';
 
-  // Fetch expenses
+  // Fetch expenses - let RLS handle the filtering
   const { 
     data: expenses = [], 
     isLoading, 
     refetch 
   } = useQuery({
-    queryKey: ["expenses", user?.id],
-    queryFn: () => fetchUserExpenses(isAdmin ? undefined : user?.id),
+    queryKey: ["expenses", user?.id, userRole],
+    queryFn: () => fetchUserExpenses(), // Remove userId parameter, let RLS handle it
     enabled: !!user
   });
 
