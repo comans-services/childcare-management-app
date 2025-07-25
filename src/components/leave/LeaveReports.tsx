@@ -333,7 +333,7 @@ const LeaveReports = () => {
                 ) : (
                   <>
                     <Download className="h-4 w-4 mr-2" />
-                    Generate {format.toUpperCase()} Report
+                    Generate Report
                   </>
                 )}
               </Button>
