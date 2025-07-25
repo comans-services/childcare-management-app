@@ -33,10 +33,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { Search, Eye, Calendar, X } from "lucide-react";
+import { Search, Eye, Calendar, X, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { LeaveApplication, fetchLeaveApplications, cancelLeaveApplication } from "@/lib/leave-service";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { 
+  exportLeaveApplicationsToCSV,
+  exportLeaveApplicationsToExcel,
+  exportLeaveApplicationsToPDF
+} from "@/lib/leave-export-utils";
 
 interface LeaveHistoryTableProps {
   userId?: string;
@@ -49,6 +54,7 @@ const LeaveHistoryTable = ({ userId }: LeaveHistoryTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedApplication, setSelectedApplication] = useState<LeaveApplication | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
   const { toast } = useToast();
   const { userRole } = useAuth();
 
@@ -128,6 +134,67 @@ const LeaveHistoryTable = ({ userId }: LeaveHistoryTableProps) => {
     }
   };
 
+  const handleExport = async (format: 'csv' | 'excel' | 'pdf') => {
+    if (filteredApplications.length === 0) {
+      toast({
+        title: "No Data to Export",
+        description: "Please adjust your filters to include some applications.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setExportLoading(true);
+    try {
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `leave-applications-${timestamp}`;
+
+      switch (format) {
+        case 'csv':
+          await exportLeaveApplicationsToCSV(
+            filteredApplications,
+            isAdmin,
+            filename,
+            searchTerm,
+            statusFilter
+          );
+          break;
+        case 'excel':
+          await exportLeaveApplicationsToExcel(
+            filteredApplications,
+            isAdmin,
+            filename,
+            searchTerm,
+            statusFilter
+          );
+          break;
+        case 'pdf':
+          await exportLeaveApplicationsToPDF(
+            filteredApplications,
+            isAdmin,
+            filename,
+            searchTerm,
+            statusFilter
+          );
+          break;
+      }
+
+      toast({
+        title: "Export Successful",
+        description: `Leave applications exported to ${format.toUpperCase()} successfully.`,
+      });
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "Failed to export data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -173,6 +240,45 @@ const LeaveHistoryTable = ({ userId }: LeaveHistoryTableProps) => {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Export Section */}
+      {filteredApplications.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-muted/50 rounded-lg">
+          <div className="text-sm text-muted-foreground">
+            {filteredApplications.length} application{filteredApplications.length !== 1 ? 's' : ''} found
+            {(searchTerm || statusFilter !== 'all') && ' (filtered)'}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExport('csv')}
+              disabled={exportLoading}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExport('excel')}
+              disabled={exportLoading}
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Excel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExport('pdf')}
+              disabled={exportLoading}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              PDF
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Applications Table */}
       <Card>
