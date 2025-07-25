@@ -7,6 +7,7 @@ import { MoreHorizontal, Edit, Trash2, Send, Eye, CheckCircle, XCircle } from "l
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Expense } from "@/lib/expense-service";
 import { useAuth } from "@/context/AuthContext";
+import { extractUserName } from "@/lib/expense-user-utils";
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -137,7 +138,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                 <TableCell>{getStatusBadge(expense.status)}</TableCell>
                 {showUserColumn && (
                   <TableCell>
-                    {expense.user_name || 'Unknown User'}
+                    {extractUserName(expense.user_name)}
                   </TableCell>
                 )}
                 <TableCell className="text-right">

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Expense } from "@/lib/expense-service";
 import { useAuth } from "@/context/AuthContext";
+import { extractUserName } from "@/lib/expense-user-utils";
 
 interface MobileExpenseCardProps {
   expense: Expense;
@@ -212,7 +213,7 @@ const MobileExpenseCard: React.FC<MobileExpenseCardProps> = ({
           {showUserColumn && (
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <User className="h-4 w-4" />
-              <span>{expense.user_name || 'Unknown User'}</span>
+              <span>{extractUserName(expense.user_name)}</span>
             </div>
           )}
 

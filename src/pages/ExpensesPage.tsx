@@ -22,6 +22,7 @@ import ExpenseList from "@/components/expenses/ExpenseList";
 import ExpenseApprovalDialog from "@/components/expenses/ExpenseApprovalDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { extractUserName } from "@/lib/expense-user-utils";
 
 const ExpensesPage = () => {
   const { user, userRole } = useAuth();
@@ -67,19 +68,10 @@ const ExpensesPage = () => {
       if (expense.user_id && expense.user_name) {
         let userName = '';
         
-        // Handle different possible user_name formats
-        if (Array.isArray(expense.user_name)) {
-          // user_name is an array with profile objects
-          userName = expense.user_name[0]?.full_name || '';
-        } else if (expense.user_name && typeof expense.user_name === 'object') {
-          // user_name is a single profile object
-          userName = (expense.user_name as any).full_name || '';
-        } else if (typeof expense.user_name === 'string') {
-          // user_name is already a string
-          userName = expense.user_name;
-        }
+        // Use the helper function for consistent extraction
+        userName = extractUserName(expense.user_name);
         
-        if (userName && typeof userName === 'string') {
+        if (userName && userName !== 'Unknown User') {
           acc[expense.user_id] = userName;
         }
       }
