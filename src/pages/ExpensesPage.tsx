@@ -56,21 +56,39 @@ const ExpensesPage = () => {
 
   // Get unique users for admin filter
   const userOptions = useMemo(() => {
+    console.log("Raw expenses data for userOptions:", expenses.map(e => ({ 
+      user_id: e.user_id, 
+      user_name: e.user_name,
+      user_name_type: typeof e.user_name,
+      user_name_isArray: Array.isArray(e.user_name)
+    })));
+
     const uniqueUsers = expenses.reduce((acc, expense) => {
       if (expense.user_id && expense.user_name) {
-        // user_name is an array with a profile object containing full_name
-        const fullName = Array.isArray(expense.user_name) 
-          ? expense.user_name[0]?.full_name 
-          : expense.user_name;
+        let userName = '';
         
-        if (fullName) {
-          acc[expense.user_id] = fullName;
+        // Handle different possible user_name formats
+        if (Array.isArray(expense.user_name)) {
+          // user_name is an array with profile objects
+          userName = expense.user_name[0]?.full_name || '';
+        } else if (expense.user_name && typeof expense.user_name === 'object') {
+          // user_name is a single profile object
+          userName = (expense.user_name as any).full_name || '';
+        } else if (typeof expense.user_name === 'string') {
+          // user_name is already a string
+          userName = expense.user_name;
+        }
+        
+        if (userName && typeof userName === 'string') {
+          acc[expense.user_id] = userName;
         }
       }
       return acc;
     }, {} as Record<string, string>);
 
-    return Object.entries(uniqueUsers).map(([id, name]) => ({ id, name }));
+    const options = Object.entries(uniqueUsers).map(([id, name]) => ({ id, name }));
+    console.log("Generated userOptions:", options);
+    return options;
   }, [expenses]);
 
   // Delete mutation
