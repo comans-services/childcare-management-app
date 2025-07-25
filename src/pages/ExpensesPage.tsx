@@ -200,13 +200,15 @@ const ExpensesPage = () => {
   };
 
   const handleApproveExpense = (expense: Expense) => {
-    setApprovingExpense(expense);
+    console.log('Setting approval action to: approve');
     setApprovalAction('approve');
+    setApprovingExpense(expense);
   };
 
   const handleRejectExpense = (expense: Expense) => {
-    setApprovingExpense(expense);
+    console.log('Setting approval action to: reject');
     setApprovalAction('reject');
+    setApprovingExpense(expense);
   };
 
   const handleApprovalDialogApprove = (expenseId: string, notes?: string) => {

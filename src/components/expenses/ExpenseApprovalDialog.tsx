@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +30,15 @@ const ExpenseApprovalDialog: React.FC<ExpenseApprovalDialogProps> = ({
   const [notes, setNotes] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [action, setAction] = useState<'approve' | 'reject' | null>(initialAction || null);
+  
+  console.log('ExpenseApprovalDialog - initialAction:', initialAction, 'action:', action);
+
+  useEffect(() => {
+    if (initialAction) {
+      console.log('Setting action from initialAction:', initialAction);
+      setAction(initialAction);
+    }
+  }, [initialAction]);
 
   const handleApprove = () => {
     if (expense) {
