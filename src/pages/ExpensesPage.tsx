@@ -19,7 +19,7 @@ import { useExpenseFilters } from "@/hooks/useExpenseFilters";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ExpenseForm from "@/components/expenses/ExpenseForm";
 import ExpenseList from "@/components/expenses/ExpenseList";
-
+import ExpenseApprovalDialog from "@/components/expenses/ExpenseApprovalDialog";
 import ExpenseViewDialog from "@/components/expenses/ExpenseViewDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -32,7 +32,7 @@ const ExpensesPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
-  
+  const [approvingExpense, setApprovingExpense] = useState<Expense | null>(null);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
 
   const isAdmin = userRole === 'admin';
@@ -132,6 +132,7 @@ const ExpensesPage = () => {
       approveExpense(expenseId, user!.id, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      setApprovingExpense(null);
       toast({
         title: "Expense approved",
         description: "The expense has been approved successfully"
@@ -153,6 +154,7 @@ const ExpensesPage = () => {
       rejectExpense(expenseId, user!.id, reason, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      setApprovingExpense(null);
       toast({
         title: "Expense rejected",
         description: "The expense has been rejected"
@@ -197,15 +199,20 @@ const ExpensesPage = () => {
   };
 
   const handleApproveExpense = (expense: Expense) => {
-    // Directly approve the expense without dialog
-    approveMutation.mutate({ expenseId: expense.id, notes: undefined });
+    setApprovingExpense(expense);
   };
 
   const handleRejectExpense = (expense: Expense) => {
-    // Directly reject the expense with a default reason
-    rejectMutation.mutate({ expenseId: expense.id, reason: "Rejected by admin", notes: undefined });
+    setApprovingExpense(expense);
   };
 
+  const handleApprovalDialogApprove = (expenseId: string, notes?: string) => {
+    approveMutation.mutate({ expenseId, notes });
+  };
+
+  const handleApprovalDialogReject = (expenseId: string, reason: string, notes?: string) => {
+    rejectMutation.mutate({ expenseId, reason, notes });
+  };
 
   const handleFormSuccess = () => {
     setIsFormOpen(false);
@@ -372,6 +379,15 @@ const ExpensesPage = () => {
         onClose={() => setViewingExpense(null)}
       />
 
+      {/* Approval Dialog */}
+      <ExpenseApprovalDialog
+        expense={approvingExpense}
+        isOpen={!!approvingExpense}
+        onClose={() => setApprovingExpense(null)}
+        onApprove={handleApprovalDialogApprove}
+        onReject={handleApprovalDialogReject}
+        isLoading={approveMutation.isPending || rejectMutation.isPending}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog 
