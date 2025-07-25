@@ -8,7 +8,11 @@ import ReportCharts from "@/components/reports/ReportCharts";
 import ReportDataTable from "@/components/reports/ReportDataTable";
 import AuditLogsTable from "@/components/reports/AuditLogsTable";
 import TimesheetLockManager from "@/components/reports/TimesheetLockManager";
-import LeaveReports from "@/components/leave/LeaveReports";
+import LeaveUsageTable from "@/components/reports/leave/LeaveUsageTable";
+import LeaveBalanceTable from "@/components/reports/leave/LeaveBalanceTable";
+import LeaveCalendarTable from "@/components/reports/leave/LeaveCalendarTable";
+import LeaveTrendsTable from "@/components/reports/leave/LeaveTrendsTable";
+import LeaveSummaryTable from "@/components/reports/leave/LeaveSummaryTable";
 import ExpenseReportCharts from "@/components/reports/ExpenseReportCharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -294,18 +298,23 @@ const ReportsPage = () => {
                 </Tabs>
               ) : filters.reportType === 'audit' ? (
                 <AuditLogsTable auditData={auditData} users={users} isLoading={isLoading} />
-              ) : filters.reportType === 'leave' && leaveData ? (
+              ) : filters.reportType === 'leave' ? (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">
-                    {filters.leaveReportType === 'usage' && 'Leave Usage Report'}
-                    {filters.leaveReportType === 'balance' && 'Leave Balance Report'}
-                    {filters.leaveReportType === 'calendar' && 'Leave Calendar Report'}
-                    {filters.leaveReportType === 'trends' && 'Leave Trends Report'}
-                    {filters.leaveReportType === 'summary' && 'Leave Summary Report'}
-                  </h3>
-                  <div className="border rounded-lg p-4">
-                    <pre className="text-sm">{JSON.stringify(leaveData, null, 2)}</pre>
-                  </div>
+                  {filters.leaveReportType === 'usage' && (
+                    <LeaveUsageTable data={leaveData} isLoading={isLoading} />
+                  )}
+                  {filters.leaveReportType === 'balance' && (
+                    <LeaveBalanceTable data={leaveData} isLoading={isLoading} />
+                  )}
+                  {filters.leaveReportType === 'calendar' && (
+                    <LeaveCalendarTable data={leaveData} isLoading={isLoading} />
+                  )}
+                  {filters.leaveReportType === 'trends' && (
+                    <LeaveTrendsTable data={leaveData} isLoading={isLoading} />
+                  )}
+                  {filters.leaveReportType === 'summary' && (
+                    <LeaveSummaryTable data={leaveData} isLoading={isLoading} />
+                  )}
                 </div>
               ) : null}
             </CardContent>
