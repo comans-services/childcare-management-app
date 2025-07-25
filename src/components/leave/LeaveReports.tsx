@@ -162,14 +162,14 @@ const LeaveReports = () => {
         csvContent += `Generated on: ${new Date().toLocaleDateString()}\n`;
         csvContent += `Period: ${startDate} to ${endDate}\n\n`;
         csvContent += `Metric,Value\n`;
-        csvContent += `Total Applications,${data.totalApplications}\n`;
-        csvContent += `Approved Applications,${data.approvedApplications}\n`;
-        csvContent += `Rejected Applications,${data.rejectedApplications}\n`;
-        csvContent += `Pending Applications,${data.pendingApplications}\n`;
-        csvContent += `Total Days Requested,${data.totalDaysRequested}\n`;
-        csvContent += `Total Days Approved,${data.totalDaysApproved}\n`;
-        csvContent += `Average Days per Application,${data.averageDaysPerApplication.toFixed(1)}\n`;
-        csvContent += `Most Popular Leave Type,${data.mostPopularLeaveType}\n`;
+        csvContent += `Total Applications,${data?.totalApplications || 0}\n`;
+        csvContent += `Approved Applications,${data?.approvedApplications || 0}\n`;
+        csvContent += `Rejected Applications,${data?.rejectedApplications || 0}\n`;
+        csvContent += `Pending Applications,${data?.pendingApplications || 0}\n`;
+        csvContent += `Total Days Requested,${data?.totalDaysRequested || 0}\n`;
+        csvContent += `Total Days Approved,${data?.totalDaysApproved || 0}\n`;
+        csvContent += `Average Days per Application,${data?.averageDaysPerApplication ? data.averageDaysPerApplication.toFixed(1) : '0.0'}\n`;
+        csvContent += `Most Popular Leave Type,${data?.mostPopularLeaveType || 'N/A'}\n`;
         break;
       
       case "leave-balance":
@@ -177,9 +177,11 @@ const LeaveReports = () => {
         csvContent += `Generated on: ${new Date().toLocaleDateString()}\n`;
         csvContent += `Year: ${new Date().getFullYear()}\n\n`;
         csvContent += `Leave Type,Allocated,Used,Remaining,Utilization Rate\n`;
-        data.byLeaveType.forEach((item: any) => {
-          csvContent += `${item.leaveType},${item.allocated},${item.used},${item.remaining},${item.utilizationRate.toFixed(1)}%\n`;
-        });
+        if (data?.byLeaveType && Array.isArray(data.byLeaveType)) {
+          data.byLeaveType.forEach((item: any) => {
+            csvContent += `${item?.leaveType || 'Unknown'},${item?.allocated || 0},${item?.used || 0},${item?.remaining || 0},${item?.utilizationRate ? item.utilizationRate.toFixed(1) : '0.0'}%\n`;
+          });
+        }
         break;
       
       default:
@@ -370,26 +372,26 @@ const LeaveReports = () => {
                   {/* Quick Data Preview */}
                   <div className="pt-4 border-t space-y-2">
                     <h4 className="font-medium text-sm">Quick Stats:</h4>
-                    {reportType === 'leave-usage' && (
+                    {reportType === 'leave-usage' && previewData && (
                       <div className="text-sm space-y-1">
-                        <div>Applications: {previewData.totalApplications}</div>
-                        <div>Approved: {previewData.approvedApplications}</div>
-                        <div>Days Requested: {previewData.totalDaysRequested}</div>
+                        <div>Applications: {previewData.totalApplications || 0}</div>
+                        <div>Approved: {previewData.approvedApplications || 0}</div>
+                        <div>Days Requested: {previewData.totalDaysRequested || 0}</div>
                       </div>
                     )}
-                    {reportType === 'leave-balance' && (
+                    {reportType === 'leave-balance' && previewData && (
                       <div className="text-sm space-y-1">
-                        <div>Total Allocated: {previewData.totalAllocated}</div>
-                        <div>Total Used: {previewData.totalUsed}</div>
-                        <div>Utilization: {previewData.utilizationRate.toFixed(1)}%</div>
+                        <div>Total Allocated: {previewData.totalAllocated || 0}</div>
+                        <div>Total Used: {previewData.totalUsed || 0}</div>
+                        <div>Utilization: {previewData.utilizationRate ? previewData.utilizationRate.toFixed(1) : '0.0'}%</div>
                       </div>
                     )}
-                    {reportType === 'leave-calendar' && (
+                    {reportType === 'leave-calendar' && previewData && Array.isArray(previewData) && (
                       <div className="text-sm space-y-1">
                         <div>Approved Leave: {previewData.length} periods</div>
                       </div>
                     )}
-                    {(reportType === 'leave-summary' || reportType === 'leave-analytics') && (
+                    {(reportType === 'leave-summary' || reportType === 'leave-analytics') && previewData && (
                       <div className="text-sm space-y-1">
                         <div>Multiple datasets available</div>
                         <div>Comprehensive analysis included</div>
