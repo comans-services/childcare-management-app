@@ -163,9 +163,22 @@ export const fetchLeaveApplications = async (userId?: string): Promise<LeaveAppl
 export const createLeaveApplication = async (
   application: Pick<LeaveApplication, 'leave_type_id' | 'start_date' | 'end_date' | 'reason'>
 ): Promise<LeaveApplication> => {
+  // Get the current authenticated user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError || !user) {
+    throw new Error('User must be authenticated to create leave application');
+  }
+
+  // Include the user_id in the application data
+  const applicationWithUser = {
+    ...application,
+    user_id: user.id
+  };
+
   const { data, error } = await supabase
     .from('leave_applications')
-    .insert(application)
+    .insert(applicationWithUser)
     .select(`
       *,
       leave_type:leave_types(*),
