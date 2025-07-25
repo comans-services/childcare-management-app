@@ -178,9 +178,38 @@ const LeaveApplicationForm = () => {
 
     } catch (error) {
       console.error("Error submitting leave application:", error);
+      console.error("Full error details:", JSON.stringify(error, null, 2));
+      
+      // Parse specific error types for better user feedback
+      let errorMessage = "Failed to submit leave application. Please try again.";
+      
+      if (error && typeof error === 'object') {
+        const errorObj = error as any;
+        
+        // Handle specific Supabase errors
+        if (errorObj.message) {
+          if (errorObj.message.includes('user_id')) {
+            errorMessage = "Authentication error. Please log out and log back in.";
+          } else if (errorObj.message.includes('business_days_count')) {
+            errorMessage = "Error calculating business days. Please check your selected dates.";
+          } else if (errorObj.message.includes('violates row-level security')) {
+            errorMessage = "Permission denied. Please contact your administrator.";
+          } else if (errorObj.message.includes('constraint')) {
+            errorMessage = "Data validation error. Please check all required fields.";
+          } else {
+            errorMessage = `Error: ${errorObj.message}`;
+          }
+        }
+        
+        // Handle network errors
+        if (errorObj.code === 'PGRST301' || errorObj.code === 'PGRST116') {
+          errorMessage = "Database connection error. Please try again.";
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to submit leave application. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
