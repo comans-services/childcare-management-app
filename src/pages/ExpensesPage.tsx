@@ -313,7 +313,7 @@ const ExpensesPage = () => {
                     expense={expense}
                     onEdit={handleEditExpense}
                     onDelete={handleDeleteExpense}
-                    onSubmit={!isAdmin ? handleSubmitExpense : undefined}
+                    onSubmit={handleSubmitExpense}
                     onApprove={isAdmin ? handleApproveExpense : undefined}
                     onReject={isAdmin ? handleRejectExpense : undefined}
                     showUserColumn={isAdmin}
@@ -325,7 +325,7 @@ const ExpensesPage = () => {
                 expenses={filteredExpenses}
                 onEdit={handleEditExpense}
                 onDelete={handleDeleteExpense}
-                onSubmit={!isAdmin ? handleSubmitExpense : undefined}
+                onSubmit={handleSubmitExpense}
                 onApprove={isAdmin ? handleApproveExpense : undefined}
                 onReject={isAdmin ? handleRejectExpense : undefined}
                 showUserColumn={isAdmin}
