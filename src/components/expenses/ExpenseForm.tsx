@@ -156,8 +156,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, onSuccess, onCancel 
       } else {
         await createExpense(expenseData);
         toast({
-          title: "Expense created",
-          description: "Your expense has been created successfully"
+          title: "Expense submitted",
+          description: "Your expense has been submitted for approval"
         });
       }
 

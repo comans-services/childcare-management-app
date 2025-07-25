@@ -165,7 +165,7 @@ export const createExpense = async (expense: Partial<Expense>): Promise<Expense>
         expense_date: expense.expense_date,
         receipt_url: expense.receipt_url,
         notes: expense.notes,
-        status: expense.status || 'draft'
+        status: expense.status || 'submitted'
       }])
       .select(`
         *,
