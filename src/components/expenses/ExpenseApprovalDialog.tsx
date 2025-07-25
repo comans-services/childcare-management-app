@@ -176,7 +176,7 @@ const ExpenseApprovalDialog: React.FC<ExpenseApprovalDialogProps> = ({
           )}
 
           {/* Action Selection */}
-          {expense.status === 'submitted' && !action && (
+          {expense.status === 'submitted' && !action && !initialAction && (
             <div className="flex gap-3">
               <Button 
                 onClick={() => setAction('approve')}
