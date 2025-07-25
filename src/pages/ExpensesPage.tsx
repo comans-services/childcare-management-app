@@ -20,6 +20,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import ExpenseForm from "@/components/expenses/ExpenseForm";
 import ExpenseList from "@/components/expenses/ExpenseList";
 import ExpenseApprovalDialog from "@/components/expenses/ExpenseApprovalDialog";
+import ExpenseViewDialog from "@/components/expenses/ExpenseViewDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { extractUserName } from "@/lib/expense-user-utils";
@@ -32,6 +33,7 @@ const ExpensesPage = () => {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [approvingExpense, setApprovingExpense] = useState<Expense | null>(null);
+  const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
 
   const isAdmin = userRole === 'admin';
 
@@ -178,6 +180,10 @@ const ExpensesPage = () => {
     setIsFormOpen(true);
   };
 
+  const handleViewExpense = (expense: Expense) => {
+    setViewingExpense(expense);
+  };
+
   const handleDeleteExpense = (expense: Expense) => {
     setDeletingExpense(expense);
   };
@@ -314,6 +320,7 @@ const ExpensesPage = () => {
                     onEdit={handleEditExpense}
                     onDelete={handleDeleteExpense}
                     onSubmit={handleSubmitExpense}
+                    onView={handleViewExpense}
                     onApprove={isAdmin ? handleApproveExpense : undefined}
                     onReject={isAdmin ? handleRejectExpense : undefined}
                     showUserColumn={isAdmin}
@@ -326,6 +333,7 @@ const ExpensesPage = () => {
                 onEdit={handleEditExpense}
                 onDelete={handleDeleteExpense}
                 onSubmit={handleSubmitExpense}
+                onView={handleViewExpense}
                 onApprove={isAdmin ? handleApproveExpense : undefined}
                 onReject={isAdmin ? handleRejectExpense : undefined}
                 showUserColumn={isAdmin}
@@ -363,6 +371,13 @@ const ExpensesPage = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* View Dialog */}
+      <ExpenseViewDialog
+        expense={viewingExpense}
+        isOpen={!!viewingExpense}
+        onClose={() => setViewingExpense(null)}
+      />
 
       {/* Approval Dialog */}
       <ExpenseApprovalDialog
