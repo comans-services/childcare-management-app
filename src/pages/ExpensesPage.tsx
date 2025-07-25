@@ -34,6 +34,7 @@ const ExpensesPage = () => {
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [approvingExpense, setApprovingExpense] = useState<Expense | null>(null);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
+  const [approvalAction, setApprovalAction] = useState<'approve' | 'reject' | null>(null);
 
   const isAdmin = userRole === 'admin';
 
@@ -200,10 +201,12 @@ const ExpensesPage = () => {
 
   const handleApproveExpense = (expense: Expense) => {
     setApprovingExpense(expense);
+    setApprovalAction('approve');
   };
 
   const handleRejectExpense = (expense: Expense) => {
     setApprovingExpense(expense);
+    setApprovalAction('reject');
   };
 
   const handleApprovalDialogApprove = (expenseId: string, notes?: string) => {
@@ -383,10 +386,14 @@ const ExpensesPage = () => {
       <ExpenseApprovalDialog
         expense={approvingExpense}
         isOpen={!!approvingExpense}
-        onClose={() => setApprovingExpense(null)}
+        onClose={() => {
+          setApprovingExpense(null);
+          setApprovalAction(null);
+        }}
         onApprove={handleApprovalDialogApprove}
         onReject={handleApprovalDialogReject}
         isLoading={approveMutation.isPending || rejectMutation.isPending}
+        initialAction={approvalAction || undefined}
       />
 
       {/* Delete Confirmation Dialog */}

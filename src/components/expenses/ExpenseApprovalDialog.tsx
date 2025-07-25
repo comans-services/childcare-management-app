@@ -15,6 +15,7 @@ interface ExpenseApprovalDialogProps {
   onApprove: (expenseId: string, notes?: string) => void;
   onReject: (expenseId: string, reason: string, notes?: string) => void;
   isLoading?: boolean;
+  initialAction?: 'approve' | 'reject';
 }
 
 const ExpenseApprovalDialog: React.FC<ExpenseApprovalDialogProps> = ({
@@ -23,11 +24,12 @@ const ExpenseApprovalDialog: React.FC<ExpenseApprovalDialogProps> = ({
   onClose,
   onApprove,
   onReject,
-  isLoading = false
+  isLoading = false,
+  initialAction
 }) => {
   const [notes, setNotes] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
-  const [action, setAction] = useState<'approve' | 'reject' | null>(null);
+  const [action, setAction] = useState<'approve' | 'reject' | null>(initialAction || null);
 
   const handleApprove = () => {
     if (expense) {
@@ -46,7 +48,7 @@ const ExpenseApprovalDialog: React.FC<ExpenseApprovalDialogProps> = ({
   const handleClose = () => {
     setNotes("");
     setRejectionReason("");
-    setAction(null);
+    setAction(initialAction || null);
     onClose();
   };
 
