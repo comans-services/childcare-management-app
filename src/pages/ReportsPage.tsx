@@ -34,8 +34,11 @@ export type ReportFiltersType = {
   includeProject: boolean;
   includeContract: boolean;
   includeEmployeeIds: boolean;
-  reportType: 'timesheet' | 'audit' | 'expenses';
+  reportType: 'timesheet' | 'audit' | 'leave' | 'expenses';
   actionType?: string | null;
+  leaveReportType?: 'usage' | 'balance' | 'calendar' | 'trends' | 'summary';
+  leaveYear?: number;
+  leaveGroupBy?: 'month' | 'quarter';
 };
 
 const ReportsPage = () => {
@@ -61,6 +64,7 @@ const ReportsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState<TimesheetEntry[]>([]);
   const [auditData, setAuditData] = useState<AuditLogEntry[]>([]);
+  const [leaveData, setLeaveData] = useState<any>(null);
   const [expenseData, setExpenseData] = useState<any>(null);
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -78,7 +82,10 @@ const ReportsPage = () => {
     includeContract: false,
     includeEmployeeIds: false,
     reportType: 'timesheet',
-    actionType: null
+    actionType: null,
+    leaveReportType: 'usage',
+    leaveYear: new Date().getFullYear(),
+    leaveGroupBy: 'month'
   });
 
   // Load expense data when component mounts
@@ -106,7 +113,12 @@ const ReportsPage = () => {
   }, [user]);
 
   // Check if export is available (data has been generated)
-  const isExportDisabled = (filters.reportType === 'timesheet' ? reportData.length === 0 : auditData.length === 0) || projects.length === 0 || users.length === 0;
+  const isExportDisabled = () => {
+    if (filters.reportType === 'timesheet') return reportData.length === 0;
+    if (filters.reportType === 'audit') return auditData.length === 0;
+    if (filters.reportType === 'leave') return !leaveData;
+    return true;
+  };
 
   const handleExportCSV = () => {
     try {
@@ -199,8 +211,8 @@ const ReportsPage = () => {
             size="sm" 
             variant="outline" 
             onClick={handleExportCSV} 
-            disabled={isExportDisabled}
-            title={isExportDisabled ? "Generate a report first to enable export" : "Export to CSV"}
+            disabled={isExportDisabled()}
+            title={isExportDisabled() ? "Generate a report first to enable export" : "Export to CSV"}
           >
             <Download className="h-4 w-4 mr-2" />
             CSV
@@ -210,8 +222,8 @@ const ReportsPage = () => {
             size="sm" 
             variant="default" 
             onClick={handleExportPDF} 
-            disabled={isExportDisabled}
-            title={isExportDisabled ? "Generate a report first to enable export" : "Export to PDF"}
+            disabled={isExportDisabled()}
+            title={isExportDisabled() ? "Generate a report first to enable export" : "Export to PDF"}
           >
             <Download className="h-4 w-4 mr-2" />
             PDF
@@ -219,7 +231,7 @@ const ReportsPage = () => {
         </div>
       </div>
 
-      {isExportDisabled && (
+      {isExportDisabled() && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <p className="text-sm text-blue-800">
             💡 Generate a report using the filters below to enable export options.
@@ -231,7 +243,7 @@ const ReportsPage = () => {
         <TabsList>
           <TabsTrigger value="reports">Time Reports</TabsTrigger>
           <TabsTrigger value="expenses">Expense Reports</TabsTrigger>
-          <TabsTrigger value="leave-reports">Leave Reports</TabsTrigger>
+          
           <TabsTrigger value="locks" className="flex items-center gap-2">
             <Lock className="h-4 w-4" />
             Timesheet Locks
@@ -245,7 +257,9 @@ const ReportsPage = () => {
               <CardDescription>
                 {filters.reportType === 'timesheet' 
                   ? 'Create custom timesheet reports for your team' 
-                  : 'View comprehensive audit logs of all user actions including deletions'
+                  : filters.reportType === 'audit'
+                  ? 'View comprehensive audit logs of all user actions including deletions'
+                  : 'Generate comprehensive leave reports and analytics'
                 }
               </CardDescription>
             </CardHeader>
@@ -255,6 +269,7 @@ const ReportsPage = () => {
                 setFilters={setFilters} 
                 setReportData={setReportData} 
                 setAuditData={setAuditData}
+                setLeaveData={setLeaveData}
                 setProjects={setProjects} 
                 setContracts={setContracts} 
                 setCustomers={setCustomers} 
@@ -277,9 +292,22 @@ const ReportsPage = () => {
                     <ReportDataTable reportData={reportData} projects={projects} contracts={contracts} users={users} filters={filters} isLoading={isLoading} />
                   </TabsContent>
                 </Tabs>
-              ) : (
+              ) : filters.reportType === 'audit' ? (
                 <AuditLogsTable auditData={auditData} users={users} isLoading={isLoading} />
-              )}
+              ) : filters.reportType === 'leave' && leaveData ? (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">
+                    {filters.leaveReportType === 'usage' && 'Leave Usage Report'}
+                    {filters.leaveReportType === 'balance' && 'Leave Balance Report'}
+                    {filters.leaveReportType === 'calendar' && 'Leave Calendar Report'}
+                    {filters.leaveReportType === 'trends' && 'Leave Trends Report'}
+                    {filters.leaveReportType === 'summary' && 'Leave Summary Report'}
+                  </h3>
+                  <div className="border rounded-lg p-4">
+                    <pre className="text-sm">{JSON.stringify(leaveData, null, 2)}</pre>
+                  </div>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
@@ -308,19 +336,6 @@ const ReportsPage = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="leave-reports" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Leave Reports</CardTitle>
-              <CardDescription>
-                Generate comprehensive leave reports and analytics
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <LeaveReports />
-            </CardContent>
-          </Card>
-        </TabsContent>
         
         <TabsContent value="locks" className="mt-4">
           <TimesheetLockManager />

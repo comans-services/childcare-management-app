@@ -17,6 +17,7 @@ interface ReportFiltersProps {
   setFilters: React.Dispatch<React.SetStateAction<ReportFiltersType>>;
   setReportData: React.Dispatch<React.SetStateAction<any[]>>;
   setAuditData: React.Dispatch<React.SetStateAction<any[]>>;
+  setLeaveData: React.Dispatch<React.SetStateAction<any>>;
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
   setContracts: React.Dispatch<React.SetStateAction<Contract[]>>;
   setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
@@ -29,6 +30,7 @@ const ReportFilters = ({
   setFilters,
   setReportData,
   setAuditData,
+  setLeaveData,
   setProjects,
   setContracts,
   setCustomers,
@@ -45,6 +47,7 @@ const ReportFilters = ({
     filters,
     setReportData,
     setAuditData,
+    setLeaveData,
     setIsLoading
   });
 
