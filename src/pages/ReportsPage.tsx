@@ -62,6 +62,7 @@ const ReportsPage = () => {
   const [reportData, setReportData] = useState<TimesheetEntry[]>([]);
   const [auditData, setAuditData] = useState<AuditLogEntry[]>([]);
   const [expenseData, setExpenseData] = useState<any>(null);
+  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -79,6 +80,30 @@ const ReportsPage = () => {
     reportType: 'timesheet',
     actionType: null
   });
+
+  // Load expense data when component mounts
+  useEffect(() => {
+    const loadExpenseData = async () => {
+      if (!user) return;
+      
+      setIsLoadingExpenses(true);
+      try {
+        const data = await getExpenseStatistics();
+        setExpenseData(data);
+      } catch (error) {
+        console.error("Error loading expense data:", error);
+        toast({
+          title: "Error loading expense data",
+          description: error instanceof Error ? error.message : "Failed to load expense statistics",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoadingExpenses(false);
+      }
+    };
+
+    loadExpenseData();
+  }, [user]);
 
   // Check if export is available (data has been generated)
   const isExportDisabled = (filters.reportType === 'timesheet' ? reportData.length === 0 : auditData.length === 0) || projects.length === 0 || users.length === 0;
@@ -268,11 +293,15 @@ const ReportsPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {expenseData ? (
+              {isLoadingExpenses ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <p>Loading expense data...</p>
+                </div>
+              ) : expenseData ? (
                 <ExpenseReportCharts data={expenseData} />
               ) : (
                 <div className="p-8 text-center text-muted-foreground">
-                  <p>Loading expense data...</p>
+                  <p>No expense data available</p>
                 </div>
               )}
             </CardContent>
