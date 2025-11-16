@@ -7,38 +7,34 @@ let cachedManagerIds = new Set<string>();     // memoise per session
 
 /**
  * True when the user is an admin.
- * Priority:
- *   1) role claim in JWT
- *   2) role column in public.profiles (cached)
+ * Queries the user_roles table with security definer function.
  */
 export const isAdmin = async (user: Session["user"] | null | undefined): Promise<boolean> => {
   if (!user) return false;
 
-  /* ---------- 1 · JWT claim (fast) ---------- */
-  const jwtRole =
-    (user.user_metadata?.role ??
-      user.app_metadata?.role ??
-      "") as string;
-  if (jwtRole.toLowerCase() === "admin") return true;
-
-  /* ---------- 2 · Cached DB lookup ---------- */
+  // Check cache first
   if (cachedAdminIds.has(user.id)) return true;
 
-  /* ---------- 3 · DB lookup (async) ---------- */
+  // Query user_roles table
   try {
-    const { data } = await supabase
-      .from("profiles")
+    const { data, error } = await supabase
+      .from("user_roles" as any)
       .select("role")
-      .eq("id", user.id)
-      .single();
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle() as any;
     
-    if (data?.role?.toLowerCase?.() === "admin") {
+    if (error) {
+      console.error("Error checking admin status:", error);
+      return false;
+    }
+    
+    if (data?.role === "admin") {
       cachedAdminIds.add(user.id);
       return true;
     }
   } catch (error) {
     console.error("Error checking admin status:", error);
-    // Don't throw error, just return false - this is defensive programming
   }
 
   return false;
@@ -46,38 +42,34 @@ export const isAdmin = async (user: Session["user"] | null | undefined): Promise
 
 /**
  * True when the user is a manager.
- * Priority:
- *   1) role claim in JWT
- *   2) role column in public.profiles (cached)
+ * Queries the user_roles table with security definer function.
  */
 export const isManager = async (user: Session["user"] | null | undefined): Promise<boolean> => {
   if (!user) return false;
 
-  /* ---------- 1 · JWT claim (fast) ---------- */
-  const jwtRole =
-    (user.user_metadata?.role ??
-      user.app_metadata?.role ??
-      "") as string;
-  if (jwtRole.toLowerCase() === "manager") return true;
-
-  /* ---------- 2 · Cached DB lookup ---------- */
+  // Check cache first
   if (cachedManagerIds.has(user.id)) return true;
 
-  /* ---------- 3 · DB lookup (async) ---------- */
+  // Query user_roles table
   try {
-    const { data } = await supabase
-      .from("profiles")
+    const { data, error } = await supabase
+      .from("user_roles" as any)
       .select("role")
-      .eq("id", user.id)
-      .single();
+      .eq("user_id", user.id)
+      .eq("role", "manager")
+      .maybeSingle() as any;
     
-    if (data?.role?.toLowerCase?.() === "manager") {
+    if (error) {
+      console.error("Error checking manager status:", error);
+      return false;
+    }
+    
+    if (data?.role === "manager") {
       cachedManagerIds.add(user.id);
       return true;
     }
   } catch (error) {
     console.error("Error checking manager status:", error);
-    // Don't throw error, just return false - this is defensive programming
   }
 
   return false;
@@ -104,23 +96,31 @@ export const clearAdminCache = (): void => {
 
 /**
  * Get user role from database with fallback
+ * Returns highest privilege role if user has multiple roles
  */
 export const getUserRole = async (userId: string): Promise<string> => {
   try {
     const { data, error } = await supabase
-      .from("profiles")
+      .from("user_roles" as any)
       .select("role")
-      .eq("id", userId)
-      .single();
+      .eq("user_id", userId);
     
     if (error) {
       console.error("Error fetching user role:", error);
-      return "employee"; // Default fallback
+      return "employee";
     }
     
-    return data?.role || "employee";
+    if (!data || data.length === 0) {
+      return "employee";
+    }
+    
+    // Return highest privilege role
+    const roles = data.map((r: any) => r.role);
+    if (roles.includes("admin")) return "admin";
+    if (roles.includes("manager")) return "manager";
+    return "employee";
   } catch (error) {
     console.error("Error in getUserRole:", error);
-    return "employee"; // Default fallback
+    return "employee";
   }
 };

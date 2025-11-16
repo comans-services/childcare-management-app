@@ -96,10 +96,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const handleUserRoleFetch = async (userId: string) => {
+    console.log(`[AuthContext] Fetching role for user: ${userId}`);
     const userData = await fetchUserRole(userId);
+    
     if (userData) {
-      setUserRole(userData.role as "employee" | "manager" | "admin" || "employee");
-      setEmploymentType(userData.employment_type as "full-time" | "part-time" || "full-time");
+      const role = (userData.role as "employee" | "manager" | "admin") || "employee";
+      const employment = (userData.employment_type as "full-time" | "part-time") || "full-time";
+      
+      console.log(`[AuthContext] Setting role: ${role}, employment: ${employment}`);
+      setUserRole(role);
+      setEmploymentType(employment);
       
       // Update user profile with email if missing
       if (!userData.email && user?.email) {
@@ -113,6 +119,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error("Error updating profile email:", updateError);
         }
       }
+    } else {
+      console.warn(`[AuthContext] Failed to fetch role for user: ${userId}`);
+      setUserRole("employee"); // Default to employee if fetch fails
+      setEmploymentType("full-time");
     }
   };
 
