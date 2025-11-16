@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { format, startOfWeek, addDays, getDay, isFriday, isSameDay } from "date-fns";
 import { fetchTimesheetEntries, fetchUserProjects } from "@/lib/timesheet-service";
-import { fetchCustomers } from "@/lib/customer-service";
+
 import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
 import { getWeekStart } from "@/lib/date-utils";
 
