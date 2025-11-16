@@ -6,7 +6,6 @@ export interface WorkSchedule {
   user_id: string;
   working_days: number;
   created_at: string;
-  updated_at: string;
   created_by?: string;
 }
 

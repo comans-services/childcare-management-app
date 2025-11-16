@@ -61,25 +61,13 @@ export const fetchUsers = async (): Promise<User[]> => {
       console.log("No profiles found, creating one for current user");
       
       // Create a profile for the current user
-      const newProfile = {
+      const newProfileData = {
         id: authData.user.id,
-        full_name: authData.user.user_metadata?.full_name || "Admin User",
-        role: "admin",
-        organization: "Comans Services",
-        time_zone: "Australia/Sydney",
-        email: authData.user.email,
-        employment_type: "full-time" as const,
-        employee_card_id: null,
-        employee_id: null,
-      };
-      
-      const newProfile = {
-        id: authData?.user?.id,
-        full_name: authData?.user?.user_metadata?.full_name || null,
+        full_name: authData.user.user_metadata?.full_name || "",
         role: 'employee' as const,
-        organization: '',
-        time_zone: 'Australia/Melbourne',
-        email: authData?.user?.email,
+        organization: "",
+        time_zone: "Australia/Melbourne",
+        email: authData.user.email || "",
         employment_type: 'full-time' as const,
         employee_card_id: null,
         employee_id: null,
@@ -87,7 +75,7 @@ export const fetchUsers = async (): Promise<User[]> => {
       
       const { data: createdProfile, error: createError } = await supabase
         .from("profiles")
-        .insert([newProfile])
+        .insert([newProfileData])
         .select();
       
       if (createError) {
@@ -194,33 +182,21 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
         return null;
       }
       
-      const newProfile = {
+      const newProfileData = {
         id: userId,
         full_name: authData.user.user_metadata?.full_name || "",
-        role: "employee",
+        role: "employee" as const,
         organization: "",
         time_zone: "UTC",
-        email: authData.user.email,
+        email: authData.user.email || "",
         employment_type: "full-time" as const,
         employee_card_id: null,
         employee_id: null,
       };
       
-      const newProfile = {
-        id: newUserId,
-        full_name: newUser.full_name || '',
-        role: newUser.role as 'admin' | 'employee' || 'employee',
-        organization: newUser.organization || '',
-        time_zone: newUser.time_zone || 'Australia/Melbourne',
-        email: newUser.email,
-        employment_type: newUser.employment_type as 'full-time' | 'part-time' | 'casual' || 'full-time',
-        employee_card_id: newUser.employee_card_id || null,
-        employee_id: newUser.employee_id || null,
-      };
-      
       const { data: createdProfile, error: createError } = await supabase
         .from("profiles")
-        .insert([newProfile])
+        .insert([newProfileData])
         .select()
         .single();
       
