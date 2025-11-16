@@ -4,6 +4,11 @@ import { User } from "./user-service";
 import { formatDateDisplay } from "./date-utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
+interface Contract {
+  id: string;
+  name: string;
+}
+
 // Data validation functions
 export const validateExportData = (
   reportData: TimesheetEntry[], 

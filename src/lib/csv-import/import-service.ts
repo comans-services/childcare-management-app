@@ -1,6 +1,5 @@
 
 import { parseCSV } from "@/lib/csv-parser";
-import { fetchCustomers } from "@/lib/customer-service";
 import { ValidationError } from "@/lib/csv-validation";
 import { processRow } from "./processors";
 import { getRowIdentifier } from "./utils";
@@ -67,13 +66,8 @@ export const importCSV = async (
     };
   }
 
-  // Get existing customers if needed for reference resolution
-  let existingCustomers: any[] = [];
-  if (entityType === 'projects' || entityType === 'contracts') {
-    existingCustomers = await fetchCustomers();
-  }
-
   // Process rows in batches
+  const existingCustomers: any[] = [];
   let successCount = 0;
   const processingErrors: string[] = [];
   

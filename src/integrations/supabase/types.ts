@@ -439,36 +439,36 @@ export type Database = {
       }
       leave_application_attachments: {
         Row: {
-          content_type: string | null
+          application_id: string
           file_name: string
-          file_path: string
           file_size: number | null
+          file_type: string
+          file_url: string
           id: string
-          leave_application_id: string
           uploaded_at: string
         }
         Insert: {
-          content_type?: string | null
+          application_id: string
           file_name: string
-          file_path: string
           file_size?: number | null
+          file_type: string
+          file_url: string
           id?: string
-          leave_application_id: string
           uploaded_at?: string
         }
         Update: {
-          content_type?: string | null
+          application_id?: string
           file_name?: string
-          file_path?: string
           file_size?: number | null
+          file_type?: string
+          file_url?: string
           id?: string
-          leave_application_id?: string
           uploaded_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "fk_leave_attachments_application"
-            columns: ["leave_application_id"]
+            foreignKeyName: "leave_application_attachments_application_id_fkey"
+            columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "leave_applications"
             referencedColumns: ["id"]
@@ -588,6 +588,62 @@ export type Database = {
             referencedRelation: "staff_in_room"
             referencedColumns: ["staff_id"]
           },
+          {
+            foreignKeyName: "leave_applications_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_applications_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
         ]
       }
       leave_balances: {
@@ -655,6 +711,34 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_leave_balances_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_balances_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "staff_in_room"

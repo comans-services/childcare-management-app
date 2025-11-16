@@ -14,7 +14,6 @@ import MobileWeekNavigation from "./MobileWeekNavigation";
 import LoadingState from "./LoadingState";
 import ErrorState from "./ErrorState";
 import WeeklyViewContent from "./WeeklyViewContent";
-import WeeklyViewDialogs from "./WeeklyViewDialogs";
 import { isAdmin } from "@/utils/roles";
 
 interface WeeklyViewContainerProps {
@@ -50,7 +49,6 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
 
   const {
     projects,
-    contracts,
     entries,
     loading,
     error,
@@ -187,20 +185,6 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
         />
       )}
 
-      {/* Dialogs - Show for own timesheet or when admin is viewing others */}
-      {shouldShowDialogs && (
-        <WeeklyViewDialogs
-          userId={effectiveUserId}
-          selectedDate={selectedDate}
-          entryDialogOpen={entryDialogOpen}
-          setEntryDialogOpen={setEntryDialogOpen}
-          projects={projects}
-          contracts={contracts}
-          editingEntry={editingEntry}
-          onSave={handleSaveEntry}
-          entries={entries}
-        />
-      )}
     </ResponsiveContainer>
   );
 };
