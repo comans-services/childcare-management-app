@@ -110,23 +110,44 @@ export const fetchUserRole = async (userId: string) => {
   try {
     console.log(`Fetching role for user: ${userId}`);
     
-    const { data, error } = await supabase
+    // Query user_roles table for role
+    const { data: roleData, error: roleError } = await supabase
+      .from("user_roles" as any)
+      .select("role")
+      .eq("user_id", userId);
+
+    if (roleError) {
+      console.error("Error fetching user role:", roleError);
+    }
+
+    // Query profiles for other data
+    const { data: profileData, error: profileError } = await supabase
       .from("profiles")
-      .select("role, email, employment_type")
+      .select("email, employment_type")
       .eq("id", userId)
       .single();
 
-    if (error) {
-      console.error("Error fetching user role:", error);
-      return null;
+    if (profileError) {
+      console.error("Error fetching profile data:", profileError);
     }
 
-    if (data) {
-      console.log(`User role fetched: ${data.role} for ${data.email}, employment: ${data.employment_type}`);
-      return data;
+    // Determine highest privilege role
+    let role = "employee";
+    if (roleData && roleData.length > 0) {
+      const roles = roleData.map((r: any) => r.role);
+      if (roles.includes("admin")) role = "admin";
+      else if (roles.includes("manager")) role = "manager";
+      else role = "employee";
     }
-    
-    return null;
+
+    const result = {
+      role,
+      email: profileData?.email || null,
+      employment_type: profileData?.employment_type || "full-time"
+    };
+
+    console.log(`User role fetched: ${role} for ${result.email}, employment: ${result.employment_type}`);
+    return result;
   } catch (error) {
     console.error("Error in fetchUserRole:", error);
     return null;
