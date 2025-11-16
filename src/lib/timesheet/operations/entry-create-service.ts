@@ -7,13 +7,8 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
   
   // Create a clean data object for the database operation
   const dbEntry: CreateTimesheetEntry = {
-    entry_type: entry.entry_type,
-    project_id: entry.project_id || null,
-    contract_id: entry.contract_id || null,
     entry_date: entry.entry_date,
     hours_logged: entry.hours_logged,
-    notes: entry.notes || "",
-    jira_task_id: entry.jira_task_id || "",
     start_time: entry.start_time || "",
     end_time: entry.end_time || "",
     user_id: entry.user_id, // Include user_id for admin editing - trigger handles validation
@@ -39,7 +34,10 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
   console.log("Entry created successfully:", data?.[0]);
   
   // Return entry with preserved related data
-  const newEntry = data?.[0] as TimesheetEntry;
+  const newEntry: TimesheetEntry = { 
+    ...data?.[0], 
+    entry_type: 'project' as const
+  };
   if (entry.project) {
     newEntry.project = entry.project;
   }
