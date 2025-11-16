@@ -40,12 +40,9 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
   const {
     effectiveDays,
     effectiveHours,
-    hasOverride,
-    isLoading: weeklyLoading,
-    updateWeeklyDays,
-    revertToDefault,
-    isUpdating,
-    isReverting
+    hasWeeklyOverride: hasOverride,
+    loading: weeklyLoading,
+    updateWeeklySchedule
   } = useWeeklyWorkSchedule(user.id, weekStartDate);
 
   const {
