@@ -40,7 +40,6 @@ const UserWeeklyWorkScheduleCard: React.FC<UserWeeklyWorkScheduleCardProps> = ({
     friday_hours: 8,
     saturday_hours: 0,
     sunday_hours: 0,
-    notes: "",
   });
 
   React.useEffect(() => {
@@ -53,7 +52,6 @@ const UserWeeklyWorkScheduleCard: React.FC<UserWeeklyWorkScheduleCardProps> = ({
         friday_hours: effectiveDailyHours.friday,
         saturday_hours: effectiveDailyHours.saturday,
         sunday_hours: effectiveDailyHours.sunday,
-        notes: weeklySchedule?.notes || "",
       });
     }
   }, [effectiveDailyHours, weeklySchedule]);
@@ -73,7 +71,6 @@ const UserWeeklyWorkScheduleCard: React.FC<UserWeeklyWorkScheduleCardProps> = ({
       friday_hours: effectiveDailyHours.friday,
       saturday_hours: effectiveDailyHours.saturday,
       sunday_hours: effectiveDailyHours.sunday,
-      notes: weeklySchedule?.notes || "",
     });
     setEditMode(false);
   };
@@ -182,12 +179,6 @@ const UserWeeklyWorkScheduleCard: React.FC<UserWeeklyWorkScheduleCardProps> = ({
                   <span className="text-muted-foreground">Schedule Type:</span>
                   <span className="font-medium">{hasWeeklyOverride ? "Custom" : "Default"}</span>
                 </div>
-                {weeklySchedule?.notes && (
-                  <div>
-                    <span className="text-muted-foreground text-xs">Notes:</span>
-                    <p className="text-xs mt-1 p-2 bg-muted rounded">{weeklySchedule.notes}</p>
-                  </div>
-                )}
               </div>
             </TabsContent>
           </Tabs>
