@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
-import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useAuth } from "@/context/AuthContext";
 import { Calendar, Clock, Target, Calendar as CalendarWeekend, CheckCircle, XCircle, RefreshCw } from "lucide-react";
@@ -46,7 +46,7 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
     revertToDefault,
     isUpdating,
     isReverting
-  } = useSimpleWeeklySchedule(user.id, weekStartDate);
+  } = useWeeklyWorkSchedule(user.id, weekStartDate);
 
   const {
     canLogWeekendHours,

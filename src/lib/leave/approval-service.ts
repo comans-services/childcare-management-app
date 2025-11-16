@@ -225,7 +225,7 @@ export class ApprovalService {
         return false;
       }
 
-      return userProfile?.role === 'admin' || userProfile?.role === 'manager';
+      return userProfile?.role === 'admin';
     } catch (error) {
       console.error('Error in ApprovalService.canUserApprove:', error);
       return false;
@@ -270,7 +270,7 @@ export class ApprovalService {
         action: log.action,
         timestamp: log.created_at,
         user_name: log.user_name || 'System',
-        comments: log.details?.manager_comments,
+        comments: (log.details as any)?.manager_comments,
       }));
 
       return {
@@ -321,23 +321,7 @@ export class ApprovalService {
           warnings.push('This leave application is for past dates');
         }
 
-        // Check for existing timesheet entries
-        const existingEntries = await TimesheetIntegrationService.checkExistingEntries(
-          application.user_id,
-          application.start_date,
-          application.end_date
-        );
-
-        if (existingEntries.hasEntries) {
-          issues.push(
-            `Employee has ${existingEntries.entriesCount} timesheet entries during this period. ` +
-            `Please ask the employee to remove entries for: ${existingEntries.conflictDates.join(', ')}`
-          );
-        }
-
-        // Check leave balance
-        // This would require implementing balance checking logic
-        // For now, we'll add a warning
+        // Note: Timesheet integration removed - tables don't exist
         warnings.push('Please verify the employee has sufficient leave balance');
       }
 

@@ -49,7 +49,7 @@ export const fetchTimesheetEntries = async (
   if (error) throw error;
 
   // If we need user data, fetch it separately to avoid join issues
-  let entriesWithUserData = data as TimesheetEntry[];
+  let entriesWithUserData: TimesheetEntry[] = data.map(e => ({...e, entry_type: 'project' as const}));
   
   if (includeUserData && data.length > 0) {
     const userIds = [...new Set(data.map(e => e.user_id))];
@@ -65,6 +65,7 @@ export const fetchTimesheetEntries = async (
 
     entriesWithUserData = data.map(e => ({
       ...e,
+      entry_type: 'project' as const,
       user: profileMap[e.user_id]
     }));
   }

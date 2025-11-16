@@ -34,13 +34,8 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
     // For admin users, preserve the original user_id for duplicating other users' entries
     // For regular users, the trigger will set it to their own user_id
     const newEntryData = {
-      entry_type: originalEntry.entry_type,
-      project_id: originalEntry.project_id,
-      contract_id: originalEntry.contract_id,
       entry_date: originalEntry.entry_date,
       hours_logged: originalEntry.hours_logged,
-      notes: originalEntry.notes ? `${originalEntry.notes} (copy)` : "(copy)",
-      jira_task_id: originalEntry.jira_task_id,
       start_time: originalEntry.start_time,
       end_time: originalEntry.end_time,
       // Only set user_id if admin is duplicating another user's entry
@@ -61,7 +56,7 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
     
     console.log("Duplicate entry created:", newEntry?.[0]);
     
-    return newEntry?.[0] as TimesheetEntry;
+    return { ...newEntry?.[0], entry_type: 'project' as const } as TimesheetEntry;
   } catch (error) {
     console.error("Error in duplicateTimesheetEntry:", error);
     throw error;

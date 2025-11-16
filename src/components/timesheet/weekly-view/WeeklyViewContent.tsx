@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { TimesheetEntry, Project } from "@/lib/timesheet-service";
 import { getWeekStart, isWeekend } from "@/lib/date-utils";
-import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { LazyContent } from "@/components/common/LazyContent";
@@ -53,7 +53,7 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
   const {
     effectiveDays: workingDays,
     effectiveHours: weeklyTarget,
-  } = useSimpleWeeklySchedule(effectiveUserId || "", weekStartDate);
+  } = useWeeklyWorkSchedule(effectiveUserId || "", weekStartDate);
 
   // Determine which dates to display in the grid with NEW weekend filtering logic
   const displayDates = useMemo(() => {
