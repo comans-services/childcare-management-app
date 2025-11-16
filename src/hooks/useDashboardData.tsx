@@ -4,8 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 import { format, startOfWeek, addDays, getDay, isFriday, isSameDay } from "date-fns";
 import { fetchTimesheetEntries, fetchUserProjects } from "@/lib/timesheet-service";
 
-import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
 import { getWeekStart } from "@/lib/date-utils";
+import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 
 export const useDashboardData = () => {
   const { session, user } = useAuth();
@@ -21,8 +21,8 @@ export const useDashboardData = () => {
   const {
     effectiveDays: workingDays,
     effectiveHours: weeklyTarget,
-    isLoading: scheduleLoading
-  } = useSimpleWeeklySchedule(user?.id || "", weekStartDate);
+    loading: scheduleLoading
+  } = useWeeklyWorkSchedule(user?.id || "", weekStartDate);
   
   const isFridayToday = isFriday(today);
 
@@ -256,7 +256,7 @@ export const useDashboardData = () => {
   const caughtUp = daysLoggedToDate >= expectedDaysToDate;
 
   const hasEntries = timesheetEntries && timesheetEntries.length > 0;
-  const isLoading = entriesLoading || projectsLoading || customersLoading || scheduleLoading;
+  const isLoading = entriesLoading || projectsLoading || scheduleLoading;
   const hasError = !!entriesError;
 
   const allDaysHaveEntries = checkDailyEntries();
@@ -293,7 +293,6 @@ export const useDashboardData = () => {
     // Data
     timesheetEntries,
     projects,
-    customers,
     dailyEntries,
     
     // Computed values - now days-based
