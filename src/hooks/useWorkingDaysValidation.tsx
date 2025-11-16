@@ -1,7 +1,7 @@
 
 import { useMemo } from "react";
 import { TimesheetEntry } from "@/lib/timesheet-service";
-import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 import { formatDate, getWeekStart } from "@/lib/date-utils";
 
 interface WorkingDaysValidationResult {
@@ -18,7 +18,7 @@ export const useWorkingDaysValidation = (
   entries: TimesheetEntry[],
   currentWeekStart: Date
 ): WorkingDaysValidationResult => {
-  const { effectiveDays } = useSimpleWeeklySchedule(userId, currentWeekStart);
+  const { effectiveDays } = useWeeklyWorkSchedule(userId, currentWeekStart);
 
   const validationResult = useMemo(() => {
     // Get unique days that have entries in the current week

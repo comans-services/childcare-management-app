@@ -30,16 +30,17 @@ export interface TimesheetEntry {
   user_id?: string;
   entry_date: string;
   hours_logged: number;
-  notes?: string;
-  jira_task_id?: string;
   start_time?: string;
   end_time?: string;
-  entry_type: 'project' | 'contract';
   user_full_name?: string; // Cached user name from database
-  // Either project_id OR contract_id will be set, never both
+  created_at?: string;
+  updated_at?: string;
+  // Related data that gets joined (for compatibility)
+  entry_type?: 'project' | 'contract';
+  notes?: string;
+  jira_task_id?: string;
   project_id?: string;
   contract_id?: string;
-  // Related data that gets joined
   project?: Project;
   contract?: Contract;
   user?: {
@@ -62,14 +63,9 @@ export interface ContractTimeEntry extends Omit<TimesheetEntry, 'entry_type' | '
 export interface CreateTimesheetEntry {
   entry_date: string;
   hours_logged: number;
-  notes?: string;
-  jira_task_id?: string;
-  start_time?: string;
-  end_time?: string;
-  entry_type: 'project' | 'contract';
-  project_id?: string;
-  contract_id?: string;
-  user_id?: string; // Optional for admin editing - trigger handles validation
+  start_time: string;
+  end_time: string;
+  user_id: string; // Required for DB insert
 }
 
 // Type for updating entries - user_id should not be changed

@@ -19,13 +19,18 @@ const AdminRoute = () => {
         return;
       }
 
+      console.log(`[AdminRoute] Checking admin status for user: ${user.id}`);
+      
       try {
         const adminStatus = await isAdmin(user);
+        console.log(`[AdminRoute] Admin status result: ${adminStatus}`);
+        
         setIsAdminUser(adminStatus);
         setHasCheckedAdmin(true);
 
         // Show access denied toast and redirect if not admin
         if (!adminStatus && location.pathname !== "/timesheet") {
+          console.log(`[AdminRoute] User is not admin, will redirect from: ${location.pathname}`);
           toast({
             title: "Access denied",
             description: "Admin role required",
@@ -33,9 +38,15 @@ const AdminRoute = () => {
           });
         }
       } catch (error) {
-        console.error("Error checking admin status:", error);
+        console.error("[AdminRoute] Error checking admin status:", error);
         setIsAdminUser(false);
         setHasCheckedAdmin(true);
+        
+        toast({
+          title: "Error checking permissions",
+          description: "Please try again or contact support",
+          variant: "destructive",
+        });
       }
     };
 

@@ -1,38 +1,33 @@
-
+// Audit service - uses audit_logs table
 import { supabase } from "@/integrations/supabase/client";
 
-// Re-export types from the types file
-export type { AuditLogEntry, AuditFilters } from "./types";
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  user_name?: string;
+  created_at: string;
+  details?: any;
+}
 
-// Re-export functions from other services
-export { fetchAuditLogs } from "./fetch-service";
-export { getAuditActionTypes } from "./action-types-service";
-
-/**
- * Log report generation to audit trail using the secure database function
- */
-export const logReportGeneration = async (params: {
-  reportType: string;
-  filters: Record<string, any>;
-  resultCount: number;
-}): Promise<void> => {
+export const fetchAuditLogs = async (filters?: any): Promise<AuditLogEntry[]> => {
   try {
-    console.log("Logging report generation to audit trail:", params);
-    
-    const { error } = await supabase.rpc('log_report_generation_secure', {
-      p_report_type: params.reportType,
-      p_filters: params.filters,
-      p_result_count: params.resultCount
-    });
+    let query = supabase
+      .from("audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
 
-    if (error) {
-      console.error("Error logging report generation:", error);
-      throw error;
+    if (filters?.actionType) {
+      query = query.ilike("action", `%${filters.actionType}%`);
     }
 
-    console.log("Report generation logged successfully to audit trail");
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    return data || [];
   } catch (error) {
-    console.error("Error in logReportGeneration:", error);
-    throw error;
+    console.error("Error fetching audit logs:", error);
+    return [];
   }
 };

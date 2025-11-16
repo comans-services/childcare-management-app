@@ -44,43 +44,431 @@ export type Database = {
             foreignKeyName: "fk_audit_logs_user"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_audit_logs_user"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_audit_logs_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "fk_audit_logs_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
+      campaign_events: {
+        Row: {
+          bounce_reason: string | null
+          bounce_type: string | null
+          campaign_id: string | null
+          contact_email: string
+          contact_id: string | null
+          created_at: string
+          event_timestamp: string
+          event_type: string
+          id: string
+          provider_response: Json | null
+          unsubscribe_ip: string | null
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          bounce_reason?: string | null
+          bounce_type?: string | null
+          campaign_id?: string | null
+          contact_email: string
+          contact_id?: string | null
+          created_at?: string
+          event_timestamp?: string
+          event_type: string
+          id?: string
+          provider_response?: Json | null
+          unsubscribe_ip?: string | null
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          bounce_reason?: string | null
+          bounce_type?: string | null
+          campaign_id?: string | null
+          contact_email?: string
+          contact_id?: string | null
+          created_at?: string
+          event_timestamp?: string
+          event_type?: string
+          id?: string
+          provider_response?: Json | null
+          unsubscribe_ip?: string | null
+          unsubscribed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
         ]
       }
+      campaigns: {
+        Row: {
+          audience_filter: string | null
+          created_at: string
+          created_by: string | null
+          footer_included: boolean
+          id: string
+          message_body: string
+          message_format: string | null
+          scheduled_for: string | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string | null
+          subject: string
+          target_tag: string | null
+          test_sent_at: string | null
+          test_sent_to: string | null
+          total_bounced: number | null
+          total_recipients: number | null
+          total_sent: number | null
+          total_unsubscribed: number | null
+          unsubscribe_link_included: boolean
+          updated_at: string
+        }
+        Insert: {
+          audience_filter?: string | null
+          created_at?: string
+          created_by?: string | null
+          footer_included?: boolean
+          id?: string
+          message_body: string
+          message_format?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string | null
+          subject: string
+          target_tag?: string | null
+          test_sent_at?: string | null
+          test_sent_to?: string | null
+          total_bounced?: number | null
+          total_recipients?: number | null
+          total_sent?: number | null
+          total_unsubscribed?: number | null
+          unsubscribe_link_included?: boolean
+          updated_at?: string
+        }
+        Update: {
+          audience_filter?: string | null
+          created_at?: string
+          created_by?: string | null
+          footer_included?: boolean
+          id?: string
+          message_body?: string
+          message_format?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string | null
+          subject?: string
+          target_tag?: string | null
+          test_sent_at?: string | null
+          test_sent_to?: string | null
+          total_bounced?: number | null
+          total_recipients?: number | null
+          total_sent?: number | null
+          total_unsubscribed?: number | null
+          unsubscribe_link_included?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "campaigns_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "campaigns_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
+      childcare_rooms: {
+        Row: {
+          children_over_3: number
+          children_under_3: number
+          created_at: string
+          id: string
+          is_active: boolean
+          last_updated: string
+          name: string
+          ratio_over_3: number
+          ratio_under_3: number
+          room_number: number
+          updated_by: string | null
+        }
+        Insert: {
+          children_over_3?: number
+          children_under_3?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_updated?: string
+          name: string
+          ratio_over_3?: number
+          ratio_under_3?: number
+          room_number: number
+          updated_by?: string | null
+        }
+        Update: {
+          children_over_3?: number
+          children_under_3?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_updated?: string
+          name?: string
+          ratio_over_3?: number
+          ratio_under_3?: number
+          room_number?: number
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "childcare_rooms_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "childcare_rooms_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "childcare_rooms_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "childcare_rooms_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
+      contact_imports: {
+        Row: {
+          duplicates_skipped: number | null
+          errors: Json | null
+          failed_imports: number | null
+          file_name: string
+          id: string
+          imported_at: string
+          imported_by: string
+          successful_imports: number | null
+          total_rows: number | null
+        }
+        Insert: {
+          duplicates_skipped?: number | null
+          errors?: Json | null
+          failed_imports?: number | null
+          file_name: string
+          id?: string
+          imported_at?: string
+          imported_by: string
+          successful_imports?: number | null
+          total_rows?: number | null
+        }
+        Update: {
+          duplicates_skipped?: number | null
+          errors?: Json | null
+          failed_imports?: number | null
+          file_name?: string
+          id?: string
+          imported_at?: string
+          imported_by?: string
+          successful_imports?: number | null
+          total_rows?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_imports_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_imports_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_imports_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "contact_imports_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          created_at: string
+          email: string
+          email_consent: boolean
+          first_name: string | null
+          full_name: string | null
+          id: string
+          is_active: boolean
+          last_name: string | null
+          notes: string | null
+          tags: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          email_consent?: boolean
+          first_name?: string | null
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_name?: string | null
+          notes?: string | null
+          tags?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          email_consent?: boolean
+          first_name?: string | null
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_name?: string | null
+          notes?: string | null
+          tags?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leave_application_attachments: {
         Row: {
-          content_type: string | null
+          application_id: string
           file_name: string
-          file_path: string
           file_size: number | null
+          file_type: string
+          file_url: string
           id: string
-          leave_application_id: string
           uploaded_at: string
         }
         Insert: {
-          content_type?: string | null
+          application_id: string
           file_name: string
-          file_path: string
           file_size?: number | null
+          file_type: string
+          file_url: string
           id?: string
-          leave_application_id: string
           uploaded_at?: string
         }
         Update: {
-          content_type?: string | null
+          application_id?: string
           file_name?: string
-          file_path?: string
           file_size?: number | null
+          file_type?: string
+          file_url?: string
           id?: string
-          leave_application_id?: string
           uploaded_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "fk_leave_attachments_application"
-            columns: ["leave_application_id"]
+            foreignKeyName: "leave_application_attachments_application_id_fkey"
+            columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "leave_applications"
             referencedColumns: ["id"]
@@ -141,8 +529,29 @@ export type Database = {
             foreignKeyName: "fk_leave_applications_approver"
             columns: ["approved_by"]
             isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leave_applications_approver"
+            columns: ["approved_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leave_applications_approver"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "fk_leave_applications_approver"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
           },
           {
             foreignKeyName: "fk_leave_applications_type"
@@ -155,8 +564,85 @@ export type Database = {
             foreignKeyName: "fk_leave_applications_user"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leave_applications_user"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leave_applications_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "fk_leave_applications_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_applications_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_applications_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
           },
         ]
       }
@@ -206,8 +692,57 @@ export type Database = {
             foreignKeyName: "fk_leave_balances_user"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leave_balances_user"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leave_balances_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "fk_leave_balances_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
           },
         ]
       }
@@ -272,7 +807,7 @@ export type Database = {
           employee_id?: string | null
           employment_type?: Database["public"]["Enums"]["employment_status"]
           full_name: string
-          id?: string
+          id: string
           is_active?: boolean
           organization?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -325,6 +860,366 @@ export type Database = {
         }
         Relationships: []
       }
+      room_activity_log: {
+        Row: {
+          activity_type: string
+          created_at: string
+          description: string
+          id: string
+          performed_at: string
+          performed_by: string | null
+          room_id: string
+          staff_id: string | null
+          state_after: Json | null
+          state_before: Json | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          description: string
+          id?: string
+          performed_at?: string
+          performed_by?: string | null
+          room_id: string
+          staff_id?: string | null
+          state_after?: Json | null
+          state_before?: Json | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          performed_at?: string
+          performed_by?: string | null
+          room_id?: string
+          staff_id?: string | null
+          state_after?: Json | null
+          state_before?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_activity_log_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "childcare_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "current_room_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "room_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
+      room_devices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          device_model: string | null
+          device_name: string
+          id: string
+          is_active: boolean
+          last_seen: string | null
+          mac_address: string
+          room_id: string
+          serial_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          device_model?: string | null
+          device_name: string
+          id?: string
+          is_active?: boolean
+          last_seen?: string | null
+          mac_address: string
+          room_id: string
+          serial_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          device_model?: string | null
+          device_name?: string
+          id?: string
+          is_active?: boolean
+          last_seen?: string | null
+          mac_address?: string
+          room_id?: string
+          serial_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_devices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_devices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_devices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "room_devices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "room_devices_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "childcare_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_devices_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "current_room_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_devices_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "room_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_room_entries: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          entered_at: string
+          entered_by: string | null
+          entry_method: string | null
+          exit_method: string | null
+          exited_at: string | null
+          exited_by: string | null
+          id: string
+          notes: string | null
+          room_id: string
+          staff_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          entered_at?: string
+          entered_by?: string | null
+          entry_method?: string | null
+          exit_method?: string | null
+          exited_at?: string | null
+          exited_by?: string | null
+          id?: string
+          notes?: string | null
+          room_id: string
+          staff_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          entered_at?: string
+          entered_by?: string | null
+          entry_method?: string | null
+          exit_method?: string | null
+          exited_at?: string | null
+          exited_by?: string | null
+          id?: string
+          notes?: string | null
+          room_id?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_room_entries_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_exited_by_fkey"
+            columns: ["exited_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_exited_by_fkey"
+            columns: ["exited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_exited_by_fkey"
+            columns: ["exited_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_exited_by_fkey"
+            columns: ["exited_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "childcare_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "current_room_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "room_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
       timesheet_entries: {
         Row: {
           created_at: string
@@ -364,7 +1259,66 @@ export type Database = {
             foreignKeyName: "fk_timesheet_entries_user"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_timesheet_entries_user"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_timesheet_entries_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "fk_timesheet_entries_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
+      unsubscribes: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          email: string
+          id: string
+          reason: string | null
+          unsubscribe_source: string | null
+          unsubscribed_at: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          reason?: string | null
+          unsubscribe_source?: string | null
+          unsubscribed_at?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          reason?: string | null
+          unsubscribe_source?: string | null
+          unsubscribed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unsubscribes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]
@@ -408,7 +1362,35 @@ export type Database = {
             foreignKeyName: "fk_work_schedules_locked_by"
             columns: ["locked_by"]
             isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_work_schedules_locked_by"
+            columns: ["locked_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_work_schedules_locked_by"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "fk_work_schedules_locked_by"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "fk_work_schedules_user"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "available_staff"
             referencedColumns: ["id"]
           },
           {
@@ -418,10 +1400,189 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_work_schedules_user"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "fk_work_schedules_user"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
         ]
       }
     }
     Views: {
+      available_staff: {
+        Row: {
+          email: string | null
+          employment_type:
+            | Database["public"]["Enums"]["employment_status"]
+            | null
+          full_name: string | null
+          id: string | null
+          is_active: boolean | null
+        }
+        Insert: {
+          email?: string | null
+          employment_type?:
+            | Database["public"]["Enums"]["employment_status"]
+            | null
+          full_name?: string | null
+          id?: string | null
+          is_active?: boolean | null
+        }
+        Update: {
+          email?: string | null
+          employment_type?:
+            | Database["public"]["Enums"]["employment_status"]
+            | null
+          full_name?: string | null
+          id?: string | null
+          is_active?: boolean | null
+        }
+        Relationships: []
+      }
+      compliance_violations: {
+        Row: {
+          description: string | null
+          log_id: string | null
+          performed_at: string | null
+          performed_by: string | null
+          performed_by_name: string | null
+          required_staff: number | null
+          room_name: string | null
+          staff_count: string | null
+          state_after: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_activity_log_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "room_activity_log_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
+      current_room_status: {
+        Row: {
+          children_over_3: number | null
+          children_under_3: number | null
+          current_staff: Json | null
+          current_staff_count: number | null
+          id: string | null
+          is_compliant: boolean | null
+          last_updated: string | null
+          name: string | null
+          ratio_over_3: number | null
+          ratio_under_3: number | null
+          required_educators: number | null
+          room_number: number | null
+          show_warning: boolean | null
+          staff_shortage: number | null
+          total_children: number | null
+        }
+        Relationships: []
+      }
+      daily_room_activity: {
+        Row: {
+          activity_date: string | null
+          avg_duration_minutes: number | null
+          first_entry_time: string | null
+          last_exit_time: string | null
+          room_name: string | null
+          total_entries: number | null
+          unique_staff_count: number | null
+        }
+        Relationships: []
+      }
+      room_summary: {
+        Row: {
+          children_over_3: number | null
+          children_under_3: number | null
+          current_staff: number | null
+          id: string | null
+          last_updated: string | null
+          name: string | null
+          required_staff: number | null
+          room_number: number | null
+          status: string | null
+          total_children: number | null
+        }
+        Relationships: []
+      }
+      staff_daily_hours: {
+        Row: {
+          room_history: Json | null
+          room_visits: number | null
+          staff_id: string | null
+          staff_name: string | null
+          total_hours: number | null
+          work_date: string | null
+        }
+        Relationships: []
+      }
+      staff_in_room: {
+        Row: {
+          email: string | null
+          entered_at: string | null
+          entry_id: string | null
+          entry_method: string | null
+          full_name: string | null
+          room_id: string | null
+          staff_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_room_entries_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "childcare_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "current_room_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_room_entries_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "room_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       timesheet_report_view: {
         Row: {
           created_at: string | null
@@ -447,8 +1608,29 @@ export type Database = {
             foreignKeyName: "fk_timesheet_entries_user"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_timesheet_entries_user"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_timesheet_entries_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "fk_timesheet_entries_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
           },
         ]
       }
@@ -462,16 +1644,72 @@ export type Database = {
         Args: { end_time: string; start_time: string }
         Returns: number
       }
+      calculate_required_educators: {
+        Args: {
+          p_children_over_3: number
+          p_children_under_3: number
+          p_ratio_over_3?: number
+          p_ratio_under_3?: number
+        }
+        Returns: number
+      }
+      get_campaign_recipients: {
+        Args: { p_audience_filter?: string; p_target_tag?: string }
+        Returns: {
+          contact_id: string
+          email: string
+          full_name: string
+        }[]
+      }
       get_current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_room_status: { Args: { p_room_id: string }; Returns: Json }
+      get_staff_current_room: { Args: { p_staff_id: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      is_email_unsubscribed: { Args: { check_email: string }; Returns: boolean }
       is_public_holiday: {
         Args: { check_date: string; check_state?: string }
         Returns: boolean
       }
+      is_staff_in_room: { Args: { p_staff_id: string }; Returns: boolean }
       is_weekend: { Args: { check_date: string }; Returns: boolean }
+      process_unsubscribe: {
+        Args: { p_campaign_id?: string; p_email: string; p_reason?: string }
+        Returns: Json
+      }
+      staff_enter_room: {
+        Args: {
+          p_entered_by?: string
+          p_entry_method?: string
+          p_room_id: string
+          p_staff_id: string
+        }
+        Returns: Json
+      }
+      staff_exit_room: {
+        Args: {
+          p_exit_method?: string
+          p_exited_by?: string
+          p_room_id?: string
+          p_staff_id: string
+        }
+        Returns: Json
+      }
+      update_child_counts: {
+        Args: {
+          p_children_over_3: number
+          p_children_under_3: number
+          p_room_id: string
+          p_updated_by?: string
+        }
+        Returns: Json
+      }
+      verify_mac_address_access: {
+        Args: { p_mac_address: string }
+        Returns: Json
+      }
     }
     Enums: {
       employment_status: "full-time" | "part-time" | "casual"

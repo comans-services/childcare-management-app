@@ -23,7 +23,7 @@ export interface LeaveBalance {
   user?: {
     full_name: string;
     email: string;
-    employment_type: 'full-time' | 'part-time';
+    employment_type: 'full-time' | 'part-time' | 'casual';
   };
 }
 
@@ -170,10 +170,14 @@ export const createLeaveApplication = async (
     throw new Error('User must be authenticated to create leave application');
   }
 
-  // Include the user_id in the application data
+  // Calculate business days for the application
+  const businessDays = await calculateBusinessDays(application.start_date, application.end_date);
+
+  // Include the user_id and business_days_count in the application data
   const applicationWithUser = {
     ...application,
-    user_id: user.id
+    user_id: user.id,
+    business_days_count: businessDays
   };
 
   const { data, error } = await supabase

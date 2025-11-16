@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
-import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useAuth } from "@/context/AuthContext";
 import { Calendar, Clock, Target, Calendar as CalendarWeekend, CheckCircle, XCircle, RefreshCw } from "lucide-react";
@@ -40,13 +40,10 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
   const {
     effectiveDays,
     effectiveHours,
-    hasOverride,
-    isLoading: weeklyLoading,
-    updateWeeklyDays,
-    revertToDefault,
-    isUpdating,
-    isReverting
-  } = useSimpleWeeklySchedule(user.id, weekStartDate);
+    hasWeeklyOverride: hasOverride,
+    loading: weeklyLoading,
+    updateWeeklySchedule
+  } = useWeeklyWorkSchedule(user.id, weekStartDate);
 
   const {
     canLogWeekendHours,
@@ -157,9 +154,9 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             {hasOverride && <div className="h-2 w-2 bg-blue-500 rounded-full" />}
           </div>
           
-          {isAdmin ? <DayCountSelector currentDays={effectiveDays} hasOverride={hasOverride} onDaysChange={updateWeeklyDays} onRevertToDefault={revertToDefault} isUpdating={isUpdating} isReverting={isReverting} /> : <div className="text-sm text-muted-foreground">
-              {effectiveDays} working days this week
-            </div>}
+          <div className="text-sm text-muted-foreground">
+            {effectiveDays} working days this week
+          </div>
         </div>
 
         <Separator />

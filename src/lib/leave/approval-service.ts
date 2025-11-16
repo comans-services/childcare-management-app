@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { LeaveApplication } from "@/lib/leave-service";
 import { LeaveApplicationService } from "./application-service";
-import { TimesheetIntegrationService } from "./timesheet-integration-service";
 
 export interface ApprovalWorkflowData {
   applicationId: string;
@@ -51,25 +50,8 @@ export class ApprovalService {
       let updatedApplication: LeaveApplication;
 
       if (decision === 'approved') {
-        // Check for existing timesheet entries
-        const existingEntries = await TimesheetIntegrationService.checkExistingEntries(
-          application.user_id,
-          application.start_date,
-          application.end_date
-        );
-
-        if (existingEntries.hasEntries) {
-          throw new Error(
-            `Cannot approve: Employee has ${existingEntries.entriesCount} timesheet entries during this period. ` +
-            `Conflicting dates: ${existingEntries.conflictDates.join(', ')}`
-          );
-        }
-
-        // Approve the application
+        // Approve the application (timesheet integration removed - table doesn't exist)
         updatedApplication = await LeaveApplicationService.approve(applicationId, comments);
-
-        // Lock the dates in timesheet (this is handled by database trigger)
-        // But we can also do additional validation here if needed
         
       } else {
         // Reject the application
@@ -243,7 +225,7 @@ export class ApprovalService {
         return false;
       }
 
-      return userProfile?.role === 'admin' || userProfile?.role === 'manager';
+      return userProfile?.role === 'admin';
     } catch (error) {
       console.error('Error in ApprovalService.canUserApprove:', error);
       return false;
@@ -274,8 +256,8 @@ export class ApprovalService {
       // Get approval history from audit logs
       const { data: auditLogs, error } = await supabase
         .from('audit_logs')
-        .select('*')
-        .eq('entity_name', 'Leave Application')
+        .select('action, created_at, details, user_name')
+        .ilike('action', '%leave%')
         .like('description', `%${applicationId}%`)
         .order('created_at', { ascending: true });
 
@@ -288,7 +270,7 @@ export class ApprovalService {
         action: log.action,
         timestamp: log.created_at,
         user_name: log.user_name || 'System',
-        comments: log.details?.manager_comments,
+        comments: (log.details as any)?.manager_comments,
       }));
 
       return {
@@ -339,23 +321,7 @@ export class ApprovalService {
           warnings.push('This leave application is for past dates');
         }
 
-        // Check for existing timesheet entries
-        const existingEntries = await TimesheetIntegrationService.checkExistingEntries(
-          application.user_id,
-          application.start_date,
-          application.end_date
-        );
-
-        if (existingEntries.hasEntries) {
-          issues.push(
-            `Employee has ${existingEntries.entriesCount} timesheet entries during this period. ` +
-            `Please ask the employee to remove entries for: ${existingEntries.conflictDates.join(', ')}`
-          );
-        }
-
-        // Check leave balance
-        // This would require implementing balance checking logic
-        // For now, we'll add a warning
+        // Note: Timesheet integration removed - tables don't exist
         warnings.push('Please verify the employee has sufficient leave balance');
       }
 

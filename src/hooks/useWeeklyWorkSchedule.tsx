@@ -145,9 +145,16 @@ export const useWeeklyWorkSchedule = (userId: string, weekStartDate: Date) => {
     };
   }, [userId, weekStartDate]);
 
+  // Calculate effective days and hours
+  const effectiveDailyHours = getEffectiveDailyHours();
+  const effectiveDays = Object.values(effectiveDailyHours).filter(h => h > 0).length;
+  const effectiveHours = Object.values(effectiveDailyHours).reduce((sum, h) => sum + h, 0);
+
   return {
     weeklySchedule,
-    effectiveDailyHours: getEffectiveDailyHours(),
+    effectiveDailyHours,
+    effectiveDays,
+    effectiveHours,
     updateWeeklySchedule,
     loading,
     error,

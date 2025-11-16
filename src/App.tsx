@@ -8,21 +8,16 @@ import { AuthProvider } from "@/context/AuthContext";
 
 import MainLayout from "@/components/layout/MainLayout";
 import AdminRoute from "@/routes/AdminRoute";
-import ManagerRoute from "@/routes/ManagerRoute";
 import FullTimeRoute from "@/routes/FullTimeRoute";
 import AuthPage from "@/pages/AuthPage";
 import Dashboard from "@/pages/Index";
 import TimesheetPage from "@/pages/TimesheetPage";
-import ProjectsPage from "@/pages/ProjectsPage";
-import ContractsPage from "@/pages/ContractsPage";
-import CustomersPage from "@/pages/CustomersPage";
 import ReportsPage from "@/pages/ReportsPage";
 import TeamPage from "@/pages/TeamPage";
 import WorkSchedulePage from "@/pages/WorkSchedulePage";
 import HolidayManagementPage from "@/pages/HolidayManagementPage";
 import LeaveApplicationPage from "@/pages/LeaveApplicationPage";
 import LeaveManagementPage from "@/pages/LeaveManagementPage";
-import ExpensesPage from "@/pages/ExpensesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
@@ -48,18 +43,8 @@ const App = () => (
                 <Route path="leave-application" element={<LeaveApplicationPage />} />
               </Route>
               
-              {/* Authenticated user routes */}
-              <Route path="expenses" element={<ExpensesPage />} />
-              
-              {/* Manager-level routes (manager + admin access) */}
-              <Route element={<ManagerRoute />}>
-                <Route path="contracts" element={<ContractsPage />} />
-              </Route>
-              
               {/* Admin-only routes protected by AdminRoute */}
               <Route element={<AdminRoute />}>
-                <Route path="projects" element={<ProjectsPage />} />
-                <Route path="customers" element={<CustomersPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="team" element={<TeamPage />} />
                 <Route path="work-schedule" element={<WorkSchedulePage />} />

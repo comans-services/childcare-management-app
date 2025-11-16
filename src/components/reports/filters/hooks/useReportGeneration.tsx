@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchReportData } from "@/lib/timesheet-service";
-import { fetchAuditLogs, logReportGeneration } from "@/lib/audit/audit-service";
 import { toast } from "@/hooks/use-toast";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
@@ -52,34 +51,19 @@ export const useReportGeneration = ({
       if (filters.reportType === 'timesheet') {
         // Handle timesheet reports with entry type filtering
         const normalizedFilters = {
-          userId: normalizeSelectValue(filters.userId),
-          projectId: filters.includeProject ? normalizeSelectValue(filters.projectId) : null,
-          customerId: normalizeSelectValue(filters.customerId),
-          contractId: filters.includeContract ? normalizeSelectValue(filters.contractId) : null,
-          includeProjects: filters.includeProject,
-          includeContracts: filters.includeContract
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          userIds: filters.userId ? [filters.userId] : undefined,
+          includeEmployeeData: true
         };
         
         console.log("Normalized timesheet filters:", normalizedFilters);
         
-        const reportData = await fetchReportData(filters.startDate, filters.endDate, normalizedFilters);
+        const reportData = await fetchReportData(normalizedFilters);
         
         console.log("Timesheet report data received:", reportData);
         setReportData(reportData);
         setAuditData([]); // Clear audit data when generating timesheet report
-        
-        // Log report generation to audit trail using secure database function
-        await logReportGeneration({
-          reportType: 'timesheet',
-          filters: {
-            ...normalizedFilters,
-            startDate: filters.startDate.toISOString().split('T')[0],
-            endDate: filters.endDate.toISOString().split('T')[0],
-            includeProject: filters.includeProject,
-            includeContract: filters.includeContract
-          },
-          resultCount: reportData.length
-        });
         
         if (reportData.length === 0) {
           toast({
@@ -91,48 +75,6 @@ export const useReportGeneration = ({
           toast({
             title: "Report generated successfully",
             description: `Found ${reportData.length} timesheet entries`,
-            variant: "default"
-          });
-        }
-      } else if (filters.reportType === 'audit') {
-        // Handle audit log reports
-        const auditFilters = {
-          startDate: filters.startDate,
-          endDate: filters.endDate,
-          userId: normalizeSelectValue(filters.userId),
-          actionType: normalizeSelectValue(filters.actionType)
-        };
-        
-        console.log("Audit log filters:", auditFilters);
-        
-        const auditData = await fetchAuditLogs(auditFilters);
-        
-        console.log("Audit log data received:", auditData);
-        setAuditData(auditData);
-        setReportData([]); // Clear timesheet data when generating audit report
-        
-        // Log audit report generation to audit trail using secure database function
-        await logReportGeneration({
-          reportType: 'audit',
-          filters: {
-            startDate: filters.startDate.toISOString().split('T')[0],
-            endDate: filters.endDate.toISOString().split('T')[0],
-            userId: normalizeSelectValue(filters.userId),
-            actionType: normalizeSelectValue(filters.actionType)
-          },
-          resultCount: auditData.length
-        });
-        
-        if (auditData.length === 0) {
-          toast({
-            title: "No audit logs found",
-            description: "No audit entries found for the selected criteria. Try adjusting your filters.",
-            variant: "default"
-          });
-        } else {
-          toast({
-            title: "Audit report generated successfully",
-            description: `Found ${auditData.length} audit log entries`,
             variant: "default"
           });
         }
