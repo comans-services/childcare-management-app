@@ -22,7 +22,7 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
     hours_logged: originalEntry.hours_logged,
     start_time: originalEntry.start_time,
     end_time: originalEntry.end_time,
-    ...(userIsAdmin && originalEntry.user_id !== user.id ? { user_id: originalEntry.user_id } : {})
+    user_id: (userIsAdmin && originalEntry.user_id !== user.id) ? originalEntry.user_id : user.id
   };
   
   const { data: newEntry, error: insertError } = await supabase

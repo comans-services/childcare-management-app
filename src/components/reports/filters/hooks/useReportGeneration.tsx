@@ -61,7 +61,7 @@ export const useReportGeneration = ({
         
         console.log("Normalized timesheet filters:", normalizedFilters);
         
-        const reportData = await fetchReportData(filters.startDate, filters.endDate, normalizedFilters);
+        const reportData = await fetchReportData(normalizedFilters);
         
         console.log("Timesheet report data received:", reportData);
         setReportData(reportData);

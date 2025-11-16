@@ -9,6 +9,7 @@ export interface BudgetValidationResult {
   isOverBudget: boolean;
   canOverride: boolean;
   usagePercentage: number;
+  hasUnlimitedBudget: boolean;
 }
 
 export interface BudgetCheckOptions {
@@ -26,7 +27,8 @@ export const getProjectBudgetStatus = async (projectId: string): Promise<BudgetV
     hoursUsed: 0,
     isOverBudget: false,
     canOverride: false,
-    usagePercentage: 0
+    usagePercentage: 0,
+    hasUnlimitedBudget: true
   };
 };
 
@@ -44,6 +46,7 @@ export const validateProjectBudget = async (
     hoursUsed: 0,
     isOverBudget: false,
     canOverride: false,
-    usagePercentage: 0
+    usagePercentage: 0,
+    hasUnlimitedBudget: true
   };
 };
