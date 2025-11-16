@@ -7,15 +7,12 @@ import {
   Project,
   TimesheetEntry,
 } from "@/lib/timesheet-service";
-import { fetchUserContracts } from "@/lib/contract/user-contract-service";
-import { fetchUserProjectsById, fetchUserContractsById } from "@/lib/timesheet/user-specific-service";
-import { Contract } from "@/lib/contract-service";
+import { fetchUserProjectsById } from "@/lib/timesheet/user-specific-service";
 import { toast } from "@/hooks/use-toast";
 
 export const useWeeklyViewData = (weekDates: Date[], viewAsUserId?: string | null) => {
   const { user, session } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [contracts, setContracts] = useState<Contract[]>([]);
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +24,6 @@ export const useWeeklyViewData = (weekDates: Date[], viewAsUserId?: string | nul
   const clearComponentState = useCallback(() => {
     console.log("=== CLEARING WEEKLY VIEW DATA STATE ===");
     setProjects([]);
-    setContracts([]);
     setEntries([]);
     setError(null);
   }, []);
@@ -51,31 +47,22 @@ export const useWeeklyViewData = (weekDates: Date[], viewAsUserId?: string | nul
     try {
       console.log("Starting data fetch for target user:", targetUserId);
       
-      // Fetch projects and contracts for the target user
+      // Fetch projects for the target user
       let projectsData: Project[] = [];
-      let contractsData: Contract[] = [];
       
       if (viewAsUserId && viewAsUserId !== user.id) {
         // Admin viewing another user's data - fetch their specific assignments
         console.log("Admin fetching data for user:", viewAsUserId);
-        [projectsData, contractsData] = await Promise.all([
-          fetchUserProjectsById(viewAsUserId),
-          fetchUserContractsById(viewAsUserId)
-        ]);
+        projectsData = await fetchUserProjectsById(viewAsUserId);
       } else {
         // User viewing their own data - use existing functions
         console.log("User fetching their own data");
-        [projectsData, contractsData] = await Promise.all([
-          fetchUserProjects(),
-          fetchUserContracts()
-        ]);
+        projectsData = await fetchUserProjects();
       }
       
       console.log("Successfully fetched projects:", projectsData.length);
-      console.log("Successfully fetched contracts:", contractsData.length);
       
       setProjects(projectsData);
-      setContracts(contractsData);
       
       // Then fetch entries if we have valid dates - pass target user ID for admin viewing
       if (weekDates.length > 0) {
@@ -108,7 +95,6 @@ export const useWeeklyViewData = (weekDates: Date[], viewAsUserId?: string | nul
 
   return {
     projects,
-    contracts,
     entries,
     loading,
     error,
