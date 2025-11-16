@@ -154,9 +154,9 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             {hasOverride && <div className="h-2 w-2 bg-blue-500 rounded-full" />}
           </div>
           
-          {isAdmin ? <DayCountSelector currentDays={effectiveDays} hasOverride={hasOverride} onDaysChange={updateWeeklyDays} onRevertToDefault={revertToDefault} isUpdating={isUpdating} isReverting={isReverting} /> : <div className="text-sm text-muted-foreground">
-              {effectiveDays} working days this week
-            </div>}
+          <div className="text-sm text-muted-foreground">
+            {effectiveDays} working days this week
+          </div>
         </div>
 
         <Separator />

@@ -256,8 +256,8 @@ export class ApprovalService {
       // Get approval history from audit logs
       const { data: auditLogs, error } = await supabase
         .from('audit_logs')
-        .select('*')
-        .eq('entity_name', 'Leave Application')
+        .select('action, created_at, details, user_name')
+        .ilike('action', '%leave%')
         .like('description', `%${applicationId}%`)
         .order('created_at', { ascending: true });
 
