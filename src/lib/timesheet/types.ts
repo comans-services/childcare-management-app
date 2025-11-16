@@ -63,9 +63,9 @@ export interface ContractTimeEntry extends Omit<TimesheetEntry, 'entry_type' | '
 export interface CreateTimesheetEntry {
   entry_date: string;
   hours_logged: number;
-  start_time?: string;
-  end_time?: string;
-  user_id?: string; // Optional for admin editing - trigger handles validation
+  start_time: string;
+  end_time: string;
+  user_id: string; // Required for DB insert
 }
 
 // Type for updating entries - user_id should not be changed
