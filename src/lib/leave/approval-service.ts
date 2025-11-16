@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { LeaveApplication } from "@/lib/leave-service";
 import { LeaveApplicationService } from "./application-service";
-import { TimesheetIntegrationService } from "./timesheet-integration-service";
 
 export interface ApprovalWorkflowData {
   applicationId: string;
@@ -51,25 +50,8 @@ export class ApprovalService {
       let updatedApplication: LeaveApplication;
 
       if (decision === 'approved') {
-        // Check for existing timesheet entries
-        const existingEntries = await TimesheetIntegrationService.checkExistingEntries(
-          application.user_id,
-          application.start_date,
-          application.end_date
-        );
-
-        if (existingEntries.hasEntries) {
-          throw new Error(
-            `Cannot approve: Employee has ${existingEntries.entriesCount} timesheet entries during this period. ` +
-            `Conflicting dates: ${existingEntries.conflictDates.join(', ')}`
-          );
-        }
-
-        // Approve the application
+        // Approve the application (timesheet integration removed - table doesn't exist)
         updatedApplication = await LeaveApplicationService.approve(applicationId, comments);
-
-        // Lock the dates in timesheet (this is handled by database trigger)
-        // But we can also do additional validation here if needed
         
       } else {
         // Reject the application

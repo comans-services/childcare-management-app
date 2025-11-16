@@ -93,22 +93,7 @@ export const useDashboardData = () => {
     retry: 1,
   });
 
-  const { data: customers = [], isLoading: customersLoading } = useQuery({
-    queryKey: ["customers"],
-    queryFn: async () => {
-      console.log("Dashboard: Fetching customers");
-      try {
-        const result = await fetchCustomers();
-        console.log(`Dashboard: Fetched ${result.length} customers`);
-        return result;
-      } catch (err) {
-        console.error("Error fetching customers for dashboard:", err);
-        throw err;
-      }
-    },
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
+  // Customers feature removed
 
   const totalHours = timesheetEntries?.reduce((sum, entry) => {
     const hoursLogged = Number(entry.hours_logged) || 0;
@@ -207,47 +192,11 @@ export const useDashboardData = () => {
     return result;
   }, [timesheetEntries]);
 
+  // Customer hours feature removed - projects and customers tables don't exist
   const customerHours = useMemo(() => {
-    const result: Record<string, { name: string, hours: number }> = {};
-    
-    if (!timesheetEntries || !projects || !customers || 
-        timesheetEntries.length === 0 || projects.length === 0) {
-      console.log("Dashboard: Missing data for customer hours calculation");
-      return result;
-    }
+    return {};
+  }, []);
 
-    timesheetEntries.forEach(entry => {
-      if (!entry.project_id) return;
-      
-      const project = projects.find(p => p.id === entry.project_id);
-      if (!project || !project.customer_id) {
-        console.log("Dashboard: Entry with missing project or customer reference:", entry);
-        return;
-      }
-      
-      const customerId = project.customer_id;
-      const customer = customers.find(c => c.id === customerId);
-      if (!customer) {
-        console.log("Dashboard: Customer not found for ID:", customerId);
-        return;
-      }
-
-      const customerName = customer.name || "Unknown Customer";
-      
-      if (!result[customerId]) {
-        result[customerId] = {
-          name: customerName,
-          hours: 0
-        };
-      }
-      
-      const hoursLogged = Number(entry.hours_logged) || 0;
-      result[customerId].hours += hoursLogged;
-    });
-    
-    console.log("Dashboard: Customer hours calculation result:", result);
-    return result;
-  }, [timesheetEntries, projects, customers]);
 
   // Days-based calculations
   const calculateExpectedDays = () => {

@@ -30,9 +30,12 @@ export class LeaveApplicationService {
       const { data, error } = await supabase
         .from('leave_applications')
         .insert({
-          ...applicationData,
+          leave_type_id: applicationData.leave_type_id,
+          start_date: applicationData.start_date,
+          end_date: applicationData.end_date,
+          reason: applicationData.reason,
           business_days_count: businessDays,
-        })
+        } as any)
         .select(`
           *,
           leave_type:leave_types(*),
@@ -138,7 +141,7 @@ export class LeaveApplicationService {
       }
 
       if (options.status) {
-        query = query.eq('status', options.status);
+        query = query.eq('status', options.status as any);
       }
 
       if (options.startDate) {
