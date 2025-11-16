@@ -1,6 +1,5 @@
 
 import { TimesheetEntry, Project } from "./timesheet-service";
-import { Contract } from "./contract-service";
 import { User } from "./user-service";
 import { formatDateDisplay } from "./date-utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";

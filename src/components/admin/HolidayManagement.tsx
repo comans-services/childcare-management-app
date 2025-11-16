@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import HolidayPermissionMatrix from "./HolidayPermissionMatrix";
+
 
 interface Holiday {
   id: string;
@@ -465,7 +465,14 @@ const HolidayManagement: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="specific">
-          <HolidayPermissionMatrix />
+          <Card>
+            <CardHeader>
+              <CardTitle>User-Specific Permissions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">User-specific holiday entry permissions feature coming soon.</p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
