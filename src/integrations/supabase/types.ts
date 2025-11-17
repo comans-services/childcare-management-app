@@ -1323,6 +1323,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       work_schedules: {
         Row: {
           allow_holiday_entries: boolean
@@ -1667,6 +1688,13 @@ export type Database = {
       }
       get_room_status: { Args: { p_room_id: string }; Returns: Json }
       get_staff_current_room: { Args: { p_staff_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
       is_email_unsubscribed: { Args: { check_email: string }; Returns: boolean }
       is_public_holiday: {
@@ -1712,6 +1740,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "manager" | "employee"
       employment_status: "full-time" | "part-time" | "casual"
       leave_status: "pending" | "approved" | "rejected" | "cancelled"
       user_role: "employee" | "admin"
@@ -1842,6 +1871,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "manager", "employee"],
       employment_status: ["full-time", "part-time", "casual"],
       leave_status: ["pending", "approved", "rejected", "cancelled"],
       user_role: ["employee", "admin"],
