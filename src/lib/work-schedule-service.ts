@@ -76,9 +76,7 @@ export const upsertWorkSchedule = async (userId: string, workingDays: number): P
       .from("work_schedules")
       .upsert({
         user_id: userId,
-        working_days: workingDays,
-        created_by: currentUser.id,
-        updated_at: new Date().toISOString()
+        working_days: workingDays
       }, {
         onConflict: "user_id"
       })
