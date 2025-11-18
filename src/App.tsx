@@ -7,9 +7,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 
 import MainLayout from "@/components/layout/MainLayout";
+import HubLayout from "@/components/layout/HubLayout";
 import AdminRoute from "@/routes/AdminRoute";
 import FullTimeRoute from "@/routes/FullTimeRoute";
 import AuthPage from "@/pages/AuthPage";
+import ManagementHubPage from "@/pages/ManagementHubPage";
 import Dashboard from "@/pages/Index";
 import TimesheetPage from "@/pages/TimesheetPage";
 import ReportsPage from "@/pages/ReportsPage";
@@ -32,17 +34,22 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
-            
-            <Route path="/" element={<MainLayout />}>
+
+            {/* Management Hub - Landing page for all apps */}
+            <Route path="/" element={<HubLayout />}>
+              <Route index element={<ManagementHubPage />} />
+            </Route>
+
+            {/* Timesheet App Routes */}
+            <Route path="/timesheet" element={<MainLayout />}>
               <Route index element={<Dashboard />} />
-              <Route path="timesheet" element={<TimesheetPage />} />
               <Route path="settings" element={<SettingsPage />} />
-              
+
               {/* Full-time employee routes */}
               <Route element={<FullTimeRoute />}>
                 <Route path="leave-application" element={<LeaveApplicationPage />} />
               </Route>
-              
+
               {/* Admin-only routes protected by AdminRoute */}
               <Route element={<AdminRoute />}>
                 <Route path="reports" element={<ReportsPage />} />
@@ -52,7 +59,7 @@ const App = () => (
                 <Route path="leave-management" element={<LeaveManagementPage />} />
               </Route>
             </Route>
-            
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
