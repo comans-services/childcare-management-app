@@ -43,6 +43,7 @@ const App = () => (
             {/* Timesheet App Routes */}
             <Route path="/timesheet" element={<MainLayout />}>
               <Route index element={<Dashboard />} />
+              <Route path="entry" element={<TimesheetPage />} />
               <Route path="settings" element={<SettingsPage />} />
 
               {/* Full-time employee routes */}

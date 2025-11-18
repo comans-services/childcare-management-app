@@ -39,14 +39,14 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
   const isManagerOrAbove = isAdmin || isManager;
 
   const navigationItems = [
-    { to: "/", icon: Home, label: "Home", showForAll: true },
-    { to: "/timesheet", icon: Calendar, label: "Timesheet", showForAll: true },
-    { to: "/leave-application", icon: Plane, label: "Leave Application", fullTimeOnly: true },
-    { to: "/reports", icon: BarChart, label: "Reports", adminOnly: true },
-    { to: "/team", icon: UserPlus, label: "Team", adminOnly: true },
-    { to: "/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },
-    { to: "/holidays", icon: CalendarCheck, label: "Holiday Management", adminOnly: true },
-    { to: "/leave-management", icon: CalendarCheck, label: "Leave Management", adminOnly: true },
+    { to: "/timesheet", icon: Home, label: "Dashboard", showForAll: true },
+    { to: "/timesheet/entry", icon: Calendar, label: "Timesheet Entry", showForAll: true },
+    { to: "/timesheet/leave-application", icon: Plane, label: "Leave Application", fullTimeOnly: true },
+    { to: "/timesheet/reports", icon: BarChart, label: "Reports", adminOnly: true },
+    { to: "/timesheet/team", icon: UserPlus, label: "Team", adminOnly: true },
+    { to: "/timesheet/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },
+    { to: "/timesheet/holidays", icon: CalendarCheck, label: "Holiday Management", adminOnly: true },
+    { to: "/timesheet/leave-management", icon: CalendarCheck, label: "Leave Management", adminOnly: true },
   ];
 
   const filteredItems = navigationItems.filter(item => 
@@ -109,8 +109,8 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
       
       {/* Settings and logout */}
       <div className="flex flex-col space-y-1 p-2">
-        <Link 
-          to="/settings" 
+        <Link
+          to="/timesheet/settings"
           className={`
             flex items-center space-x-2 py-2 hover:bg-secondary rounded-md px-2
             ${isCollapsed ? 'justify-center' : ''}

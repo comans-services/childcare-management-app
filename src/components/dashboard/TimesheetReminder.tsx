@@ -88,7 +88,7 @@ const TimesheetReminder: React.FC<TimesheetReminderProps> = ({
         </div>
       </CardContent>
       <CardFooter className="pt-0">
-        <Button onClick={() => navigate("/timesheet")} variant="outline" className={cardStyle.button}>
+        <Button onClick={() => navigate("/timesheet/entry")} variant="outline" className={cardStyle.button}>
           <CalendarClock className="mr-2 h-4 w-4" />
           {hasEntries && completeWeek && allDaysHaveEntries ? "View Timesheet" : "Enter Timesheet"}
         </Button>
