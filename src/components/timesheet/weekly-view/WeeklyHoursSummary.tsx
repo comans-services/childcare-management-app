@@ -18,8 +18,6 @@ const WeeklyHoursSummary: React.FC<WeeklyHoursSummaryProps> = ({
   weeklyTarget,
   entries = []
 }) => {
-  const { user } = useAuth();
-  
   const formatHours = (hours: number) => {
     return hours.toFixed(1);
   };
@@ -31,6 +29,9 @@ const WeeklyHoursSummary: React.FC<WeeklyHoursSummaryProps> = ({
     if (percentage < 100) return "text-blue-600";
     return "text-green-600";
   };
+
+  // Calculate unique days worked from entries
+  const daysWorked = new Set(entries.map(e => e.entry_date)).size;
 
   return (
     <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
@@ -48,21 +49,16 @@ const WeeklyHoursSummary: React.FC<WeeklyHoursSummaryProps> = ({
             </div>
           </div>
           
-          {/* Working Days Summary - Only show days */}
+          {/* Days Worked Summary */}
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-100 rounded-lg">
               <Calendar className="h-5 w-5 text-indigo-600" />
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-600">Days Worked</p>
-              <p className={`text-xl font-bold ${getDaysColor()}`}>
-                {validation.daysWorked} / {validation.daysAllowed} days
+              <p className="text-sm text-gray-600">Days Worked This Week</p>
+              <p className="text-xl font-bold text-indigo-600">
+                {daysWorked} {daysWorked === 1 ? 'day' : 'days'}
               </p>
-              {validation.daysRemaining > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {validation.daysRemaining} days remaining
-                </p>
-              )}
             </div>
           </div>
         </div>
