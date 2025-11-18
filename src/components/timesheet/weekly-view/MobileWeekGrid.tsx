@@ -1,6 +1,6 @@
 
 import React from "react";
-import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { TimesheetEntry } from "@/lib/timesheet-service";
 import MobileDayColumn from "../day-column/MobileDayColumn";
 import {
   Carousel,
@@ -14,7 +14,6 @@ interface MobileWeekGridProps {
   weekDates: Date[];
   userId: string;
   entries: TimesheetEntry[];
-  projects: Project[];
   onEntryChange: () => void;
   onAddEntry: (date: Date) => void;
   onEditEntry: (date: Date, entry: TimesheetEntry) => void;
@@ -25,7 +24,6 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
   weekDates,
   userId,
   entries,
-  projects,
   onEntryChange,
   onAddEntry,
   onEditEntry,
@@ -46,7 +44,7 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
             date={date}
             userId={userId}
             entries={entries}
-            projects={projects}
+            projects={[]}
             onEntryChange={onEntryChange}
             onAddEntry={() => onAddEntry(date)}
             onEditEntry={(entry) => onEditEntry(date, entry)}
@@ -70,7 +68,7 @@ const MobileWeekGrid: React.FC<MobileWeekGridProps> = ({
                 date={date}
                 userId={userId}
                 entries={entries}
-                projects={projects}
+                projects={[]}
                 onEntryChange={onEntryChange}
                 onAddEntry={() => onAddEntry(date)}
                 onEditEntry={(entry) => onEditEntry(date, entry)}

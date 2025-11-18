@@ -2,17 +2,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
-  fetchUserProjects,
   fetchTimesheetEntries,
-  Project,
   TimesheetEntry,
 } from "@/lib/timesheet-service";
-import { fetchUserProjectsById } from "@/lib/timesheet/user-specific-service";
 import { toast } from "@/hooks/use-toast";
 
 export const useWeeklyViewData = (weekDates: Date[], viewAsUserId?: string | null) => {
   const { user, session } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +19,6 @@ export const useWeeklyViewData = (weekDates: Date[], viewAsUserId?: string | nul
   // Clear all state when user changes
   const clearComponentState = useCallback(() => {
     console.log("=== CLEARING WEEKLY VIEW DATA STATE ===");
-    setProjects([]);
     setEntries([]);
     setError(null);
   }, []);
@@ -47,24 +42,7 @@ export const useWeeklyViewData = (weekDates: Date[], viewAsUserId?: string | nul
     try {
       console.log("Starting data fetch for target user:", targetUserId);
       
-      // Fetch projects for the target user
-      let projectsData: Project[] = [];
-      
-      if (viewAsUserId && viewAsUserId !== user.id) {
-        // Admin viewing another user's data - fetch their specific assignments
-        console.log("Admin fetching data for user:", viewAsUserId);
-        projectsData = await fetchUserProjectsById(viewAsUserId);
-      } else {
-        // User viewing their own data - use existing functions
-        console.log("User fetching their own data");
-        projectsData = await fetchUserProjects();
-      }
-      
-      console.log("Successfully fetched projects:", projectsData.length);
-      
-      setProjects(projectsData);
-      
-      // Then fetch entries if we have valid dates - pass target user ID for admin viewing
+      // Fetch entries if we have valid dates - pass target user ID for admin viewing
       if (weekDates.length > 0) {
         console.log("Fetching entries for date range:", weekDates[0], "to", weekDates[weekDates.length - 1]);
         console.log("Fetching entries for user:", targetUserId);
@@ -94,7 +72,6 @@ export const useWeeklyViewData = (weekDates: Date[], viewAsUserId?: string | nul
   }, [weekDates, user?.id, session, targetUserId, viewAsUserId]);
 
   return {
-    projects,
     entries,
     loading,
     error,

@@ -3,7 +3,7 @@ import React from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import DayColumn from "../DayColumn";
-import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { TimesheetEntry } from "@/lib/timesheet-service";
 import { isWeekend } from "@/lib/date-utils";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useAuth } from "@/context/AuthContext";
@@ -19,7 +19,6 @@ interface WeekGridProps {
   weekDates: Date[];
   userId: string;
   entries: TimesheetEntry[];
-  projects: Project[];
   onEntryChange: () => void;
   onDragEnd: (result: DropResult) => void;
   onAddEntry: (date: Date) => void;
@@ -31,7 +30,6 @@ const WeekGrid: React.FC<WeekGridProps> = ({
   weekDates,
   userId,
   entries,
-  projects,
   onEntryChange,
   onDragEnd,
   onAddEntry,
@@ -75,7 +73,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
               date={date}
               userId={userId}
               entries={entries}
-              projects={projects}
+              projects={[]}
               onEntryChange={onEntryChange}
               droppableId={index.toString()}
               onAddEntry={() => onAddEntry(date)}
@@ -106,7 +104,7 @@ const WeekGrid: React.FC<WeekGridProps> = ({
                 date={date}
                 userId={userId}
                 entries={entries}
-                projects={projects}
+                projects={[]}
                 onEntryChange={onEntryChange}
                 droppableId={index.toString()}
                 onAddEntry={() => onAddEntry(date)}
