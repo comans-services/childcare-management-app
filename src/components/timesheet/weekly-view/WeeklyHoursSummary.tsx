@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, Calendar } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
+import { useDailyEntryValidation } from "@/hooks/useDailyEntryValidation";
 import { TimesheetEntry } from "@/lib/timesheet-service";
 import { getWeekStart } from "@/lib/date-utils";
 
@@ -20,10 +20,6 @@ const WeeklyHoursSummary: React.FC<WeeklyHoursSummaryProps> = ({
 }) => {
   const { user } = useAuth();
   
-  // Get working days validation for current week
-  const currentWeekStart = getWeekStart(new Date());
-  const validation = useWorkingDaysValidation(user?.id || "", entries, currentWeekStart);
-
   const formatHours = (hours: number) => {
     return hours.toFixed(1);
   };
@@ -31,13 +27,6 @@ const WeeklyHoursSummary: React.FC<WeeklyHoursSummaryProps> = ({
   const getHoursColor = () => {
     if (!weeklyTarget) return "text-blue-600";
     const percentage = totalHours / weeklyTarget * 100;
-    if (percentage < 50) return "text-amber-600";
-    if (percentage < 100) return "text-blue-600";
-    return "text-green-600";
-  };
-
-  const getDaysColor = () => {
-    const percentage = validation.daysWorked / validation.daysAllowed * 100;
     if (percentage < 50) return "text-amber-600";
     if (percentage < 100) return "text-blue-600";
     return "text-green-600";

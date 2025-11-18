@@ -2,14 +2,29 @@
 import { TimesheetEntry } from "./types";
 import { validateWeekendEntry } from "./validation/weekend-validation-service";
 import { validateHolidayEntry } from "./validation/holiday-validation-service";
-import { validateEntryData, validateProjectBudgetForEntry } from "./validation/entry-validation-service";
+import { validateEntryData } from "./validation/entry-validation-service";
 import { createTimesheetEntry } from "./operations/entry-create-service";
 import { updateTimesheetEntry } from "./operations/entry-update-service";
 import { deleteTimesheetEntry, deleteAllTimesheetEntries } from "./operations/entry-delete-service";
 import { duplicateTimesheetEntry } from "./operations/entry-duplicate-service";
-import { validateProjectBudget, getProjectHoursUsed } from "./validation/budget-validation-service";
 import { supabase } from "@/integrations/supabase/client";
-import { isAdmin } from "@/utils/roles";
+
+const checkForDuplicateEntry = async (userId: string, entryDate: string, entryId?: string): Promise<boolean> => {
+  const query = supabase
+    .from("timesheet_entries")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("entry_date", entryDate);
+  
+  // If updating, exclude the current entry from the check
+  if (entryId) {
+    query.neq("id", entryId);
+  }
+  
+  const { data } = await query.maybeSingle();
+  
+  return !!data;
+};
 
 export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
   try {
@@ -32,55 +47,23 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
       throw new Error(holidayValidation.message || "Holiday entry not allowed");
     }
 
-    // Step 4: Get current user for admin override checks
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.error("Authentication error during entry save:", authError);
-      throw new Error("Authentication required");
-    }
-
-    console.log("=== AUTHENTICATED USER ===", user.id);
-
-    // Step 5: Check if user is admin for enhanced permissions
-    const userIsAdmin = await isAdmin(user);
-    console.log("User is admin:", userIsAdmin);
-
-    // Step 6: Critical budget validation for project entries
-    let budgetOverrideUsed = false;
-    if (entry.entry_type === 'project' && entry.project_id) {
-      console.log("=== BACKEND BUDGET VALIDATION ===");
-      
-      // For budget validation, use the target user (could be different for admin editing)
-      const targetUserId = entry.user_id || user.id;
-      
-      const budgetValidation = await validateProjectBudget({
-        projectId: entry.project_id,
-        hoursToAdd: entry.hours_logged,
-        existingEntryId: entry.id,
-        userId: targetUserId
-      });
-
-      console.log("Backend budget validation result:", budgetValidation);
-      console.log("User can override:", budgetValidation.canOverride);
-      console.log("Budget is valid:", budgetValidation.isValid);
-
-      // Critical: Block non-admin users from exceeding budget
-      if (!budgetValidation.isValid && !userIsAdmin) {
-        console.error("BACKEND BLOCKING: Non-admin user attempting to exceed budget");
-        console.error("Budget message:", budgetValidation.message);
-        throw new Error(budgetValidation.message || "Budget exceeded - entry blocked by server");
+    // Step 4: Check for duplicate entry on the same day
+    if (!entry.id) {
+      const hasDuplicate = await checkForDuplicateEntry(entry.user_id, entry.entry_date);
+      if (hasDuplicate) {
+        throw new Error("You already have a shift logged for this day. Please edit or delete the existing entry first.");
       }
-
-      // If budget is exceeded but user is admin, allow with logging
-      if (!budgetValidation.isValid && userIsAdmin) {
-        budgetOverrideUsed = true;
-        console.log("Admin budget override being applied by server");
+    } else {
+      // When updating, check if there's another entry on this date
+      const hasDuplicate = await checkForDuplicateEntry(entry.user_id, entry.entry_date, entry.id);
+      if (hasDuplicate) {
+        throw new Error("Another shift already exists for this day. Please delete it first.");
       }
     }
     
     console.log("All validations passed, proceeding with save");
     
-    // Save the entry - database triggers will handle user_id and user_full_name assignment
+    // Save the entry
     let savedEntry: TimesheetEntry;
     const isUpdate = !!entry.id;
     
@@ -90,12 +73,6 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     } else {
       console.log("=== CREATING NEW ENTRY ===");
       savedEntry = await createTimesheetEntry(entry);
-    }
-
-    // Budget override logging is now handled by the database function
-    if (budgetOverrideUsed) {
-      console.log("=== BUDGET OVERRIDE OCCURRED ===");
-      console.log("Admin override applied - tracked by database function");
     }
 
     console.log("=== ENTRY SAVE COMPLETED SUCCESSFULLY ===");

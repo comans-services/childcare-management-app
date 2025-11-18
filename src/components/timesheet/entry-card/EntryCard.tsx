@@ -47,24 +47,14 @@ export const getProjectColor = (project?: { name?: string }) => {
   return PROJECT_COLORS.default;
 };
 
-// New function to get color for any entry type
+// Simplified - no more project/contract distinction
 export const getEntryColor = (entry: TimesheetEntry) => {
-  if (entry.entry_type === 'project' && entry.project) {
-    return getProjectColor(entry.project);
-  } else if (entry.entry_type === 'contract' && entry.contract) {
-    return getProjectColor({ name: entry.contract.name });
-  }
   return PROJECT_COLORS.default;
 };
 
-// New function to get display name for any entry type
+// Simplified - just show time info
 export const getEntryDisplayName = (entry: TimesheetEntry) => {
-  if (entry.entry_type === 'project' && entry.project) {
-    return entry.project.name;
-  } else if (entry.entry_type === 'contract' && entry.contract) {
-    return entry.contract.name;
-  }
-  return "Unknown Entry";
+  return `${entry.start_time} - ${entry.end_time}`;
 };
 
 export const formatUserName = (entry: TimesheetEntry) => {
@@ -177,11 +167,6 @@ const EntryCard: React.FC<EntryCardProps> = ({
               {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
             </div>
             
-            {entry.jira_task_id && (
-              <div className="text-[10px] md:text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block truncate max-w-[120px]">
-                {entry.jira_task_id}
-              </div>
-            )}
           </div>
           
           <div className="flex items-center mt-1.5 mb-1.5 text-[10px] md:text-xs text-muted-foreground">
@@ -195,15 +180,6 @@ const EntryCard: React.FC<EntryCardProps> = ({
               <span className="text-muted-foreground">
                 {entry.start_time} - {entry.end_time}
               </span>
-            </div>
-          )}
-          
-          {entry.notes && (
-            <div className="flex items-start mt-2 bg-background/30 p-1.5 rounded-md">
-              <FileText className="h-3 w-3 mt-0.5 text-muted-foreground mr-1.5 flex-shrink-0" aria-hidden="true" />
-              <p className="text-[10px] md:text-xs text-muted-foreground break-words whitespace-normal w-full">
-                {entry.notes}
-              </p>
             </div>
           )}
           

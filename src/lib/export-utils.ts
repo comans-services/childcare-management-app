@@ -50,26 +50,6 @@ const formatReportData = (
   return reportData.map(entry => {
     const employee = userMap.get(entry.user_id);
     
-    // Use the same logic as ReportDataTable for project/contract names
-    const getProjectName = () => {
-      if (entry.entry_type === 'project' && entry.project) {
-        // Use the project data from RPC response first, fall back to map lookup
-        return entry.project.name || projectMap.get(entry.project_id!)?.name || 'Unknown Project';
-      } else if (entry.entry_type === 'contract' && entry.contract_id) {
-        return 'N/A (Contract Entry)';
-      }
-      return 'Unknown';
-    };
-
-    const getContractName = () => {
-      if (entry.entry_type === 'contract' && entry.contract) {
-        // Use the contract data from RPC response first, fall back to map lookup
-        return entry.contract.name || contractMap.get(entry.contract_id!)?.name || 'Unknown Contract';
-      } else if (entry.entry_type === 'project' && entry.project_id) {
-        return 'N/A (Project Entry)';
-      }
-      return 'Unknown';
-    };
     
     const baseData = {
       Date: formatDateDisplay(new Date(entry.entry_date)),
@@ -81,26 +61,16 @@ const formatReportData = (
       'Employee Card ID': employee?.employee_card_id || '-'
     } : {};
 
-    const projectData = filters.includeProject ? {
-      Project: getProjectName()
-    } : {};
-
-    const contractData = filters.includeContract ? {
-      Contract: getContractName()
-    } : {};
-
-    const remainingData = {
-      Hours: entry.hours_logged,
-      'Jira Task ID': entry.jira_task_id || '',
-      Notes: entry.notes || ''
+    const timeData = {
+      'Start Time': entry.start_time || '',
+      'End Time': entry.end_time || '',
+      Hours: entry.hours_logged
     };
 
     return {
       ...baseData,
       ...employeeIdData,
-      ...projectData,
-      ...contractData,
-      ...remainingData
+      ...timeData
     };
   });
 };

@@ -7,20 +7,8 @@ export const processProjectDistribution = (
   reportData: TimesheetEntry[],
   projectMap: Map<string, Project>
 ) => {
-  const projectHours: Record<string, number> = {};
-  
-  reportData.forEach((entry) => {
-    const projectId = entry.project_id;
-    projectHours[projectId] = (projectHours[projectId] || 0) + entry.hours_logged;
-  });
-  
-  return Object.keys(projectHours).map((projectId) => {
-    const project = projectMap.get(projectId);
-    return {
-      name: project?.name || "Unknown Project",
-      value: projectHours[projectId],
-    };
-  }).sort((a, b) => b.value - a.value);
+  // No projects anymore - return empty array
+  return [];
 };
 
 export const processEmployeeDistribution = (
