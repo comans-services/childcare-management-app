@@ -94,12 +94,6 @@ const MobileEntryCard: React.FC<MobileEntryCardProps> = ({
             <h3 className="font-semibold text-base leading-tight break-words">
               {getEntryDisplayName(entry)}
             </h3>
-            {entry.entry_type === 'contract' && (
-              <div className="flex items-center mt-1">
-                <Tag className="h-3 w-3 mr-1 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Contract</span>
-              </div>
-            )}
           </div>
           <div className="text-right flex-shrink-0 ml-3">
             <div className="font-bold text-lg rounded-lg bg-background/70 px-3 py-1 flex items-center">
@@ -109,18 +103,12 @@ const MobileEntryCard: React.FC<MobileEntryCardProps> = ({
           </div>
         </div>
 
-        {/* User and Task Info */}
+        {/* User and Time Info */}
         <div className="space-y-2 mb-3">
           <div className="flex items-center text-sm text-muted-foreground">
             <User className="h-4 w-4 mr-2 flex-shrink-0" />
             <span>{formatUserName(entry)}</span>
           </div>
-          
-          {entry.jira_task_id && (
-            <div className="inline-block bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-medium">
-              {entry.jira_task_id}
-            </div>
-          )}
           
           {entry.start_time && entry.end_time && (
             <div className="flex items-center bg-background/30 p-2 rounded-md text-sm">
@@ -131,18 +119,6 @@ const MobileEntryCard: React.FC<MobileEntryCardProps> = ({
             </div>
           )}
         </div>
-        
-        {/* Notes */}
-        {entry.notes && (
-          <div className="mb-3">
-            <div className="flex items-start bg-background/40 p-3 rounded-lg">
-              <FileText className="h-4 w-4 mt-0.5 text-muted-foreground mr-2 flex-shrink-0" />
-              <p className="text-sm text-muted-foreground break-words leading-relaxed">
-                {entry.notes}
-              </p>
-            </div>
-          </div>
-        )}
         
         {/* Action Buttons */}
         <div className="flex justify-end space-x-2 pt-3 border-t border-background/30">

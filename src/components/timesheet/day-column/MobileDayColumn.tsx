@@ -4,7 +4,7 @@ import { TimesheetEntry, Project, deleteTimesheetEntry } from "@/lib/timesheet-s
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
+import { useDailyEntryValidation } from "@/hooks/useDailyEntryValidation";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { isWeekend } from "@/lib/date-utils";
 import { sortEntriesByTime } from "@/lib/time-sorting-utils";
@@ -39,9 +39,8 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const dailyTarget = 8;
 
-  // Get working days validation
-  const weekStart = getWeekStart(date);
-  const validation = useWorkingDaysValidation(userId, entries, weekStart);
+  // Get daily entry validation
+  const validation = useDailyEntryValidation(entries);
 
   // Get weekend lock validation
   const { validateWeekendEntry } = useWeekendLock(userId);
@@ -116,8 +115,8 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
   const handleAddEntry = () => {
     if (!canAddToThisDay) {
       toast({
-        title: "Cannot add entry",
-        description: validation.getValidationMessage(),
+        title: "Cannot add shift",
+        description: validation.getValidationMessage(date),
         variant: "destructive",
       });
       return;

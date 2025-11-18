@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, Calendar, TrendingUp } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useWorkingDaysValidation } from "@/hooks/useWorkingDaysValidation";
+import { useDailyEntryValidation } from "@/hooks/useDailyEntryValidation";
 import { TimesheetEntry } from "@/lib/timesheet-service";
 import { getWeekStart } from "@/lib/date-utils";
 
@@ -20,10 +20,6 @@ const MobileWeeklyHoursSummary: React.FC<MobileWeeklyHoursSummaryProps> = ({
 }) => {
   const { user } = useAuth();
   
-  // Get working days validation for current week
-  const currentWeekStart = getWeekStart(new Date());
-  const validation = useWorkingDaysValidation(user?.id || "", entries, currentWeekStart);
-
   const formatHours = (hours: number) => {
     return hours.toFixed(1);
   };
@@ -31,13 +27,6 @@ const MobileWeeklyHoursSummary: React.FC<MobileWeeklyHoursSummaryProps> = ({
   const getHoursColor = () => {
     if (!weeklyTarget) return "text-blue-600";
     const percentage = totalHours / weeklyTarget * 100;
-    if (percentage < 50) return "text-amber-600";
-    if (percentage < 100) return "text-blue-600";
-    return "text-green-600";
-  };
-
-  const getDaysColor = () => {
-    const percentage = validation.daysWorked / validation.daysAllowed * 100;
     if (percentage < 50) return "text-amber-600";
     if (percentage < 100) return "text-blue-600";
     return "text-green-600";
@@ -76,31 +65,6 @@ const MobileWeeklyHoursSummary: React.FC<MobileWeeklyHoursSummaryProps> = ({
               </div>
               <p className="text-xs text-gray-500 mt-2">
                 {getProgressPercentage().toFixed(0)}% of weekly target
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Days Worked - Only show days, no hours */}
-        <div className="flex items-center justify-center space-x-6 pt-4 border-t border-blue-200">
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-2">
-              <Calendar className="h-4 w-4 text-indigo-600 mr-1" />
-              <span className="text-sm text-gray-600">Days Worked</span>
-            </div>
-            <p className={`text-xl font-bold ${getDaysColor()}`}>
-              {validation.daysWorked} / {validation.daysAllowed}
-            </p>
-          </div>
-          
-          {validation.daysRemaining > 0 && (
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-2">
-                <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
-                <span className="text-sm text-gray-600">Remaining</span>
-              </div>
-              <p className="text-xl font-bold text-green-600">
-                {validation.daysRemaining}
               </p>
             </div>
           )}

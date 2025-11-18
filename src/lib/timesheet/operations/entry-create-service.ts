@@ -21,5 +21,5 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     throw error;
   }
   
-  return { ...data, entry_type: 'project' as const };
+  return data;
 };

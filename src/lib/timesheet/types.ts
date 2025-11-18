@@ -27,22 +27,14 @@ export interface Contract {
 
 export interface TimesheetEntry {
   id?: string;
-  user_id?: string;
+  user_id: string;
   entry_date: string;
   hours_logged: number;
-  start_time?: string;
-  end_time?: string;
+  start_time: string;
+  end_time: string;
   user_full_name?: string; // Cached user name from database
   created_at?: string;
   updated_at?: string;
-  // Related data that gets joined (for compatibility)
-  entry_type?: 'project' | 'contract';
-  notes?: string;
-  jira_task_id?: string;
-  project_id?: string;
-  contract_id?: string;
-  project?: Project;
-  contract?: Contract;
   user?: {
     id: string;
     full_name?: string;
