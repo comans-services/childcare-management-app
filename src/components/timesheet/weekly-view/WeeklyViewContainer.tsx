@@ -48,7 +48,6 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
   } = useWeeklyNavigation(viewMode);
 
   const {
-    projects,
     entries,
     loading,
     error,
@@ -177,7 +176,6 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
           currentDate={currentDate}
           viewMode={viewMode}
           entries={entries}
-          projects={projects}
           onEntryChange={fetchData}
           onAddEntry={handleOpenEntryDialog}
           onEditEntry={handleOpenEntryDialog}

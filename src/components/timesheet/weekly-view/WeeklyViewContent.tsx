@@ -1,7 +1,7 @@
 
 import React, { useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { TimesheetEntry, Project } from "@/lib/timesheet-service";
+import { TimesheetEntry } from "@/lib/timesheet-service";
 import { getWeekStart, isWeekend } from "@/lib/date-utils";
 import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
@@ -12,14 +12,12 @@ import WeeklyHoursSummary from "./WeeklyHoursSummary";
 import MobileWeeklyHoursSummary from "./MobileWeeklyHoursSummary";
 import WeekGrid from "./WeekGrid";
 import MobileWeekGrid from "./MobileWeekGrid";
-import EmptyState from "./EmptyState";
 
 interface WeeklyViewContentProps {
   weekDates: Date[];
   currentDate: Date;
   viewMode: "today" | "week";
   entries: TimesheetEntry[];
-  projects: Project[];
   onEntryChange: () => void;
   onAddEntry: (date: Date, entry?: TimesheetEntry) => void;
   onEditEntry: (date: Date, entry?: TimesheetEntry) => void;
@@ -32,7 +30,6 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
   currentDate,
   viewMode,
   entries,
-  projects,
   onEntryChange,
   onAddEntry,
   onEditEntry,
@@ -126,10 +123,6 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
     return <div className="text-center text-gray-500">Please sign in to view your timesheet.</div>;
   }
 
-  if (projects.length === 0) {
-    return <EmptyState />;
-  }
-
   return (
     <>
       {/* Hours Summary - use calculation entries for accurate totals */}
@@ -171,7 +164,6 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
             weekDates={displayDates}
             userId={effectiveUserId || ""}
             entries={entries}
-            projects={projects}
             onEntryChange={onEntryChange}
             onAddEntry={onAddEntry}
             onEditEntry={onEditEntry}
@@ -182,7 +174,6 @@ const WeeklyViewContent: React.FC<WeeklyViewContentProps> = ({
             weekDates={displayDates}
             userId={effectiveUserId || ""}
             entries={entries}
-            projects={projects}
             onEntryChange={onEntryChange}
             onDragEnd={onDragEnd}
             onAddEntry={onAddEntry}
