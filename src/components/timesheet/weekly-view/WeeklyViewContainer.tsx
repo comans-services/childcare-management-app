@@ -15,6 +15,13 @@ import LoadingState from "./LoadingState";
 import ErrorState from "./ErrorState";
 import WeeklyViewContent from "./WeeklyViewContent";
 import { isAdmin } from "@/utils/roles";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import EntryForm from "../EntryForm";
 
 interface WeeklyViewContainerProps {
   viewAsUserId?: string | null;
@@ -181,6 +188,37 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
           onEditEntry={handleOpenEntryDialog}
           onDragEnd={handleDragEnd}
         />
+      )}
+
+      {/* Entry Dialog */}
+      {shouldShowDialogs && (
+        <Dialog open={entryDialogOpen} onOpenChange={(open) => {
+          if (!open) {
+            clearDialogState();
+            setEditingEntry(undefined);
+          }
+        }}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>
+                {editingEntry ? "Edit Shift" : "Add Shift"}
+                {selectedDate && ` - ${selectedDate.toLocaleDateString()}`}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedDate && (
+              <EntryForm
+                userId={effectiveUserId}
+                date={selectedDate}
+                existingEntry={editingEntry}
+                onSave={handleSaveEntry}
+                onCancel={() => {
+                  clearDialogState();
+                  setEditingEntry(undefined);
+                }}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       )}
 
     </ResponsiveContainer>
