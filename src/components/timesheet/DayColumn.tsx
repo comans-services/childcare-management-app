@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useDailyEntryValidation } from "@/hooks/useDailyEntryValidation";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
+import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 import { isWeekend } from "@/lib/date-utils";
 import { sortEntriesByTime } from "@/lib/time-sorting-utils";
 import DayHeader from "./day-column/DayHeader";
@@ -39,10 +40,18 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<TimesheetEntry | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const dailyTarget = 8;
+  
+  // Get weekly schedule to determine scheduled hours
+  const { effectiveDailyHours } = useWeeklyWorkSchedule(userId, getWeekStart(date));
+  
+  // Get the scheduled hours for this specific day
+  const dayOfWeek = date.getDay();
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+  const scheduledHours = effectiveDailyHours[dayNames[dayOfWeek]];
+  const dailyTarget = scheduledHours > 0 ? scheduledHours : 8;
 
-  // Get daily entry validation
-  const validation = useDailyEntryValidation(entries);
+  // Get daily entry validation with schedule awareness
+  const validation = useDailyEntryValidation(entries, effectiveDailyHours);
 
   // Get weekend lock validation
   const { validateWeekendEntry } = useWeekendLock(userId);
@@ -75,14 +84,23 @@ const DayColumn: React.FC<DayColumnProps> = ({
     return "bg-violet-500";
   };
 
-  // Check if this day can accept new entries (1 per day + weekend validation)
+  // Check if this day can accept new entries (schedule + 1 per day + weekend validation)
   const canAddToThisDay = validation.canAddToDate(date);
   const hasEntries = dayEntries.length > 0;
+  const isDayScheduled = validation.isDayScheduled(date);
   
   // Weekend-specific validation
   const isWeekendDay = isWeekend(date);
   const weekendValidation = validateWeekendEntry(date);
   const isWeekendBlocked = isWeekendDay && !weekendValidation.isValid;
+  
+  // Determine block reason for visual feedback
+  const getBlockReason = (): 'not-scheduled' | 'has-entry' | 'weekend' | null => {
+    if (!isDayScheduled) return 'not-scheduled';
+    if (hasEntries) return 'has-entry';
+    if (isWeekendBlocked) return 'weekend';
+    return null;
+  };
 
   const handleDeleteClick = (entry: TimesheetEntry) => {
     setEntryToDelete(entry);
@@ -142,44 +160,33 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const isDayBlocked = (!canAddToThisDay && !hasEntries) || (isWeekendBlocked && !hasEntries);
 
   return (
-    <div className="flex flex-col h-full min-w-0 w-full max-w-full">
-      <DayHeader date={date} />
+    <div 
+      className={cn(
+        "flex flex-col h-full border-2 rounded-lg overflow-hidden transition-all",
+        !isDayScheduled ? "bg-muted/30 border-muted" : 
+        isWeekendBlocked ? "bg-red-50 border-red-200" : "bg-card border-border",
+        hasEntries && "ring-2 ring-primary/20"
+      )}
+    >
+      <DayHeader 
+        date={date} 
+        isScheduled={isDayScheduled}
+        scheduledHours={scheduledHours}
+      />
       
-      <div className={cn(
-        "h-full flex-grow overflow-hidden bg-background border border-t-0 rounded-b-md shadow-sm",
-        // Enhanced visual styling for blocked days
-        isDayBlocked && "bg-gray-50 border-dashed opacity-75",
-        // Special weekend styling when blocked
-        isWeekendBlocked && !hasEntries && "bg-red-50 border-red-200 border-dashed",
-        // Weekend day indicator (subtle for allowed weekend days)
-        isWeekendDay && !isWeekendBlocked && "bg-blue-50"
-      )}>
+      <div className="h-full flex-grow overflow-hidden">
         <ScrollArea className="h-[50vh] md:h-[60vh]">
           <div className="flex flex-col p-2 space-y-2 min-w-0">
             <AddEntryButton 
               onClick={handleAddEntry}
-              disabled={isDayBlocked}
-              className={cn(
-                isDayBlocked && "opacity-50 cursor-not-allowed"
-              )}
+              disabled={!canAddToThisDay}
+              blockReason={getBlockReason()}
             />
 
-            {/* Enhanced status messages for blocked days */}
-            {!canAddToThisDay && !hasEntries && (
-              <div className="text-xs text-muted-foreground text-center p-2 bg-amber-50 rounded border">
-                Day limit reached
-              </div>
-            )}
-
-            {isWeekendBlocked && !hasEntries && (
-              <div className="text-xs text-red-600 text-center p-2 bg-red-50 rounded border border-red-200">
-                Weekend entries disabled
-              </div>
-            )}
-
-            {isWeekendDay && !isWeekendBlocked && !hasEntries && (
-              <div className="text-xs text-blue-600 text-center p-2 bg-blue-50 rounded border border-blue-200">
-                Weekend day
+            {/* Status messages for blocked days */}
+            {!isDayScheduled && !hasEntries && (
+              <div className="text-xs text-muted-foreground text-center p-2 bg-muted/50 rounded border border-muted">
+                Not scheduled to work
               </div>
             )}
 

@@ -1,21 +1,29 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchWeeklyWorkSchedule, upsertWeeklyWorkSchedule, WeeklyWorkSchedule } from "@/lib/weekly-work-schedule-service";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
+import { useEmploymentType } from "@/hooks/useEmploymentType";
 import { toast } from "@/hooks/use-toast";
 
 export const useWeeklyWorkSchedule = (userId: string, weekStartDate: Date) => {
   const { user } = useAuth();
   const { workingDays } = useWorkSchedule(userId);
+  const { employmentType } = useEmploymentType();
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklyWorkSchedule | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Calculate default daily hours based on working days
+  // Calculate default daily hours based on employment type and working days
   const getDefaultDailyHours = (dayIndex: number): number => {
     // Monday = 1, Tuesday = 2, ..., Sunday = 0
+    
+    // Full-time: Always Mon-Fri, 8 hours each
+    if (employmentType === 'full-time') {
+      return (dayIndex >= 1 && dayIndex <= 5) ? 8 : 0;
+    }
+    
+    // Part-time/Casual: Use global working_days setting
     const workingDaysList = [];
     if (workingDays >= 1) workingDaysList.push(1); // Monday
     if (workingDays >= 2) workingDaysList.push(2); // Tuesday

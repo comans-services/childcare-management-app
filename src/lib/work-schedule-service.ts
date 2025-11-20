@@ -53,7 +53,12 @@ export const getDefaultWorkingDays = async (userId: string): Promise<number> => 
       return 5; // Default fallback
     }
 
-    // Return 3 days for part-time, 5 days for full-time or undefined
+    // Full-time employees always work Mon-Fri (5 days)
+    if (profile?.employment_type === 'full-time') {
+      return 5;
+    }
+    
+    // Part-time/casual default to 3 days (can be customized)
     const defaultDays = profile?.employment_type === 'part-time' ? 3 : 5;
     console.log(`Default working days for user ${userId} (${profile?.employment_type}): ${defaultDays}`);
     return defaultDays;
@@ -61,6 +66,32 @@ export const getDefaultWorkingDays = async (userId: string): Promise<number> => 
     console.error("Error getting default working days:", error);
     return 5; // Default fallback
   }
+};
+
+export const getDefaultWeeklySchedule = (employmentType: string) => {
+  if (employmentType === 'full-time') {
+    // Full-time: Mon-Fri, 8 hours each
+    return {
+      monday_hours: 8,
+      tuesday_hours: 8,
+      wednesday_hours: 8,
+      thursday_hours: 8,
+      friday_hours: 8,
+      saturday_hours: 0,
+      sunday_hours: 0,
+    };
+  }
+  
+  // Part-time/casual: No days by default (must be configured)
+  return {
+    monday_hours: 0,
+    tuesday_hours: 0,
+    wednesday_hours: 0,
+    thursday_hours: 0,
+    friday_hours: 0,
+    saturday_hours: 0,
+    sunday_hours: 0,
+  };
 };
 
 export const upsertWorkSchedule = async (userId: string, workingDays: number): Promise<WorkSchedule | null> => {

@@ -6,11 +6,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWorkSchedule } from "@/hooks/useWorkSchedule";
 import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
+import { useEmploymentType } from "@/hooks/useEmploymentType";
 import { useAuth } from "@/context/AuthContext";
-import { Calendar, Clock, Target, Calendar as CalendarWeekend, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { Calendar, Clock, Target, Calendar as CalendarWeekend, CheckCircle, XCircle, RefreshCw, Info, Briefcase } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
 import WeeklyScheduleEditor from "./WeeklyScheduleEditor";
@@ -32,7 +34,10 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
 }) => {
   const { userRole } = useAuth();
   const isAdmin = userRole === "admin";
+  const { employmentType } = useEmploymentType();
   const [updatingWeekend, setUpdatingWeekend] = useState(false);
+  
+  const isFullTime = employmentType === 'full-time';
 
   const {
     workingDays,
@@ -141,6 +146,15 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             {user.full_name || user.email}
           </CardTitle>
           <div className="flex items-center gap-2">
+            {/* Employment Type Badge */}
+            <Badge 
+              variant={isFullTime ? "default" : "secondary"} 
+              className="text-xs"
+            >
+              <Briefcase className="h-3 w-3 mr-1" />
+              {employmentType === 'full-time' ? 'Full-Time' : employmentType === 'part-time' ? 'Part-Time' : 'Casual'}
+            </Badge>
+            
             {hasOverride && <Badge variant="secondary" className="text-xs">
                 <Calendar className="h-3 w-3 mr-1" />
                 Custom Schedule
@@ -148,12 +162,6 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             <Badge variant={user.role === "admin" ? "default" : "secondary"}>
               {user.role || "employee"}
             </Badge>
-            {/* Admin override indicator */}
-            {user.role === "admin" && (
-              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
-                Weekend Override
-              </Badge>
-            )}
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -175,6 +183,16 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
         </TabsList>
 
         <TabsContent value="schedule" className="space-y-4 mt-4">
+          {/* Employment Type Notice */}
+          {isFullTime && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                Full-time employees are automatically scheduled Mon-Fri (5 days, 40 hours/week). Use Weekly Hours tab to override specific weeks.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
@@ -195,16 +213,9 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
               <span className="font-medium text-sm">Global Working Days</span>
             </div>
             
-            {isAdmin && (
-              <div className="text-sm text-muted-foreground">
-                {workingDays} days per week (edit in global settings)
-              </div>
-            )}
-            {!isAdmin && (
-              <div className="text-sm text-muted-foreground">
-                {workingDays} days per week
-              </div>
-            )}
+            <div className="text-sm text-muted-foreground">
+              {workingDays} days per week {isFullTime && '(Mon-Fri for full-time)'}
+            </div>
           </div>
         </TabsContent>
 
