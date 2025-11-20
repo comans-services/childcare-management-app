@@ -1,6 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry } from "../types";
-import { validateScheduledHours } from "../validation/entry-validation-service";
 
 export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
   if (!entry.id) {
@@ -8,9 +8,6 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
   }
 
   console.log("Updating entry:", entry.id, "for user:", entry.user_id);
-  
-  // Validate that user is scheduled to work on this day
-  await validateScheduledHours(entry.user_id, entry.entry_date);
 
   // Create update object - only actual database fields
   const updateData = {

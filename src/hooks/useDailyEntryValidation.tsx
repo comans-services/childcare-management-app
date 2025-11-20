@@ -26,7 +26,7 @@ export const useDailyEntryValidation = (
   };
 
   const canAddToDate = (date: Date): boolean => {
-    // Only check if entry already exists for this date
+    // Can only add if no entry exists for this date
     return !hasEntryOnDate(date);
   };
 

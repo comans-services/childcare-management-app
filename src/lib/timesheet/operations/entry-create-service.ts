@@ -1,10 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { TimesheetEntry, CreateTimesheetEntry } from "../types";
-import { validateScheduledHours } from "../validation/entry-validation-service";
 
 export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<TimesheetEntry> => {
-  // Validate that user is scheduled to work on this day
-  await validateScheduledHours(entry.user_id, entry.entry_date);
   const dbEntry: CreateTimesheetEntry = {
     entry_date: entry.entry_date,
     hours_logged: entry.hours_logged,

@@ -5,7 +5,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useDailyEntryValidation } from "@/hooks/useDailyEntryValidation";
-import { useScheduleValidation } from "@/hooks/useScheduleValidation";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { isWeekend } from "@/lib/date-utils";
 import { sortEntriesByTime } from "@/lib/time-sorting-utils";
@@ -40,11 +39,8 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const dailyTarget = 8;
 
-  // Get daily entry validation (only checks for duplicates)
+  // Get daily entry validation
   const validation = useDailyEntryValidation(entries);
-
-  // Get schedule validation
-  const scheduleValidation = useScheduleValidation(userId, date);
 
   // Get weekend lock validation
   const { validateWeekendEntry } = useWeekendLock(userId);
@@ -76,8 +72,8 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
     return "bg-violet-500";
   };
 
-  // Check if this day can accept new entries (combine all validations)
-  const canAddToThisDay = validation.canAddToDate(date) && scheduleValidation.canLogHours;
+  // Check if this day can accept new entries
+  const canAddToThisDay = validation.canAddToDate(date);
   const hasEntries = dayEntries.length > 0;
   
   // Weekend-specific validation
@@ -117,21 +113,10 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
   };
 
   const handleAddEntry = () => {
-    // Check for duplicate entry
-    if (!validation.canAddToDate(date)) {
+    if (!canAddToThisDay) {
       toast({
         title: "Cannot add shift",
         description: validation.getValidationMessage(date),
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check schedule validation
-    if (!scheduleValidation.canLogHours) {
-      toast({
-        title: "Cannot add shift",
-        description: scheduleValidation.validationMessage,
         variant: "destructive",
       });
       return;
