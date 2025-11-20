@@ -1769,6 +1769,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      initialize_user_leave_balances: {
+        Args: { p_user_id: string; p_year?: number }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       is_email_unsubscribed: { Args: { check_email: string }; Returns: boolean }
       is_public_holiday: {
@@ -1777,6 +1781,15 @@ export type Database = {
       }
       is_staff_in_room: { Args: { p_staff_id: string }; Returns: boolean }
       is_weekend: { Args: { check_date: string }; Returns: boolean }
+      process_leave_carry_over: {
+        Args: { p_from_year: number; p_to_year: number }
+        Returns: {
+          carried_over_days: number
+          leave_type_name: string
+          user_id: string
+          user_name: string
+        }[]
+      }
       process_unsubscribe: {
         Args: { p_campaign_id?: string; p_email: string; p_reason?: string }
         Returns: Json
