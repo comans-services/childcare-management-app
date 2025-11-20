@@ -80,8 +80,14 @@ const ReportsPage = () => {
       return !reportData || reportData.length === 0;
     } else if (filters.reportType === 'audit') {
       return !auditData || auditData.length === 0;
+    } else if (filters.reportType === 'leave') {
+      return !leaveData || !leaveData.applications || leaveData.applications.length === 0;
+    } else if (filters.reportType === 'schedules') {
+      return !scheduleData || !scheduleData.weeklySchedules || scheduleData.weeklySchedules.length === 0;
+    } else if (filters.reportType === 'rooms') {
+      return !roomData || !roomData.staffEntries || roomData.staffEntries.length === 0;
     }
-    return true;
+    return true; // For 'locks' tab which doesn't have export
   };
 
   const handleExportCSV = async () => {
@@ -131,6 +137,99 @@ const ReportsPage = () => {
 
         csvContent = headers.join(',') + '\n' + rows.join('\n');
         filename = `audit-logs-${formatDate(filters.startDate)}-${formatDate(filters.endDate)}.csv`;
+      } else if (filters.reportType === 'leave') {
+        if (!leaveData || !leaveData.applications || leaveData.applications.length === 0) {
+          toast({
+            title: "No data to export",
+            description: "No leave applications found",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const headers = ["Employee", "Leave Type", "Start Date", "End Date", "Business Days", "Status", "Submitted", "Reason"];
+        const rows = leaveData.applications.map((app: any) => [
+          app.profiles?.full_name || 'Unknown',
+          app.leave_types?.name || 'Unknown',
+          formatDate(new Date(app.start_date)),
+          formatDate(new Date(app.end_date)),
+          app.business_days_count,
+          app.status,
+          formatDate(new Date(app.submitted_at)),
+          app.reason || ''
+        ].map(v => `"${v}"`).join(','));
+        
+        csvContent = headers.join(',') + '\n' + rows.join('\n');
+        filename = `leave-report-${formatDate(filters.startDate)}-${formatDate(filters.endDate)}.csv`;
+      } else if (filters.reportType === 'schedules') {
+        if (!scheduleData || !scheduleData.weeklySchedules || scheduleData.weeklySchedules.length === 0) {
+          toast({
+            title: "No data to export",
+            description: "No schedule data found",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const headers = ["Employee", "Week Start", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Scheduled Total", "Actual Hours", "Variance"];
+        const rows = scheduleData.weeklySchedules.map((schedule: any) => {
+          const scheduledHours = 
+            Number(schedule.monday_hours || 0) +
+            Number(schedule.tuesday_hours || 0) +
+            Number(schedule.wednesday_hours || 0) +
+            Number(schedule.thursday_hours || 0) +
+            Number(schedule.friday_hours || 0) +
+            Number(schedule.saturday_hours || 0) +
+            Number(schedule.sunday_hours || 0);
+          const actualHours = scheduleData.actualHours[schedule.user_id] || 0;
+          const variance = actualHours - scheduledHours;
+          
+          return [
+            schedule.profiles?.full_name || 'Unknown',
+            formatDate(new Date(schedule.week_start_date)),
+            schedule.monday_hours,
+            schedule.tuesday_hours,
+            schedule.wednesday_hours,
+            schedule.thursday_hours,
+            schedule.friday_hours,
+            schedule.saturday_hours,
+            schedule.sunday_hours,
+            scheduledHours.toFixed(2),
+            actualHours.toFixed(2),
+            variance.toFixed(2)
+          ].map(v => `"${v}"`).join(',');
+        });
+        
+        csvContent = headers.join(',') + '\n' + rows.join('\n');
+        filename = `schedule-report-${formatDate(filters.startDate)}-${formatDate(filters.endDate)}.csv`;
+      } else if (filters.reportType === 'rooms') {
+        if (!roomData || !roomData.staffEntries || roomData.staffEntries.length === 0) {
+          toast({
+            title: "No data to export",
+            description: "No room activity found",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const headers = ["Timestamp", "Staff Member", "Room", "Entry Method", "Exit Time", "Duration"];
+        const rows = roomData.staffEntries.map((entry: any) => {
+          const duration = entry.exited_at 
+            ? `${Math.floor((new Date(entry.exited_at).getTime() - new Date(entry.entered_at).getTime()) / 1000 / 60)} mins`
+            : 'In room';
+          
+          return [
+            new Date(entry.entered_at).toISOString(),
+            entry.profiles?.full_name || 'Unknown',
+            entry.childcare_rooms?.name || 'Unknown',
+            entry.entry_method || 'manual',
+            entry.exited_at ? new Date(entry.exited_at).toISOString() : 'Still in room',
+            duration
+          ].map(v => `"${v}"`).join(',');
+        });
+        
+        csvContent = headers.join(',') + '\n' + rows.join('\n');
+        filename = `room-activity-report-${formatDate(filters.startDate)}-${formatDate(filters.endDate)}.csv`;
       }
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -210,14 +309,6 @@ const ReportsPage = () => {
         </TabsList>
 
         <TabsContent value="timesheet" className="space-y-6">
-          {reportData.length > 0 && (
-            <ReportCharts
-              reportData={reportData}
-              projects={[]}
-              users={users}
-              isLoading={isLoading}
-            />
-          )}
           <ReportDataTable
             reportData={reportData}
             filters={filters}
