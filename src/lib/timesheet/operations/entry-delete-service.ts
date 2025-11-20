@@ -17,7 +17,7 @@ export const deleteTimesheetEntry = async (entryId: string): Promise<void> => {
     }
     
     console.log(`Entry ${entryId} deleted successfully.`);
-    // Deletion tracking is now handled by the absence of the record in the database function
+    // Database trigger will log this automatically
   } catch (error) {
     console.error("Error in deleteTimesheetEntry:", error);
     throw error;
@@ -50,7 +50,7 @@ export const deleteAllTimesheetEntries = async (): Promise<number> => {
     }
     
     console.log(`All timesheet entries deleted successfully. Rows affected: ${entriesCount}`);
-    // Bulk deletion tracking is now handled by the absence of records in the database function
+    // Database triggers will log each deletion automatically
     
     return entriesCount || 0;
   } catch (error) {

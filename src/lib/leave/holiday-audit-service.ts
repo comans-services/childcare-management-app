@@ -52,15 +52,13 @@ export class HolidayAuditService {
 
       const description = `${action === 'granted' ? 'Granted' : 'Revoked'} holiday permission for ${userIds.length} users on ${holidayName} (${holidayDate})`;
 
-      // Insert audit log
+      // Insert audit log with correct schema
       await supabase
         .from('audit_logs')
         .insert({
           user_id: user.id,
           user_name: adminName,
           action: `holiday_permission_${action}`,
-          entity_name: 'Holiday Permission',
-          description,
           details: {
             holiday_id: holidayId,
             holiday_name: holidayName,
@@ -70,7 +68,7 @@ export class HolidayAuditService {
             affected_users_count: userIds.length,
             is_bulk_action: true,
             notes,
-            action_type: 'bulk_permission_change'
+            description
           }
         });
     } catch (error) {
@@ -102,22 +100,20 @@ export class HolidayAuditService {
 
       const description = `Created custom holiday: ${holidayName} on ${holidayDate} (${state})`;
 
-      // Insert audit log with enhanced context
+      // Insert audit log with correct schema
       await supabase
         .from('audit_logs')
         .insert({
           user_id: user.id,
           user_name: adminName,
           action: 'custom_holiday_created',
-          entity_name: 'Custom Holiday',
-          description,
           details: {
             holiday_name: holidayName,
             holiday_date: holidayDate,
             state,
             affected_users_count: affectedUsersCount,
             created_by_admin: adminName,
-            action_type: 'holiday_management'
+            description
           }
         });
     } catch (error) {
@@ -167,15 +163,13 @@ export class HolidayAuditService {
 
       const description = `Manually adjusted ${leaveTypeName} balance for ${targetUserName} - Total: ${oldBalance.total} → ${newBalance.total}, Used: ${oldBalance.used} → ${newBalance.used}`;
 
-      // Insert audit log
+      // Insert audit log with correct schema
       await supabase
         .from('audit_logs')
         .insert({
           user_id: user.id,
           user_name: adminName,
           action: 'leave_balance_updated',
-          entity_name: 'Leave Balance',
-          description,
           details: {
             target_user_id: targetUserId,
             target_user_name: targetUserName,
@@ -186,7 +180,7 @@ export class HolidayAuditService {
             adjustment_reason: reason,
             adjusted_by_admin: adminName,
             is_manual_adjustment: true,
-            action_type: 'balance_management'
+            description
           }
         });
     } catch (error) {

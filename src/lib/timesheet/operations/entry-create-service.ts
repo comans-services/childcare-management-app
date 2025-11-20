@@ -61,5 +61,7 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     throw error;
   }
   
+  // Database trigger will log this automatically
+  
   return data;
 };

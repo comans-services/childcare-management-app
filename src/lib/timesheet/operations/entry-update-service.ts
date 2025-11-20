@@ -33,5 +33,7 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
 
   console.log("Entry updated successfully:", data?.[0]);
 
+  // Database trigger will log this automatically
+
   return data?.[0] as TimesheetEntry;
 };

@@ -76,18 +76,27 @@ export class DocumentService {
 
       // Log document upload to audit trail
       try {
-        await this.logDocumentAudit(
-          'document_uploaded',
-          user.id,
-          applicationId,
-          file.name,
-          {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", user.id)
+          .single();
+
+        const userName = profile?.full_name || profile?.email || "Unknown User";
+
+        await supabase.from("audit_logs").insert({
+          user_id: user.id,
+          user_name: userName,
+          action: "leave_document_uploaded",
+          details: {
+            application_id: applicationId,
+            file_name: file.name,
             file_size: file.size,
             file_type: file.type,
             file_url: publicUrl,
             attachment_id: attachment.id
           }
-        );
+        });
       } catch (auditError) {
         console.warn('Failed to log document upload audit:', auditError);
       }
@@ -155,18 +164,27 @@ export class DocumentService {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await this.logDocumentAudit(
-            'document_deleted',
-            user.id,
-            attachment.application_id,
-            attachment.file_name,
-            {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, email")
+            .eq("id", user.id)
+            .single();
+
+          const userName = profile?.full_name || profile?.email || "Unknown User";
+
+          await supabase.from("audit_logs").insert({
+            user_id: user.id,
+            user_name: userName,
+            action: "leave_document_deleted",
+            details: {
+              application_id: attachment.application_id,
+              file_name: attachment.file_name,
               file_size: attachment.file_size,
               file_type: attachment.file_type,
               file_url: attachment.file_url,
               attachment_id: attachment.id
             }
-          );
+          });
         }
       } catch (auditError) {
         console.warn('Failed to log document deletion audit:', auditError);
@@ -333,7 +351,8 @@ export class DocumentService {
   }
 
   /**
-   * Log document actions to audit trail
+   * Log document actions to audit trail - DEPRECATED
+   * Use direct audit log insertion with correct schema instead
    */
   private static async logDocumentAudit(
     action: 'document_uploaded' | 'document_deleted',
@@ -342,54 +361,7 @@ export class DocumentService {
     fileName: string,
     details: Record<string, any>
   ): Promise<void> {
-    try {
-      // Get user display name
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('full_name, email')
-        .eq('id', userId)
-        .single();
-
-      const userDisplayName = userProfile?.full_name || userProfile?.email || 'Unknown User';
-
-      // Get leave application details for context
-      const { data: application } = await supabase
-        .from('leave_applications')
-        .select(`
-          *,
-          leave_type:leave_types(name),
-          applicant:profiles!leave_applications_user_id_fkey(full_name, email)
-        `)
-        .eq('id', applicationId)
-        .single();
-
-      const leaveTypeName = application?.leave_type?.name || 'Unknown Leave Type';
-      const applicantName = application?.applicant?.full_name || application?.applicant?.email || 'Unknown User';
-
-      const description = action === 'document_uploaded'
-        ? `Uploaded document "${fileName}" for ${applicantName}'s ${leaveTypeName} application`
-        : `Deleted document "${fileName}" for ${applicantName}'s ${leaveTypeName} application`;
-
-      // Insert audit log
-      await supabase
-        .from('audit_logs')
-        .insert({
-          user_id: userId,
-          user_name: userDisplayName,
-          action,
-          entity_name: 'Leave Application Document',
-          description,
-          details: {
-            ...details,
-            application_id: applicationId,
-            leave_type_name: leaveTypeName,
-            applicant_name: applicantName,
-            file_name: fileName
-          }
-        });
-    } catch (error) {
-      console.error('Error logging document audit:', error);
-      throw error;
-    }
+    // This method is deprecated - audit logging now uses correct schema
+    console.warn('logDocumentAudit is deprecated - use direct audit log insertion');
   }
 }
