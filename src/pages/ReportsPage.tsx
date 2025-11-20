@@ -7,41 +7,38 @@ import ReportFilters from "@/components/reports/ReportFilters";
 import ReportCharts from "@/components/reports/ReportCharts";
 import ReportDataTable from "@/components/reports/ReportDataTable";
 import AuditLogsTable from "@/components/reports/AuditLogsTable";
+import LeaveReportsSection from "@/components/reports/LeaveReportsSection";
+import ScheduleReportsSection from "@/components/reports/ScheduleReportsSection";
+import RoomActivityReports from "@/components/reports/RoomActivityReports";
 import TimesheetLockManager from "@/components/reports/TimesheetLockManager";
-import ExpenseReportCharts from "@/components/reports/ExpenseReportCharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Download, Lock } from "lucide-react";
-import { TimesheetEntry, Project, fetchReportData } from "@/lib/timesheet-service";
-import { Contract } from "@/lib/contract-service";
-import { Customer } from "@/lib/customer-service";
+import { Download } from "lucide-react";
+import { TimesheetEntry } from "@/lib/timesheet-service";
 import { User } from "@/lib/user-service";
-import { AuditLogEntry, fetchAuditLogs } from "@/lib/audit/audit-service";
-import { getExpenseStatistics } from "@/lib/expense-service";
+import { AuditLogEntry } from "@/lib/audit/audit-service";
 import { toast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/date-utils";
-import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export-utils";
 
 export type ReportFiltersType = {
   startDate: Date;
   endDate: Date;
-  customerId: string | null;
-  contractId: string | null;
-  projectId: string | null;
-  userId: string | null;
-  includeProject: boolean;
-  includeContract: boolean;
+  userIds: string[];
+  employmentType?: string;
+  organizationvalue?: string;
+  roomIds?: string[];
   includeEmployeeIds: boolean;
-  reportType: 'timesheet' | 'audit' | 'expenses';
-  actionType?: string | null;
+  includeOrganization: boolean;
+  includeTimeZone: boolean;
+  reportType: 'timesheet' | 'audit' | 'leave' | 'schedules' | 'rooms';
+  actionType?: string;
 };
 
 const ReportsPage = () => {
   const { user } = useAuth();
   const [userIsAdmin, setUserIsAdmin] = useState<boolean | null>(null);
 
-  // Defense-in-depth: Check admin status
   useEffect(() => {
     const checkAdmin = async () => {
       if (user) {
@@ -52,7 +49,6 @@ const ReportsPage = () => {
     checkAdmin();
   }, [user]);
 
-  // Return null if user is not admin (backup protection)
   if (userIsAdmin === false) {
     return null;
   }
@@ -60,260 +56,203 @@ const ReportsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState<TimesheetEntry[]>([]);
   const [auditData, setAuditData] = useState<AuditLogEntry[]>([]);
-  const [expenseData, setExpenseData] = useState<any>(null);
-  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [contracts, setContracts] = useState<Contract[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [leaveData, setLeaveData] = useState<any>(null);
+  const [scheduleData, setScheduleData] = useState<any>(null);
+  const [roomData, setRoomData] = useState<any>(null);
   const [users, setUsers] = useState<User[]>([]);
+  
   const [filters, setFilters] = useState<ReportFiltersType>({
-    startDate: new Date(new Date().setDate(1)), // First day of current month
+    startDate: new Date(new Date().setDate(1)),
     endDate: new Date(),
-    customerId: null,
-    contractId: null,
-    projectId: null,
-    userId: null,
-    includeProject: false,
-    includeContract: false,
+    userIds: [],
+    employmentType: undefined,
+    organizationvalue: undefined,
+    roomIds: [],
     includeEmployeeIds: false,
+    includeOrganization: false,
+    includeTimeZone: false,
     reportType: 'timesheet',
-    actionType: null
+    actionType: undefined
   });
 
-  // Load expense data when component mounts
-  useEffect(() => {
-    const loadExpenseData = async () => {
-      if (!user) return;
-      
-      setIsLoadingExpenses(true);
-      try {
-        const data = await getExpenseStatistics();
-        setExpenseData(data);
-      } catch (error) {
-        console.error("Error loading expense data:", error);
-        toast({
-          title: "Error loading expense data",
-          description: error instanceof Error ? error.message : "Failed to load expense statistics",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoadingExpenses(false);
-      }
-    };
-
-    loadExpenseData();
-  }, [user]);
-
-  // Check if export is available (data has been generated)
   const isExportDisabled = () => {
-    if (filters.reportType === 'timesheet') return reportData.length === 0;
-    if (filters.reportType === 'audit') return auditData.length === 0;
+    if (filters.reportType === 'timesheet') {
+      return !reportData || reportData.length === 0;
+    } else if (filters.reportType === 'audit') {
+      return !auditData || auditData.length === 0;
+    }
     return true;
   };
 
-  const handleExportCSV = () => {
-    try {
-      if (filters.reportType === 'timesheet') {
-        exportToCSV(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
-      } else {
-        // TODO: Implement audit logs CSV export
-        toast({
-          title: "Feature coming soon",
-          description: "Audit logs CSV export will be available soon"
-        });
-        return;
-      }
+  const handleExportCSV = async () => {
+    if (isExportDisabled()) {
       toast({
-        title: "Export successful",
-        description: "The report has been exported to CSV"
-      });
-    } catch (error) {
-      console.error("Error exporting to CSV:", error);
-      toast({
-        title: "Export failed",
-        description: error instanceof Error ? error.message : "There was an error exporting the report",
+        title: "No data to export",
+        description: "Please generate a report first before exporting",
         variant: "destructive"
       });
+      return;
     }
-  };
 
-  const handleExportExcel = () => {
     try {
+      let csvContent = "";
+      let filename = "";
+
       if (filters.reportType === 'timesheet') {
-        exportToExcel(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
-      } else {
-        // TODO: Implement audit logs Excel export
-        toast({
-          title: "Feature coming soon",
-          description: "Audit logs Excel export will be available soon"
+        const headers = ["Date", "Employee", "Start Time", "End Time", "Hours"];
+        if (filters.includeEmployeeIds) {
+          headers.push("Employee ID", "Card ID");
+        }
+        
+        const rows = reportData.map(entry => {
+          const row: any[] = [
+            formatDate(new Date(entry.entry_date)),
+            entry.user_full_name || '',
+            entry.start_time,
+            entry.end_time,
+            entry.hours_logged
+          ];
+          if (filters.includeEmployeeIds) {
+            row.push((entry as any).employee_id || '', (entry as any).employee_card_id || '');
+          }
+          return row.map(v => `"${v}"`).join(',');
         });
-        return;
+
+        csvContent = headers.join(',') + '\n' + rows.join('\n');
+        filename = `timesheet-report-${formatDate(filters.startDate)}-${formatDate(filters.endDate)}.csv`;
+      } else if (filters.reportType === 'audit') {
+        const headers = ["Timestamp", "User", "Action", "Details"];
+        const rows = auditData.map(log => [
+          new Date(log.created_at).toISOString(),
+          log.user_name || 'System',
+          log.action,
+          JSON.stringify(log.details || '')
+        ].map(v => `"${v}"`).join(','));
+
+        csvContent = headers.join(',') + '\n' + rows.join('\n');
+        filename = `audit-logs-${formatDate(filters.startDate)}-${formatDate(filters.endDate)}.csv`;
       }
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
       toast({
         title: "Export successful",
-        description: "The report has been exported to Excel"
+        description: `Report exported as ${filename}`,
+        variant: "default"
       });
     } catch (error) {
-      console.error("Error exporting to Excel:", error);
+      console.error("Export error:", error);
       toast({
         title: "Export failed",
-        description: error instanceof Error ? error.message : "There was an error exporting the report",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleExportPDF = () => {
-    try {
-      if (filters.reportType === 'timesheet') {
-        exportToPDF(reportData, projects, contracts, users, filters, `timesheet-report-${formatDate(new Date())}`);
-      } else {
-        // TODO: Implement audit logs PDF export
-        toast({
-          title: "Feature coming soon",
-          description: "Audit logs PDF export will be available soon"
-        });
-        return;
-      }
-      toast({
-        title: "Export successful",
-        description: "The report has been exported to PDF"
-      });
-    } catch (error) {
-      console.error("Error exporting to PDF:", error);
-      toast({
-        title: "Export failed",
-        description: error instanceof Error ? error.message : "There was an error exporting the report",
+        description: error instanceof Error ? error.message : "Failed to export report",
         variant: "destructive"
       });
     }
   };
 
   return (
-    <div className="container mx-auto px-2 md:px-4">
-      <div className="mb-4 md:mb-6 flex justify-between items-center">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold">Reports</h1>
-          <p className="text-gray-600 text-sm md:text-base">Generate reports and manage timesheet locks</p>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleExportCSV} 
-            disabled={isExportDisabled()}
-            title={isExportDisabled() ? "Generate a report first to enable export" : "Export to CSV"}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            CSV
-          </Button>
-          
-          <Button 
-            size="sm" 
-            variant="default" 
-            onClick={handleExportPDF} 
-            disabled={isExportDisabled()}
-            title={isExportDisabled() ? "Generate a report first to enable export" : "Export to PDF"}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            PDF
-          </Button>
-        </div>
-      </div>
-
-      {isExportDisabled() && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-sm text-blue-800">
-            💡 Generate a report using the filters below to enable export options.
+          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+          <p className="text-muted-foreground">
+            Generate and export comprehensive reports
           </p>
         </div>
-      )}
+        <Button onClick={handleExportCSV} disabled={isExportDisabled()}>
+          <Download className="mr-2 h-4 w-4" />
+          Export CSV
+        </Button>
+      </div>
 
-      <Tabs defaultValue="reports" className="w-full">
+      <Separator />
+
+      <ReportFilters
+        filters={filters}
+        setFilters={setFilters}
+        setReportData={setReportData}
+        setAuditData={setAuditData}
+        setLeaveData={setLeaveData}
+        setScheduleData={setScheduleData}
+        setRoomData={setRoomData}
+        setIsLoading={setIsLoading}
+      />
+
+      <Tabs defaultValue={filters.reportType} value={filters.reportType} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="reports">Time Reports</TabsTrigger>
-          <TabsTrigger value="expenses">Expense Reports</TabsTrigger>
-          
-          <TabsTrigger value="locks" className="flex items-center gap-2">
-            <Lock className="h-4 w-4" />
+          <TabsTrigger value="timesheet" onClick={() => setFilters(prev => ({ ...prev, reportType: 'timesheet' }))}>
+            Timesheet Reports
+          </TabsTrigger>
+          <TabsTrigger value="audit" onClick={() => setFilters(prev => ({ ...prev, reportType: 'audit' }))}>
+            Audit Logs
+          </TabsTrigger>
+          <TabsTrigger value="leave" onClick={() => setFilters(prev => ({ ...prev, reportType: 'leave' }))}>
+            Leave Reports
+          </TabsTrigger>
+          <TabsTrigger value="schedules" onClick={() => setFilters(prev => ({ ...prev, reportType: 'schedules' }))}>
+            Schedule Reports
+          </TabsTrigger>
+          <TabsTrigger value="rooms" onClick={() => setFilters(prev => ({ ...prev, reportType: 'rooms' }))}>
+            Room Activity
+          </TabsTrigger>
+          <TabsTrigger value="locks">
             Timesheet Locks
           </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="reports" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reports</CardTitle>
-              <CardDescription>
-                {filters.reportType === 'timesheet' 
-                  ? 'Create custom timesheet reports for your team' 
-                  : 'View comprehensive audit logs of all user actions including deletions'
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ReportFilters 
-                filters={filters} 
-                setFilters={setFilters} 
-                setReportData={setReportData} 
-                setAuditData={setAuditData}
-                setProjects={setProjects} 
-                setContracts={setContracts} 
-                setCustomers={setCustomers} 
-                setUsers={setUsers} 
-                setIsLoading={setIsLoading} 
-              />
-              
-              <Separator className="my-6" />
-              
-              {filters.reportType === 'timesheet' ? (
-                <Tabs defaultValue="visual" className="w-full">
-                  <TabsList>
-                    <TabsTrigger value="visual">Visual Reports</TabsTrigger>
-                    <TabsTrigger value="tabular">Tabular Data</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="visual" className="mt-4">
-                    <ReportCharts reportData={reportData} projects={projects} users={users} isLoading={isLoading} />
-                  </TabsContent>
-                  <TabsContent value="tabular" className="mt-4">
-                    <ReportDataTable reportData={reportData} projects={projects} contracts={contracts} users={users} filters={filters} isLoading={isLoading} />
-                  </TabsContent>
-                </Tabs>
-              ) : filters.reportType === 'audit' ? (
-                <AuditLogsTable auditData={auditData} users={users} isLoading={isLoading} />
-              ) : null}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="expenses" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Expense Reports</CardTitle>
-              <CardDescription>
-                Comprehensive expense analytics and insights
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoadingExpenses ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  <p>Loading expense data...</p>
-                </div>
-              ) : expenseData ? (
-                <ExpenseReportCharts data={expenseData} />
-              ) : (
-                <div className="p-8 text-center text-muted-foreground">
-                  <p>No expense data available</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+
+        <TabsContent value="timesheet" className="space-y-6">
+          {reportData.length > 0 && (
+            <ReportCharts
+              reportData={reportData}
+              projects={[]}
+              users={users}
+              isLoading={isLoading}
+            />
+          )}
+          <ReportDataTable
+            reportData={reportData}
+            filters={filters}
+            isLoading={isLoading}
+          />
         </TabsContent>
 
-        
-        <TabsContent value="locks" className="mt-4">
-          <TimesheetLockManager />
+        <TabsContent value="audit">
+          <AuditLogsTable auditData={auditData} isLoading={isLoading} />
+        </TabsContent>
+
+        <TabsContent value="leave">
+          <LeaveReportsSection leaveData={leaveData} isLoading={isLoading} />
+        </TabsContent>
+
+        <TabsContent value="schedules">
+          <ScheduleReportsSection scheduleData={scheduleData} isLoading={isLoading} />
+        </TabsContent>
+
+        <TabsContent value="rooms">
+          <RoomActivityReports roomData={roomData} isLoading={isLoading} />
+        </TabsContent>
+
+        <TabsContent value="locks">
+          <Card>
+            <CardHeader>
+              <CardTitle>Timesheet Lock Management</CardTitle>
+              <CardDescription>
+                Lock or unlock timesheet entries for specific date ranges
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TimesheetLockManager />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

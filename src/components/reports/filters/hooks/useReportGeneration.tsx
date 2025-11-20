@@ -2,6 +2,10 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchReportData } from "@/lib/timesheet-service";
+import { fetchAuditLogs } from "@/lib/audit/audit-service";
+import { fetchLeaveReportData } from "@/lib/reports/leave-report-service";
+import { fetchScheduleReportData } from "@/lib/reports/schedule-report-service";
+import { fetchRoomActivityReportData } from "@/lib/reports/room-activity-report-service";
 import { toast } from "@/hooks/use-toast";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
@@ -9,6 +13,9 @@ interface UseReportGenerationProps {
   filters: ReportFiltersType;
   setReportData: React.Dispatch<React.SetStateAction<any[]>>;
   setAuditData: React.Dispatch<React.SetStateAction<any[]>>;
+  setLeaveData?: React.Dispatch<React.SetStateAction<any>>;
+  setScheduleData?: React.Dispatch<React.SetStateAction<any>>;
+  setRoomData?: React.Dispatch<React.SetStateAction<any>>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -16,6 +23,9 @@ export const useReportGeneration = ({
   filters,
   setReportData,
   setAuditData,
+  setLeaveData,
+  setScheduleData,
+  setRoomData,
   setIsLoading
 }: UseReportGenerationProps) => {
   const { user } = useAuth();
@@ -49,35 +59,90 @@ export const useReportGeneration = ({
     
     try {
       if (filters.reportType === 'timesheet') {
-        // Handle timesheet reports with entry type filtering
         const normalizedFilters = {
           startDate: filters.startDate,
           endDate: filters.endDate,
-          userIds: filters.userId ? [filters.userId] : undefined,
+          userIds: filters.userIds?.filter(id => id),
           includeEmployeeData: true
         };
         
-        console.log("Normalized timesheet filters:", normalizedFilters);
-        
         const reportData = await fetchReportData(normalizedFilters);
-        
-        console.log("Timesheet report data received:", reportData);
         setReportData(reportData);
-        setAuditData([]); // Clear audit data when generating timesheet report
+        setAuditData([]);
+        setLeaveData?.({});
+        setScheduleData?.({});
+        setRoomData?.({});
         
-        if (reportData.length === 0) {
-          toast({
-            title: "No data found",
-            description: "No timesheet entries found for the selected criteria. Try adjusting your filters.",
-            variant: "default"
-          });
-        } else {
-          toast({
-            title: "Report generated successfully",
-            description: `Found ${reportData.length} timesheet entries`,
-            variant: "default"
-          });
-        }
+        toast({
+          title: reportData.length > 0 ? "Report generated successfully" : "No data found",
+          description: reportData.length > 0 ? `Found ${reportData.length} timesheet entries` : "No timesheet entries found for the selected criteria.",
+          variant: "default"
+        });
+      } else if (filters.reportType === 'audit') {
+        const auditLogs = await fetchAuditLogs(filters);
+        setAuditData(auditLogs);
+        setReportData([]);
+        setLeaveData?.({});
+        setScheduleData?.({});
+        setRoomData?.({});
+        
+        toast({
+          title: "Audit logs loaded",
+          description: `Found ${auditLogs.length} audit log entries`,
+          variant: "default"
+        });
+      } else if (filters.reportType === 'leave') {
+        const leaveData = await fetchLeaveReportData({
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          userIds: filters.userIds?.filter(id => id),
+        });
+        setLeaveData?.(leaveData);
+        setReportData([]);
+        setAuditData([]);
+        setScheduleData?.({});
+        setRoomData?.({});
+        
+        toast({
+          title: "Leave report generated",
+          description: `Found ${leaveData.applications.length} leave applications`,
+          variant: "default"
+        });
+      } else if (filters.reportType === 'schedules') {
+        const scheduleData = await fetchScheduleReportData({
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          userIds: filters.userIds?.filter(id => id),
+        });
+        setScheduleData?.(scheduleData);
+        setReportData([]);
+        setAuditData([]);
+        setLeaveData?.({});
+        setRoomData?.({});
+        
+        toast({
+          title: "Schedule report generated",
+          description: `Found ${scheduleData.weeklySchedules.length} weekly schedules`,
+          variant: "default"
+        });
+      } else if (filters.reportType === 'rooms') {
+        const roomData = await fetchRoomActivityReportData({
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          roomIds: filters.roomIds?.filter(id => id),
+          staffIds: filters.userIds?.filter(id => id),
+        });
+        setRoomData?.(roomData);
+        setReportData([]);
+        setAuditData([]);
+        setLeaveData?.({});
+        setScheduleData?.({});
+        
+        toast({
+          title: "Room activity report generated",
+          description: `Found ${roomData.staffEntries.length} room entries`,
+          variant: "default"
+        });
       }
     } catch (error) {
       console.error("Error generating report:", error);
