@@ -36,7 +36,7 @@ export const LeaveReportsSection: React.FC<LeaveReportsSectionProps> = ({
     );
   }
 
-  if (!leaveData || leaveData.applications?.length === 0) {
+  if (!leaveData || !leaveData.applications || leaveData.applications.length === 0) {
     return (
       <Card>
         <CardHeader>
