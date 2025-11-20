@@ -8,9 +8,11 @@ import { useAuth } from "@/context/AuthContext";
 
 interface DayHeaderProps {
   date: Date;
+  isScheduled?: boolean;
+  scheduledHours?: number;
 }
 
-const DayHeader: React.FC<DayHeaderProps> = ({ date }) => {
+const DayHeader: React.FC<DayHeaderProps> = ({ date, isScheduled = true, scheduledHours }) => {
   const { user } = useAuth();
   const { validateWeekendEntry, canCreateWeekendEntries } = useWeekendLock(user?.id);
   const { validateHolidayEntry, canCreateHolidayEntries, checkIfHoliday, isAdmin } = useHolidayLock(user?.id);
@@ -40,6 +42,10 @@ const DayHeader: React.FC<DayHeaderProps> = ({ date }) => {
       return "bg-primary text-primary-foreground";
     }
     
+    if (!isScheduled) {
+      return "bg-muted text-muted-foreground";
+    }
+    
     if (isHolidayBlocked) {
       return "bg-red-100 text-red-800";
     }
@@ -64,14 +70,21 @@ const DayHeader: React.FC<DayHeaderProps> = ({ date }) => {
       "text-xs md:text-sm font-medium p-2 md:p-3 rounded-t-md relative overflow-hidden",
       getHeaderColor()
     )}>
-      <div className="flex justify-between items-center">
-        <span className="font-bold">{formatDateShort(date)}</span>
-        <div className="flex items-center gap-1">
-          {isToday(date) && (
-            <span className="px-1.5 py-0.5 bg-white/20 text-white rounded-full text-[10px]">Today</span>
-          )}
-          
-          {isHolidayDate && (
+      <div className="flex flex-col gap-1">
+        <div className="flex justify-between items-center">
+          <span className="font-bold">{formatDateShort(date)}</span>
+          <div className="flex items-center gap-1">
+            {isToday(date) && (
+              <span className="px-1.5 py-0.5 bg-white/20 text-white rounded-full text-[10px]">Today</span>
+            )}
+            
+            {!isScheduled && (
+              <span className="px-1.5 py-0.5 bg-muted-foreground/20 text-muted-foreground rounded-full text-[10px]">
+                Not Scheduled
+              </span>
+            )}
+            
+            {isHolidayDate && (
             <span className={cn(
               "px-1.5 py-0.5 rounded-full text-[10px]",
               isHolidayBlocked 
@@ -104,7 +117,14 @@ const DayHeader: React.FC<DayHeaderProps> = ({ date }) => {
                 : "Weekend"}
             </span>
           )}
+          </div>
         </div>
+        
+        {isScheduled && scheduledHours !== undefined && scheduledHours > 0 && (
+          <div className="text-[10px] opacity-80">
+            Scheduled: {scheduledHours.toFixed(1)} hrs
+          </div>
+        )}
       </div>
       
       <div className="absolute bottom-0 left-0 right-0 h-1">
