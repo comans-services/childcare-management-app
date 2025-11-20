@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { TimesheetEntry, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDateDisplay, formatDate, getHoursDifference } from "@/lib/date-utils";
+import { useScheduleValidation } from "@/hooks/useScheduleValidation";
 import { timeEntryFormSchema, TimeEntryFormValues } from "./time-entry/schema";
 
 interface EntryFormProps {
@@ -32,6 +33,9 @@ const EntryForm: React.FC<EntryFormProps> = ({
   onCancel,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Get schedule validation for this date
+  const scheduleValidation = useScheduleValidation(userId, date);
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
@@ -94,6 +98,16 @@ const EntryForm: React.FC<EntryFormProps> = ({
   }, [form]);
 
   const onSubmit = async (values: TimeEntryFormValues) => {
+    // Check schedule validation before submitting
+    if (!scheduleValidation.canLogHours && !existingEntry) {
+      toast({
+        title: "Cannot log hours",
+        description: scheduleValidation.validationMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 

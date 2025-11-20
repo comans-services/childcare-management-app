@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { TimesheetEntry } from "@/lib/timesheet-service";
 import { formatDate } from "@/lib/date-utils";
+import { useScheduleValidation } from "./useScheduleValidation";
 
 interface DailyEntryValidationResult {
   canAddToDate: (date: Date) => boolean;
@@ -9,7 +10,8 @@ interface DailyEntryValidationResult {
 }
 
 export const useDailyEntryValidation = (
-  entries: TimesheetEntry[]
+  entries: TimesheetEntry[],
+  userId?: string
 ): DailyEntryValidationResult => {
   const entriesByDate = useMemo(() => {
     const map = new Map<string, TimesheetEntry>();
@@ -26,14 +28,31 @@ export const useDailyEntryValidation = (
   };
 
   const canAddToDate = (date: Date): boolean => {
-    // Can only add if no entry exists for this date
-    return !hasEntryOnDate(date);
+    // Check if entry already exists for this date
+    if (hasEntryOnDate(date)) return false;
+    
+    // If userId provided, check schedule validation
+    if (userId) {
+      const scheduleValidation = useScheduleValidation(userId, date);
+      if (!scheduleValidation.canLogHours) return false;
+    }
+    
+    return true;
   };
 
   const getValidationMessage = (date: Date): string => {
     if (hasEntryOnDate(date)) {
       return `You already have a shift logged for this day. You can edit or delete the existing entry.`;
     }
+    
+    // Check schedule validation if userId provided
+    if (userId) {
+      const scheduleValidation = useScheduleValidation(userId, date);
+      if (!scheduleValidation.canLogHours) {
+        return scheduleValidation.validationMessage;
+      }
+    }
+    
     return "";
   };
 

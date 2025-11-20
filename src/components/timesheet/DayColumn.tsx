@@ -41,8 +41,8 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const dailyTarget = 8;
 
-  // Get daily entry validation
-  const validation = useDailyEntryValidation(entries);
+  // Get daily entry validation (pass userId for schedule checking)
+  const validation = useDailyEntryValidation(entries, userId);
 
   // Get weekend lock validation
   const { validateWeekendEntry } = useWeekendLock(userId);
