@@ -275,19 +275,6 @@ const ReportsPage = () => {
 
       <Separator />
 
-      {filters.reportType !== 'locks' && (
-        <ReportFilters
-          filters={filters}
-          setFilters={setFilters}
-          setReportData={setReportData}
-          setAuditData={setAuditData}
-          setLeaveData={setLeaveData}
-          setScheduleData={setScheduleData}
-          setRoomData={setRoomData}
-          setIsLoading={setIsLoading}
-        />
-      )}
-
       <Tabs value={filters.reportType} onValueChange={(value) => setFilters(prev => ({ ...prev, reportType: value as any }))} className="space-y-4">
         <TabsList>
           <TabsTrigger value="timesheet">
@@ -309,6 +296,19 @@ const ReportsPage = () => {
             Timesheet Locks
           </TabsTrigger>
         </TabsList>
+
+        {filters.reportType !== 'locks' && (
+          <ReportFilters
+            filters={filters}
+            setFilters={setFilters}
+            setReportData={setReportData}
+            setAuditData={setAuditData}
+            setLeaveData={setLeaveData}
+            setScheduleData={setScheduleData}
+            setRoomData={setRoomData}
+            setIsLoading={setIsLoading}
+          />
+        )}
 
         <TabsContent value="timesheet" className="space-y-6">
           <ReportDataTable
