@@ -31,7 +31,7 @@ export type ReportFiltersType = {
   includeEmployeeIds: boolean;
   includeOrganization: boolean;
   includeTimeZone: boolean;
-  reportType: 'timesheet' | 'audit' | 'leave' | 'schedules' | 'rooms';
+  reportType: 'timesheet' | 'audit' | 'leave' | 'schedules' | 'rooms' | 'locks';
   actionType?: string;
 };
 
@@ -286,21 +286,21 @@ const ReportsPage = () => {
         setIsLoading={setIsLoading}
       />
 
-      <Tabs defaultValue={filters.reportType} value={filters.reportType} className="space-y-4">
+      <Tabs value={filters.reportType} onValueChange={(value) => setFilters(prev => ({ ...prev, reportType: value as any }))} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="timesheet" onClick={() => setFilters(prev => ({ ...prev, reportType: 'timesheet' }))}>
+          <TabsTrigger value="timesheet">
             Timesheet Reports
           </TabsTrigger>
-          <TabsTrigger value="audit" onClick={() => setFilters(prev => ({ ...prev, reportType: 'audit' }))}>
+          <TabsTrigger value="audit">
             Audit Logs
           </TabsTrigger>
-          <TabsTrigger value="leave" onClick={() => setFilters(prev => ({ ...prev, reportType: 'leave' }))}>
+          <TabsTrigger value="leave">
             Leave Reports
           </TabsTrigger>
-          <TabsTrigger value="schedules" onClick={() => setFilters(prev => ({ ...prev, reportType: 'schedules' }))}>
+          <TabsTrigger value="schedules">
             Schedule Reports
           </TabsTrigger>
-          <TabsTrigger value="rooms" onClick={() => setFilters(prev => ({ ...prev, reportType: 'rooms' }))}>
+          <TabsTrigger value="rooms">
             Room Activity
           </TabsTrigger>
           <TabsTrigger value="locks">
