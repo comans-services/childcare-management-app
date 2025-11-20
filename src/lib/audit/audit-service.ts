@@ -31,3 +31,40 @@ export const fetchAuditLogs = async (filters?: any): Promise<AuditLogEntry[]> =>
     return [];
   }
 };
+
+interface LogAuditEventParams {
+  action: string;
+  details?: Record<string, any>;
+}
+
+/**
+ * Log an audit event with current user context
+ * This is the centralized audit logging function for all application activities
+ */
+export const logAuditEvent = async ({ action, details = {} }: LogAuditEventParams): Promise<void> => {
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.warn("logAuditEvent: no authenticated user, skipping audit log");
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", user.id)
+      .single();
+
+    const userName = profile?.full_name || profile?.email || "Unknown User";
+
+    await supabase.from("audit_logs").insert({
+      user_id: user.id,
+      user_name: userName,
+      action,
+      details
+    });
+  } catch (error) {
+    console.error("Error logging audit event:", error);
+    // Never throw - we don't want logging to break main operations
+  }
+};

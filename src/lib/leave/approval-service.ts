@@ -419,8 +419,6 @@ export class ApprovalService {
           user_id: approverId,
           user_name: approverName,
           action,
-          entity_name: 'Leave Application',
-          description,
           details: {
             application_id: application.id,
             applicant_id: application.user_id,
@@ -437,10 +435,7 @@ export class ApprovalService {
             manager_comments: comments,
             approved_at: application.approved_at,
             decision,
-            business_impact: {
-              days_affected: application.business_days_count,
-              leave_period: `${application.start_date} to ${application.end_date}`
-            }
+            description
           }
         });
     } catch (error) {

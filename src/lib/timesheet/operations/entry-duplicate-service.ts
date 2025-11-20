@@ -33,5 +33,7 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
     
   if (insertError) throw insertError;
   
+  // Database trigger will log the creation automatically
+  
   return { ...newEntry, entry_type: 'project' as const } as TimesheetEntry;
 };
