@@ -167,115 +167,143 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        <Tabs defaultValue="schedule" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="schedule">Schedule</TabsTrigger>
-            {isAdmin && <TabsTrigger value="weekly">Weekly Hours</TabsTrigger>}
-            <TabsTrigger value="permissions">Permissions</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="schedule" className="w-full">
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <TabsTrigger value="schedule">Schedule</TabsTrigger>
+          {isAdmin && <TabsTrigger value="weekly">Weekly Hours</TabsTrigger>}
+          <TabsTrigger value="permissions">Permissions</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="schedule" className="space-y-4 mt-4">
-            {/* This Week Schedule */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
-                <span className="font-medium text-sm">This Week</span>
-                {hasOverride && <div className="h-2 w-2 bg-primary rounded-full" />}
-              </div>
-              
-              <div className="text-sm text-muted-foreground">
-                {effectiveDays} working days • {effectiveHours} hours total
-              </div>
-            </div>
-
-            <Separator />
-
-        {/* Enhanced Weekend Permissions Section */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
+        <TabsContent value="schedule" className="space-y-4 mt-4">
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <CalendarWeekend className="h-4 w-4 text-primary" />
-              <span className="font-medium text-sm">Weekend Entries</span>
-              {/* Visual status indicator based on effective permission */}
-              {canLogWeekendHours ? (
-                <CheckCircle className="h-4 w-4 text-green-500" />
-              ) : (
-                <XCircle className="h-4 w-4 text-red-500" />
-              )}
+              <Clock className="h-4 w-4 text-primary" />
+              <span className="font-medium text-sm">This Week</span>
+              {hasOverride && <div className="h-2 w-2 bg-primary rounded-full" />}
+            </div>
+            
+            <div className="text-sm text-muted-foreground">
+              {effectiveDays} working days • {effectiveHours} hours total
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" />
+              <span className="font-medium text-sm">Global Working Days</span>
             </div>
             
             {isAdmin && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefreshPermissions}
-                className="h-6 w-6 p-0"
-              >
-                <RefreshCw className="h-3 w-3" />
-              </Button>
+              <div className="text-sm text-muted-foreground">
+                {workingDays} days per week (edit in global settings)
+              </div>
+            )}
+            {!isAdmin && (
+              <div className="text-sm text-muted-foreground">
+                {workingDays} days per week
+              </div>
             )}
           </div>
-          
-          {isAdmin ? (
+        </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="weekly" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Allow weekend hour logging
-                </div>
-                <Switch
-                  checked={allowWeekendEntries} // Use raw permission, not effective permission
-                  onCheckedChange={handleWeekendToggle}
-                  disabled={updatingWeekend}
-                />
+              <p className="text-sm text-muted-foreground">
+                Set specific hours for each day of this week. This will override the global working days setting.
+              </p>
+              <WeeklyScheduleEditor
+                userId={user.id}
+                weekStartDate={weekStartDate}
+                weeklySchedule={weeklySchedule}
+                defaultHours={workingDays * 8 / 5}
+                onSave={handleSaveWeeklySchedule}
+                onReset={handleResetWeeklySchedule}
+              />
+            </div>
+          </TabsContent>
+        )}
+
+        <TabsContent value="permissions" className="space-y-4 mt-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarWeekend className="h-4 w-4 text-primary" />
+                <span className="font-medium text-sm">Weekend Entries</span>
+                {canLogWeekendHours ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-500" />
+                )}
               </div>
               
-              {updatingWeekend && (
-                <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
-                  Updating weekend permissions...
-                </div>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefreshPermissions}
+                  className="h-6 w-6 p-0"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
               )}
-              
-              {/* Enhanced status display showing both raw and effective permissions */}
-              <div className="space-y-1">
-                <div className={`text-xs p-2 rounded border ${
-                  allowWeekendEntries 
-                    ? "text-green-700 bg-green-50 border-green-200" 
-                    : "text-red-700 bg-red-50 border-red-200"
-                }`}>
-                  Permission Setting: Weekend entries {allowWeekendEntries ? "enabled" : "disabled"}
+            </div>
+            
+            {isAdmin ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Allow weekend hour logging
+                  </div>
+                  <Switch
+                    checked={allowWeekendEntries}
+                    onCheckedChange={handleWeekendToggle}
+                    disabled={updatingWeekend}
+                  />
                 </div>
                 
-                {user.role === "admin" && (
+                {updatingWeekend && (
                   <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
-                    Effective Permission: Can log weekend hours (admin override active)
+                    Updating weekend permissions...
                   </div>
                 )}
                 
-                {user.role !== "admin" && (
+                <div className="space-y-1">
                   <div className={`text-xs p-2 rounded border ${
-                    canLogWeekendHours 
+                    allowWeekendEntries 
                       ? "text-green-700 bg-green-50 border-green-200" 
                       : "text-red-700 bg-red-50 border-red-200"
                   }`}>
-                    Effective Permission: {canLogWeekendHours ? "Can log weekend hours" : "Cannot log weekend hours"}
+                    Permission Setting: Weekend entries {allowWeekendEntries ? "enabled" : "disabled"}
                   </div>
-                )}
+                  
+                  {user.role === "admin" && (
+                    <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                      Effective Permission: Can log weekend hours (admin override active)
+                    </div>
+                  )}
+                  
+                  {user.role !== "admin" && (
+                    <div className={`text-xs p-2 rounded border ${
+                      canLogWeekendHours 
+                        ? "text-green-700 bg-green-50 border-green-200" 
+                        : "text-red-700 bg-red-50 border-red-200"
+                    }`}>
+                      Effective Permission: {canLogWeekendHours ? "Can" : "Cannot"} log weekend hours
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className={`text-sm p-2 rounded border ${
-                canLogWeekendHours 
-                  ? "text-green-700 bg-green-50 border-green-200" 
-                  : "text-red-700 bg-red-50 border-red-200"
-              }`}>
-                Weekend entries: {canLogWeekendHours ? "Enabled" : "Disabled"}
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                {canLogWeekendHours ? "You can log weekend hours" : "Weekend logging is disabled"}
               </div>
-            </div>
-          )}
-            </div>
-          </TabsContent>
-        </Tabs>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
       </CardContent>
     </Card>;
 };
