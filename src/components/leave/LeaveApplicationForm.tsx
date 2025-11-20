@@ -39,8 +39,8 @@ import {
   fetchUserLeaveBalances,
   createLeaveApplication,
   calculateBusinessDays,
-  uploadLeaveAttachment
 } from "@/lib/leave-service";
+import { validateLeaveApplication } from "@/lib/leave/validation-service";
 import { useAuth } from "@/context/AuthContext";
 import DocumentUploadComponent from "./DocumentUploadComponent";
 
@@ -135,43 +135,64 @@ const LeaveApplicationForm = () => {
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to submit a leave application",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      // Validate leave balance for leave types that have balances
-      const balance = getLeaveBalance(values.leave_type_id);
-      if (balance) {
-        const validation = validateLeaveBalance(values.leave_type_id, businessDays);
-        if (!validation.valid) {
-          toast({
-            title: "Insufficient Leave Balance",
-            description: validation.message,
-            variant: "destructive",
-          });
-          return;
+      // Comprehensive validation
+      const validation = await validateLeaveApplication(
+        user.id,
+        values.leave_type_id,
+        format(values.start_date, "yyyy-MM-dd"),
+        format(values.end_date, "yyyy-MM-dd"),
+        businessDays,
+        {
+          skipWeekendCheck: false,
+          skipBackdateCheck: false,
+          skipNoticeCheck: true, // Set to false and add minDaysNotice: 2 if needed
         }
+      );
+
+      if (!validation.isValid) {
+        toast({
+          title: "Validation Failed",
+          description: validation.message,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
       }
 
+      // Submit application
       const application = await createLeaveApplication({
         leave_type_id: values.leave_type_id,
         start_date: format(values.start_date, "yyyy-MM-dd"),
         end_date: format(values.end_date, "yyyy-MM-dd"),
-        reason: values.reason
+        reason: values.reason || "",
       });
 
       setApplicationId(application.id);
-      
+
       toast({
         title: "Leave Application Submitted",
         description: `Your leave application for ${businessDays} business days has been submitted for approval.`,
       });
 
-      // Reset form
-      form.reset();
-      setBusinessDays(0);
-      setSelectedLeaveType(null);
-      
+      // If this leave type requires attachments, keep the form to show upload
+      if (!selectedLeaveType?.requires_attachment) {
+        form.reset();
+        setBusinessDays(0);
+        setSelectedLeaveType(null);
+        setApplicationId(null);
+      }
+
       // Refresh balances
       const balancesData = await fetchUserLeaveBalances(user.id);
       setLeaveBalances(balancesData);
