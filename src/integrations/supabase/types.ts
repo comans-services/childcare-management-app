@@ -1344,6 +1344,80 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_work_schedules: {
+        Row: {
+          created_at: string | null
+          friday_hours: number
+          id: string
+          monday_hours: number
+          saturday_hours: number
+          sunday_hours: number
+          thursday_hours: number
+          tuesday_hours: number
+          updated_at: string | null
+          user_id: string
+          wednesday_hours: number
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          friday_hours?: number
+          id?: string
+          monday_hours?: number
+          saturday_hours?: number
+          sunday_hours?: number
+          thursday_hours?: number
+          tuesday_hours?: number
+          updated_at?: string | null
+          user_id: string
+          wednesday_hours?: number
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string | null
+          friday_hours?: number
+          id?: string
+          monday_hours?: number
+          saturday_hours?: number
+          sunday_hours?: number
+          thursday_hours?: number
+          tuesday_hours?: number
+          updated_at?: string | null
+          user_id?: string
+          wednesday_hours?: number
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_work_schedules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_work_schedules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_work_schedules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "weekly_work_schedules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
       work_schedules: {
         Row: {
           allow_holiday_entries: boolean
