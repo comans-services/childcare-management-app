@@ -36,7 +36,7 @@ export const ScheduleReportsSection: React.FC<ScheduleReportsSectionProps> = ({
     );
   }
 
-  if (!scheduleData || scheduleData.weeklySchedules?.length === 0) {
+  if (!scheduleData || !scheduleData.weeklySchedules || scheduleData.weeklySchedules.length === 0) {
     return (
       <Card>
         <CardHeader>
