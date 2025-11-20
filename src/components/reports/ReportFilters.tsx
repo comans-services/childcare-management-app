@@ -71,7 +71,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
       <CardContent className="pt-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Date Range */}
-          <div className="space-y-2 lg:col-span-2">
+          <div className="space-y-2 lg:col-span-3">
             <Label>Date Range</Label>
             <DateRangePicker
               value={{
@@ -88,28 +88,6 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
                 }
               }}
             />
-          </div>
-
-          {/* Report Type */}
-          <div className="space-y-2">
-            <Label>Report Type</Label>
-            <Select
-              value={filters.reportType}
-              onValueChange={(value: any) =>
-                setFilters((prev) => ({ ...prev, reportType: value }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select report type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="timesheet">Timesheet Reports</SelectItem>
-                <SelectItem value="audit">Audit Logs</SelectItem>
-                <SelectItem value="leave">Leave Reports</SelectItem>
-                <SelectItem value="schedules">Schedule Reports</SelectItem>
-                <SelectItem value="rooms">Room Activity</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* User Filter */}
