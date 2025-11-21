@@ -32,12 +32,18 @@ interface UserSelectorProps {
   selectedUserId: string | null;
   onSelectUser: (userId: string | null) => void;
   className?: string;
+  showCurrentUserOption?: boolean;
+  currentUserLabel?: string;
+  placeholderText?: string;
 }
 
 const UserSelector: React.FC<UserSelectorProps> = ({
   selectedUserId,
   onSelectUser,
-  className
+  className,
+  showCurrentUserOption = true,
+  currentUserLabel = "View My Timesheet",
+  placeholderText = "My Timesheet"
 }) => {
   const { user: currentUser } = useAuth();
   const [open, setOpen] = useState(false);
@@ -93,7 +99,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
               </Avatar>
               <div className="flex flex-col items-start min-w-0 flex-1">
                 <span className="text-sm font-medium truncate">
-                  {selectedUserId ? displayName : `My Timesheet`}
+                  {selectedUserId ? displayName : placeholderText}
                 </span>
                 {selectedUser?.employee_id && (
                   <span className="text-xs text-muted-foreground">
@@ -112,31 +118,33 @@ const UserSelector: React.FC<UserSelectorProps> = ({
               <CommandEmpty>No users found.</CommandEmpty>
               <CommandGroup>
                 {/* Current user option */}
-                <CommandItem
-                  value="current"
-                  onSelect={() => handleSelectUser("current")}
-                  className="flex items-center gap-2 p-2"
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      !selectedUserId ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                      ME
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <span className="font-medium">
-                      View My Timesheet
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      Your own timesheet
-                    </span>
-                  </div>
-                </CommandItem>
+                {showCurrentUserOption && (
+                  <CommandItem
+                    value="current"
+                    onSelect={() => handleSelectUser("current")}
+                    className="flex items-center gap-2 p-2"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        !selectedUserId ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                        ME
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {currentUserLabel}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        Your own timesheet
+                      </span>
+                    </div>
+                  </CommandItem>
+                )}
                 
                 {/* Other users */}
                 {users

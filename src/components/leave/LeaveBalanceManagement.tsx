@@ -92,6 +92,8 @@ const LeaveBalanceManagement = () => {
               selectedUserId={selectedUserId}
               onSelectUser={setSelectedUserId}
               className="w-72"
+              showCurrentUserOption={false}
+              placeholderText="Select an employee"
             />
           </div>
         </CardHeader>
