@@ -169,12 +169,9 @@ const RoomMonitor: React.FC = () => {
         <RoomInfoCard roomData={roomData} />
         <StaffCard roomName={room.name} staff={staff} />
         <RoomUpdateFormComponent
-          employees={employees}
-          rooms={rooms}
-          currentRoom={room}
-          currentStaffCount={staff.length}
-          childrenOver3={roomData.childrenOver3}
-          childrenUnder3={roomData.childrenUnder3}
+          roomId={room.id}
+          currentChildrenOver3={roomData.childrenOver3}
+          currentChildrenUnder3={roomData.childrenUnder3}
           onSubmit={handleFormSubmit}
         />
       </div>
