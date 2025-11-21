@@ -2,7 +2,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContactList } from "@/components/mass-mailer/ContactList";
 import { CampaignList } from "@/components/mass-mailer/CampaignList";
 import { TemplateList } from "@/components/mass-mailer/TemplateList";
-import { Mail, Users, FileText } from "lucide-react";
+import { AnalyticsDashboard } from "@/components/mass-mailer/AnalyticsDashboard";
+import { Mail, Users, FileText, BarChart3 } from "lucide-react";
 
 const MassMailerPage = () => {
   return (
@@ -15,7 +16,7 @@ const MassMailerPage = () => {
       </div>
 
       <Tabs defaultValue="contacts" className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-3 h-14">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4 h-14">
           <TabsTrigger value="contacts" className="flex items-center gap-2 text-base">
             <Users className="h-5 w-5" />
             Contacts
@@ -23,6 +24,10 @@ const MassMailerPage = () => {
           <TabsTrigger value="campaigns" className="flex items-center gap-2 text-base">
             <Mail className="h-5 w-5" />
             Campaigns
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2 text-base">
+            <BarChart3 className="h-5 w-5" />
+            Analytics
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-2 text-base">
             <FileText className="h-5 w-5" />
@@ -36,6 +41,10 @@ const MassMailerPage = () => {
 
         <TabsContent value="campaigns" className="mt-6">
           <CampaignList />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="mt-6">
+          <AnalyticsDashboard />
         </TabsContent>
 
         <TabsContent value="templates" className="mt-6">
