@@ -55,18 +55,24 @@ const App = () => (
                 <Route path="leave-application" element={<LeaveApplicationPage />} />
               </Route>
 
-              {/* Admin-only routes protected by AdminRoute */}
-              <Route element={<AdminRoute />}>
-                <Route path="reports" element={<ReportsPage />} />
-                <Route path="team" element={<TeamPage />} />
-                <Route path="work-schedule" element={<WorkSchedulePage />} />
-                <Route path="holidays" element={<HolidayManagementPage />} />
-                <Route path="leave-management" element={<LeaveManagementPage />} />
-                <Route path="mass-mailer" element={<MassMailerPage />} />
-              </Route>
+            {/* Admin-only routes protected by AdminRoute */}
+            <Route element={<AdminRoute />}>
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="team" element={<TeamPage />} />
+              <Route path="work-schedule" element={<WorkSchedulePage />} />
+              <Route path="holidays" element={<HolidayManagementPage />} />
+              <Route path="leave-management" element={<LeaveManagementPage />} />
             </Route>
+          </Route>
 
-            {/* Childcare Monitor App Routes - Standalone */}
+          {/* Mass Mailer App Routes - Standalone */}
+          <Route path="/mass-mailer" element={<MainLayout />}>
+            <Route element={<AdminRoute />}>
+              <Route index element={<MassMailerPage />} />
+            </Route>
+          </Route>
+
+          {/* Childcare Monitor App Routes - Standalone */}
             <Route path="/childcare-monitor" element={<ChildcareMonitorLayout />}>
               <Route index element={<ChildcareMonitorIndex />} />
               <Route path="room/:roomId" element={<RoomMonitor />} />
