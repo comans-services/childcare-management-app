@@ -173,7 +173,7 @@ const WorkSchedulePage = () => {
               <p className="text-muted-foreground">
                 {searchTerm ? "No users found matching your search." : "No users found."}
               </p>
-            </div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            </div> : <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {filteredUsers.map(user => <UnifiedUserScheduleCard key={`${user.id}-${weekDates[0]?.getTime()}`} user={user} weekStartDate={weekDates[0] || new Date()} />)}
             </div>}
         </CardContent>
