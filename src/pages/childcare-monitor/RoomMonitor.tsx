@@ -33,13 +33,13 @@ const RoomMonitor: React.FC = () => {
 
   useEffect(() => {
     if (!roomId) {
-      navigate('/childcare-monitor/rooms/1');
+      navigate('/childcare-monitor/room/1');
       return;
     }
 
     const selectedRoom = getRoomById(roomId);
     if (!selectedRoom) {
-      navigate('/childcare-monitor/rooms');
+      navigate('/childcare-monitor');
       return;
     }
 
@@ -139,7 +139,7 @@ const RoomMonitor: React.FC = () => {
             <h1 className="text-2xl font-bold mb-4">Room Not Found</h1>
             <p className="mb-4">The requested room does not exist.</p>
             <button
-              onClick={() => navigate('/childcare-monitor/rooms')}
+              onClick={() => navigate('/childcare-monitor')}
               className="px-4 py-2 bg-care-brightGreen hover:bg-care-hoverGreen rounded-md"
             >
               Go to Rooms List
@@ -155,7 +155,7 @@ const RoomMonitor: React.FC = () => {
       <div className="max-w-xl mx-auto">
         <div className="mb-4">
           <button
-            onClick={() => navigate('/childcare-monitor/rooms')}
+            onClick={() => navigate('/childcare-monitor')}
             className="flex items-center text-care-paleGreen hover:text-white"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

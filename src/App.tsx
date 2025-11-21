@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 
 import MainLayout from "@/components/layout/MainLayout";
 import HubLayout from "@/components/layout/HubLayout";
+import ChildcareMonitorLayout from "@/components/layout/ChildcareMonitorLayout";
 import AdminRoute from "@/routes/AdminRoute";
 import FullTimeRoute from "@/routes/FullTimeRoute";
 import AuthPage from "@/pages/AuthPage";
@@ -23,7 +24,6 @@ import LeaveManagementPage from "@/pages/LeaveManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
 import MassMailerPage from "@/pages/MassMailerPage";
 import ChildcareMonitorIndex from "@/pages/childcare-monitor/ChildcareMonitorIndex";
-import RoomsList from "@/pages/childcare-monitor/RoomsList";
 import RoomMonitor from "@/pages/childcare-monitor/RoomMonitor";
 import NotFound from "@/pages/NotFound";
 
@@ -66,12 +66,11 @@ const App = () => (
               </Route>
             </Route>
 
-            {/* Childcare Monitor App Routes */}
-          <Route path="/childcare-monitor" element={<MainLayout />}>
-            <Route index element={<ChildcareMonitorIndex />} />
-            <Route path="rooms" element={<RoomsList />} />
-            <Route path="rooms/:roomId" element={<RoomMonitor />} />
-          </Route>
+            {/* Childcare Monitor App Routes - Standalone */}
+            <Route path="/childcare-monitor" element={<ChildcareMonitorLayout />}>
+              <Route index element={<ChildcareMonitorIndex />} />
+              <Route path="room/:roomId" element={<RoomMonitor />} />
+            </Route>
 
             <Route path="*" element={<NotFound />} />
           </Routes>
