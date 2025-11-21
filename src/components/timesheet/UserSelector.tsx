@@ -148,7 +148,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
                 
                 {/* Other users */}
                 {users
-                  .filter(user => user.id !== currentUser?.id)
+                  .filter(user => showCurrentUserOption ? user.id !== currentUser?.id : true)
                   .map((user) => (
                     <CommandItem
                       key={user.id}
