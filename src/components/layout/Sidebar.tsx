@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
-import { Home, Calendar, Settings, BarChart, UserPlus, Clock, CalendarCheck, Plane } from "lucide-react";
+import { Home, Calendar, Settings, BarChart, UserPlus, Clock, CalendarCheck, Plane, Mail } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -47,6 +47,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
     { to: "/timesheet/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },
     { to: "/timesheet/holidays", icon: CalendarCheck, label: "Holiday Management", adminOnly: true },
     { to: "/timesheet/leave-management", icon: CalendarCheck, label: "Leave Management", adminOnly: true },
+    { to: "/timesheet/mass-mailer", icon: Mail, label: "Mass Mailer", adminOnly: true },
   ];
 
   const filteredItems = navigationItems.filter(item => 
