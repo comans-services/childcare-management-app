@@ -32,7 +32,7 @@ const ManagementHubPage = () => {
       borderColor: "border-green-200",
       hoverColor: "hover:bg-green-100",
       route: "/mass-mailer",
-      available: false
+      available: true
     },
     {
       id: "childcare-monitor",

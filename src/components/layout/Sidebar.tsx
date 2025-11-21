@@ -47,7 +47,6 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
     { to: "/timesheet/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },
     { to: "/timesheet/holidays", icon: CalendarCheck, label: "Holiday Management", adminOnly: true },
     { to: "/timesheet/leave-management", icon: CalendarCheck, label: "Leave Management", adminOnly: true },
-    { to: "/timesheet/mass-mailer", icon: Mail, label: "Mass Mailer", adminOnly: true },
   ];
 
   const filteredItems = navigationItems.filter(item => 
