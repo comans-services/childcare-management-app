@@ -21,6 +21,7 @@ import HolidayManagementPage from "@/pages/HolidayManagementPage";
 import LeaveApplicationPage from "@/pages/LeaveApplicationPage";
 import LeaveManagementPage from "@/pages/LeaveManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
+import MassMailerPage from "@/pages/MassMailerPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
                 <Route path="work-schedule" element={<WorkSchedulePage />} />
                 <Route path="holidays" element={<HolidayManagementPage />} />
                 <Route path="leave-management" element={<LeaveManagementPage />} />
+                <Route path="mass-mailer" element={<MassMailerPage />} />
               </Route>
             </Route>
 
