@@ -9,7 +9,8 @@ export const useWorkSchedule = (userId?: string) => {
   const { user } = useAuth();
   const targetUserId = userId || user?.id;
   
-  const [workingDays, setWorkingDays] = useState<number>(5); // Default to 5 days
+  const [workingDays, setWorkingDays] = useState<number>(5);
+  const [templateSchedule, setTemplateSchedule] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +35,7 @@ export const useWorkSchedule = (userId?: string) => {
       
       if (schedule) {
         setWorkingDays(schedule.working_days);
+        setTemplateSchedule(schedule);
         console.log(`Loaded work schedule from database: ${schedule.working_days} days for user ${targetUserId}`);
       } else {
         // Get default based on employment type
@@ -185,6 +187,7 @@ export const useWorkSchedule = (userId?: string) => {
   return {
     workingDays,
     weeklyTarget,
+    templateSchedule,
     updateWorkingDays,
     loading,
     error,

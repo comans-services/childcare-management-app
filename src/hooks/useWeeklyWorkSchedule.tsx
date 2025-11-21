@@ -8,30 +8,46 @@ import { toast } from "@/hooks/use-toast";
 
 export const useWeeklyWorkSchedule = (userId: string, weekStartDate: Date) => {
   const { user } = useAuth();
-  const { workingDays } = useWorkSchedule(userId);
+  const { workingDays, templateSchedule } = useWorkSchedule(userId);
   const { employmentType } = useEmploymentType();
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklyWorkSchedule | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Calculate default daily hours based on employment type and working days
+  // Calculate default daily hours: template > employment type > working_days
   const getDefaultDailyHours = (dayIndex: number): number => {
-    // Monday = 1, Tuesday = 2, ..., Sunday = 0
+    // Priority 1: Check if template hours are set
+    if (templateSchedule) {
+      const dayMap: Record<number, keyof typeof templateSchedule> = {
+        1: 'monday_hours',
+        2: 'tuesday_hours',
+        3: 'wednesday_hours',
+        4: 'thursday_hours',
+        5: 'friday_hours',
+        6: 'saturday_hours',
+        0: 'sunday_hours',
+      };
+      
+      const templateHours = templateSchedule[dayMap[dayIndex]];
+      if (templateHours !== undefined && templateHours !== null) {
+        return templateHours;
+      }
+    }
     
-    // Full-time: Always Mon-Fri, 8 hours each
+    // Priority 2: Full-time defaults (Mon-Fri, 8 hours each)
     if (employmentType === 'full-time') {
       return (dayIndex >= 1 && dayIndex <= 5) ? 8 : 0;
     }
     
-    // Part-time/Casual: Use global working_days setting
+    // Priority 3: Calculate from working_days setting
     const workingDaysList = [];
-    if (workingDays >= 1) workingDaysList.push(1); // Monday
-    if (workingDays >= 2) workingDaysList.push(2); // Tuesday
-    if (workingDays >= 3) workingDaysList.push(3); // Wednesday
-    if (workingDays >= 4) workingDaysList.push(4); // Thursday
-    if (workingDays >= 5) workingDaysList.push(5); // Friday
-    if (workingDays >= 6) workingDaysList.push(6); // Saturday
-    if (workingDays >= 7) workingDaysList.push(0); // Sunday
+    if (workingDays >= 1) workingDaysList.push(1);
+    if (workingDays >= 2) workingDaysList.push(2);
+    if (workingDays >= 3) workingDaysList.push(3);
+    if (workingDays >= 4) workingDaysList.push(4);
+    if (workingDays >= 5) workingDaysList.push(5);
+    if (workingDays >= 6) workingDaysList.push(6);
+    if (workingDays >= 7) workingDaysList.push(0);
 
     return workingDaysList.includes(dayIndex) ? 8 : 0;
   };
@@ -158,6 +174,16 @@ export const useWeeklyWorkSchedule = (userId: string, weekStartDate: Date) => {
   const effectiveDays = Object.values(effectiveDailyHours).filter(h => h > 0).length;
   const effectiveHours = Object.values(effectiveDailyHours).reduce((sum, h) => sum + h, 0);
 
+  const hasTemplate = !!(
+    templateSchedule?.monday_hours ||
+    templateSchedule?.tuesday_hours ||
+    templateSchedule?.wednesday_hours ||
+    templateSchedule?.thursday_hours ||
+    templateSchedule?.friday_hours ||
+    templateSchedule?.saturday_hours ||
+    templateSchedule?.sunday_hours
+  );
+
   return {
     weeklySchedule,
     effectiveDailyHours,
@@ -168,5 +194,7 @@ export const useWeeklyWorkSchedule = (userId: string, weekStartDate: Date) => {
     error,
     reload: loadWeeklySchedule,
     hasWeeklyOverride: !!weeklySchedule,
+    hasTemplate,
+    scheduleSource: weeklySchedule ? 'override' : hasTemplate ? 'template' : 'default',
   };
 };
