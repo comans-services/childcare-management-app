@@ -9,7 +9,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
+import { Menu, ChevronLeft, ChevronRight, Baby } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Home, Calendar, Settings, BarChart, UserPlus, Clock, CalendarCheck, Plane, Mail } from "lucide-react";
@@ -42,6 +42,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
     { to: "/timesheet", icon: Home, label: "Dashboard", showForAll: true },
     { to: "/timesheet/entry", icon: Calendar, label: "Timesheet Entry", showForAll: true },
     { to: "/timesheet/leave-application", icon: Plane, label: "Leave Application", fullTimeOnly: true },
+    { to: "/childcare-monitor/rooms", icon: Baby, label: "Room Monitor", showForAll: true },
     { to: "/timesheet/reports", icon: BarChart, label: "Reports", adminOnly: true },
     { to: "/timesheet/team", icon: UserPlus, label: "Team", adminOnly: true },
     { to: "/timesheet/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },

@@ -1,25 +1,18 @@
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { rooms, getLatestRoomData, getEmployeesInRoom } from '@/data/childcare-monitor/mockData';
-import { validateEducatorChildRatio } from '@/utils/childcare-monitor/roomUtils';
+import { useCurrentRoomStatus } from '@/hooks/useRoomStatus';
+import { Loader2 } from 'lucide-react';
 
 const RoomsList: React.FC = () => {
-  // Force re-render on focus to update room data
-  const [, setForceUpdate] = useState<number>(0);
+  const { data: rooms, isLoading } = useCurrentRoomStatus();
 
-  // Effect to update the room list when tab regains focus
-  useEffect(() => {
-    const handleFocus = () => {
-      setForceUpdate(prev => prev + 1);
-    };
-
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-care-green text-white p-6 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-care-green text-white p-6">
@@ -31,28 +24,20 @@ const RoomsList: React.FC = () => {
           </p>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {rooms.map((room) => {
-              const roomData = getLatestRoomData(room.id);
-              const staff = getEmployeesInRoom(room.id);
-
-              // Calculate if the room meets educator-child ratio
-              const totalChildren = roomData ? roomData.childrenOver3 + roomData.childrenUnder3 : 0;
-              const ratio = validateEducatorChildRatio(
-                staff.length,
-                roomData?.childrenUnder3 || 0,
-                roomData?.childrenOver3 || 0
-              );
+            {rooms?.map((room) => {
+              const totalChildren = room.total_children || 0;
+              const isCompliant = room.is_compliant || false;
 
               return (
                 <Link
                   key={room.id}
                   to={`/childcare-monitor/rooms/${room.id}`}
-                  className={`${ratio.isValid ? 'bg-care-lightGreen' : 'bg-yellow-800'} hover:bg-care-brightGreen transition-colors p-4 rounded-lg`}
+                  className={`${isCompliant ? 'bg-care-lightGreen' : 'bg-yellow-800'} hover:bg-care-brightGreen transition-colors p-4 rounded-lg`}
                 >
                   <h2 className="text-xl font-bold mb-2">The {room.name} Room</h2>
                   <div className="flex gap-2 mb-2">
                     <div className="bg-care-darkGreen px-2 py-1 rounded text-sm">
-                      Staff: {staff.length}
+                      Staff: {room.current_staff_count || 0}
                     </div>
                     <div className="bg-care-darkGreen px-2 py-1 rounded text-sm">
                       Children: {totalChildren}
@@ -60,16 +45,16 @@ const RoomsList: React.FC = () => {
                   </div>
                   <div className="flex gap-2 mb-2">
                     <div className="bg-care-darkGreen px-2 py-1 rounded text-sm">
-                      Over 3: {roomData?.childrenOver3 || 0}
+                      Over 3: {room.children_over_3 || 0}
                     </div>
                     <div className="bg-care-darkGreen px-2 py-1 rounded text-sm">
-                      Under 3: {roomData?.childrenUnder3 || 0}
+                      Under 3: {room.children_under_3 || 0}
                     </div>
                   </div>
                   <div className="text-sm text-care-paleGreen">
-                    Last updated: {roomData?.timestamp || 'Never'}
+                    Last updated: {room.last_updated ? new Date(room.last_updated).toLocaleString() : 'Never'}
                   </div>
-                  {!ratio.isValid && (
+                  {!isCompliant && (
                     <div className="mt-2 text-yellow-200 text-sm">
                       ⚠️ Warning: Educator-to-child ratio not met
                     </div>
@@ -93,10 +78,6 @@ const RoomsList: React.FC = () => {
               <li>Children 3 years and older: 1 educator for every 15 children (1:15)</li>
             </ul>
           </div>
-          <p className="text-sm text-care-paleGreen">
-            Note: Room monitors can only be accessed from devices physically located in the
-            corresponding room.
-          </p>
         </div>
       </div>
     </div>
