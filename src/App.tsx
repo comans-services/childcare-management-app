@@ -9,6 +9,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import HubLayout from "@/components/layout/HubLayout";
 import ChildcareMonitorLayout from "@/components/layout/ChildcareMonitorLayout";
+import MassMailerLayout from "@/components/layout/MassMailerLayout";
 import AdminRoute from "@/routes/AdminRoute";
 import FullTimeRoute from "@/routes/FullTimeRoute";
 import AuthPage from "@/pages/AuthPage";
@@ -66,7 +67,7 @@ const App = () => (
           </Route>
 
           {/* Mass Mailer App Routes - Standalone */}
-          <Route path="/mass-mailer" element={<MainLayout />}>
+          <Route path="/mass-mailer" element={<MassMailerLayout />}>
             <Route element={<AdminRoute />}>
               <Route index element={<MassMailerPage />} />
             </Route>
