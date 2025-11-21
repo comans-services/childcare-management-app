@@ -1,61 +1,83 @@
-
 import React, { useState, useEffect } from 'react';
-import { Employee, Room, StatusType } from '@/types/childcare-monitor';
-import type { RoomUpdateForm } from '@/types/childcare-monitor';
+import { RoomUpdateForm as RoomUpdateFormType, StatusType } from '@/types/childcare-monitor';
 import { validateEducatorChildRatio } from '@/utils/childcare-monitor/roomUtils';
-import { isEmployeeInAnyRoom, getEmployeeCurrentRoom } from '@/data/childcare-monitor/mockData';
+import { useRooms } from '@/hooks/useRoomStatus';
+import { useAllStaff } from '@/hooks/useStaffInRoom';
+import { roomService } from '@/lib/childcare-monitor/room-service';
 
 interface RoomUpdateFormProps {
-  employees: Employee[];
-  rooms: Room[];
-  currentRoom: Room;
-  currentStaffCount: number;
-  childrenOver3: number;
-  childrenUnder3: number;
-  onSubmit: (formData: RoomUpdateForm) => void;
+  roomId: string;
+  currentChildrenOver3: number;
+  currentChildrenUnder3: number;
+  onSubmit: (formData: RoomUpdateFormType) => void;
 }
 
 const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
-  employees,
-  rooms,
-  currentRoom,
-  currentStaffCount,
-  childrenOver3,
-  childrenUnder3,
-  onSubmit,
+  roomId: initialRoomId,
+  currentChildrenOver3,
+  currentChildrenUnder3,
+  onSubmit
 }) => {
+  const { data: rooms } = useRooms();
+  const { data: allStaff } = useAllStaff();
+  
   const [status, setStatus] = useState<StatusType>(StatusType.ENTER);
   const [employeeId, setEmployeeId] = useState<string>('');
-  const [roomId, setRoomId] = useState<string>('');
-  const [over3Count, setOver3Count] = useState<number>(childrenOver3);
-  const [under3Count, setUnder3Count] = useState<number>(childrenUnder3);
+  const [roomId, setRoomId] = useState<string>(initialRoomId);
+  const [over3Count, setOver3Count] = useState<number>(currentChildrenOver3);
+  const [under3Count, setUnder3Count] = useState<number>(currentChildrenUnder3);
   const [validationMessage, setValidationMessage] = useState<string>('');
   const [isValid, setIsValid] = useState<boolean>(true);
   const [staffError, setStaffError] = useState<string>('');
+  const [staffInRoomMap, setStaffInRoomMap] = useState<Map<string, string>>(new Map());
+  const [currentStaffCount, setCurrentStaffCount] = useState<number>(0);
 
-  // Filter out employees who are already in other rooms if status is ENTER
-  const availableEmployees = employees.filter(employee => {
+  // Load staff room status
+  useEffect(() => {
+    const loadStaffStatus = async () => {
+      if (!allStaff) return;
+      
+      const map = new Map<string, string>();
+      let countInCurrentRoom = 0;
+      
+      for (const staff of allStaff) {
+        const currentRoom = await roomService.getStaffCurrentRoom(staff.id);
+        if (currentRoom) {
+          map.set(staff.id, currentRoom);
+          if (currentRoom === initialRoomId) {
+            countInCurrentRoom++;
+          }
+        }
+      }
+      setStaffInRoomMap(map);
+      setCurrentStaffCount(countInCurrentRoom);
+    };
+    
+    loadStaffStatus();
+  }, [allStaff, initialRoomId]);
+
+  // Filter employees based on status
+  const availableEmployees = (allStaff || []).filter((employee) => {
+    const employeeCurrentRoom = staffInRoomMap.get(employee.id);
+
     if (status === StatusType.ENTER) {
-      // If entering, only show employees not already in any room
-      return !isEmployeeInAnyRoom(employee.id);
+      return !employeeCurrentRoom;
     } else {
-      // If exiting, only show employees in current room
-      const currentRoom = getEmployeeCurrentRoom(employee.id);
-      return currentRoom && currentRoom.id === roomId;
+      return employeeCurrentRoom === initialRoomId;
     }
   });
 
   // Set default values
   useEffect(() => {
-    setRoomId(currentRoom.id);
+    setRoomId(initialRoomId);
     if (availableEmployees.length > 0) {
       setEmployeeId(availableEmployees[0].id);
     } else {
       setEmployeeId('');
     }
-    setOver3Count(childrenOver3);
-    setUnder3Count(childrenUnder3);
-  }, [currentRoom.id, childrenOver3, childrenUnder3, availableEmployees, status]);
+    setOver3Count(currentChildrenOver3);
+    setUnder3Count(currentChildrenUnder3);
+  }, [initialRoomId, currentChildrenOver3, currentChildrenUnder3, availableEmployees.length]);
 
   // Update available employees when status changes
   useEffect(() => {
@@ -70,11 +92,10 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
         setStaffError('No staff members currently in this room to exit.');
       }
     }
-  }, [status, availableEmployees]);
+  }, [status, availableEmployees.length]);
 
   // Validate the form whenever counts change
   useEffect(() => {
-    // Calculate the new staff count based on current form
     let newStaffCount = currentStaffCount;
     if (status === StatusType.ENTER) {
       newStaffCount += 1;
@@ -96,11 +117,9 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
     e.preventDefault();
 
     if (!employeeId) {
-      // Don't submit if no employee is selected
       return;
     }
 
-    // Submit even if not valid, but show warning
     onSubmit({
       status,
       employeeId,
@@ -146,7 +165,7 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
             >
               {availableEmployees.map((employee) => (
                 <option key={employee.id} value={employee.id}>
-                  {employee.name}
+                  {employee.full_name}
                 </option>
               ))}
             </select>
@@ -160,10 +179,11 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
             className="w-full p-3 bg-care-green text-white rounded-md border border-care-accentGreen focus:border-care-brightGreen focus:outline-none focus:ring-1 focus:ring-care-brightGreen"
+            disabled
           >
-            {rooms.map((room) => (
+            {(rooms || []).map((room) => (
               <option key={room.id} value={room.id}>
-                {room.name}
+                The {room.name} Room
               </option>
             ))}
           </select>

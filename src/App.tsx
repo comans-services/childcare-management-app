@@ -67,11 +67,11 @@ const App = () => (
             </Route>
 
             {/* Childcare Monitor App Routes */}
-            <Route path="/childcare-monitor">
-              <Route index element={<ChildcareMonitorIndex />} />
-              <Route path="rooms" element={<RoomsList />} />
-              <Route path="rooms/:roomId" element={<RoomMonitor />} />
-            </Route>
+          <Route path="/childcare-monitor">
+            <Route index element={<MainLayout><ChildcareMonitorIndex /></MainLayout>} />
+            <Route path="rooms" element={<MainLayout><RoomsList /></MainLayout>} />
+            <Route path="rooms/:roomId" element={<MainLayout><RoomMonitor /></MainLayout>} />
+          </Route>
 
             <Route path="*" element={<NotFound />} />
           </Routes>
