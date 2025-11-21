@@ -1,18 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import nodemailer from "npm:nodemailer@6.9.7";
+import { Resend } from "npm:resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// SMTP Configuration - Placeholders for Azure SMTP
-const SMTP_HOST = Deno.env.get("AZURE_SMTP_HOST") || "smtp-hve.office365.com";
-const SMTP_PORT = parseInt(Deno.env.get("AZURE_SMTP_PORT") || "587");
-const SMTP_USER = Deno.env.get("AZURE_SMTP_USERNAME") || "";
-const SMTP_PASS = Deno.env.get("AZURE_SMTP_PASSWORD") || "";
-const FROM_EMAIL = SMTP_USER || "no-reply@yourdomain.com";
+// Email Configuration
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
+const FROM_EMAIL = "onboarding@resend.dev"; // Use your verified domain
 const FROM_NAME = "Mass Mailer System";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -141,47 +138,20 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check SMTP credentials
-    if (!SMTP_USER || !SMTP_PASS) {
-      console.error("SMTP credentials not configured");
+    // Check Resend API key
+    if (!RESEND_API_KEY) {
+      console.error("Resend API key not configured");
       return new Response(
         JSON.stringify({ 
-          error: "SMTP credentials not configured. Please add AZURE_SMTP_USERNAME and AZURE_SMTP_PASSWORD secrets." 
+          error: "Resend API key not configured. Please add RESEND_API_KEY secret." 
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Configure SMTP transporter
-    console.log(`Configuring SMTP: ${SMTP_HOST}:${SMTP_PORT}`);
-    const transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: false, // Use STARTTLS for port 587
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
-      },
-      tls: {
-        ciphers: "SSLv3",
-        rejectUnauthorized: true,
-      },
-    });
-
-    // Verify SMTP connection
-    try {
-      await transporter.verify();
-      console.log("SMTP connection verified");
-    } catch (verifyError) {
-      console.error("SMTP verification failed:", verifyError);
-      return new Response(
-        JSON.stringify({ 
-          error: "SMTP authentication failed. Please check your Azure SMTP credentials.",
-          details: verifyError.message
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Initialize Resend client
+    const resend = new Resend(RESEND_API_KEY);
+    console.log("Resend client initialized");
 
     // Update campaign status to 'sending' (if not test mode)
     if (!testMode) {
@@ -230,16 +200,19 @@ const handler = async (req: Request): Promise<Response> => {
             campaign.unsubscribe_link_included ? unsubLink : null
           );
 
-          // Send email
-          const info = await transporter.sendMail({
-            from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+          // Send email via Resend
+          const { data, error } = await resend.emails.send({
+            from: `${FROM_NAME} <${FROM_EMAIL}>`,
             to: contact.email,
             subject: campaign.subject,
             html: emailHtml,
-            text: campaign.message_body.replace(/<[^>]*>/g, ""), // Strip HTML for plain text
           });
 
-          console.log(`✓ Sent to ${contact.email} - Message ID: ${info.messageId}`);
+          if (error) {
+            throw error;
+          }
+
+          console.log(`✓ Sent to ${contact.email} - ID: ${data?.id}`);
 
           // Log success event
           await supabase.from("campaign_events").insert({
@@ -248,7 +221,7 @@ const handler = async (req: Request): Promise<Response> => {
             contact_email: contact.email,
             event_type: testMode ? "test_sent" : "sent",
             event_timestamp: new Date().toISOString(),
-            provider_response: { messageId: info.messageId, response: info.response },
+            provider_response: { id: data?.id },
           });
 
           sentCount++;
@@ -257,7 +230,7 @@ const handler = async (req: Request): Promise<Response> => {
           console.error(`✗ Failed to send to ${contact.email}:`, error.message);
 
           // Determine if it's a bounce or general failure
-          const isBounce = error.responseCode >= 500 || error.message.includes("bounce");
+          const isBounce = error.message?.includes("bounce") || error.statusCode === 550;
           
           if (isBounce) {
             bouncedCount++;
@@ -276,7 +249,7 @@ const handler = async (req: Request): Promise<Response> => {
             event_timestamp: new Date().toISOString(),
             bounce_type: isBounce ? "hard" : null,
             bounce_reason: error.message,
-            provider_response: { error: error.message, code: error.code },
+            provider_response: { error: error.message, statusCode: error.statusCode },
           });
 
           return { success: false, email: contact.email, error: error.message };
