@@ -12,11 +12,14 @@ import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useEmploymentType } from "@/hooks/useEmploymentType";
 import { useAuth } from "@/context/AuthContext";
-import { Calendar, Clock, Target, Calendar as CalendarWeekend, CheckCircle, XCircle, RefreshCw, Info, Briefcase } from "lucide-react";
+import { Calendar, Clock, Target, Calendar as CalendarWeekend, CheckCircle, XCircle, RefreshCw, Info, Briefcase, FileText } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import DayCountSelector from "@/components/timesheet/weekly-view/DayCountSelector";
 import WeeklyScheduleEditor from "./WeeklyScheduleEditor";
+import TemplateScheduleEditor from "./TemplateScheduleEditor";
 import { upsertWeeklyWorkSchedule, deleteWeeklyWorkSchedule, formatDaysSummary } from "@/lib/weekly-work-schedule-service";
+import { upsertWorkScheduleTemplate } from "@/lib/work-schedule-service";
+import { toast } from "@/hooks/use-toast";
 
 interface UnifiedUserScheduleCardProps {
   user: {
@@ -41,8 +44,10 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
 
   const {
     workingDays,
+    templateSchedule,
     loading: globalLoading,
-    error: globalError
+    error: globalError,
+    reload: reloadGlobalSchedule
   } = useWorkSchedule(user.id);
 
   const {
@@ -50,6 +55,8 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
     effectiveDays,
     effectiveHours,
     hasWeeklyOverride: hasOverride,
+    hasTemplate,
+    scheduleSource,
     loading: weeklyLoading,
     reload: reloadWeeklySchedule
   } = useWeeklyWorkSchedule(user.id, weekStartDate);
@@ -96,6 +103,52 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
   const handleResetWeeklySchedule = async () => {
     await deleteWeeklyWorkSchedule(user.id, weekStartDate);
     await reloadWeeklySchedule();
+  };
+
+  const handleSaveTemplate = async (templateHours: any) => {
+    try {
+      await upsertWorkScheduleTemplate(user.id, templateHours);
+      await reloadGlobalSchedule();
+      await reloadWeeklySchedule();
+      toast({
+        title: "Template Saved",
+        description: "Default schedule template has been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving template:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleClearTemplate = async () => {
+    try {
+      await upsertWorkScheduleTemplate(user.id, {
+        monday_hours: 0,
+        tuesday_hours: 0,
+        wednesday_hours: 0,
+        thursday_hours: 0,
+        friday_hours: 0,
+        saturday_hours: 0,
+        sunday_hours: 0,
+      });
+      await reloadGlobalSchedule();
+      await reloadWeeklySchedule();
+      toast({
+        title: "Template Cleared",
+        description: "Default schedule template has been cleared.",
+      });
+    } catch (error) {
+      console.error("Error clearing template:", error);
+      toast({
+        title: "Error",
+        description: "Failed to clear template. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (globalLoading || weeklyLoading || weekendLoading) {
@@ -176,13 +229,36 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
       
       <CardContent className="space-y-4">
       <Tabs defaultValue="schedule" className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-2'}`}>
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
+          {isAdmin && <TabsTrigger value="template">Default Template</TabsTrigger>}
           {isAdmin && <TabsTrigger value="weekly">Weekly Hours</TabsTrigger>}
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="schedule" className="space-y-4 mt-4">
+          {/* Schedule Source Indicator */}
+          <div className="flex gap-2">
+            {scheduleSource === 'override' && (
+              <Badge variant="default" className="text-xs">
+                <Calendar className="h-3 w-3 mr-1" />
+                Weekly Override
+              </Badge>
+            )}
+            {scheduleSource === 'template' && (
+              <Badge variant="secondary" className="text-xs">
+                <FileText className="h-3 w-3 mr-1" />
+                Using Template
+              </Badge>
+            )}
+            {scheduleSource === 'default' && (
+              <Badge variant="outline" className="text-xs">
+                <Target className="h-3 w-3 mr-1" />
+                Default Schedule
+              </Badge>
+            )}
+          </div>
+
           {/* Employment Type Notice */}
           {isFullTime && (
             <Alert>
@@ -220,10 +296,21 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
         </TabsContent>
 
         {isAdmin && (
+          <TabsContent value="template" className="space-y-4 mt-4">
+            <TemplateScheduleEditor
+              userId={user.id}
+              currentTemplate={templateSchedule}
+              onSave={handleSaveTemplate}
+              onClear={handleClearTemplate}
+            />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
           <TabsContent value="weekly" className="space-y-4 mt-4">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Set specific hours for each day of this week. This will override the global working days setting.
+                Set specific hours for each day of this week. This will override the template and global settings.
               </p>
               <WeeklyScheduleEditor
                 userId={user.id}

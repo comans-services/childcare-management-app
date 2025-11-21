@@ -5,6 +5,13 @@ export interface WorkSchedule {
   id: string;
   user_id: string;
   working_days: number;
+  monday_hours?: number;
+  tuesday_hours?: number;
+  wednesday_hours?: number;
+  thursday_hours?: number;
+  friday_hours?: number;
+  saturday_hours?: number;
+  sunday_hours?: number;
   created_at: string;
   created_by?: string;
 }
@@ -68,7 +75,20 @@ export const getDefaultWorkingDays = async (userId: string): Promise<number> => 
   }
 };
 
-export const getDefaultWeeklySchedule = (employmentType: string) => {
+export const getDefaultWeeklySchedule = (employmentType: string, templateSchedule?: WorkSchedule) => {
+  // If template hours are set, use them
+  if (templateSchedule && hasTemplateHours(templateSchedule)) {
+    return {
+      monday_hours: templateSchedule.monday_hours || 0,
+      tuesday_hours: templateSchedule.tuesday_hours || 0,
+      wednesday_hours: templateSchedule.wednesday_hours || 0,
+      thursday_hours: templateSchedule.thursday_hours || 0,
+      friday_hours: templateSchedule.friday_hours || 0,
+      saturday_hours: templateSchedule.saturday_hours || 0,
+      sunday_hours: templateSchedule.sunday_hours || 0,
+    };
+  }
+
   if (employmentType === 'full-time') {
     // Full-time: Mon-Fri, 8 hours each
     return {
@@ -82,7 +102,7 @@ export const getDefaultWeeklySchedule = (employmentType: string) => {
     };
   }
   
-  // Part-time/casual: No days by default (must be configured)
+  // Part-time/casual: No days by default (must be configured via template)
   return {
     monday_hours: 0,
     tuesday_hours: 0,
@@ -92,6 +112,66 @@ export const getDefaultWeeklySchedule = (employmentType: string) => {
     saturday_hours: 0,
     sunday_hours: 0,
   };
+};
+
+export const hasTemplateHours = (schedule: WorkSchedule): boolean => {
+  return !!(
+    schedule.monday_hours ||
+    schedule.tuesday_hours ||
+    schedule.wednesday_hours ||
+    schedule.thursday_hours ||
+    schedule.friday_hours ||
+    schedule.saturday_hours ||
+    schedule.sunday_hours
+  );
+};
+
+export const upsertWorkScheduleTemplate = async (
+  userId: string,
+  templateHours: {
+    monday_hours: number;
+    tuesday_hours: number;
+    wednesday_hours: number;
+    thursday_hours: number;
+    friday_hours: number;
+    saturday_hours: number;
+    sunday_hours: number;
+  }
+): Promise<WorkSchedule | null> => {
+  try {
+    console.log(`Upserting work schedule template for user ${userId}`);
+    
+    const currentUser = (await supabase.auth.getUser()).data.user;
+    if (!currentUser) {
+      throw new Error("No authenticated user");
+    }
+
+    // Calculate working days from template
+    const workingDays = Object.values(templateHours).filter(h => h > 0).length;
+
+    const { data, error } = await supabase
+      .from("work_schedules")
+      .upsert({
+        user_id: userId,
+        working_days: workingDays,
+        ...templateHours
+      }, {
+        onConflict: "user_id"
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error upserting work schedule template:", error);
+      throw error;
+    }
+
+    console.log(`Work schedule template upserted successfully:`, data);
+    return data;
+  } catch (error) {
+    console.error("Error in upsertWorkScheduleTemplate:", error);
+    throw error;
+  }
 };
 
 export const upsertWorkSchedule = async (userId: string, workingDays: number): Promise<WorkSchedule | null> => {

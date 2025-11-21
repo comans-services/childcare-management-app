@@ -1423,33 +1423,54 @@ export type Database = {
           allow_holiday_entries: boolean
           allow_weekend_entries: boolean
           created_at: string
+          friday_hours: number | null
           id: string
           lock_reason: string | null
           locked_by: string | null
           locked_until_date: string | null
+          monday_hours: number | null
+          saturday_hours: number | null
+          sunday_hours: number | null
+          thursday_hours: number | null
+          tuesday_hours: number | null
           user_id: string
+          wednesday_hours: number | null
           working_days: number
         }
         Insert: {
           allow_holiday_entries?: boolean
           allow_weekend_entries?: boolean
           created_at?: string
+          friday_hours?: number | null
           id?: string
           lock_reason?: string | null
           locked_by?: string | null
           locked_until_date?: string | null
+          monday_hours?: number | null
+          saturday_hours?: number | null
+          sunday_hours?: number | null
+          thursday_hours?: number | null
+          tuesday_hours?: number | null
           user_id: string
+          wednesday_hours?: number | null
           working_days?: number
         }
         Update: {
           allow_holiday_entries?: boolean
           allow_weekend_entries?: boolean
           created_at?: string
+          friday_hours?: number | null
           id?: string
           lock_reason?: string | null
           locked_by?: string | null
           locked_until_date?: string | null
+          monday_hours?: number | null
+          saturday_hours?: number | null
+          sunday_hours?: number | null
+          thursday_hours?: number | null
+          tuesday_hours?: number | null
           user_id?: string
+          wednesday_hours?: number | null
           working_days?: number
         }
         Relationships: [
