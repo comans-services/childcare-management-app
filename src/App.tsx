@@ -22,6 +22,9 @@ import LeaveApplicationPage from "@/pages/LeaveApplicationPage";
 import LeaveManagementPage from "@/pages/LeaveManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
 import MassMailerPage from "@/pages/MassMailerPage";
+import ChildcareMonitorIndex from "@/pages/childcare-monitor/ChildcareMonitorIndex";
+import RoomsList from "@/pages/childcare-monitor/RoomsList";
+import RoomMonitor from "@/pages/childcare-monitor/RoomMonitor";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +64,13 @@ const App = () => (
                 <Route path="leave-management" element={<LeaveManagementPage />} />
                 <Route path="mass-mailer" element={<MassMailerPage />} />
               </Route>
+            </Route>
+
+            {/* Childcare Monitor App Routes */}
+            <Route path="/childcare-monitor">
+              <Route index element={<ChildcareMonitorIndex />} />
+              <Route path="rooms" element={<RoomsList />} />
+              <Route path="rooms/:roomId" element={<RoomMonitor />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

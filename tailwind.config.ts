@@ -59,6 +59,16 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				care: {
+					darkGreen: '#1e4025',
+					green: '#2c5e35',
+					lightGreen: '#397242',
+					accentGreen: '#4a7553',
+					brightGreen: '#4CAF50',
+					hoverGreen: '#45a049',
+					lightText: '#e0e0e0',
+					paleGreen: '#afd4b6',
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

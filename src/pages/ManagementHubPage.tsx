@@ -36,7 +36,7 @@ const ManagementHubPage = () => {
     },
     {
       id: "childcare-monitor",
-      title: "ChildcareMonitor",
+      title: "Childcare Monitor",
       description: "Monitor attendance, activities, and care records for all children",
       icon: Baby,
       color: "text-purple-600",
@@ -44,7 +44,7 @@ const ManagementHubPage = () => {
       borderColor: "border-purple-200",
       hoverColor: "hover:bg-purple-100",
       route: "/childcare-monitor",
-      available: false
+      available: true
     }
   ];
 
