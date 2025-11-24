@@ -1,10 +1,48 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCurrentRoomStatus } from '@/hooks/useRoomStatus';
 import { Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const ChildcareMonitorIndex: React.FC = () => {
   const { data: rooms, isLoading } = useCurrentRoomStatus();
+  const queryClient = useQueryClient();
+
+  // Real-time subscriptions for all rooms
+  useEffect(() => {
+    const channel = supabase
+      .channel('all-rooms-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'childcare_rooms',
+        },
+        (payload) => {
+          console.log('[Realtime] Rooms list updated:', payload);
+          queryClient.invalidateQueries({ queryKey: ['current-room-status'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'room_activity_log',
+        },
+        (payload) => {
+          console.log('[Realtime] Staff movement detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['current-room-status'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   if (isLoading) {
     return (
