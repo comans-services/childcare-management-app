@@ -37,7 +37,7 @@ export const RoomActivityReports: React.FC<RoomActivityReportsProps> = ({
     );
   }
 
-  if (!roomData || roomData.staffEntries?.length === 0) {
+  if (!roomData || !roomData.staffEntries || roomData.staffEntries.length === 0) {
     return (
       <Card>
         <CardHeader>
