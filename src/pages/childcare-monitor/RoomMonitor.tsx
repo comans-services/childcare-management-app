@@ -1,7 +1,9 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useRoomStatus } from '@/hooks/useRoomStatus';
-import { useQuery } from '@tanstack/react-query';
+import { useRealtimeRoom } from '@/hooks/useRealtimeRoom';
+import { useRealtimeRoomStatus } from '@/hooks/useRealtimeRoomStatus';
+import { useRealtimeStaffInRoom } from '@/hooks/useRealtimeStaffInRoom';
+import { useQueryClient } from '@tanstack/react-query';
 import { roomService, Room } from '@/lib/childcare-monitor/room-service';
 import RoomInfoCard from '@/components/childcare-monitor/RoomInfoCard';
 import StaffCard from '@/components/childcare-monitor/StaffCard';
@@ -14,24 +16,12 @@ import logo from '@/assets/childcare-monitor-logo.svg';
 const RoomMonitor: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  // Fetch room details
-  const { data: room, isLoading: roomLoading } = useQuery({
-    queryKey: ['room', roomId],
-    queryFn: () => roomService.getRoom(roomId!),
-    enabled: !!roomId,
-  });
-
-  // Fetch room status
-  const { data: roomStatus, isLoading: statusLoading } = useRoomStatus(roomId);
-
-  // Fetch staff in room
-  const { data: staff = [], isLoading: staffLoading } = useQuery({
-    queryKey: ['staff-in-room', roomId],
-    queryFn: () => roomService.getStaffInRoom(roomId!),
-    enabled: !!roomId,
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
+  // Real-time data fetching
+  const { data: room, isLoading: roomLoading } = useRealtimeRoom(roomId);
+  const { data: roomStatus, isLoading: statusLoading } = useRealtimeRoomStatus(roomId);
+  const { data: staff = [], isLoading: staffLoading } = useRealtimeStaffInRoom(roomId);
 
   const isLoading = roomLoading || statusLoading || staffLoading;
 
@@ -105,6 +95,11 @@ const RoomMonitor: React.FC = () => {
         );
         toast.success('Child counts updated');
       }
+
+      // Manually invalidate queries for instant feedback
+      queryClient.invalidateQueries({ queryKey: ['room', roomId] });
+      queryClient.invalidateQueries({ queryKey: ['staff-in-room', roomId] });
+      queryClient.invalidateQueries({ queryKey: ['room-status', roomId] });
     } catch (error) {
       console.error('Error updating room:', error);
       toast.error('Failed to update room data');
