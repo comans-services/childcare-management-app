@@ -1,54 +1,36 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SimpleComposeEmail } from "@/components/mass-mailer/SimpleComposeEmail";
 import { ContactList } from "@/components/mass-mailer/ContactList";
-import { CampaignList } from "@/components/mass-mailer/CampaignList";
-import { TemplateList } from "@/components/mass-mailer/TemplateList";
-import { AnalyticsDashboard } from "@/components/mass-mailer/AnalyticsDashboard";
-import { Mail, Users, FileText, BarChart3 } from "lucide-react";
+import { Mail, Users } from "lucide-react";
 
 const MassMailerPage = () => {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Mass Mailer</h1>
-        <p className="text-muted-foreground">
-          Manage contacts and send email campaigns
+        <h1 className="text-4xl font-bold text-foreground mb-2">Mass Mailer</h1>
+        <p className="text-xl text-muted-foreground">
+          Send email notifications to parents and staff
         </p>
       </div>
 
-      <Tabs defaultValue="contacts" className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-4 h-14">
-          <TabsTrigger value="contacts" className="flex items-center gap-2 text-base">
-            <Users className="h-5 w-5" />
+      <Tabs defaultValue="send" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 h-16">
+          <TabsTrigger value="send" className="flex items-center gap-2 text-lg">
+            <Mail className="h-6 w-6" />
+            Send Email
+          </TabsTrigger>
+          <TabsTrigger value="contacts" className="flex items-center gap-2 text-lg">
+            <Users className="h-6 w-6" />
             Contacts
-          </TabsTrigger>
-          <TabsTrigger value="campaigns" className="flex items-center gap-2 text-base">
-            <Mail className="h-5 w-5" />
-            Campaigns
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2 text-base">
-            <BarChart3 className="h-5 w-5" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2 text-base">
-            <FileText className="h-5 w-5" />
-            Templates
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="send" className="mt-6">
+          <SimpleComposeEmail />
+        </TabsContent>
+
         <TabsContent value="contacts" className="mt-6">
           <ContactList />
-        </TabsContent>
-
-        <TabsContent value="campaigns" className="mt-6">
-          <CampaignList />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="mt-6">
-          <AnalyticsDashboard />
-        </TabsContent>
-
-        <TabsContent value="templates" className="mt-6">
-          <TemplateList />
         </TabsContent>
       </Tabs>
     </div>

@@ -437,6 +437,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          organization_name: string | null
+          reply_to_email: string
+          sender_email: string
+          sender_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          organization_name?: string | null
+          reply_to_email?: string
+          sender_email?: string
+          sender_name?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          organization_name?: string | null
+          reply_to_email?: string
+          sender_email?: string
+          sender_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           category: string | null

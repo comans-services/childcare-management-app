@@ -9,8 +9,6 @@ const corsHeaders = {
 
 // Email Configuration
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
-const FROM_EMAIL = "onboarding@resend.dev"; // Use your verified domain
-const FROM_NAME = "Mass Mailer System";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -52,6 +50,23 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Initialize Supabase client with service role
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Fetch email settings from database
+    const { data: emailSettings, error: settingsError } = await supabase
+      .from('email_settings')
+      .select('*')
+      .single();
+
+    if (settingsError) {
+      console.error("Email settings fetch error:", settingsError);
+    }
+
+    // Use email settings or fallback to defaults
+    const FROM_NAME = emailSettings?.sender_name || 'DACCC';
+    const FROM_EMAIL = emailSettings?.sender_email || 'onboarding@resend.dev';
+    const REPLY_TO_EMAIL = emailSettings?.reply_to_email || FROM_EMAIL;
+    
+    console.log(`Email settings: From: ${FROM_NAME} <${FROM_EMAIL}>, Reply-To: ${REPLY_TO_EMAIL}`);
 
     // Parse request body
     const { campaignId, testMode = false, testEmail }: CampaignEmailRequest = await req.json();
@@ -204,6 +219,7 @@ const handler = async (req: Request): Promise<Response> => {
           const { data, error } = await resend.emails.send({
             from: `${FROM_NAME} <${FROM_EMAIL}>`,
             to: contact.email,
+            reply_to: REPLY_TO_EMAIL, // Enable replies to go to configured address
             subject: campaign.subject,
             html: emailHtml,
           });
@@ -324,7 +340,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
-// Generate HTML email template
+// Generate simple HTML email template (simplified for notifications)
 function generateEmailTemplate(
   subject: string,
   messageBody: string,
@@ -340,23 +356,23 @@ function generateEmailTemplate(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${subject}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px 0;">
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 20px 0;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
           
-          <!-- Header -->
+          <!-- Simple Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center;">
-              <h1 style="margin: 0; font-size: 28px; color: #ffffff; font-weight: 700;">${subject}</h1>
+            <td style="background-color: #ffffff; padding: 30px 40px; border-bottom: 1px solid #e5e7eb;">
+              <h1 style="margin: 0; font-size: 24px; color: #111827; font-weight: 600;">${subject}</h1>
             </td>
           </tr>
           
           <!-- Greeting -->
           <tr>
             <td style="padding: 30px 40px 20px 40px;">
-              <p style="margin: 0; font-size: 18px; color: #333333; line-height: 1.6;">
+              <p style="margin: 0; font-size: 16px; color: #374151; line-height: 1.6;">
                 Dear ${recipientName},
               </p>
             </td>
@@ -365,7 +381,7 @@ function generateEmailTemplate(
           <!-- Main Content -->
           <tr>
             <td style="padding: 0 40px 30px 40px;">
-              <div style="font-size: 16px; line-height: 1.8; color: #555555;">
+              <div style="font-size: 16px; line-height: 1.8; color: #374151;">
                 ${messageBody}
               </div>
             </td>
@@ -374,17 +390,16 @@ function generateEmailTemplate(
           ${includeFooter ? `
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 30px 40px; border-top: 2px solid #e9ecef;">
-              <p style="margin: 0 0 10px 0; font-size: 14px; color: #6c757d; line-height: 1.6;">
-                <strong>Mass Mailer System</strong><br>
-                This email was sent to you as part of our communication.
+            <td style="background-color: #f9fafb; padding: 30px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
+                Best regards,<br>
+                <strong>DACCC</strong>
               </p>
               
               ${unsubscribeLink ? `
-              <p style="margin: 10px 0 0 0; font-size: 12px; color: #adb5bd; line-height: 1.5;">
-                Don't want to receive these emails? 
-                <a href="${unsubscribeLink}" style="color: #667eea; text-decoration: underline;">
-                  Click here to unsubscribe
+              <p style="margin: 15px 0 0 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">
+                <a href="${unsubscribeLink}" style="color: #6b7280; text-decoration: underline;">
+                  Unsubscribe from these emails
                 </a>
               </p>
               ` : ''}

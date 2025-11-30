@@ -4,6 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 // TypeScript Interfaces
 // ============================================================================
 
+// Email settings interface
+export interface EmailSettings {
+  id: string;
+  sender_name: string;
+  sender_email: string;
+  reply_to_email: string;
+  organization_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Contact interfaces
 export interface Contact {
   id: string;
@@ -975,5 +986,73 @@ export const checkIsUnsubscribed = async (email: string): Promise<boolean> => {
   } catch (error) {
     console.error('Error checking unsubscribe status:', error);
     return false;
+  }
+};
+
+// ============================================================================
+// Simplified Email Sending
+// ============================================================================
+
+/**
+ * Send a quick email to a group of contacts (simplified version for notifications)
+ */
+export const sendQuickEmail = async (
+  subject: string,
+  messageBody: string,
+  recipientGroup: string, // 'all' or tag name
+): Promise<{ sent: number; failed: number }> => {
+  try {
+    console.log('Sending quick email:', { subject, recipientGroup });
+
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Create a campaign record for tracking
+    const { data: campaign, error: campaignError } = await supabase
+      .from('campaigns')
+      .insert({
+        subject: subject.trim(),
+        message_body: messageBody,
+        message_format: 'html',
+        audience_filter: recipientGroup === 'all' ? 'all' : 'tags',
+        target_tag: recipientGroup === 'all' ? null : recipientGroup,
+        status: 'sending',
+        created_by: user.id,
+        sent_by: user.id,
+        footer_included: true,
+        unsubscribe_link_included: false,
+      })
+      .select()
+      .single();
+
+    if (campaignError) throw campaignError;
+
+    // Call the edge function to send emails
+    const { data, error } = await supabase.functions.invoke('send-campaign-email', {
+      body: {
+        campaignId: campaign.id,
+        testMode: false,
+      },
+    });
+
+    if (error) throw error;
+
+    // Update campaign status
+    await supabase
+      .from('campaigns')
+      .update({
+        status: 'completed',
+        sent_at: new Date().toISOString(),
+      })
+      .eq('id', campaign.id);
+
+    return {
+      sent: data?.sent || 0,
+      failed: data?.failed || 0,
+    };
+  } catch (error) {
+    console.error('Error sending quick email:', error);
+    throw error;
   }
 };
