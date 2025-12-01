@@ -1013,6 +1013,7 @@ export type Database = {
           created_by: string | null
           device_model: string | null
           device_name: string
+          device_token: string | null
           id: string
           is_active: boolean
           last_seen: string | null
@@ -1026,6 +1027,7 @@ export type Database = {
           created_by?: string | null
           device_model?: string | null
           device_name: string
+          device_token?: string | null
           id?: string
           is_active?: boolean
           last_seen?: string | null
@@ -1039,6 +1041,7 @@ export type Database = {
           created_by?: string | null
           device_model?: string | null
           device_name?: string
+          device_token?: string | null
           id?: string
           is_active?: boolean
           last_seen?: string | null
@@ -1799,6 +1802,10 @@ export type Database = {
         }
         Returns: number
       }
+      generate_device_token: {
+        Args: { p_device_name: string; p_room_id: string }
+        Returns: Json
+      }
       get_campaign_recipients: {
         Args: { p_audience_filter?: string; p_target_tag?: string }
         Returns: {
@@ -1872,6 +1879,7 @@ export type Database = {
         }
         Returns: Json
       }
+      validate_device_token: { Args: { p_token: string }; Returns: Json }
       verify_mac_address_access: {
         Args: { p_mac_address: string }
         Returns: Json

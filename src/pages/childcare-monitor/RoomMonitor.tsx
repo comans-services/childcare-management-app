@@ -12,23 +12,48 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import logo from '@/assets/childcare-monitor-logo.svg';
+import { useDeviceAuth } from '@/hooks/useDeviceAuth';
+import { useAuth } from '@/context/AuthContext';
 
 const RoomMonitor: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { isDevice, isValidating, deviceInfo } = useDeviceAuth();
 
   // Real-time data fetching
   const { data: room, isLoading: roomLoading } = useRealtimeRoom(roomId);
   const { data: roomStatus, isLoading: statusLoading } = useRealtimeRoomStatus(roomId);
   const { data: staff = [], isLoading: staffLoading } = useRealtimeStaffInRoom(roomId);
 
-  const isLoading = roomLoading || statusLoading || staffLoading;
+  // Check if device is authorized for this room
+  const isAuthorizedDevice = isDevice && deviceInfo?.roomId === roomId;
+  const canUpdate = isAuthorizedDevice;
+
+  const isLoading = roomLoading || statusLoading || staffLoading || isValidating;
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-care-green text-white p-6 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // Check if device is trying to access wrong room
+  if (isDevice && !isAuthorizedDevice) {
+    return (
+      <div className="min-h-screen bg-care-green text-white p-6 flex items-center justify-center">
+        <div className="max-w-md bg-care-darkGreen rounded-lg p-8 text-center">
+          <h1 className="text-2xl font-bold mb-4 text-red-400">Access Denied</h1>
+          <p className="text-care-lightText mb-4">
+            This device is not authorized to access this room.
+          </p>
+          <p className="text-sm text-care-paleGreen">
+            Assigned room: {deviceInfo?.roomName}
+          </p>
+        </div>
       </div>
     );
   }
@@ -109,17 +134,32 @@ const RoomMonitor: React.FC = () => {
   return (
     <div className="min-h-screen bg-care-green text-white p-6">
       <div className="max-w-xl mx-auto">
-        <div className="mb-4">
-          <button
-            onClick={() => navigate('/childcare-monitor')}
-            className="flex items-center text-care-paleGreen hover:text-white"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-            <span className="ml-1">Back to Rooms</span>
-          </button>
-        </div>
+        {/* Only show back button for logged-in users, not iPad devices */}
+        {user && !isDevice && (
+          <div className="mb-4">
+            <button
+              onClick={() => navigate('/childcare-monitor')}
+              className="flex items-center text-care-paleGreen hover:text-white"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+              <span className="ml-1">Back to Rooms</span>
+            </button>
+          </div>
+        )}
+
+        {/* Show access mode indicator */}
+        {isDevice && (
+          <div className="bg-care-accentGreen rounded-lg p-3 mb-4 text-sm text-center">
+            iPad Device Mode - {deviceInfo?.deviceName}
+          </div>
+        )}
+        {user && !isDevice && (
+          <div className="bg-care-lightGreen rounded-lg p-3 mb-4 text-sm text-center">
+            Admin View Only - Updates Disabled
+          </div>
+        )}
 
         {/* Room Header */}
         <div className="flex items-center justify-between mb-6 p-4 bg-care-darkGreen rounded-lg">
@@ -130,12 +170,16 @@ const RoomMonitor: React.FC = () => {
         </div>
         <RoomInfoCard roomData={roomData} />
         <StaffCard roomName={room.name} staff={staffForDisplay} />
-        <RoomUpdateFormComponent
-          roomId={room.id}
-          currentChildrenOver3={room.children_over_3}
-          currentChildrenUnder3={room.children_under_3}
-          onSubmit={handleFormSubmit}
-        />
+        
+        {/* Only show update form for authorized iPad devices */}
+        {canUpdate && (
+          <RoomUpdateFormComponent
+            roomId={room.id}
+            currentChildrenOver3={room.children_over_3}
+            currentChildrenUnder3={room.children_under_3}
+            onSubmit={handleFormSubmit}
+          />
+        )}
       </div>
     </div>
   );

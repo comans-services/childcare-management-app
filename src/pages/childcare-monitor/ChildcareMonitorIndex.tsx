@@ -1,13 +1,25 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCurrentRoomStatus } from '@/hooks/useRoomStatus';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { useDeviceAuth } from '@/hooks/useDeviceAuth';
+import { Button } from '@/components/ui/button';
 
 const ChildcareMonitorIndex: React.FC = () => {
   const { data: rooms, isLoading } = useCurrentRoomStatus();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { isDevice, deviceInfo } = useDeviceAuth();
+
+  // If device is authenticated, redirect to its assigned room
+  useEffect(() => {
+    if (isDevice && deviceInfo?.roomId) {
+      window.location.href = `/childcare-monitor/room/${deviceInfo.roomId}`;
+    }
+  }, [isDevice, deviceInfo]);
 
   // Real-time subscriptions for all rooms
   useEffect(() => {
@@ -56,9 +68,25 @@ const ChildcareMonitorIndex: React.FC = () => {
     <div className="min-h-screen bg-care-green text-white p-6">
       <div className="max-w-2xl mx-auto">
         <div className="bg-care-darkGreen rounded-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold mb-4 text-center">Childcare Room Monitors</h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold">Childcare Room Monitors</h1>
+            {user && !isDevice && (
+              <Link to="/childcare-monitor/devices">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-care-accentGreen text-white hover:bg-care-lightGreen"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Manage iPads
+                </Button>
+              </Link>
+            )}
+          </div>
           <p className="text-center mb-6 text-care-lightText">
-            Select a room to view and update its information.
+            {user && !isDevice
+              ? "View-only access - Select a room to monitor"
+              : "Select a room to view its information"}
           </p>
 
           <div className="grid gap-4 md:grid-cols-2">
