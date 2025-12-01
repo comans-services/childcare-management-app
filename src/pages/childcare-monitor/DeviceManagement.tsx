@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Copy, Power, PowerOff, ArrowLeft } from "lucide-react";
+import { Loader2, Plus, Copy, Power, PowerOff, ArrowLeft, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 const DeviceManagement: React.FC = () => {
   const {
@@ -22,6 +22,7 @@ const DeviceManagement: React.FC = () => {
   const [generatedToken, setGeneratedToken] = useState<string | null>(null);
   const [revokeDeviceId, setRevokeDeviceId] = useState<string | null>(null);
   const [reactivateDeviceId, setReactivateDeviceId] = useState<string | null>(null);
+  const [deleteDeviceId, setDeleteDeviceId] = useState<string | null>(null);
   const {
     data: devices,
     isLoading: devicesLoading
@@ -103,6 +104,27 @@ const DeviceManagement: React.FC = () => {
       });
     }
   });
+
+  const deleteDeviceMutation = useMutation({
+    mutationFn: (deviceId: string) => deviceService.deleteDevice(deviceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["room-devices"]
+      });
+      toast({
+        title: "Device deleted",
+        description: "The device has been permanently removed"
+      });
+      setDeleteDeviceId(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete device",
+        variant: "destructive"
+      });
+    }
+  });
   const handleRegisterDevice = () => {
     if (!newDeviceName.trim() || !selectedRoomId) {
       toast({
@@ -180,6 +202,9 @@ const DeviceManagement: React.FC = () => {
                         <Power className="h-4 w-4 mr-2" />
                         Reactivate
                       </Button>}
+                    <Button onClick={() => setDeleteDeviceId(device.id)} size="sm" className="bg-red-600 text-white">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>) : <div className="text-center py-8 text-care-lightText">
                 No devices registered yet. Click "Register New iPad" to add one.
@@ -278,6 +303,25 @@ const DeviceManagement: React.FC = () => {
             <AlertDialogCancel className="border-care-accentGreen text-white bg-transparent">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => reactivateDeviceId && reactivateDeviceMutation.mutate(reactivateDeviceId)} className="bg-green-600 text-white">
               Reactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDeviceId !== null} onOpenChange={() => setDeleteDeviceId(null)}>
+        <AlertDialogContent className="bg-care-darkGreen text-white border-care-lightGreen">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Device Permanently?</AlertDialogTitle>
+            <AlertDialogDescription className="text-care-lightText">
+              This will permanently remove the device from the system. This action cannot be undone. 
+              The iPad will need to be re-registered to access rooms again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-care-accentGreen text-white bg-transparent">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteDeviceId && deleteDeviceMutation.mutate(deleteDeviceId)} className="bg-red-600 text-white">
+              Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
