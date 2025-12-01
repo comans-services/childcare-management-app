@@ -265,7 +265,7 @@ const DeviceManagement: React.FC = () => {
                   placeholder="e.g., Wattle Room iPad"
                   value={newDeviceName}
                   onChange={(e) => setNewDeviceName(e.target.value)}
-                  className="bg-care-lightGreen border-care-accentGreen text-white"
+                  className="bg-care-lightGreen border-care-accentGreen text-white placeholder:text-black"
                 />
               </div>
               <div>
