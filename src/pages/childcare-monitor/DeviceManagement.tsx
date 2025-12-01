@@ -298,7 +298,7 @@ const DeviceManagement: React.FC = () => {
                     onClick={copySetupUrl}
                     variant="outline"
                     size="icon"
-                    className="border-care-accentGreen"
+                    className="border-care-accentGreen text-white hover:bg-care-lightGreen hover:text-white"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -312,7 +312,7 @@ const DeviceManagement: React.FC = () => {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeRegisterDialog}>
+            <Button variant="outline" onClick={closeRegisterDialog} className="border-care-accentGreen text-white hover:bg-care-lightGreen hover:text-white">
               {generatedToken ? "Done" : "Cancel"}
             </Button>
             {!generatedToken && (
@@ -349,7 +349,7 @@ const DeviceManagement: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel className="border-care-accentGreen text-white hover:bg-care-lightGreen hover:text-white">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => revokeDeviceId && revokeDeviceMutation.mutate(revokeDeviceId)}
               className="bg-red-600 hover:bg-red-700"
@@ -373,7 +373,7 @@ const DeviceManagement: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="border-care-accentGreen text-white hover:bg-care-lightGreen hover:text-white">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
                 reactivateDeviceId &&
