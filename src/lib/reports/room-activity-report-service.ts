@@ -32,7 +32,8 @@ export const fetchRoomActivityReportData = async (
       .select(`
         *,
         profiles!staff_room_entries_staff_id_fkey(full_name, email, employment_type),
-        childcare_rooms!staff_room_entries_room_id_fkey(name, room_number)
+        childcare_rooms!staff_room_entries_room_id_fkey(name, room_number),
+        room_devices!staff_room_entries_device_id_fkey(device_name)
       `)
       .gte("entered_at", startDateISO)
       .lte("entered_at", endDateISO)
@@ -56,7 +57,8 @@ export const fetchRoomActivityReportData = async (
         *,
         childcare_rooms!room_activity_log_room_id_fkey(name, room_number),
         staff:profiles!room_activity_log_staff_id_fkey(full_name),
-        performer:profiles!room_activity_log_performed_by_fkey(full_name)
+        performer:profiles!room_activity_log_performed_by_fkey(full_name),
+        room_devices!room_activity_log_device_id_fkey(device_name)
       `)
       .gte("performed_at", startDateISO)
       .lte("performed_at", endDateISO)

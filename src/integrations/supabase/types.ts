@@ -264,6 +264,7 @@ export type Database = {
           children_over_3: number
           children_under_3: number
           created_at: string
+          device_id: string | null
           id: string
           is_active: boolean
           last_updated: string
@@ -277,6 +278,7 @@ export type Database = {
           children_over_3?: number
           children_under_3?: number
           created_at?: string
+          device_id?: string | null
           id?: string
           is_active?: boolean
           last_updated?: string
@@ -290,6 +292,7 @@ export type Database = {
           children_over_3?: number
           children_under_3?: number
           created_at?: string
+          device_id?: string | null
           id?: string
           is_active?: boolean
           last_updated?: string
@@ -300,6 +303,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "childcare_rooms_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "room_devices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "childcare_rooms_updated_by_fkey"
             columns: ["updated_by"]
@@ -895,6 +905,7 @@ export type Database = {
           activity_type: string
           created_at: string
           description: string
+          device_id: string | null
           id: string
           performed_at: string
           performed_by: string | null
@@ -907,6 +918,7 @@ export type Database = {
           activity_type: string
           created_at?: string
           description: string
+          device_id?: string | null
           id?: string
           performed_at?: string
           performed_by?: string | null
@@ -919,6 +931,7 @@ export type Database = {
           activity_type?: string
           created_at?: string
           description?: string
+          device_id?: string | null
           id?: string
           performed_at?: string
           performed_by?: string | null
@@ -928,6 +941,13 @@ export type Database = {
           state_before?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "room_activity_log_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "room_devices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "room_activity_log_performed_by_fkey"
             columns: ["performed_by"]
@@ -1105,6 +1125,7 @@ export type Database = {
       staff_room_entries: {
         Row: {
           created_at: string
+          device_id: string | null
           duration_minutes: number | null
           entered_at: string
           entered_by: string | null
@@ -1119,6 +1140,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          device_id?: string | null
           duration_minutes?: number | null
           entered_at?: string
           entered_by?: string | null
@@ -1133,6 +1155,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          device_id?: string | null
           duration_minutes?: number | null
           entered_at?: string
           entered_by?: string | null
@@ -1146,6 +1169,13 @@ export type Database = {
           staff_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "staff_room_entries_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "room_devices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "staff_room_entries_entered_by_fkey"
             columns: ["entered_by"]
@@ -1852,33 +1882,66 @@ export type Database = {
         Args: { p_campaign_id?: string; p_email: string; p_reason?: string }
         Returns: Json
       }
-      staff_enter_room: {
-        Args: {
-          p_entered_by?: string
-          p_entry_method?: string
-          p_room_id: string
-          p_staff_id: string
-        }
-        Returns: Json
-      }
-      staff_exit_room: {
-        Args: {
-          p_exit_method?: string
-          p_exited_by?: string
-          p_room_id?: string
-          p_staff_id: string
-        }
-        Returns: Json
-      }
-      update_child_counts: {
-        Args: {
-          p_children_over_3: number
-          p_children_under_3: number
-          p_room_id: string
-          p_updated_by?: string
-        }
-        Returns: Json
-      }
+      staff_enter_room:
+        | {
+            Args: {
+              p_device_id?: string
+              p_entered_by?: string
+              p_entry_method?: string
+              p_room_id: string
+              p_staff_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_entered_by?: string
+              p_entry_method?: string
+              p_room_id: string
+              p_staff_id: string
+            }
+            Returns: Json
+          }
+      staff_exit_room:
+        | {
+            Args: {
+              p_device_id?: string
+              p_exit_method?: string
+              p_exited_by?: string
+              p_room_id?: string
+              p_staff_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_exit_method?: string
+              p_exited_by?: string
+              p_room_id?: string
+              p_staff_id: string
+            }
+            Returns: Json
+          }
+      update_child_counts:
+        | {
+            Args: {
+              p_children_over_3: number
+              p_children_under_3: number
+              p_device_id?: string
+              p_room_id: string
+              p_updated_by?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_children_over_3: number
+              p_children_under_3: number
+              p_room_id: string
+              p_updated_by?: string
+            }
+            Returns: Json
+          }
       validate_device_token: { Args: { p_token: string }; Returns: Json }
       verify_mac_address_access: {
         Args: { p_mac_address: string }
