@@ -3,15 +3,38 @@ import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Home, Baby } from "lucide-react";
+import { Home, Loader2 } from "lucide-react";
 import logo from '@/assets/childcare-monitor-logo.svg';
+import { useDeviceAuth } from "@/hooks/useDeviceAuth";
 
 export const ChildcareMonitorLayout = () => {
   const { session, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { isDevice, isValidating, deviceInfo } = useDeviceAuth();
 
-  // Save intended path before redirecting to auth
+  // Wait for device validation to complete before making auth decisions
+  if (isValidating) {
+    return (
+      <div className="min-h-screen bg-care-green flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      </div>
+    );
+  }
+
+  // If it's a valid device, allow access without user session
+  // Render minimal layout for iPad devices (no header)
+  if (isDevice && deviceInfo) {
+    return (
+      <div className="min-h-screen bg-care-green">
+        <main className="w-full">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
+  // For non-device access, require user session
   if (!session && location.pathname !== '/auth') {
     console.log(`Saving intended path before redirect: ${location.pathname}`);
     localStorage.setItem('intended_path', location.pathname);
