@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { cleanupAuthState } from "./authUtils";
+import { logAuditEvent } from "@/lib/audit/audit-service";
 
 export const signInOperation = async (email: string, password: string) => {
   try {
@@ -24,6 +25,17 @@ export const signInOperation = async (email: string, password: string) => {
 
     if (error) {
       console.error("Sign in error:", error);
+      
+      // Log failed login attempt
+      await logAuditEvent({
+        action: "user_login_failed",
+        details: {
+          email,
+          error: error.message,
+          timestamp: new Date().toISOString()
+        }
+      });
+      
       toast({
         title: "Sign in failed",
         description: error.message,
@@ -35,6 +47,16 @@ export const signInOperation = async (email: string, password: string) => {
     console.log("Sign in successful", {
       userId: data.user?.id,
       userEmail: data.user?.email
+    });
+
+    // Log successful login
+    await logAuditEvent({
+      action: "user_login_success",
+      details: {
+        email: data.user?.email,
+        userId: data.user?.id,
+        timestamp: new Date().toISOString()
+      }
     });
 
     toast({
@@ -49,6 +71,15 @@ export const signInOperation = async (email: string, password: string) => {
 export const signOutOperation = async (userEmail?: string) => {
   try {
     console.log(`Signing out user: ${userEmail}`);
+    
+    // Log logout event before cleaning up
+    await logAuditEvent({
+      action: "user_logout",
+      details: {
+        email: userEmail,
+        timestamp: new Date().toISOString()
+      }
+    });
     
     // Clean up auth state
     cleanupAuthState();
@@ -97,6 +128,15 @@ export const changePasswordOperation = async (newPassword: string) => {
     }
 
     console.log("Password changed successfully");
+    
+    // Log password change event
+    await logAuditEvent({
+      action: "password_changed",
+      details: {
+        timestamp: new Date().toISOString()
+      }
+    });
+    
     toast({
       title: "Password changed successfully",
       description: "Your password has been updated",
