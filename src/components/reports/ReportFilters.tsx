@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRangeFilter } from "./filters/DateRangeFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,22 +71,10 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
       <CardContent className="pt-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Date Range */}
-          <div className="space-y-2 lg:col-span-3">
-            <Label>Date Range</Label>
-            <DateRangePicker
-              value={{
-                from: filters.startDate,
-                to: filters.endDate,
-              }}
-              onChange={(range) => {
-                if (range?.from) {
-                  setFilters((prev) => ({
-                    ...prev,
-                    startDate: range.from!,
-                    endDate: range.to || range.from!,
-                  }));
-                }
-              }}
+          <div className="lg:col-span-3">
+            <DateRangeFilter 
+              filters={filters} 
+              setFilters={setFilters} 
             />
           </div>
 
