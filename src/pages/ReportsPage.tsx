@@ -11,6 +11,7 @@ import LeaveReportsSection from "@/components/reports/LeaveReportsSection";
 import ScheduleReportsSection from "@/components/reports/ScheduleReportsSection";
 import RoomActivityReports from "@/components/reports/RoomActivityReports";
 import TimesheetLockManager from "@/components/reports/TimesheetLockManager";
+import { PayrollReportsSection } from "@/components/reports/PayrollReportsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,7 @@ export type ReportFiltersType = {
   includeEmployeeIds: boolean;
   includeOrganization: boolean;
   includeTimeZone: boolean;
-  reportType: 'timesheet' | 'audit' | 'leave' | 'schedules' | 'rooms' | 'locks';
+  reportType: 'timesheet' | 'payroll' | 'audit' | 'leave' | 'schedules' | 'rooms' | 'locks';
   actionType?: string;
 };
 
@@ -280,6 +281,9 @@ const ReportsPage = () => {
           <TabsTrigger value="timesheet">
             Timesheet Reports
           </TabsTrigger>
+          <TabsTrigger value="payroll">
+            Payroll
+          </TabsTrigger>
           <TabsTrigger value="audit">
             Audit Logs
           </TabsTrigger>
@@ -316,6 +320,10 @@ const ReportsPage = () => {
             filters={filters}
             isLoading={isLoading}
           />
+        </TabsContent>
+
+        <TabsContent value="payroll" className="space-y-4">
+          <PayrollReportsSection />
         </TabsContent>
 
         <TabsContent value="audit">

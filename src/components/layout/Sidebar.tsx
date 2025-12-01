@@ -45,6 +45,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
     { to: "/timesheet/team", icon: UserPlus, label: "Team", adminOnly: true },
     { to: "/timesheet/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },
     { to: "/timesheet/holidays", icon: CalendarCheck, label: "Holiday Management", adminOnly: true },
+    { to: "/timesheet/payroll-settings", icon: Calendar, label: "Payroll Settings", adminOnly: true },
     { to: "/timesheet/leave-management", icon: CalendarCheck, label: "Leave Management", adminOnly: true },
   ];
 
