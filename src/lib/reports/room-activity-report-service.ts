@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { startOfDay, endOfDay } from "date-fns";
 
 type StaffRoomEntry = Database["public"]["Tables"]["staff_room_entries"]["Row"];
 type RoomActivityLog = Database["public"]["Tables"]["room_activity_log"]["Row"];
@@ -21,6 +22,10 @@ export const fetchRoomActivityReportData = async (
   filters: RoomActivityReportFilters
 ): Promise<RoomActivityReportData> => {
   try {
+    // Normalize dates to full day ranges
+    const startDateISO = startOfDay(filters.startDate).toISOString();
+    const endDateISO = endOfDay(filters.endDate).toISOString();
+
     // Fetch staff room entries
     let entriesQuery = supabase
       .from("staff_room_entries")
@@ -29,8 +34,8 @@ export const fetchRoomActivityReportData = async (
         profiles!staff_room_entries_staff_id_fkey(full_name, email, employment_type),
         childcare_rooms!staff_room_entries_room_id_fkey(name, room_number)
       `)
-      .gte("entered_at", filters.startDate.toISOString())
-      .lte("entered_at", filters.endDate.toISOString())
+      .gte("entered_at", startDateISO)
+      .lte("entered_at", endDateISO)
       .order("entered_at", { ascending: false });
 
     if (filters.roomIds && filters.roomIds.length > 0) {
@@ -53,8 +58,8 @@ export const fetchRoomActivityReportData = async (
         staff:profiles!room_activity_log_staff_id_fkey(full_name),
         performer:profiles!room_activity_log_performed_by_fkey(full_name)
       `)
-      .gte("performed_at", filters.startDate.toISOString())
-      .lte("performed_at", filters.endDate.toISOString())
+      .gte("performed_at", startDateISO)
+      .lte("performed_at", endDateISO)
       .order("performed_at", { ascending: false });
 
     if (filters.roomIds && filters.roomIds.length > 0) {
@@ -68,8 +73,8 @@ export const fetchRoomActivityReportData = async (
     let violationsQuery = supabase
       .from("compliance_violations")
       .select("*")
-      .gte("performed_at", filters.startDate.toISOString())
-      .lte("performed_at", filters.endDate.toISOString())
+      .gte("performed_at", startDateISO)
+      .lte("performed_at", endDateISO)
       .order("performed_at", { ascending: false });
 
     const { data: violations, error: violationsError } = await violationsQuery;
