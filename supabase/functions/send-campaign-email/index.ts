@@ -219,7 +219,7 @@ const handler = async (req: Request): Promise<Response> => {
           const { data, error } = await resend.emails.send({
             from: `${FROM_NAME} <${FROM_EMAIL}>`,
             to: contact.email,
-            reply_to: REPLY_TO_EMAIL, // Enable replies to go to configured address
+            replyTo: REPLY_TO_EMAIL, // Enable replies to go to configured address
             subject: campaign.subject,
             html: emailHtml,
           });
