@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Lock, Unlock, Trash2 } from "lucide-react";
+import { logAuditEvent } from "@/lib/audit/audit-service";
 import { formatDate } from "@/lib/date-utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/context/AuthContext";
@@ -141,6 +142,19 @@ export const TimesheetLockManager: React.FC = () => {
         }
       }
 
+      // Log timesheet lock event
+      await logAuditEvent({
+        action: "timesheet_locked",
+        details: {
+          targetUsers: selectedUserId === "all" ? "all users" : users.find(u => u.id === selectedUserId)?.full_name,
+          userCount: userIdsToLock.length,
+          lockFromDate: lockDateRange.from.toISOString(),
+          lockUntilDate: lockUntilDate.toISOString(),
+          lockReason,
+          timestamp: new Date().toISOString()
+        }
+      });
+
       toast({
         title: "Success",
         description: `Timesheets locked for ${userIdsToLock.length} user(s) until ${formatDate(lockUntilDate)}`,
@@ -174,6 +188,16 @@ export const TimesheetLockManager: React.FC = () => {
         .eq("id", scheduleId);
 
       if (error) throw error;
+
+      // Log timesheet unlock event
+      await logAuditEvent({
+        action: "timesheet_unlocked",
+        details: {
+          targetUser: userName,
+          scheduleId,
+          timestamp: new Date().toISOString()
+        }
+      });
 
       toast({
         title: "Success",
