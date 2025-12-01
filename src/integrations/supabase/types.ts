@@ -477,6 +477,98 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_adjustments: {
+        Row: {
+          applied_at: string | null
+          created_at: string | null
+          hours_to_deduct: number
+          id: string
+          leave_application_id: string | null
+          leave_date: string
+          original_pay_period_id: string | null
+          reason: string | null
+          status: string
+          target_pay_period_id: string | null
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string | null
+          hours_to_deduct?: number
+          id?: string
+          leave_application_id?: string | null
+          leave_date: string
+          original_pay_period_id?: string | null
+          reason?: string | null
+          status?: string
+          target_pay_period_id?: string | null
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string | null
+          hours_to_deduct?: number
+          id?: string
+          leave_application_id?: string | null
+          leave_date?: string
+          original_pay_period_id?: string | null
+          reason?: string | null
+          status?: string
+          target_pay_period_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_adjustments_leave_application_id_fkey"
+            columns: ["leave_application_id"]
+            isOneToOne: false
+            referencedRelation: "leave_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_original_pay_period_id_fkey"
+            columns: ["original_pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_target_pay_period_id_fkey"
+            columns: ["target_pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
       leave_application_attachments: {
         Row: {
           application_id: string
@@ -822,6 +914,104 @@ export type Database = {
           name?: string
           requires_attachment?: boolean
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pay_periods: {
+        Row: {
+          created_at: string | null
+          id: string
+          payroll_cutoff_date: string
+          payroll_date: string
+          period_end: string
+          period_start: string
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payroll_cutoff_date: string
+          payroll_date: string
+          period_end: string
+          period_start: string
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payroll_cutoff_date?: string
+          payroll_date?: string
+          period_end?: string
+          period_start?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pay_periods_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_periods_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_periods_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "pay_periods_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
+      payroll_settings: {
+        Row: {
+          created_at: string | null
+          hours_per_leave_day: number
+          id: string
+          pay_day: string
+          pay_frequency: string
+          reference_pay_date: string
+          updated_at: string | null
+          week_start_day: string
+        }
+        Insert: {
+          created_at?: string | null
+          hours_per_leave_day?: number
+          id?: string
+          pay_day?: string
+          pay_frequency?: string
+          reference_pay_date: string
+          updated_at?: string | null
+          week_start_day?: string
+        }
+        Update: {
+          created_at?: string | null
+          hours_per_leave_day?: number
+          id?: string
+          pay_day?: string
+          pay_frequency?: string
+          reference_pay_date?: string
+          updated_at?: string | null
+          week_start_day?: string
         }
         Relationships: []
       }
@@ -1832,9 +2022,17 @@ export type Database = {
         }
         Returns: number
       }
+      create_leave_adjustments_for_application: {
+        Args: { p_leave_application_id: string }
+        Returns: number
+      }
       generate_device_token: {
         Args: { p_device_name: string; p_room_id: string }
         Returns: Json
+      }
+      generate_pay_periods: {
+        Args: { p_num_periods?: number; p_start_date: string }
+        Returns: number
       }
       get_campaign_recipients: {
         Args: { p_audience_filter?: string; p_target_tag?: string }
@@ -1844,9 +2042,39 @@ export type Database = {
           full_name: string
         }[]
       }
+      get_current_pay_period: {
+        Args: never
+        Returns: {
+          id: string
+          payroll_cutoff_date: string
+          payroll_date: string
+          period_end: string
+          period_start: string
+          status: string
+        }[]
+      }
       get_current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_next_pay_period: {
+        Args: { current_period_id: string }
+        Returns: string
+      }
+      get_pay_period_for_date: { Args: { check_date: string }; Returns: string }
+      get_payroll_report: {
+        Args: { p_pay_period_id: string }
+        Returns: {
+          actual_hours: number
+          employee_id: string
+          full_name: string
+          leave_hours_post_cutoff: number
+          leave_hours_pre_cutoff: number
+          net_hours: number
+          prior_period_adjustments: number
+          scheduled_hours: number
+          user_id: string
+        }[]
       }
       get_room_status: { Args: { p_room_id: string }; Returns: Json }
       get_staff_current_room: { Args: { p_staff_id: string }; Returns: string }
@@ -1862,6 +2090,10 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
+      is_after_payroll_cutoff: {
+        Args: { check_date: string }
+        Returns: boolean
+      }
       is_email_unsubscribed: { Args: { check_email: string }; Returns: boolean }
       is_public_holiday: {
         Args: { check_date: string; check_state?: string }

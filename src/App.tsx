@@ -19,6 +19,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import TeamPage from "@/pages/TeamPage";
 import WorkSchedulePage from "@/pages/WorkSchedulePage";
 import HolidayManagementPage from "@/pages/HolidayManagementPage";
+import PayrollSettingsPage from "@/pages/PayrollSettingsPage";
 import LeaveApplicationPage from "@/pages/LeaveApplicationPage";
 import LeaveManagementPage from "@/pages/LeaveManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="team" element={<TeamPage />} />
               <Route path="work-schedule" element={<WorkSchedulePage />} />
               <Route path="holidays" element={<HolidayManagementPage />} />
+              <Route path="payroll-settings" element={<PayrollSettingsPage />} />
               <Route path="leave-management" element={<LeaveManagementPage />} />
             </Route>
           </Route>
