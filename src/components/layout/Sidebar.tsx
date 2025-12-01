@@ -39,8 +39,7 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
   const isManagerOrAbove = isAdmin || isManager;
 
   const navigationItems = [
-    { to: "/timesheet", icon: Home, label: "Dashboard", showForAll: true },
-    { to: "/timesheet/entry", icon: Calendar, label: "Timesheet Entry", showForAll: true },
+    { to: "/timesheet", icon: Calendar, label: "Timesheet Entry", showForAll: true },
     { to: "/timesheet/leave-application", icon: Plane, label: "Leave Application", fullTimeOnly: true },
     { to: "/timesheet/reports", icon: BarChart, label: "Reports", adminOnly: true },
     { to: "/timesheet/team", icon: UserPlus, label: "Team", adminOnly: true },

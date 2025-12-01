@@ -14,7 +14,6 @@ import AdminRoute from "@/routes/AdminRoute";
 import FullTimeRoute from "@/routes/FullTimeRoute";
 import AuthPage from "@/pages/AuthPage";
 import ManagementHubPage from "@/pages/ManagementHubPage";
-import Dashboard from "@/pages/Index";
 import TimesheetPage from "@/pages/TimesheetPage";
 import ReportsPage from "@/pages/ReportsPage";
 import TeamPage from "@/pages/TeamPage";
@@ -49,8 +48,7 @@ const App = () => (
 
             {/* Timesheet App Routes */}
             <Route path="/timesheet" element={<MainLayout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="entry" element={<TimesheetPage />} />
+              <Route index element={<TimesheetPage />} />
               <Route path="settings" element={<SettingsPage />} />
 
               {/* Full-time employee routes */}
