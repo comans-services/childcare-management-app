@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { startOfDay, endOfDay } from "date-fns";
 
 type LeaveApplication = Database["public"]["Tables"]["leave_applications"]["Row"];
 type LeaveBalance = Database["public"]["Tables"]["leave_balances"]["Row"];
@@ -20,6 +21,10 @@ export const fetchLeaveReportData = async (
   filters: LeaveReportFilters
 ): Promise<LeaveReportData> => {
   try {
+    // Normalize dates to full day ranges  
+    const startDateISO = startOfDay(filters.startDate).toISOString();
+    const endDateISO = endOfDay(filters.endDate).toISOString();
+
     // Fetch leave applications with filters
     let applicationsQuery = supabase
       .from("leave_applications")
@@ -28,8 +33,8 @@ export const fetchLeaveReportData = async (
         profiles!fk_leave_applications_user(full_name, email, employment_type),
         leave_types(name, description)
       `)
-      .gte("start_date", filters.startDate.toISOString())
-      .lte("end_date", filters.endDate.toISOString())
+      .gte("start_date", startDateISO)
+      .lte("end_date", endDateISO)
       .order("start_date", { ascending: false });
 
     if (filters.userIds && filters.userIds.length > 0) {
