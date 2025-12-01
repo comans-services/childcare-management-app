@@ -64,7 +64,7 @@ const ChildcareMonitorIndex: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl font-bold">Childcare Room Monitors</h1>
             {user && !isDevice && <Link to="/childcare-monitor/devices">
-                <Button variant="outline" size="sm" className="">
+                <Button variant="outline" size="sm" className="border-care-accentGreen text-white">
                   <Settings className="h-4 w-4 mr-2" />
                   Manage iPads
                 </Button>
