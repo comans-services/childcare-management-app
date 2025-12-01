@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,8 +20,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { addContact, updateContact, type Contact } from "@/lib/mass-mailer-service";
+import { Badge } from "@/components/ui/badge";
+import { addContact, updateContact, getAllTags, type Contact } from "@/lib/mass-mailer-service";
 import { toast } from "sonner";
+import { X } from "lucide-react";
 
 const contactSchema = z.object({
   first_name: z.string().optional(),
@@ -42,6 +44,11 @@ interface ContactFormProps {
 }
 
 export const ContactForm = ({ open, onOpenChange, contact, onSuccess }: ContactFormProps) => {
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
@@ -55,16 +62,26 @@ export const ContactForm = ({ open, onOpenChange, contact, onSuccess }: ContactF
   });
 
   useEffect(() => {
+    if (open) {
+      // Fetch existing tags when form opens
+      getAllTags().then(setAvailableTags).catch(console.error);
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (contact) {
+      const contactTags = Array.isArray(contact.tags) ? contact.tags : [];
+      setSelectedTags(contactTags);
       form.reset({
         first_name: contact.first_name || "",
         last_name: contact.last_name || "",
         email: contact.email,
-        tags: Array.isArray(contact.tags) ? contact.tags.join(", ") : "",
+        tags: contactTags.join(", "),
         email_consent: contact.email_consent,
         notes: contact.notes || "",
       });
     } else {
+      setSelectedTags([]);
       form.reset({
         first_name: "",
         last_name: "",
@@ -74,7 +91,38 @@ export const ContactForm = ({ open, onOpenChange, contact, onSuccess }: ContactF
         notes: "",
       });
     }
-  }, [contact, form]);
+  }, [contact, form, open]);
+
+  const handleAddTag = (tag: string) => {
+    const trimmedTag = tag.trim();
+    if (trimmedTag && !selectedTags.includes(trimmedTag)) {
+      const newTags = [...selectedTags, trimmedTag];
+      setSelectedTags(newTags);
+      form.setValue("tags", newTags.join(", "));
+      setTagInput("");
+      setShowTagDropdown(false);
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    const newTags = selectedTags.filter(tag => tag !== tagToRemove);
+    setSelectedTags(newTags);
+    form.setValue("tags", newTags.join(", "));
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (tagInput.trim()) {
+        handleAddTag(tagInput);
+      }
+    }
+  };
+
+  const filteredTags = availableTags.filter(tag => 
+    tag.toLowerCase().includes(tagInput.toLowerCase()) && 
+    !selectedTags.includes(tag)
+  );
 
   const onSubmit = async (data: ContactFormData) => {
     try {
@@ -166,11 +214,73 @@ export const ContactForm = ({ open, onOpenChange, contact, onSuccess }: ContactF
             <FormField
               control={form.control}
               name="tags"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormLabel>Tags</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., newsletter, customer (comma-separated)" {...field} />
+                    <div className="space-y-3">
+                      {/* Selected tags as badges */}
+                      {selectedTags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedTags.map((tag) => (
+                            <Badge 
+                              key={tag} 
+                              variant="secondary" 
+                              className="h-11 px-4 text-base gap-2"
+                            >
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTag(tag)}
+                                className="ml-1 hover:bg-background/20 rounded-full p-0.5"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Tag input with dropdown */}
+                      <div className="relative">
+                        <Input
+                          placeholder="Type to add or select tags..."
+                          value={tagInput}
+                          onChange={(e) => {
+                            setTagInput(e.target.value);
+                            setShowTagDropdown(true);
+                          }}
+                          onFocus={() => setShowTagDropdown(true)}
+                          onKeyDown={handleTagInputKeyDown}
+                          className="h-12 text-base"
+                        />
+                        
+                        {/* Dropdown with existing tags */}
+                        {showTagDropdown && (filteredTags.length > 0 || tagInput.trim()) && (
+                          <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {filteredTags.map((tag) => (
+                              <button
+                                key={tag}
+                                type="button"
+                                onClick={() => handleAddTag(tag)}
+                                className="w-full text-left px-4 py-3 hover:bg-accent text-base transition-colors"
+                              >
+                                {tag}
+                              </button>
+                            ))}
+                            {tagInput.trim() && !availableTags.includes(tagInput.trim()) && (
+                              <button
+                                type="button"
+                                onClick={() => handleAddTag(tagInput)}
+                                className="w-full text-left px-4 py-3 hover:bg-accent text-base border-t transition-colors"
+                              >
+                                + Add "<strong>{tagInput.trim()}</strong>" as new tag
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
