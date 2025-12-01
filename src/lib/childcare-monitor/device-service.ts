@@ -84,4 +84,14 @@ export const deviceService = {
 
     if (error) throw error;
   },
+
+  // Delete device permanently (admin only)
+  async deleteDevice(deviceId: string) {
+    const { error } = await supabase
+      .from("room_devices")
+      .delete()
+      .eq("id", deviceId);
+
+    if (error) throw error;
+  },
 };
