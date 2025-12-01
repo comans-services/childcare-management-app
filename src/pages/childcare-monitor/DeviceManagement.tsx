@@ -221,7 +221,7 @@ const DeviceManagement: React.FC = () => {
                 <Label>Setup URL</Label>
                 <div className="flex gap-2">
                   <Input value={generatedToken} readOnly className="bg-care-lightGreen border-care-accentGreen text-white" />
-                  <Button onClick={copySetupUrl} variant="outline" size="icon" className="border-care-accentGreen text-white hover:bg-care-lightGreen hover:text-white">
+                  <Button onClick={copySetupUrl} size="icon" className="border border-care-accentGreen bg-transparent text-white">
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
