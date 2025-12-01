@@ -75,7 +75,7 @@ const ChildcareMonitorIndex: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-care-accentGreen text-white hover:bg-care-lightGreen"
+                  className="border-care-accentGreen text-white hover:bg-care-lightGreen hover:text-white"
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Manage iPads
