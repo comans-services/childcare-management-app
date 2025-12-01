@@ -312,7 +312,7 @@ const DeviceManagement: React.FC = () => {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeRegisterDialog} className="border-care-accentGreen text-white hover:bg-transparent hover:text-white">
+            <Button onClick={closeRegisterDialog} className="border border-care-accentGreen bg-transparent text-white">
               {generatedToken ? "Done" : "Cancel"}
             </Button>
             {!generatedToken && (
