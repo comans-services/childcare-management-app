@@ -204,15 +204,9 @@ export const addContact = async (contact: NewContact): Promise<Contact> => {
   try {
     console.log("Creating new contact:", contact.email);
     
-    // Build full_name from first_name and last_name
-    const full_name = [contact.first_name, contact.last_name]
-      .filter(Boolean)
-      .join(' ') || contact.email;
-    
     const contactData = {
       first_name: contact.first_name,
       last_name: contact.last_name,
-      full_name,
       email: contact.email.toLowerCase().trim(),
       tags: contact.tags || [],
       email_consent: contact.email_consent,
@@ -253,22 +247,10 @@ export const updateContact = async (
   try {
     console.log("Updating contact:", id);
     
-    // Rebuild full_name if first_name or last_name changed
-    const updateData: any = { ...updates };
-    if (updates.first_name !== undefined || updates.last_name !== undefined) {
-      const { data: current } = await supabase
-        .from('contacts')
-        .select('first_name, last_name, email')
-        .eq('id', id)
-        .single();
-      
-      const firstName = updates.first_name ?? current?.first_name;
-      const lastName = updates.last_name ?? current?.last_name;
-      const fullName = [firstName, lastName].filter(Boolean).join(' ');
-      updateData.full_name = fullName || current?.email || '';
-    }
-    
-    updateData.updated_at = new Date().toISOString();
+    const updateData: any = { 
+      ...updates,
+      updated_at: new Date().toISOString()
+    };
     
     const { data, error } = await supabase
       .from('contacts')
