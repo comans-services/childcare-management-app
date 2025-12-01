@@ -7,19 +7,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useDeviceAuth } from '@/hooks/useDeviceAuth';
 import { Button } from '@/components/ui/button';
+
 const ChildcareMonitorIndex: React.FC = () => {
-  const {
-    data: rooms,
-    isLoading
-  } = useCurrentRoomStatus();
+  const { data: rooms, isLoading } = useCurrentRoomStatus();
   const queryClient = useQueryClient();
-  const {
-    user
-  } = useAuth();
-  const {
-    isDevice,
-    deviceInfo
-  } = useDeviceAuth();
+  const { user } = useAuth();
+  const { isDevice, deviceInfo } = useDeviceAuth();
 
   // If device is authenticated, redirect to its assigned room
   useEffect(() => {
@@ -30,55 +23,83 @@ const ChildcareMonitorIndex: React.FC = () => {
 
   // Real-time subscriptions for all rooms
   useEffect(() => {
-    const channel = supabase.channel('all-rooms-updates').on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'childcare_rooms'
-    }, payload => {
-      console.log('[Realtime] Rooms list updated:', payload);
-      queryClient.invalidateQueries({
-        queryKey: ['current-room-status']
-      });
-    }).on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'room_activity_log'
-    }, payload => {
-      console.log('[Realtime] Staff movement detected:', payload);
-      queryClient.invalidateQueries({
-        queryKey: ['current-room-status']
-      });
-    }).subscribe();
+    const channel = supabase
+      .channel('all-rooms-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'childcare_rooms',
+        },
+        (payload) => {
+          console.log('[Realtime] Rooms list updated:', payload);
+          queryClient.invalidateQueries({ queryKey: ['current-room-status'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'room_activity_log',
+        },
+        (payload) => {
+          console.log('[Realtime] Staff movement detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['current-room-status'] });
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
+
   if (isLoading) {
-    return <div className="min-h-screen bg-care-green text-white p-6 flex items-center justify-center">
+    return (
+      <div className="min-h-screen bg-care-green text-white p-6 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
-      </div>;
+      </div>
+    );
   }
-  return <div className="min-h-screen bg-care-green text-white p-6">
+
+  return (
+    <div className="min-h-screen bg-care-green text-white p-6">
       <div className="max-w-2xl mx-auto">
         <div className="bg-care-darkGreen rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl font-bold">Childcare Room Monitors</h1>
-            {user && !isDevice && <Link to="/childcare-monitor/devices">
-                <Button variant="outline" size="sm" className="border-care-accentGreen text-white">
+            {user && !isDevice && (
+              <Link to="/childcare-monitor/devices">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-care-accentGreen text-white hover:bg-care-lightGreen hover:text-white"
+                >
                   <Settings className="h-4 w-4 mr-2" />
                   Manage iPads
                 </Button>
-              </Link>}
+              </Link>
+            )}
           </div>
           <p className="text-center mb-6 text-care-lightText">
-            {user && !isDevice ? "View-only access - Select a room to monitor" : "Select a room to view its information"}
+            {user && !isDevice
+              ? "View-only access - Select a room to monitor"
+              : "Select a room to view its information"}
           </p>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {rooms?.map(room => {
-            const totalChildren = room.total_children || 0;
-            const isCompliant = room.is_compliant || false;
-            return <Link key={room.id} to={`/childcare-monitor/room/${room.id}`} className={`${isCompliant ? 'bg-care-lightGreen' : 'bg-yellow-800'} hover:bg-care-brightGreen transition-colors p-4 rounded-lg`}>
+            {rooms?.map((room) => {
+              const totalChildren = room.total_children || 0;
+              const isCompliant = room.is_compliant || false;
+
+              return (
+                <Link
+                  key={room.id}
+                  to={`/childcare-monitor/room/${room.id}`}
+                  className={`${isCompliant ? 'bg-care-lightGreen' : 'bg-yellow-800'} hover:bg-care-brightGreen transition-colors p-4 rounded-lg`}
+                >
                   <h2 className="text-xl font-bold mb-2">The {room.name} Room</h2>
                   <div className="flex gap-2 mb-2">
                     <div className="bg-care-darkGreen px-2 py-1 rounded text-sm">
@@ -99,11 +120,14 @@ const ChildcareMonitorIndex: React.FC = () => {
                   <div className="text-sm text-care-paleGreen">
                     Last updated: {room.last_updated ? new Date(room.last_updated).toLocaleString() : 'Never'}
                   </div>
-                  {!isCompliant && <div className="mt-2 text-yellow-200 text-sm">
+                  {!isCompliant && (
+                    <div className="mt-2 text-yellow-200 text-sm">
                       ⚠️ Warning: Educator-to-child ratio not met
-                    </div>}
-                </Link>;
-          })}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         </div>
 
@@ -122,6 +146,8 @@ const ChildcareMonitorIndex: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default ChildcareMonitorIndex;
