@@ -223,7 +223,7 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
         {/* Submit button */}
         <button
           type="submit"
-          className="w-full p-3 bg-care-brightGreen hover:bg-care-hoverGreen text-white rounded-md transition-colors"
+          className="w-full p-3 bg-care-brightGreen text-white rounded-md"
           disabled={availableEmployees.length === 0}
         >
           Update Room
