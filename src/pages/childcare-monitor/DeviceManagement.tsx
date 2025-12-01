@@ -140,7 +140,7 @@ const DeviceManagement: React.FC = () => {
   return <div className="min-h-screen bg-care-green text-white p-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <Link to="/childcare-monitor" className="flex items-center gap-2 text-care-paleGreen hover:text-white transition-colors">
+          <Link to="/childcare-monitor" className="flex items-center gap-2 text-care-paleGreen">
             <ArrowLeft className="h-5 w-5" />
             <span>Back to Rooms</span>
           </Link>
@@ -149,7 +149,7 @@ const DeviceManagement: React.FC = () => {
         <div className="bg-care-darkGreen rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold">iPad Device Management</h1>
-            <Button onClick={() => setShowRegisterDialog(true)} className="bg-care-accentGreen hover:bg-care-brightGreen text-white">
+            <Button onClick={() => setShowRegisterDialog(true)} className="bg-care-accentGreen text-white">
               <Plus className="h-4 w-4 mr-2" />
               Register New iPad
             </Button>
@@ -173,10 +173,10 @@ const DeviceManagement: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    {device.is_active ? <Button onClick={() => setRevokeDeviceId(device.id)} variant="destructive" size="sm">
+                    {device.is_active ? <Button onClick={() => setRevokeDeviceId(device.id)} size="sm" className="bg-red-600 text-white">
                         <PowerOff className="h-4 w-4 mr-2" />
                         Revoke
-                      </Button> : <Button onClick={() => setReactivateDeviceId(device.id)} variant="default" size="sm" className="bg-green-600 hover:bg-green-700">
+                      </Button> : <Button onClick={() => setReactivateDeviceId(device.id)} size="sm" className="bg-green-600 text-white">
                         <Power className="h-4 w-4 mr-2" />
                         Reactivate
                       </Button>}
@@ -236,7 +236,7 @@ const DeviceManagement: React.FC = () => {
             <Button onClick={closeRegisterDialog} className="border border-care-accentGreen bg-transparent text-white">
               {generatedToken ? "Done" : "Cancel"}
             </Button>
-            {!generatedToken && <Button onClick={handleRegisterDevice} disabled={generateTokenMutation.isPending} className="bg-care-accentGreen hover:bg-care-brightGreen">
+            {!generatedToken && <Button onClick={handleRegisterDevice} disabled={generateTokenMutation.isPending} className="bg-care-accentGreen text-white">
                 {generateTokenMutation.isPending ? <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Generating...
@@ -257,8 +257,8 @@ const DeviceManagement: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-          <AlertDialogCancel className="border-care-accentGreen text-white hover:bg-care-lightGreen hover:text-white">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => revokeDeviceId && revokeDeviceMutation.mutate(revokeDeviceId)} className="bg-red-600 hover:bg-red-700">
+          <AlertDialogCancel className="border-care-accentGreen text-white bg-transparent">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => revokeDeviceId && revokeDeviceMutation.mutate(revokeDeviceId)} className="bg-red-600 text-white">
               Revoke Access
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -275,8 +275,8 @@ const DeviceManagement: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-care-accentGreen text-white hover:bg-care-lightGreen hover:text-white">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => reactivateDeviceId && reactivateDeviceMutation.mutate(reactivateDeviceId)} className="bg-green-600 hover:bg-green-700">
+            <AlertDialogCancel className="border-care-accentGreen text-white bg-transparent">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => reactivateDeviceId && reactivateDeviceMutation.mutate(reactivateDeviceId)} className="bg-green-600 text-white">
               Reactivate
             </AlertDialogAction>
           </AlertDialogFooter>
