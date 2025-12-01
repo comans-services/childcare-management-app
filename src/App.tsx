@@ -26,6 +26,8 @@ import SettingsPage from "@/pages/SettingsPage";
 import MassMailerPage from "@/pages/MassMailerPage";
 import ChildcareMonitorIndex from "@/pages/childcare-monitor/ChildcareMonitorIndex";
 import RoomMonitor from "@/pages/childcare-monitor/RoomMonitor";
+import DeviceSetup from "@/pages/childcare-monitor/DeviceSetup";
+import DeviceManagement from "@/pages/childcare-monitor/DeviceManagement";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,10 +76,16 @@ const App = () => (
           </Route>
 
           {/* Childcare Monitor App Routes - Standalone */}
-            <Route path="/childcare-monitor" element={<ChildcareMonitorLayout />}>
-              <Route index element={<ChildcareMonitorIndex />} />
-              <Route path="room/:roomId" element={<RoomMonitor />} />
+          {/* Device setup route - no auth required */}
+          <Route path="/childcare-monitor/setup" element={<DeviceSetup />} />
+          
+          <Route path="/childcare-monitor" element={<ChildcareMonitorLayout />}>
+            <Route index element={<ChildcareMonitorIndex />} />
+            <Route path="room/:roomId" element={<RoomMonitor />} />
+            <Route element={<AdminRoute />}>
+              <Route path="devices" element={<DeviceManagement />} />
             </Route>
+          </Route>
 
             <Route path="*" element={<NotFound />} />
           </Routes>
