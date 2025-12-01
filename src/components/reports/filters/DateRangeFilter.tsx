@@ -55,7 +55,7 @@ export const DateRangeFilter = ({ filters, setFilters }: DateRangeFilterProps) =
             <Button
               variant={"outline"}
               className={cn(
-                "w-[150px] justify-start text-left font-normal",
+                "w-[180px] justify-start text-left font-normal",
                 !filters.startDate && "text-muted-foreground"
               )}
             >
@@ -83,7 +83,7 @@ export const DateRangeFilter = ({ filters, setFilters }: DateRangeFilterProps) =
             <Button
               variant={"outline"}
               className={cn(
-                "w-[150px] justify-start text-left font-normal",
+                "w-[180px] justify-start text-left font-normal",
                 !filters.endDate && "text-muted-foreground"
               )}
             >
