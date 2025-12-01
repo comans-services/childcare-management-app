@@ -99,12 +99,15 @@ const RoomMonitor: React.FC = () => {
 
   const handleFormSubmit = async (formData: any) => {
     try {
+      // Get device ID if this is an iPad device
+      const deviceId = isDevice ? deviceInfo?.deviceId : undefined;
+      
       // Handle staff entry/exit
       if (formData.status === 'enter') {
-        await roomService.staffEnterRoom(formData.employeeId, formData.roomId);
+        await roomService.staffEnterRoom(formData.employeeId, formData.roomId, 'ipad', deviceId);
         toast.success('Staff member entered the room');
       } else {
-        await roomService.staffExitRoom(formData.employeeId, formData.roomId);
+        await roomService.staffExitRoom(formData.employeeId, formData.roomId, 'ipad', deviceId);
         toast.success('Staff member exited the room');
       }
 
@@ -116,7 +119,8 @@ const RoomMonitor: React.FC = () => {
         await roomService.updateChildCounts(
           formData.roomId,
           formData.childrenUnder3,
-          formData.childrenOver3
+          formData.childrenOver3,
+          deviceId
         );
         toast.success('Child counts updated');
       }

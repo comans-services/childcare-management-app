@@ -122,13 +122,15 @@ export const roomService = {
   async staffEnterRoom(
     staffId: string,
     roomId: string,
-    entryMethod: string = "manual"
+    entryMethod: string = "manual",
+    deviceId?: string
   ) {
     const { data, error } = await supabase.rpc("staff_enter_room", {
       p_staff_id: staffId,
       p_room_id: roomId,
       p_entry_method: entryMethod,
       p_entered_by: (await supabase.auth.getUser()).data.user?.id,
+      p_device_id: deviceId || null,
     });
 
     if (error) throw error;
@@ -138,13 +140,15 @@ export const roomService = {
   async staffExitRoom(
     staffId: string,
     roomId?: string,
-    exitMethod: string = "manual"
+    exitMethod: string = "manual",
+    deviceId?: string
   ) {
     const { data, error } = await supabase.rpc("staff_exit_room", {
       p_staff_id: staffId,
       p_room_id: roomId || null,
       p_exit_method: exitMethod,
       p_exited_by: (await supabase.auth.getUser()).data.user?.id,
+      p_device_id: deviceId || null,
     });
 
     if (error) throw error;
@@ -154,13 +158,15 @@ export const roomService = {
   async updateChildCounts(
     roomId: string,
     childrenUnder3: number,
-    childrenOver3: number
+    childrenOver3: number,
+    deviceId?: string
   ) {
     const { data, error } = await supabase.rpc("update_child_counts", {
       p_room_id: roomId,
       p_children_under_3: childrenUnder3,
       p_children_over_3: childrenOver3,
       p_updated_by: (await supabase.auth.getUser()).data.user?.id,
+      p_device_id: deviceId || null,
     });
 
     if (error) throw error;

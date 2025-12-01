@@ -136,6 +136,7 @@ export const RoomActivityReports: React.FC<RoomActivityReportsProps> = ({
                   <TableHead>Exited</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Entry Method</TableHead>
+                  <TableHead>Device</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -178,6 +179,9 @@ export const RoomActivityReports: React.FC<RoomActivityReportsProps> = ({
                       <Badge variant="outline">{entry.entry_method || "manual"}</Badge>
                     </TableCell>
                     <TableCell>
+                      {entry.room_devices?.device_name || "Manual"}
+                    </TableCell>
+                    <TableCell>
                       {entry.exited_at ? (
                         <Badge variant="secondary">Completed</Badge>
                       ) : (
@@ -211,6 +215,7 @@ export const RoomActivityReports: React.FC<RoomActivityReportsProps> = ({
                     <TableHead>Activity Type</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Performed By</TableHead>
+                    <TableHead>Device</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -242,6 +247,9 @@ export const RoomActivityReports: React.FC<RoomActivityReportsProps> = ({
                       </TableCell>
                       <TableCell className="max-w-md">{log.description}</TableCell>
                       <TableCell>{log.performer?.full_name || "System"}</TableCell>
+                      <TableCell>
+                        {log.room_devices?.device_name || "Manual"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
