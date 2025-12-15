@@ -248,7 +248,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
             name="hours_logged"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Hours (after break)</FormLabel>
+                <FormLabel>Hours</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
