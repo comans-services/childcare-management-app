@@ -32,6 +32,7 @@ export interface TimesheetEntry {
   hours_logged: number;
   start_time: string;
   end_time: string;
+  break_minutes: number;
   user_full_name?: string; // Cached user name from database
   created_at?: string;
   updated_at?: string;
@@ -57,6 +58,7 @@ export interface CreateTimesheetEntry {
   hours_logged: number;
   start_time: string;
   end_time: string;
+  break_minutes: number;
   user_id: string; // Required for DB insert
 }
 

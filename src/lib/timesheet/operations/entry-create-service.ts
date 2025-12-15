@@ -47,6 +47,7 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     hours_logged: entry.hours_logged,
     start_time: entry.start_time || "",
     end_time: entry.end_time || "",
+    break_minutes: entry.break_minutes ?? 30,
     user_id: entry.user_id,
   };
 
