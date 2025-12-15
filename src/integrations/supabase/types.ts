@@ -1035,6 +1035,7 @@ export type Database = {
       }
       timesheet_entries: {
         Row: {
+          break_minutes: number
           created_at: string
           end_time: string
           entry_date: string
@@ -1046,6 +1047,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          break_minutes?: number
           created_at?: string
           end_time: string
           entry_date: string
@@ -1057,6 +1059,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          break_minutes?: number
           created_at?: string
           end_time?: string
           entry_date?: string

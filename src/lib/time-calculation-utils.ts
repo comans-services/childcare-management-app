@@ -4,9 +4,13 @@
  */
 
 /**
- * Calculate hours between two time strings (HH:MM format)
+ * Calculate hours between two time strings (HH:MM format), with optional break deduction
  */
-export const calculateHoursBetweenTimes = (startTime: string, endTime: string): number => {
+export const calculateHoursBetweenTimes = (
+  startTime: string, 
+  endTime: string, 
+  breakMinutes: number = 0
+): number => {
   if (!startTime || !endTime) return 0;
   
   // Parse time strings
@@ -22,11 +26,11 @@ export const calculateHoursBetweenTimes = (startTime: string, endTime: string): 
     endTotalMinutes += 24 * 60; // Add 24 hours in minutes
   }
   
-  // Calculate difference in minutes
-  const diffMinutes = endTotalMinutes - startTotalMinutes;
+  // Calculate difference in minutes, subtracting break time
+  const diffMinutes = endTotalMinutes - startTotalMinutes - breakMinutes;
   
   // Convert to hours and round to nearest 0.25 (15 minutes)
-  const hours = diffMinutes / 60;
+  const hours = Math.max(0, diffMinutes / 60);
   return Math.round(hours * 4) / 4; // Round to nearest quarter hour
 };
 
