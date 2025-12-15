@@ -11,13 +11,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { TimesheetEntry, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDateDisplay, formatDate, getHoursDifference } from "@/lib/date-utils";
@@ -41,6 +37,9 @@ const EntryForm: React.FC<EntryFormProps> = ({
   onCancel,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [includeTeaBreak, setIncludeTeaBreak] = useState(
+    existingEntry?.tea_break_minutes ? existingEntry.tea_break_minutes > 0 : false
+  );
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
@@ -49,33 +48,39 @@ const EntryForm: React.FC<EntryFormProps> = ({
       start_time: existingEntry?.start_time || "09:00",
       end_time: existingEntry?.end_time || "17:00",
       break_minutes: MANDATORY_BREAK_MINUTES,
+      tea_break_minutes: existingEntry?.tea_break_minutes || 0,
     },
   });
 
   useEffect(() => {
     if (existingEntry) {
+      setIncludeTeaBreak(existingEntry.tea_break_minutes > 0);
       form.reset({
         hours_logged: existingEntry.hours_logged,
         start_time: existingEntry.start_time || "09:00",
         end_time: existingEntry.end_time || "17:00",
         break_minutes: MANDATORY_BREAK_MINUTES,
+        tea_break_minutes: existingEntry.tea_break_minutes || 0,
       });
     } else {
+      setIncludeTeaBreak(false);
       form.reset({
         hours_logged: 7.5,
         start_time: "09:00",
         end_time: "17:00",
         break_minutes: MANDATORY_BREAK_MINUTES,
+        tea_break_minutes: 0,
       });
     }
   }, [existingEntry, form]);
 
-  // Auto-calculate hours when time range changes (always deduct 30 min lunch)
+  // Auto-calculate hours when time range or tea break changes
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      if (name === 'start_time' || name === 'end_time') {
+      if (name === 'start_time' || name === 'end_time' || name === 'tea_break_minutes') {
         const startTime = value.start_time;
         const endTime = value.end_time;
+        const teaBreakMinutes = value.tea_break_minutes ?? 0;
         
         if (startTime && endTime) {
           try {
@@ -94,7 +99,8 @@ const EntryForm: React.FC<EntryFormProps> = ({
             }
             
             const rawHours = getHoursDifference(start, end);
-            const breakHours = MANDATORY_BREAK_MINUTES / 60;
+            const totalBreakMinutes = MANDATORY_BREAK_MINUTES + teaBreakMinutes;
+            const breakHours = totalBreakMinutes / 60;
             const netHours = Math.max(0, Math.round((rawHours - breakHours) * 4) / 4);
             form.setValue('hours_logged', netHours);
           } catch (error) {
@@ -119,6 +125,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
         start_time: values.start_time,
         end_time: values.end_time,
         break_minutes: values.break_minutes,
+        tea_break_minutes: values.tea_break_minutes,
       };
 
       console.log("Submitting entry:", entry);
@@ -184,6 +191,52 @@ const EntryForm: React.FC<EntryFormProps> = ({
           <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
             <span className="font-medium">30 min lunch break</span> deducted automatically
           </div>
+
+          <FormField
+            control={form.control}
+            name="tea_break_minutes"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="include-tea-break"
+                    checked={includeTeaBreak}
+                    onCheckedChange={(checked) => {
+                      setIncludeTeaBreak(!!checked);
+                      if (!checked) {
+                        field.onChange(0);
+                      } else {
+                        field.onChange(15); // Default to 15 min when enabled
+                      }
+                    }}
+                  />
+                  <Label htmlFor="include-tea-break" className="text-sm font-medium cursor-pointer">
+                    Include Tea Break
+                  </Label>
+                </div>
+                
+                {includeTeaBreak && (
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      value={field.value.toString()}
+                      className="flex gap-4 pl-6"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="15" id="tea-15" />
+                        <Label htmlFor="tea-15" className="cursor-pointer">15 minutes</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="30" id="tea-30" />
+                        <Label htmlFor="tea-30" className="cursor-pointer">30 minutes</Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}

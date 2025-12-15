@@ -48,6 +48,7 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     start_time: entry.start_time || "",
     end_time: entry.end_time || "",
     break_minutes: entry.break_minutes ?? 30,
+    tea_break_minutes: entry.tea_break_minutes ?? 0,
     user_id: entry.user_id,
   };
 
