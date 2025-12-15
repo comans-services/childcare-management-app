@@ -14,10 +14,17 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { TimesheetEntry, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDateDisplay, formatDate, getHoursDifference } from "@/lib/date-utils";
-import { timeEntryFormSchema, TimeEntryFormValues } from "./time-entry/schema";
+import { timeEntryFormSchema, TimeEntryFormValues, LEAVE_TYPES } from "./time-entry/schema";
 import { fetchUserById } from "@/lib/user-service";
 
 interface EntryFormProps {
@@ -50,6 +57,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
       end_time: existingEntry?.end_time || "17:00",
       break_minutes: MANDATORY_BREAK_MINUTES,
       tea_break_minutes: existingEntry?.tea_break_minutes || 0,
+      leave_type: existingEntry?.leave_type || null,
     },
   });
 
@@ -63,6 +71,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
           end_time: existingEntry.end_time || "17:00",
           break_minutes: MANDATORY_BREAK_MINUTES,
           tea_break_minutes: existingEntry.tea_break_minutes || 0,
+          leave_type: existingEntry.leave_type || null,
         });
       } else {
         // Fetch user's default times for new entries
@@ -77,6 +86,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
           end_time: defaultEnd,
           break_minutes: MANDATORY_BREAK_MINUTES,
           tea_break_minutes: 0,
+          leave_type: null,
         });
       }
     };
@@ -135,6 +145,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
         end_time: values.end_time,
         break_minutes: values.break_minutes,
         tea_break_minutes: values.tea_break_minutes,
+        leave_type: values.leave_type || null,
       };
 
       console.log("Submitting entry:", entry);
@@ -196,6 +207,35 @@ const EntryForm: React.FC<EntryFormProps> = ({
               )}
             />
           </div>
+
+          <FormField
+            control={form.control}
+            name="leave_type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Leave Type (Optional)</FormLabel>
+                <Select
+                  onValueChange={(value) => field.onChange(value === "none" ? null : value)}
+                  value={field.value || "none"}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select leave type..." />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="none">None - Regular Hours</SelectItem>
+                    {LEAVE_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}
