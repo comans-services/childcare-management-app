@@ -13,10 +13,17 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+interface EmailAttachment {
+  filename: string;
+  url: string;
+  size?: number;
+}
+
 interface CampaignEmailRequest {
   campaignId: string;
   testMode?: boolean;
   testEmail?: string;
+  attachments?: EmailAttachment[];
 }
 
 interface Contact {
@@ -37,6 +44,7 @@ interface Campaign {
   created_by: string;
   footer_included: boolean;
   unsubscribe_link_included: boolean;
+  attachments?: EmailAttachment[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -69,9 +77,9 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Email settings: From: ${FROM_NAME} <${FROM_EMAIL}>, Reply-To: ${REPLY_TO_EMAIL}`);
 
     // Parse request body
-    const { campaignId, testMode = false, testEmail }: CampaignEmailRequest = await req.json();
+    const { campaignId, testMode = false, testEmail, attachments: requestAttachments }: CampaignEmailRequest = await req.json();
 
-    console.log(`Campaign ID: ${campaignId}, Test Mode: ${testMode}`);
+    console.log(`Campaign ID: ${campaignId}, Test Mode: ${testMode}, Attachments: ${requestAttachments?.length || 0}`);
 
     // Validate campaignId
     if (!campaignId || typeof campaignId !== "string") {
@@ -97,6 +105,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log(`Campaign found: ${campaign.subject}`);
+
+    // Use attachments from request or from campaign record
+    const attachments: EmailAttachment[] = requestAttachments || 
+      (Array.isArray(campaign.attachments) ? campaign.attachments : []);
+    
+    console.log(`Processing ${attachments.length} attachments`);
 
     // Get recipients
     let recipients: Contact[] = [];
@@ -179,6 +193,14 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("id", campaignId);
     }
 
+    // Prepare Resend attachments format
+    const resendAttachments = attachments.map(att => ({
+      filename: att.filename,
+      path: att.url, // Resend will fetch the file from this URL
+    }));
+
+    console.log(`Prepared ${resendAttachments.length} attachments for Resend`);
+
     // Send emails in batches
     const BATCH_SIZE = 50;
     const BATCH_DELAY_MS = 1000; // 1 second between batches
@@ -212,17 +234,26 @@ const handler = async (req: Request): Promise<Response> => {
             campaign.message_body,
             recipientName,
             campaign.footer_included,
-            campaign.unsubscribe_link_included ? unsubLink : null
+            campaign.unsubscribe_link_included ? unsubLink : null,
+            attachments.length > 0
           );
 
-          // Send email via Resend
-          const { data, error } = await resend.emails.send({
+          // Prepare email options
+          const emailOptions: any = {
             from: `${FROM_NAME} <${FROM_EMAIL}>`,
             to: contact.email,
-            replyTo: REPLY_TO_EMAIL, // Enable replies to go to configured address
+            replyTo: REPLY_TO_EMAIL,
             subject: campaign.subject,
             html: emailHtml,
-          });
+          };
+
+          // Add attachments if present
+          if (resendAttachments.length > 0) {
+            emailOptions.attachments = resendAttachments;
+          }
+
+          // Send email via Resend
+          const { data, error } = await resend.emails.send(emailOptions);
 
           if (error) {
             throw error;
@@ -237,7 +268,7 @@ const handler = async (req: Request): Promise<Response> => {
             contact_email: contact.email,
             event_type: testMode ? "test_sent" : "sent",
             event_timestamp: new Date().toISOString(),
-            provider_response: { id: data?.id },
+            provider_response: { id: data?.id, attachments_count: attachments.length },
           });
 
           sentCount++;
@@ -321,6 +352,7 @@ const handler = async (req: Request): Promise<Response> => {
         sent: sentCount,
         failed: failedCount,
         bounced: bouncedCount,
+        attachments_count: attachments.length,
         errors: errors.length > 0 ? errors : undefined,
       }),
       {
@@ -346,8 +378,13 @@ function generateEmailTemplate(
   messageBody: string,
   recipientName: string,
   includeFooter: boolean,
-  unsubscribeLink: string | null
+  unsubscribeLink: string | null,
+  hasAttachments: boolean = false
 ): string {
+  const attachmentNotice = hasAttachments 
+    ? `<p style="margin: 15px 0 0 0; font-size: 14px; color: #6b7280; font-style: italic;">📎 This email includes attachments</p>` 
+    : '';
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -384,6 +421,7 @@ function generateEmailTemplate(
               <div style="font-size: 16px; line-height: 1.8; color: #374151;">
                 ${messageBody}
               </div>
+              ${attachmentNotice}
             </td>
           </tr>
           

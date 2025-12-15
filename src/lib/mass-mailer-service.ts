@@ -976,19 +976,37 @@ export const checkIsUnsubscribed = async (email: string): Promise<boolean> => {
 // ============================================================================
 
 /**
+ * Email attachment interface
+ */
+export interface EmailAttachment {
+  filename: string;
+  url: string;
+  size: number;
+  type?: string;
+}
+
+/**
  * Send a quick email to a group of contacts (simplified version for notifications)
  */
 export const sendQuickEmail = async (
   subject: string,
   messageBody: string,
   recipientGroup: string, // 'all' or tag name
+  attachments?: EmailAttachment[],
 ): Promise<{ sent: number; failed: number }> => {
   try {
-    console.log('Sending quick email:', { subject, recipientGroup });
+    console.log('Sending quick email:', { subject, recipientGroup, attachmentCount: attachments?.length || 0 });
 
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
+
+    // Prepare attachments data for storage
+    const attachmentsData = attachments?.map(att => ({
+      filename: att.filename,
+      url: att.url,
+      size: att.size,
+    })) || [];
 
     // Create a campaign record for tracking
     const { data: campaign, error: campaignError } = await supabase
@@ -1004,6 +1022,7 @@ export const sendQuickEmail = async (
         sent_by: user.id,
         footer_included: true,
         unsubscribe_link_included: false,
+        attachments: attachmentsData,
       })
       .select()
       .single();
@@ -1015,6 +1034,7 @@ export const sendQuickEmail = async (
       body: {
         campaignId: campaign.id,
         testMode: false,
+        attachments: attachmentsData,
       },
     });
 

@@ -21,11 +21,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RichTextEditor } from "./RichTextEditor";
-import { Mail, Settings, Users } from "lucide-react";
+import { Mail, Settings, Users, Paperclip } from "lucide-react";
 import { fetchContacts, sendQuickEmail, type Contact } from "@/lib/mass-mailer-service";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { EmailSettingsDialog } from "./EmailSettingsDialog";
+import { FileAttachmentUpload, type EmailAttachment } from "./FileAttachmentUpload";
 
 export const SimpleComposeEmail = () => {
   const [subject, setSubject] = useState("");
@@ -36,6 +37,7 @@ export const SimpleComposeEmail = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [emailSettings, setEmailSettings] = useState<any>(null);
+  const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
 
   // Load contacts and settings
   useEffect(() => {
@@ -113,7 +115,7 @@ export const SimpleComposeEmail = () => {
     setLoading(true);
 
     try {
-      const result = await sendQuickEmail(subject, messageBody, selectedGroup);
+      const result = await sendQuickEmail(subject, messageBody, selectedGroup, attachments);
       
       toast.success(
         `Email sent successfully to ${result.sent} recipient${result.sent !== 1 ? 's' : ''}!`
@@ -127,6 +129,7 @@ export const SimpleComposeEmail = () => {
       setSubject("");
       setMessageBody("");
       setSelectedGroup("all");
+      setAttachments([]);
     } catch (error: any) {
       console.error("Error sending email:", error);
       toast.error(error.message || "Failed to send email");
@@ -218,6 +221,20 @@ export const SimpleComposeEmail = () => {
               content={messageBody}
               onChange={setMessageBody}
               className="min-h-[300px]"
+            />
+          </div>
+
+          {/* File Attachments */}
+          <div className="space-y-3">
+            <Label className="text-lg font-semibold flex items-center gap-2">
+              <Paperclip className="h-5 w-5" />
+              Attachments:
+            </Label>
+            <FileAttachmentUpload
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+              maxFiles={5}
+              maxSizePerFile={10 * 1024 * 1024}
             />
           </div>
 
