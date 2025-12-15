@@ -90,7 +90,7 @@ export const processRow = async (
             data: {
               full_name: processedData.full_name,
             },
-            emailRedirectTo: undefined // This will prevent email confirmation requirement
+            emailRedirectTo: `${window.location.origin}/auth`
           }
         });
         
