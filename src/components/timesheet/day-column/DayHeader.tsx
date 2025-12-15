@@ -9,10 +9,9 @@ import { useAuth } from "@/context/AuthContext";
 interface DayHeaderProps {
   date: Date;
   isScheduled?: boolean;
-  scheduledHours?: number;
 }
 
-const DayHeader: React.FC<DayHeaderProps> = ({ date, isScheduled = true, scheduledHours }) => {
+const DayHeader: React.FC<DayHeaderProps> = ({ date, isScheduled = true }) => {
   const { user } = useAuth();
   const { validateWeekendEntry, canCreateWeekendEntries } = useWeekendLock(user?.id);
   const { validateHolidayEntry, canCreateHolidayEntries, checkIfHoliday, isAdmin } = useHolidayLock(user?.id);
@@ -120,11 +119,6 @@ const DayHeader: React.FC<DayHeaderProps> = ({ date, isScheduled = true, schedul
           </div>
         </div>
         
-        {isScheduled && scheduledHours !== undefined && scheduledHours > 0 && (
-          <div className="text-[10px] opacity-80">
-            Scheduled: {scheduledHours.toFixed(1)} hrs
-          </div>
-        )}
       </div>
       
       <div className="absolute bottom-0 left-0 right-0 h-1">

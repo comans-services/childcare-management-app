@@ -171,7 +171,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
       <DayHeader 
         date={date} 
         isScheduled={isDayScheduled}
-        scheduledHours={scheduledHours}
       />
       
       <div className="h-full flex-grow overflow-hidden">
