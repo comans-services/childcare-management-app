@@ -34,6 +34,7 @@ interface EmployeeData {
   id: string;
   full_name: string;
   employment_type: string;
+  employee_id: string | null;
 }
 
 interface DayData {
@@ -64,7 +65,7 @@ export const fetchMatrixData = async (
   // 1. Fetch employees based on filters
   let employeesQuery = supabase
     .from('profiles')
-    .select('id, full_name, employment_type')
+    .select('id, full_name, employment_type, employee_id')
     .eq('is_active', true)
     .order('full_name');
 
@@ -227,8 +228,10 @@ export const generateMatrixCSV = (data: MatrixData): string => {
   lines.push(`"Period: ${period}"`);
   lines.push(''); // Empty line
   
-  // Header row: Date + employee names + Daily Total
-  const headerRow = ['Date', ...employees.map(e => e.full_name), 'Daily Total'];
+  // Header row: Date + employee names (with ID) + Daily Total
+  const headerRow = ['Date', ...employees.map(e => 
+    e.employee_id ? `${e.full_name} (${e.employee_id})` : e.full_name
+  ), 'Daily Total'];
   lines.push(headerRow.map(h => `"${h}"`).join(','));
   
   // Data rows
@@ -301,7 +304,9 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
   doc.text(`Period: ${period}`, 14, 22);
   
   // Prepare table data
-  const tableHeaders = ['Date', ...employees.map(e => e.full_name), 'Total'];
+  const tableHeaders = ['Date', ...employees.map(e => 
+    e.employee_id ? `${e.full_name} (${e.employee_id})` : e.full_name
+  ), 'Total'];
   
   const tableBody: any[][] = [];
   
