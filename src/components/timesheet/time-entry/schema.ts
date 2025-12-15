@@ -9,6 +9,8 @@ export const timeEntryFormSchema = z.object({
   break_minutes: z.coerce.number()
     .min(0, { message: "Break cannot be negative" })
     .max(120, { message: "Break cannot exceed 2 hours" }),
+  tea_break_minutes: z.coerce.number()
+    .refine((val) => [0, 15, 30].includes(val), { message: "Tea break must be 0, 15, or 30 minutes" }),
 });
 
 export type TimeEntryFormValues = z.infer<typeof timeEntryFormSchema>;
