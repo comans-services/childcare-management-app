@@ -84,3 +84,11 @@ export const isPublicHoliday = (date: Date): boolean => {
 export const formatDateForHolidayAPI = (date: Date): string => {
   return date.toISOString().split('T')[0];
 };
+
+// Check if a date is after Tuesday cutoff (Wednesday, Thursday, or Friday)
+// For payroll purposes: leave taken Wed-Fri should be processed next pay period
+export const isAfterTuesdayCutoff = (date: Date): boolean => {
+  const dayOfWeek = date.getDay();
+  // Wednesday = 3, Thursday = 4, Friday = 5
+  return dayOfWeek >= 3 && dayOfWeek <= 5;
+};
