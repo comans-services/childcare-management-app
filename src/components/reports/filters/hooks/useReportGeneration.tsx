@@ -63,6 +63,7 @@ export const useReportGeneration = ({
           startDate: filters.startDate,
           endDate: filters.endDate,
           userIds: filters.userIds?.filter(id => id),
+          employmentType: filters.employmentType,
           includeEmployeeData: true
         };
         

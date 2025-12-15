@@ -124,8 +124,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="full-time">Full-Time</SelectItem>
-                  <SelectItem value="part-time">Part-Time</SelectItem>
+                  <SelectItem value="permanent">Permanent</SelectItem>
                   <SelectItem value="casual">Casual</SelectItem>
                 </SelectContent>
               </Select>

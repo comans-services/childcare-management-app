@@ -65,6 +65,7 @@ export const fetchReportData = async (
     startDate: Date;
     endDate: Date;
     userIds?: string[];
+    employmentType?: string;
     includeEmployeeData?: boolean;
   }
 ): Promise<TimesheetEntry[]> => {
@@ -100,7 +101,23 @@ export const fetchReportData = async (
       throw error;
     }
 
-    const entries: TimesheetEntry[] = (data || []).map((entry: any) => ({
+    // Filter by employment type after fetching (since we need to check the joined profiles data)
+    let filteredData = data || [];
+    if (filters.employmentType) {
+      if (filters.employmentType === 'permanent') {
+        // Permanent includes full-time and part-time
+        filteredData = filteredData.filter((entry: any) => 
+          entry.profiles?.employment_type === 'full-time' || 
+          entry.profiles?.employment_type === 'part-time'
+        );
+      } else if (filters.employmentType === 'casual') {
+        filteredData = filteredData.filter((entry: any) => 
+          entry.profiles?.employment_type === 'casual'
+        );
+      }
+    }
+
+    const entries: TimesheetEntry[] = filteredData.map((entry: any) => ({
       ...entry,
       entry_type: 'project' as const,
       user: filters.includeEmployeeData ? entry.profiles : undefined
