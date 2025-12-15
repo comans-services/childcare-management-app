@@ -230,7 +230,9 @@ export const generateMatrixCSV = (data: MatrixData): string => {
   
   // Header row: Date + employee names (with ID) + Daily Total
   const headerRow = ['Date', ...employees.map(e => 
-    e.employee_id ? `${e.full_name} (${e.employee_id})` : e.full_name
+    e.employee_id && e.employee_id.trim() 
+      ? `${e.full_name} (#${e.employee_id.trim()})` 
+      : e.full_name
   ), 'Daily Total'];
   lines.push(headerRow.map(h => `"${h}"`).join(','));
   
@@ -305,7 +307,9 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
   
   // Prepare table data
   const tableHeaders = ['Date', ...employees.map(e => 
-    e.employee_id ? `${e.full_name} (${e.employee_id})` : e.full_name
+    e.employee_id && e.employee_id.trim() 
+      ? `${e.full_name}\n#${e.employee_id.trim()}` 
+      : e.full_name
   ), 'Total'];
   
   const tableBody: any[][] = [];
