@@ -15,7 +15,10 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     hours_logged: entry.hours_logged,
     start_time: entry.start_time,
     end_time: entry.end_time,
-    user_id: entry.user_id // Include user_id for admin editing
+    user_id: entry.user_id,
+    leave_type: entry.leave_type || null,
+    break_minutes: entry.break_minutes ?? 30,
+    tea_break_minutes: entry.tea_break_minutes ?? 0,
   };
 
   console.log("Update data:", updateData);
