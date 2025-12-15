@@ -56,23 +56,25 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Employee</TableHead>
+                <TableHead>Employee ID</TableHead>
                 <TableHead>Start Time</TableHead>
                 <TableHead>End Time</TableHead>
                 <TableHead className="text-right">Hours</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reportData.map((entry) => (
+              {reportData.map((entry: any) => (
                 <TableRow key={entry.id}>
                   <TableCell>{formatDateDisplay(new Date(entry.entry_date))}</TableCell>
                   <TableCell>{entry.user_full_name || 'Unknown'}</TableCell>
+                  <TableCell>{entry.profiles?.employee_id || '-'}</TableCell>
                   <TableCell>{entry.start_time}</TableCell>
                   <TableCell>{entry.end_time}</TableCell>
                   <TableCell className="text-right">{entry.hours_logged.toFixed(2)}</TableCell>
                 </TableRow>
               ))}
               <TableRow className="font-bold bg-muted/50">
-                <TableCell colSpan={4} className="text-right">Total Hours:</TableCell>
+                <TableCell colSpan={5} className="text-right">Total Hours:</TableCell>
                 <TableCell className="text-right">{totalHours.toFixed(2)}</TableCell>
               </TableRow>
             </TableBody>

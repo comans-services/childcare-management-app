@@ -169,12 +169,12 @@ export const generateMatrixCSV = (data: MatrixData): string => {
   lines.push(`"Period: ${period}"`);
   lines.push(''); // Empty line
   
-  // Header row: Name + dates + Total + Initial
+  // Header row: Name + dates + Total + Approval Signature
   const headerRow = [
     'Name',
     ...dates.map(date => format(date, 'EEE d/MM')),
     'Total',
-    'Initial'
+    'Approval Signature'
   ];
   lines.push(headerRow.map(h => `"${h}"`).join(','));
   
@@ -256,7 +256,7 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
     'Name',
     ...dates.map(date => format(date, 'EEE\nd/MM')),
     'Total',
-    'Initial'
+    'Approval\nSignature'
   ];
   
   const tableBody: any[][] = [];
@@ -326,7 +326,7 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
     columnStyles: {
       0: { halign: 'left', cellWidth: 35 }, // Name column
       [dates.length + 1]: { fontStyle: 'bold' }, // Total column
-      [dates.length + 2]: { cellWidth: 15 }, // Initial column
+      [dates.length + 2]: { cellWidth: 22 }, // Approval Signature column
     },
     didParseCell: (data) => {
       // Style PH differently
