@@ -243,27 +243,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="hours_logged"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Hours</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.25"
-                    min="0.25"
-                    max="24"
-                    readOnly
-                    className="bg-muted cursor-not-allowed"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button
