@@ -3,10 +3,12 @@ import React from "react";
 import { TimesheetEntry, duplicateTimesheetEntry } from "@/lib/timesheet-service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Clock, FileText, GripVertical, Copy, User, Pencil, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
+import { LEAVE_TYPE_ABBREVIATIONS } from "@/components/timesheet/time-entry/schema";
 
 // Color mapping for different project types
 export const PROJECT_COLORS: { [key: string]: string } = {
@@ -50,6 +52,33 @@ export const getProjectColor = (project?: { name?: string }) => {
 // Simplified - no more project/contract distinction
 export const getEntryColor = (entry: TimesheetEntry) => {
   return PROJECT_COLORS.default;
+};
+
+// Get color for leave type badge
+export const getLeaveTypeBadgeColor = (leaveType: string): string => {
+  switch (leaveType) {
+    case "Annual Leave":
+    case "Leave Loading":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "Sick Leave":
+    case "Carer's Leave":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "ADO":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "Leave Without Pay":
+      return "bg-gray-100 text-gray-800 border-gray-200";
+    case "Higher Duty":
+      return "bg-purple-100 text-purple-800 border-purple-200";
+    case "Paid Parental Leave":
+      return "bg-pink-100 text-pink-800 border-pink-200";
+    case "Time and a Half":
+    case "Double Time and a Half":
+      return "bg-amber-100 text-amber-800 border-amber-200";
+    case "Long Service Leave":
+      return "bg-teal-100 text-teal-800 border-teal-200";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
 };
 
 // Simplified - just show time info
@@ -180,6 +209,17 @@ const EntryCard: React.FC<EntryCardProps> = ({
               <span className="text-muted-foreground">
                 {entry.start_time} - {entry.end_time}
               </span>
+            </div>
+          )}
+
+          {entry.leave_type && (
+            <div className="mt-2">
+              <Badge 
+                variant="outline" 
+                className={cn("text-[10px] md:text-xs", getLeaveTypeBadgeColor(entry.leave_type))}
+              >
+                {LEAVE_TYPE_ABBREVIATIONS[entry.leave_type] || entry.leave_type}
+              </Badge>
             </div>
           )}
           

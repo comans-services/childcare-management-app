@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, eachDayOfInterval, isWeekend } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { LEAVE_TYPE_ABBREVIATIONS } from "@/components/timesheet/time-entry/schema";
 
 export interface MatrixExportFilters {
   startDate: Date;
@@ -21,6 +22,7 @@ interface DayData {
   hours?: number;
   isHoliday?: boolean;
   isWeekend?: boolean;
+  leaveType?: string | null;
 }
 
 interface MatrixData {
@@ -68,7 +70,7 @@ export const fetchMatrixData = async (
   // 2. Fetch timesheet entries
   const { data: timesheetData, error: tsError } = await supabase
     .from('timesheet_entries')
-    .select('user_id, entry_date, hours_logged')
+    .select('user_id, entry_date, hours_logged, leave_type')
     .gte('entry_date', startDateStr)
     .lte('entry_date', endDateStr)
     .in('user_id', employees.map(e => e.id));
@@ -113,6 +115,10 @@ export const fetchMatrixData = async (
       const hours = Number(entry.hours_logged) || 0;
       matrix[dateKey][entry.user_id].hours = 
         (matrix[dateKey][entry.user_id].hours || 0) + hours;
+      // Store leave type (use first one if multiple entries on same day)
+      if (entry.leave_type && !matrix[dateKey][entry.user_id].leaveType) {
+        matrix[dateKey][entry.user_id].leaveType = entry.leave_type;
+      }
       employeeTotals[entry.user_id] = (employeeTotals[entry.user_id] || 0) + hours;
       dateTotals[dateKey] = (dateTotals[dateKey] || 0) + hours;
       grandTotal += hours;
@@ -192,7 +198,14 @@ export const generateMatrixCSV = (data: MatrixData): string => {
       let cellValue = '';
       
       if (cellData.hours && cellData.hours > 0) {
-        cellValue = cellData.hours.toFixed(1);
+        // Include leave type abbreviation if present
+        const hoursStr = cellData.hours.toFixed(1);
+        if (cellData.leaveType) {
+          const abbrev = LEAVE_TYPE_ABBREVIATIONS[cellData.leaveType] || cellData.leaveType.substring(0, 3).toUpperCase();
+          cellValue = `${hoursStr} ${abbrev}`;
+        } else {
+          cellValue = hoursStr;
+        }
       } else if (cellData.isHoliday) {
         cellValue = 'PH';
       } else if (cellData.isWeekend) {
@@ -225,7 +238,7 @@ export const generateMatrixCSV = (data: MatrixData): string => {
   
   // Empty line and legend
   lines.push('');
-  lines.push(`"Legend: PH = Public Holiday"`);
+  lines.push(`"Legend: PH = Public Holiday, AL = Annual Leave, LL = Leave Loading, SL = Sick Leave, CL = Carer's Leave, ADO = Accrued Day Off, LWP = Leave Without Pay, HD = Higher Duty, PPL = Paid Parental Leave, T1.5 = Time and a Half, T2.5 = Double Time and a Half, LSL = Long Service Leave"`);
   
   return lines.join('\n');
 };
@@ -275,7 +288,14 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
       let cellValue = '';
       
       if (cellData.hours && cellData.hours > 0) {
-        cellValue = cellData.hours.toFixed(1);
+        // Include leave type abbreviation if present
+        const hoursStr = cellData.hours.toFixed(1);
+        if (cellData.leaveType) {
+          const abbrev = LEAVE_TYPE_ABBREVIATIONS[cellData.leaveType] || cellData.leaveType.substring(0, 3).toUpperCase();
+          cellValue = `${hoursStr}\n${abbrev}`;
+        } else {
+          cellValue = hoursStr;
+        }
       } else if (cellData.isHoliday) {
         cellValue = 'PH';
       } else if (cellData.isWeekend) {
@@ -343,9 +363,10 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
   
   // Add legend at bottom
   const finalY = (doc as any).lastAutoTable?.finalY || 150;
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
-  doc.text('Legend: PH = Public Holiday', 14, finalY + 8);
+  doc.text('Legend: PH = Public Holiday, AL = Annual Leave, LL = Leave Loading, SL = Sick Leave, CL = Carer\'s Leave, ADO = Accrued Day Off', 14, finalY + 6);
+  doc.text('LWP = Leave Without Pay, HD = Higher Duty, PPL = Paid Parental Leave, T1.5 = Time and a Half, T2.5 = Double Time and a Half, LSL = Long Service Leave', 14, finalY + 10);
   
   return doc;
 };
