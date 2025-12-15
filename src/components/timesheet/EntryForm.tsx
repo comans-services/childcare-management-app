@@ -18,6 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { TimesheetEntry, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDateDisplay, formatDate, getHoursDifference } from "@/lib/date-utils";
 import { timeEntryFormSchema, TimeEntryFormValues } from "./time-entry/schema";
+import { fetchUserById } from "@/lib/user-service";
 
 interface EntryFormProps {
   userId: string;
@@ -53,26 +54,34 @@ const EntryForm: React.FC<EntryFormProps> = ({
   });
 
   useEffect(() => {
-    if (existingEntry) {
-      setIncludeTeaBreak(existingEntry.tea_break_minutes > 0);
-      form.reset({
-        hours_logged: existingEntry.hours_logged,
-        start_time: existingEntry.start_time || "09:00",
-        end_time: existingEntry.end_time || "17:00",
-        break_minutes: MANDATORY_BREAK_MINUTES,
-        tea_break_minutes: existingEntry.tea_break_minutes || 0,
-      });
-    } else {
-      setIncludeTeaBreak(false);
-      form.reset({
-        hours_logged: 7.5,
-        start_time: "09:00",
-        end_time: "17:00",
-        break_minutes: MANDATORY_BREAK_MINUTES,
-        tea_break_minutes: 0,
-      });
-    }
-  }, [existingEntry, form]);
+    const loadDefaults = async () => {
+      if (existingEntry) {
+        setIncludeTeaBreak(existingEntry.tea_break_minutes > 0);
+        form.reset({
+          hours_logged: existingEntry.hours_logged,
+          start_time: existingEntry.start_time || "09:00",
+          end_time: existingEntry.end_time || "17:00",
+          break_minutes: MANDATORY_BREAK_MINUTES,
+          tea_break_minutes: existingEntry.tea_break_minutes || 0,
+        });
+      } else {
+        // Fetch user's default times for new entries
+        const userProfile = await fetchUserById(userId);
+        const defaultStart = userProfile?.default_start_time?.slice(0, 5) || "09:00";
+        const defaultEnd = userProfile?.default_end_time?.slice(0, 5) || "17:00";
+        
+        setIncludeTeaBreak(false);
+        form.reset({
+          hours_logged: 7.5,
+          start_time: defaultStart,
+          end_time: defaultEnd,
+          break_minutes: MANDATORY_BREAK_MINUTES,
+          tea_break_minutes: 0,
+        });
+      }
+    };
+    loadDefaults();
+  }, [existingEntry, form, userId]);
 
   // Auto-calculate hours when time range or tea break changes
   useEffect(() => {
@@ -188,10 +197,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
             />
           </div>
 
-          <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
-            <span className="font-medium">30 min lunch break</span> deducted automatically
-          </div>
-
           <FormField
             control={form.control}
             name="tea_break_minutes"
@@ -250,6 +255,8 @@ const EntryForm: React.FC<EntryFormProps> = ({
                     step="0.25"
                     min="0.25"
                     max="24"
+                    readOnly
+                    className="bg-muted cursor-not-allowed"
                     {...field}
                   />
                 </FormControl>
@@ -271,8 +278,8 @@ const EntryForm: React.FC<EntryFormProps> = ({
               {isSubmitting
                 ? "Saving..."
                 : existingEntry
-                ? "Update Shift"
-                : "Add Shift"}
+                ? "Update"
+                : "Submit"}
             </Button>
           </div>
         </form>

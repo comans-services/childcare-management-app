@@ -578,6 +578,8 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          default_end_time: string | null
+          default_start_time: string | null
           email: string
           employee_card_id: string | null
           employee_id: string | null
@@ -592,6 +594,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_end_time?: string | null
+          default_start_time?: string | null
           email: string
           employee_card_id?: string | null
           employee_id?: string | null
@@ -606,6 +610,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_end_time?: string | null
+          default_start_time?: string | null
           email?: string
           employee_card_id?: string | null
           employee_id?: string | null

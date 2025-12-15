@@ -10,6 +10,8 @@ export interface User {
   employment_type?: 'full-time' | 'part-time' | 'casual';
   employee_card_id?: string;
   employee_id?: string;
+  default_start_time?: string;
+  default_end_time?: string;
 }
 
 export interface NewUser extends Omit<User, "id"> {
@@ -164,7 +166,7 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
     
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone, employment_type, employee_card_id, employee_id")
+      .select("id, full_name, role, organization, time_zone, employment_type, employee_card_id, employee_id, default_start_time, default_end_time")
       .eq("id", userId)
       .maybeSingle();
     
@@ -238,6 +240,8 @@ export const updateUser = async (user: User): Promise<User> => {
         employment_type: user.employment_type,
         employee_card_id: user.employee_card_id?.trim() || null,
         employee_id: user.employee_id?.trim() || null,
+        default_start_time: user.default_start_time || null,
+        default_end_time: user.default_end_time || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id)
