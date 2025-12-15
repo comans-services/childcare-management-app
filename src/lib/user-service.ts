@@ -268,7 +268,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         data: {
           full_name: userData.full_name,
         },
-        emailRedirectTo: undefined // This will prevent email confirmation requirement
+        emailRedirectTo: `${window.location.origin}/auth`
       }
     });
     
