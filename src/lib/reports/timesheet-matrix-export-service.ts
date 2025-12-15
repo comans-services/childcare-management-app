@@ -158,7 +158,7 @@ export const fetchMatrixData = async (
   };
 };
 
-// Generate CSV in matrix format
+// Generate CSV in matrix format (transposed: employees as rows, dates as columns)
 export const generateMatrixCSV = (data: MatrixData): string => {
   const { title, period, employees, dates, matrix, employeeTotals, dateTotals, grandTotal } = data;
   
@@ -169,24 +169,26 @@ export const generateMatrixCSV = (data: MatrixData): string => {
   lines.push(`"Period: ${period}"`);
   lines.push(''); // Empty line
   
-  // Header row: Date + employee names (with ID) + Daily Total
-  const headerRow = ['Date', ...employees.map(e => 
-    e.employee_id && e.employee_id.trim() 
-      ? `${e.full_name} (#${e.employee_id.trim()})` 
-      : e.full_name
-  ), 'Daily Total'];
+  // Header row: Name + dates + Total + Initial
+  const headerRow = [
+    'Name',
+    ...dates.map(date => format(date, 'EEE d/MM')),
+    'Total',
+    'Initial'
+  ];
   lines.push(headerRow.map(h => `"${h}"`).join(','));
   
-  // Data rows
-  dates.forEach(date => {
-    const dateKey = format(date, 'yyyy-MM-dd');
-    const dateDisplay = format(date, 'EEE dd/MM');
-    const dayData = matrix[dateKey];
+  // Data rows (one per employee)
+  employees.forEach(emp => {
+    const displayName = emp.employee_id && emp.employee_id.trim() 
+      ? `${emp.full_name} (#${emp.employee_id.trim()})` 
+      : emp.full_name;
     
-    const row: string[] = [dateDisplay];
+    const row: string[] = [displayName];
     
-    employees.forEach(emp => {
-      const cellData = dayData[emp.id] || {};
+    dates.forEach(date => {
+      const dateKey = format(date, 'yyyy-MM-dd');
+      const cellData = matrix[dateKey]?.[emp.id] || {};
       let cellValue = '';
       
       if (cellData.hours && cellData.hours > 0) {
@@ -200,20 +202,25 @@ export const generateMatrixCSV = (data: MatrixData): string => {
       row.push(cellValue);
     });
     
-    // Daily total (exclude weekends from display but still calculate)
-    const dailyTotal = dateTotals[dateKey] || 0;
-    row.push(dailyTotal > 0 ? dailyTotal.toFixed(1) : '');
+    // Employee total
+    const empTotal = employeeTotals[emp.id] || 0;
+    row.push(empTotal > 0 ? empTotal.toFixed(1) : '');
+    
+    // Empty Initial column for signatures
+    row.push('');
     
     lines.push(row.map(v => `"${v}"`).join(','));
   });
   
-  // Totals row
-  const totalsRow = ['Total Hours'];
-  employees.forEach(emp => {
-    const total = employeeTotals[emp.id] || 0;
-    totalsRow.push(total.toFixed(1));
+  // Daily totals row
+  const totalsRow = ['Daily Total'];
+  dates.forEach(date => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const dailyTotal = dateTotals[dateKey] || 0;
+    totalsRow.push(dailyTotal > 0 ? dailyTotal.toFixed(1) : '');
   });
   totalsRow.push(grandTotal.toFixed(1));
+  totalsRow.push(''); // Empty Initial column
   lines.push(totalsRow.map(v => `"${v}"`).join(','));
   
   // Empty line and legend
@@ -223,13 +230,13 @@ export const generateMatrixCSV = (data: MatrixData): string => {
   return lines.join('\n');
 };
 
-// Generate PDF in matrix format
+// Generate PDF in matrix format (transposed: employees as rows, dates as columns)
 export const generateMatrixPDF = (data: MatrixData): jsPDF => {
   const { title, period, employees, dates, matrix, employeeTotals, dateTotals, grandTotal } = data;
   
-  // Use landscape for more columns
+  // Use landscape for more date columns
   const doc = new jsPDF({
-    orientation: employees.length > 5 ? 'landscape' : 'portrait',
+    orientation: dates.length > 7 ? 'landscape' : 'portrait',
     unit: 'mm',
     format: 'a4'
   });
@@ -244,24 +251,27 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
   doc.setFont('helvetica', 'normal');
   doc.text(`Period: ${period}`, 14, 22);
   
-  // Prepare table data
-  const tableHeaders = ['Date', ...employees.map(e => 
-    e.employee_id && e.employee_id.trim() 
-      ? `${e.full_name}\n#${e.employee_id.trim()}` 
-      : e.full_name
-  ), 'Total'];
+  // Prepare table data (transposed)
+  const tableHeaders = [
+    'Name',
+    ...dates.map(date => format(date, 'EEE\nd/MM')),
+    'Total',
+    'Initial'
+  ];
   
   const tableBody: any[][] = [];
   
-  dates.forEach(date => {
-    const dateKey = format(date, 'yyyy-MM-dd');
-    const dateDisplay = format(date, 'EEE dd/MM');
-    const dayData = matrix[dateKey];
+  // Data rows (one per employee)
+  employees.forEach(emp => {
+    const displayName = emp.employee_id && emp.employee_id.trim() 
+      ? `${emp.full_name}\n#${emp.employee_id.trim()}` 
+      : emp.full_name;
     
-    const row: any[] = [dateDisplay];
+    const row: any[] = [displayName];
     
-    employees.forEach(emp => {
-      const cellData = dayData[emp.id] || {};
+    dates.forEach(date => {
+      const dateKey = format(date, 'yyyy-MM-dd');
+      const cellData = matrix[dateKey]?.[emp.id] || {};
       let cellValue = '';
       
       if (cellData.hours && cellData.hours > 0) {
@@ -275,19 +285,25 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
       row.push(cellValue);
     });
     
-    const dailyTotal = dateTotals[dateKey] || 0;
-    row.push(dailyTotal > 0 ? dailyTotal.toFixed(1) : '');
+    // Employee total
+    const empTotal = employeeTotals[emp.id] || 0;
+    row.push(empTotal > 0 ? empTotal.toFixed(1) : '');
+    
+    // Empty Initial column for signatures
+    row.push('');
     
     tableBody.push(row);
   });
   
-  // Totals row
-  const totalsRow: any[] = [{ content: 'Total Hours', styles: { fontStyle: 'bold' } }];
-  employees.forEach(emp => {
-    const total = employeeTotals[emp.id] || 0;
-    totalsRow.push({ content: total.toFixed(1), styles: { fontStyle: 'bold' } });
+  // Daily totals row
+  const totalsRow: any[] = [{ content: 'Daily Total', styles: { fontStyle: 'bold' } }];
+  dates.forEach(date => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const dailyTotal = dateTotals[dateKey] || 0;
+    totalsRow.push({ content: dailyTotal > 0 ? dailyTotal.toFixed(1) : '', styles: { fontStyle: 'bold' } });
   });
   totalsRow.push({ content: grandTotal.toFixed(1), styles: { fontStyle: 'bold' } });
+  totalsRow.push({ content: '', styles: { fontStyle: 'bold' } }); // Empty Initial column
   tableBody.push(totalsRow);
   
   // Generate table
@@ -297,17 +313,20 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
     startY: 28,
     theme: 'grid',
     styles: {
-      fontSize: 8,
-      cellPadding: 2,
+      fontSize: 7,
+      cellPadding: 1.5,
       halign: 'center',
     },
     headStyles: {
       fillColor: [66, 66, 66],
       textColor: 255,
       fontStyle: 'bold',
+      fontSize: 6,
     },
     columnStyles: {
-      0: { halign: 'left', cellWidth: 25 }, // Date column
+      0: { halign: 'left', cellWidth: 35 }, // Name column
+      [dates.length + 1]: { fontStyle: 'bold' }, // Total column
+      [dates.length + 2]: { cellWidth: 15 }, // Initial column
     },
     didParseCell: (data) => {
       // Style PH differently
