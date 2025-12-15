@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import ReportFilters from "@/components/reports/ReportFilters";
 import ReportDataTable from "@/components/reports/ReportDataTable";
 import AuditLogsTable from "@/components/reports/AuditLogsTable";
-import LeaveReportsSection from "@/components/reports/LeaveReportsSection";
 import ScheduleReportsSection from "@/components/reports/ScheduleReportsSection";
 import RoomActivityReports from "@/components/reports/RoomActivityReports";
 import TimesheetLockManager from "@/components/reports/TimesheetLockManager";
@@ -32,7 +31,7 @@ export type ReportFiltersType = {
   includeEmployeeIds: boolean;
   includeOrganization: boolean;
   includeTimeZone: boolean;
-  reportType: 'timesheet' | 'payroll' | 'audit' | 'leave' | 'schedules' | 'rooms' | 'locks';
+  reportType: 'timesheet' | 'payroll' | 'audit' | 'schedules' | 'rooms' | 'locks';
   actionType?: string;
 };
 
@@ -57,7 +56,6 @@ const ReportsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState<TimesheetEntry[]>([]);
   const [auditData, setAuditData] = useState<AuditLogEntry[]>([]);
-  const [leaveData, setLeaveData] = useState<any>(null);
   const [scheduleData, setScheduleData] = useState<any>(null);
   const [roomData, setRoomData] = useState<any>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -81,8 +79,6 @@ const ReportsPage = () => {
       return !reportData || reportData.length === 0;
     } else if (filters.reportType === 'audit') {
       return !auditData || auditData.length === 0;
-    } else if (filters.reportType === 'leave') {
-      return !leaveData || !leaveData.applications || leaveData.applications.length === 0;
     } else if (filters.reportType === 'schedules') {
       return !scheduleData || !scheduleData.weeklySchedules || scheduleData.weeklySchedules.length === 0;
     } else if (filters.reportType === 'rooms') {
@@ -161,30 +157,6 @@ const ReportsPage = () => {
 
         csvContent = headers.join(',') + '\n' + rows.join('\n');
         filename = `audit-logs-${formatDate(filters.startDate)}-${formatDate(filters.endDate)}.csv`;
-      } else if (filters.reportType === 'leave') {
-        if (!leaveData || !leaveData.applications || leaveData.applications.length === 0) {
-          toast({
-            title: "No data to export",
-            description: "No leave applications found",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        const headers = ["Employee", "Leave Type", "Start Date", "End Date", "Business Days", "Status", "Submitted", "Reason"];
-        const rows = leaveData.applications.map((app: any) => [
-          app.profiles?.full_name || 'Unknown',
-          app.leave_types?.name || 'Unknown',
-          formatDate(new Date(app.start_date)),
-          formatDate(new Date(app.end_date)),
-          app.business_days_count,
-          app.status,
-          formatDate(new Date(app.submitted_at)),
-          app.reason || ''
-        ].map(v => `"${v}"`).join(','));
-        
-        csvContent = headers.join(',') + '\n' + rows.join('\n');
-        filename = `leave-report-${formatDate(filters.startDate)}-${formatDate(filters.endDate)}.csv`;
       } else if (filters.reportType === 'schedules') {
         if (!scheduleData || !scheduleData.weeklySchedules || scheduleData.weeklySchedules.length === 0) {
           toast({
@@ -332,9 +304,6 @@ const ReportsPage = () => {
           <TabsTrigger value="audit">
             Audit Logs
           </TabsTrigger>
-          <TabsTrigger value="leave">
-            Leave Reports
-          </TabsTrigger>
           <TabsTrigger value="schedules">
             Schedule Reports
           </TabsTrigger>
@@ -352,7 +321,6 @@ const ReportsPage = () => {
             setFilters={setFilters}
             setReportData={setReportData}
             setAuditData={setAuditData}
-            setLeaveData={setLeaveData}
             setScheduleData={setScheduleData}
             setRoomData={setRoomData}
             setIsLoading={setIsLoading}
@@ -373,10 +341,6 @@ const ReportsPage = () => {
 
         <TabsContent value="audit">
           <AuditLogsTable auditData={auditData} isLoading={isLoading} />
-        </TabsContent>
-
-        <TabsContent value="leave">
-          <LeaveReportsSection leaveData={leaveData} isLoading={isLoading} />
         </TabsContent>
 
         <TabsContent value="schedules">

@@ -1,27 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { format, eachDayOfInterval, isWeekend } from "date-fns";
-import { TimesheetEntry } from "@/lib/timesheet-service";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
-// Leave type abbreviations matching physical timesheet form
-export const leaveTypeAbbreviations: Record<string, string> = {
-  'Annual Leave': 'AL',
-  'Sick Leave': 'SL',
-  "Carer's Leave": 'CL',
-  'Long Service Leave': 'LSL',
-  'Leave Without Pay': 'LWOP',
-  'ADO (Accrued Day Off)': 'ADO',
-  'Parental Leave': 'PL',
-  'Compassionate Leave': 'CPL',
-  'Personal Leave': 'PER',
-  'Study Leave': 'STU',
-  'Time Off In Lieu': 'TOIL',
-};
-
-export const abbreviationLegend = Object.entries(leaveTypeAbbreviations)
-  .map(([name, abbr]) => `${abbr} = ${name}`)
-  .join(', ') + ', PH = Public Holiday';
 
 export interface MatrixExportFilters {
   startDate: Date;
@@ -39,7 +19,6 @@ interface EmployeeData {
 
 interface DayData {
   hours?: number;
-  leaveCode?: string;
   isHoliday?: boolean;
   isWeekend?: boolean;
 }
@@ -96,23 +75,7 @@ export const fetchMatrixData = async (
   
   if (tsError) throw tsError;
 
-  // 3. Fetch approved leave applications
-  const { data: leaveData, error: leaveError } = await supabase
-    .from('leave_applications')
-    .select(`
-      user_id, 
-      start_date, 
-      end_date, 
-      leave_types(name)
-    `)
-    .eq('status', 'approved')
-    .lte('start_date', endDateStr)
-    .gte('end_date', startDateStr)
-    .in('user_id', employees.map(e => e.id));
-
-  if (leaveError) throw leaveError;
-
-  // 4. Fetch public holidays
+  // 3. Fetch public holidays
   const { data: holidays, error: holError } = await supabase
     .from('public_holidays')
     .select('date, name')
@@ -156,28 +119,6 @@ export const fetchMatrixData = async (
     }
   });
 
-  // Fill leave data
-  (leaveData || []).forEach((leave: any) => {
-    const leaveStart = new Date(leave.start_date);
-    const leaveEnd = new Date(leave.end_date);
-    const leaveDates = eachDayOfInterval({ start: leaveStart, end: leaveEnd });
-    const leaveTypeName = leave.leave_types?.name || 'Leave';
-    const leaveCode = leaveTypeAbbreviations[leaveTypeName] || 'LV';
-
-    leaveDates.forEach(date => {
-      const dateKey = format(date, 'yyyy-MM-dd');
-      if (matrix[dateKey] && !isWeekend(date)) {
-        if (!matrix[dateKey][leave.user_id]) {
-          matrix[dateKey][leave.user_id] = {};
-        }
-        // Only mark leave if no hours logged
-        if (!matrix[dateKey][leave.user_id].hours) {
-          matrix[dateKey][leave.user_id].leaveCode = leaveCode;
-        }
-      }
-    });
-  });
-
   // Mark holidays and weekends
   dates.forEach(date => {
     const dateKey = format(date, 'yyyy-MM-dd');
@@ -188,7 +129,7 @@ export const fetchMatrixData = async (
       if (!matrix[dateKey][emp.id]) {
         matrix[dateKey][emp.id] = {};
       }
-      if (isHoliday && !matrix[dateKey][emp.id].hours && !matrix[dateKey][emp.id].leaveCode) {
+      if (isHoliday && !matrix[dateKey][emp.id].hours) {
         matrix[dateKey][emp.id].isHoliday = true;
       }
       if (weekend) {
@@ -250,8 +191,6 @@ export const generateMatrixCSV = (data: MatrixData): string => {
       
       if (cellData.hours && cellData.hours > 0) {
         cellValue = cellData.hours.toFixed(1);
-      } else if (cellData.leaveCode) {
-        cellValue = cellData.leaveCode;
       } else if (cellData.isHoliday) {
         cellValue = 'PH';
       } else if (cellData.isWeekend) {
@@ -279,7 +218,7 @@ export const generateMatrixCSV = (data: MatrixData): string => {
   
   // Empty line and legend
   lines.push('');
-  lines.push(`"Legend: ${abbreviationLegend}"`);
+  lines.push(`"Legend: PH = Public Holiday"`);
   
   return lines.join('\n');
 };
@@ -327,8 +266,6 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
       
       if (cellData.hours && cellData.hours > 0) {
         cellValue = cellData.hours.toFixed(1);
-      } else if (cellData.leaveCode) {
-        cellValue = cellData.leaveCode;
       } else if (cellData.isHoliday) {
         cellValue = 'PH';
       } else if (cellData.isWeekend) {
@@ -373,9 +310,9 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
       0: { halign: 'left', cellWidth: 25 }, // Date column
     },
     didParseCell: (data) => {
-      // Style leave codes differently
+      // Style PH differently
       const cellText = String(data.cell.raw || '');
-      if (Object.values(leaveTypeAbbreviations).includes(cellText) || cellText === 'PH') {
+      if (cellText === 'PH') {
         data.cell.styles.fontStyle = 'italic';
         data.cell.styles.textColor = [100, 100, 100];
       }
@@ -389,12 +326,7 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
   const finalY = (doc as any).lastAutoTable?.finalY || 150;
   doc.setFontSize(8);
   doc.setFont('helvetica', 'italic');
-  
-  // Split legend into multiple lines if needed
-  const legendText = `Legend: ${abbreviationLegend}`;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const splitLegend = doc.splitTextToSize(legendText, pageWidth - 28);
-  doc.text(splitLegend, 14, finalY + 8);
+  doc.text('Legend: PH = Public Holiday', 14, finalY + 8);
   
   return doc;
 };

@@ -14,7 +14,6 @@ interface ReportFiltersProps {
   setFilters: React.Dispatch<React.SetStateAction<ReportFiltersType>>;
   setReportData: React.Dispatch<React.SetStateAction<any[]>>;
   setAuditData: React.Dispatch<React.SetStateAction<any[]>>;
-  setLeaveData?: React.Dispatch<React.SetStateAction<any>>;
   setScheduleData?: React.Dispatch<React.SetStateAction<any>>;
   setRoomData?: React.Dispatch<React.SetStateAction<any>>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
@@ -25,7 +24,6 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
   setFilters,
   setReportData,
   setAuditData,
-  setLeaveData,
   setScheduleData,
   setRoomData,
   setIsLoading,
@@ -37,7 +35,6 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
     filters,
     setReportData,
     setAuditData,
-    setLeaveData,
     setScheduleData,
     setRoomData,
     setIsLoading,
