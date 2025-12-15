@@ -31,13 +31,7 @@ interface EntryFormProps {
   onCancel: () => void;
 }
 
-const BREAK_OPTIONS = [
-  { value: "0", label: "No break" },
-  { value: "15", label: "15 minutes" },
-  { value: "30", label: "30 minutes" },
-  { value: "45", label: "45 minutes" },
-  { value: "60", label: "1 hour" },
-];
+const MANDATORY_BREAK_MINUTES = 30;
 
 const EntryForm: React.FC<EntryFormProps> = ({
   userId,
@@ -54,7 +48,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
       hours_logged: existingEntry?.hours_logged || 7.5,
       start_time: existingEntry?.start_time || "09:00",
       end_time: existingEntry?.end_time || "17:00",
-      break_minutes: existingEntry?.break_minutes ?? 30,
+      break_minutes: MANDATORY_BREAK_MINUTES,
     },
   });
 
@@ -64,25 +58,24 @@ const EntryForm: React.FC<EntryFormProps> = ({
         hours_logged: existingEntry.hours_logged,
         start_time: existingEntry.start_time || "09:00",
         end_time: existingEntry.end_time || "17:00",
-        break_minutes: existingEntry.break_minutes ?? 30,
+        break_minutes: MANDATORY_BREAK_MINUTES,
       });
     } else {
       form.reset({
         hours_logged: 7.5,
         start_time: "09:00",
         end_time: "17:00",
-        break_minutes: 30,
+        break_minutes: MANDATORY_BREAK_MINUTES,
       });
     }
   }, [existingEntry, form]);
 
-  // Auto-calculate hours when time range or break changes
+  // Auto-calculate hours when time range changes (always deduct 30 min lunch)
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      if (name === 'start_time' || name === 'end_time' || name === 'break_minutes') {
+      if (name === 'start_time' || name === 'end_time') {
         const startTime = value.start_time;
         const endTime = value.end_time;
-        const breakMinutes = value.break_minutes ?? 30;
         
         if (startTime && endTime) {
           try {
@@ -101,7 +94,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
             }
             
             const rawHours = getHoursDifference(start, end);
-            const breakHours = breakMinutes / 60;
+            const breakHours = MANDATORY_BREAK_MINUTES / 60;
             const netHours = Math.max(0, Math.round((rawHours - breakHours) * 4) / 4);
             form.setValue('hours_logged', netHours);
           } catch (error) {
@@ -188,33 +181,9 @@ const EntryForm: React.FC<EntryFormProps> = ({
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="break_minutes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Break (Lunch)</FormLabel>
-                <Select
-                  onValueChange={(value) => field.onChange(parseInt(value))}
-                  value={field.value.toString()}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select break duration" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {BREAK_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+            <span className="font-medium">30 min lunch break</span> deducted automatically
+          </div>
 
           <FormField
             control={form.control}
