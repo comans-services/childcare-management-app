@@ -13,8 +13,8 @@ export const processUsers = (data: any[]): any[] => {
         password: row.password?.toString().trim(),
         organization: row.organization?.toString().trim() || '',
         time_zone: row.time_zone?.toString().trim() || 'UTC',
-        employee_id: row.employee_id?.toString().trim() || '',
-        employee_card_id: row.employee_card_id?.toString().trim() || '',
+        employee_id: row.employee_id?.toString().trim() || null,
+        employee_card_id: row.employee_card_id?.toString().trim() || null,
         role: row.role?.toString().trim() || 'employee',
         employment_type: row.employment_type?.toString().trim() || 'full-time'
       };
@@ -111,8 +111,8 @@ export const processRow = async (
             organization: processedData.organization,
             time_zone: processedData.time_zone,
             employment_type: processedData.employment_type,
-            employee_id: processedData.employee_id,
-            employee_card_id: processedData.employee_card_id,
+            employee_id: processedData.employee_id || null,
+            employee_card_id: processedData.employee_card_id || null,
             updated_at: new Date().toISOString(),
           };
           
