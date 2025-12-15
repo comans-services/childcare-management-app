@@ -236,8 +236,8 @@ export const updateUser = async (user: User): Promise<User> => {
         time_zone: user.time_zone,
         email: user.email,
         employment_type: user.employment_type,
-        employee_card_id: user.employee_card_id,
-        employee_id: user.employee_id,
+        employee_card_id: user.employee_card_id?.trim() || null,
+        employee_id: user.employee_id?.trim() || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id)
@@ -289,8 +289,8 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         organization: userData.organization,
         time_zone: userData.time_zone,
         employment_type: userData.employment_type || "full-time",
-        employee_card_id: userData.employee_card_id,
-        employee_id: userData.employee_id,
+        employee_card_id: userData.employee_card_id?.trim() || null,
+        employee_id: userData.employee_id?.trim() || null,
         updated_at: new Date().toISOString(),
       };
       
