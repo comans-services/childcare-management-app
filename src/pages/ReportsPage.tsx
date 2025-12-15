@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { isAdmin } from "@/utils/roles";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReportFilters from "@/components/reports/ReportFilters";
-import ReportCharts from "@/components/reports/ReportCharts";
 import ReportDataTable from "@/components/reports/ReportDataTable";
 import AuditLogsTable from "@/components/reports/AuditLogsTable";
 import LeaveReportsSection from "@/components/reports/LeaveReportsSection";
@@ -15,12 +13,14 @@ import { PayrollReportsSection } from "@/components/reports/PayrollReportsSectio
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Download, FileText, FileSpreadsheet, ChevronDown } from "lucide-react";
 import { TimesheetEntry } from "@/lib/timesheet-service";
 import { User } from "@/lib/user-service";
 import { AuditLogEntry } from "@/lib/audit/audit-service";
 import { toast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/date-utils";
+import { fetchMatrixData, downloadMatrixCSV, downloadMatrixPDF } from "@/lib/reports/timesheet-matrix-export-service";
 
 export type ReportFiltersType = {
   startDate: Date;
@@ -91,7 +91,52 @@ const ReportsPage = () => {
     return true; // For 'locks' tab which doesn't have export
   };
 
-  const handleExportCSV = async () => {
+  const handleExportTimesheet = async (format: 'csv' | 'pdf') => {
+    try {
+      toast({
+        title: "Generating report...",
+        description: "Please wait while we prepare your export",
+      });
+
+      const matrixData = await fetchMatrixData({
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        employmentType: filters.employmentType,
+        userIds: filters.userIds?.filter(id => id),
+      });
+
+      if (matrixData.employees.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "No employees found for the selected filters",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const filename = `timesheet-${formatDate(filters.startDate)}-${formatDate(filters.endDate)}.${format}`;
+      
+      if (format === 'csv') {
+        downloadMatrixCSV(matrixData, filename);
+      } else {
+        downloadMatrixPDF(matrixData, filename);
+      }
+
+      toast({
+        title: "Export successful",
+        description: `Report exported as ${filename}`,
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export failed",
+        description: error instanceof Error ? error.message : "Failed to export report",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleExportOther = async () => {
     if (isExportDisabled()) {
       toast({
         title: "No data to export",
@@ -105,29 +150,7 @@ const ReportsPage = () => {
       let csvContent = "";
       let filename = "";
 
-      if (filters.reportType === 'timesheet') {
-        const headers = ["Date", "Employee", "Start Time", "End Time", "Hours"];
-        if (filters.includeEmployeeIds) {
-          headers.push("Employee ID", "Card ID");
-        }
-        
-        const rows = reportData.map(entry => {
-          const row: any[] = [
-            formatDate(new Date(entry.entry_date)),
-            entry.user_full_name || '',
-            entry.start_time,
-            entry.end_time,
-            entry.hours_logged
-          ];
-          if (filters.includeEmployeeIds) {
-            row.push((entry as any).employee_id || '', (entry as any).employee_card_id || '');
-          }
-          return row.map(v => `"${v}"`).join(',');
-        });
-
-        csvContent = headers.join(',') + '\n' + rows.join('\n');
-        filename = `timesheet-report-${formatDate(filters.startDate)}-${formatDate(filters.endDate)}.csv`;
-      } else if (filters.reportType === 'audit') {
+      if (filters.reportType === 'audit') {
         const headers = ["Timestamp", "User", "Action", "Details"];
         const rows = auditData.map(log => [
           new Date(log.created_at).toISOString(),
@@ -268,10 +291,32 @@ const ReportsPage = () => {
             Generate and export comprehensive reports
           </p>
         </div>
-        <Button onClick={handleExportCSV} disabled={isExportDisabled()}>
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        {filters.reportType === 'timesheet' ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Download className="mr-2 h-4 w-4" />
+                Export
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExportTimesheet('csv')}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportTimesheet('pdf')}>
+                <FileText className="mr-2 h-4 w-4" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button onClick={handleExportOther} disabled={isExportDisabled()}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        )}
       </div>
 
       <Separator />
