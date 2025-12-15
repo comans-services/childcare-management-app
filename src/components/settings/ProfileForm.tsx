@@ -14,6 +14,8 @@ export interface ProfileFormData {
   organization: string;
   time_zone: string;
   preferred_name: string;
+  default_start_time: string;
+  default_end_time: string;
 }
 
 interface ProfileFormProps {
@@ -29,6 +31,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
     organization: profile?.organization || "",
     time_zone: profile?.time_zone || "",
     preferred_name: localStorage.getItem(`preferred-name-${user?.id}`) || "",
+    default_start_time: profile?.default_start_time?.slice(0, 5) || "09:00",
+    default_end_time: profile?.default_end_time?.slice(0, 5) || "17:00",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,6 +72,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
         full_name: formState.full_name,
         organization: formState.organization,
         time_zone: formState.time_zone,
+        default_start_time: formState.default_start_time,
+        default_end_time: formState.default_end_time,
       });
 
       onProfileUpdate(updatedUser);
@@ -180,6 +186,37 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
                 <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t">
+            <div>
+              <h3 className="text-lg font-medium">Default Work Times</h3>
+              <p className="text-sm text-muted-foreground">
+                These times will be pre-filled when you add a new shift.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="default_start_time">Default Start Time</Label>
+                <Input
+                  id="default_start_time"
+                  name="default_start_time"
+                  type="time"
+                  value={formState.default_start_time}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="default_end_time">Default End Time</Label>
+                <Input
+                  id="default_end_time"
+                  name="default_end_time"
+                  type="time"
+                  value={formState.default_end_time}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
           </div>
           
           <Button type="submit" disabled={isSaving}>
