@@ -3,20 +3,16 @@ import React, { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
-import { Home, Calendar, Settings, BarChart, UserPlus, Clock, CalendarCheck, Plane, Mail } from "lucide-react";
+import { Calendar, Settings, BarChart, UserPlus, Clock, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useEmploymentType } from "@/hooks/useEmploymentType";
 
 const SIDEBAR_STORAGE_KEY = "sidebar-collapsed";
 
@@ -25,7 +21,6 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
   onToggleCollapse?: () => void; 
 }) => {
   const { user, userRole, signOut } = useAuth();
-  const { isFullTime } = useEmploymentType();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -35,24 +30,18 @@ const SidebarContent = ({ isCollapsed = false, onToggleCollapse }: {
 
   // Define which navigation items are available for each role
   const isAdmin = userRole === "admin";
-  const isManager = userRole === "manager";
-  const isManagerOrAbove = isAdmin || isManager;
 
   const navigationItems = [
     { to: "/timesheet", icon: Calendar, label: "Timesheet Entry", showForAll: true },
-    { to: "/timesheet/leave-application", icon: Plane, label: "Leave Application", fullTimeOnly: true },
     { to: "/timesheet/reports", icon: BarChart, label: "Reports", adminOnly: true },
     { to: "/timesheet/team", icon: UserPlus, label: "Team", adminOnly: true },
     { to: "/timesheet/work-schedule", icon: Clock, label: "Work Schedule", adminOnly: true },
     { to: "/timesheet/holidays", icon: CalendarCheck, label: "Holiday Management", adminOnly: true },
     { to: "/timesheet/payroll-settings", icon: Calendar, label: "Payroll Settings", adminOnly: true },
-    { to: "/timesheet/leave-management", icon: CalendarCheck, label: "Leave Management", adminOnly: true },
   ];
 
   const filteredItems = navigationItems.filter(item => 
-    item.showForAll || 
-    (item.adminOnly && isAdmin) ||
-    (item.fullTimeOnly && isFullTime)
+    item.showForAll || (item.adminOnly && isAdmin)
   );
 
   return (
