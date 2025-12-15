@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { Resend } from "npm:resend@2.0.0";
@@ -10,14 +9,14 @@ const corsHeaders = {
 
 interface ReminderRequest {
   templateType: 'friday' | 'monday' | 'monthly' | 'monthly-morning' | 'monthly-evening';
-  recipientEmails?: string[]; // Optional: specific emails to send to
-  weekStartDate?: string; // Optional: specific week (defaults to current week)
+  recipientEmails?: string[];
+  weekStartDate?: string;
 }
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const APP_BASE_URL = Deno.env.get("APP_BASE_URL") || "https://example.com";
 
 const serve_handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -31,6 +30,7 @@ const serve_handler = async (req: Request): Promise<Response> => {
     const { templateType, recipientEmails, weekStartDate }: ReminderRequest = await req.json();
 
     console.log(`Processing ${templateType} timesheet reminder request`);
+    console.log("Using APP_BASE_URL:", APP_BASE_URL);
 
     // Check if this is a monthly reminder and if it's actually the last day of the month
     if (templateType.startsWith('monthly')) {
@@ -38,7 +38,6 @@ const serve_handler = async (req: Request): Promise<Response> => {
       const tomorrow = new Date(today);
       tomorrow.setDate(today.getDate() + 1);
       
-      // Check if tomorrow is the first day of next month (meaning today is last day of current month)
       const isLastDayOfMonth = tomorrow.getDate() === 1;
       
       if (!isLastDayOfMonth) {
@@ -60,7 +59,6 @@ const serve_handler = async (req: Request): Promise<Response> => {
     let usersToRemind;
 
     if (recipientEmails && recipientEmails.length > 0) {
-      // Send to specific recipients (generic emails)
       console.log(`Sending generic ${templateType} reminders to specified recipients`);
       usersToRemind = recipientEmails.map(email => ({
         email,
@@ -71,9 +69,7 @@ const serve_handler = async (req: Request): Promise<Response> => {
         logged_days: 0
       }));
     } else {
-      // Determine recipient selection based on reminder type
       if (templateType === 'monday') {
-        // Monday reminders: Only send to users with missing timesheet entries
         console.log('Querying database for users with missing timesheet entries (Monday reminder)');
         
         const { data: missingUsers, error: dbError } = await supabase
@@ -89,7 +85,6 @@ const serve_handler = async (req: Request): Promise<Response> => {
         usersToRemind = missingUsers || [];
         console.log(`Found ${usersToRemind.length} users with missing timesheet entries`);
       } else {
-        // Friday, Monthly Morning, and Monthly Evening: Send to ALL users
         console.log(`Querying database for all users (${templateType} reminder)`);
         
         const { data: allUsers, error: dbError } = await supabase
@@ -102,7 +97,6 @@ const serve_handler = async (req: Request): Promise<Response> => {
           throw new Error(`Database query failed: ${dbError.message}`);
         }
 
-        // Transform the data to match the expected format
         usersToRemind = (allUsers || []).map(user => ({
           user_id: user.id,
           email: user.email,
@@ -136,10 +130,8 @@ const serve_handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Generate email content based on template type
-    const emailContent = getEmailTemplate(templateType);
+    const emailContent = getEmailTemplate(templateType, APP_BASE_URL);
     
-    // Send emails
     const emailPromises = usersToRemind.map(async (user: any) => {
       try {
         const emailResponse = await resend.emails.send({
@@ -192,7 +184,9 @@ const serve_handler = async (req: Request): Promise<Response> => {
   }
 };
 
-function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly' | 'monthly-morning' | 'monthly-evening') {
+function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly' | 'monthly-morning' | 'monthly-evening', appBaseUrl: string) {
+  const timesheetUrl = `${appBaseUrl}/timesheet`;
+  
   const templates = {
     friday: {
       subject: "Weekend Reminder: Complete Your Timesheet",
@@ -226,7 +220,7 @@ function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly' | 'month
               </p>
               
               <div style="text-align: center; margin: 25px 0;">
-                <a href="#" style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                <a href="${timesheetUrl}" style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
                   Complete My Timesheet
                 </a>
               </div>
@@ -276,7 +270,7 @@ function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly' | 'month
               </p>
               
               <div style="text-align: center; margin: 25px 0;">
-                <a href="#" style="background-color: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                <a href="${timesheetUrl}" style="background-color: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
                   Review My Timesheet
                 </a>
               </div>
@@ -333,7 +327,7 @@ function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly' | 'month
               </ul>
               
               <div style="text-align: center; margin: 25px 0;">
-                <a href="#" style="background-color: #7c3aed; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                <a href="${timesheetUrl}" style="background-color: #7c3aed; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
                   Review Monthly Timesheet
                 </a>
               </div>
@@ -390,7 +384,7 @@ function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly' | 'month
               </ul>
               
               <div style="text-align: center; margin: 25px 0;">
-                <a href="#" style="background-color: #7c3aed; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                <a href="${timesheetUrl}" style="background-color: #7c3aed; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
                   Review Monthly Timesheet
                 </a>
               </div>
@@ -447,7 +441,7 @@ function getEmailTemplate(templateType: 'friday' | 'monday' | 'monthly' | 'month
               </ul>
               
               <div style="text-align: center; margin: 25px 0;">
-                <a href="#" style="background-color: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                <a href="${timesheetUrl}" style="background-color: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
                   COMPLETE TIMESHEET NOW
                 </a>
               </div>
