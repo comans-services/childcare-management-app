@@ -2117,7 +2117,6 @@ export type Database = {
       staff_enter_room:
         | {
             Args: {
-              p_device_id?: string
               p_entered_by?: string
               p_entry_method?: string
               p_room_id: string
@@ -2127,6 +2126,7 @@ export type Database = {
           }
         | {
             Args: {
+              p_device_id?: string
               p_entered_by?: string
               p_entry_method?: string
               p_room_id: string
@@ -2137,7 +2137,6 @@ export type Database = {
       staff_exit_room:
         | {
             Args: {
-              p_device_id?: string
               p_exit_method?: string
               p_exited_by?: string
               p_room_id?: string
@@ -2147,6 +2146,7 @@ export type Database = {
           }
         | {
             Args: {
+              p_device_id?: string
               p_exit_method?: string
               p_exited_by?: string
               p_room_id?: string
@@ -2159,7 +2159,6 @@ export type Database = {
             Args: {
               p_children_over_3: number
               p_children_under_3: number
-              p_device_id?: string
               p_room_id: string
               p_updated_by?: string
             }
@@ -2169,6 +2168,7 @@ export type Database = {
             Args: {
               p_children_over_3: number
               p_children_under_3: number
+              p_device_id?: string
               p_room_id: string
               p_updated_by?: string
             }
