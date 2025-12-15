@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const APP_BASE_URL = Deno.env.get("APP_BASE_URL") || "https://example.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,6 +39,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const requestData: LeaveNotificationRequest = await req.json();
     console.log("Processing leave notification:", requestData);
+    console.log("Using APP_BASE_URL:", APP_BASE_URL);
 
     let emailData: { to: string[]; subject: string; html: string } | null = null;
 
@@ -76,7 +78,13 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="margin: 5px 0;"><strong>Business Days:</strong> ${requestData.businessDays}</p>
               </div>
               
-              <p>Please review and process this application in the Leave Management system.</p>
+              <div style="text-align: center; margin: 25px 0;">
+                <a href="${APP_BASE_URL}/timesheet/leave-management" style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                  Review Application
+                </a>
+              </div>
+              
+              <p style="font-size: 14px; color: #6b7280;">Please review and process this application in the Leave Management system.</p>
             </div>
           `,
         };
@@ -122,7 +130,13 @@ const handler = async (req: Request): Promise<Response> => {
                 </div>
               ` : ''}
               
-              <p>You can view your leave balance and history in the Leave Management system.</p>
+              <div style="text-align: center; margin: 25px 0;">
+                <a href="${APP_BASE_URL}/timesheet/leave-application" style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                  View Leave Balance
+                </a>
+              </div>
+              
+              <p style="font-size: 14px; color: #6b7280;">You can view your leave balance and history in the Leave Management system.</p>
             </div>
           `,
         };
@@ -158,7 +172,13 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="margin: 5px 0;"><strong>New Balance:</strong> ${requestData.newBalance} days</p>
               </div>
               
-              <p>You can view your updated balance in the Leave Management system.</p>
+              <div style="text-align: center; margin: 25px 0;">
+                <a href="${APP_BASE_URL}/timesheet/leave-application" style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                  View Leave Balance
+                </a>
+              </div>
+              
+              <p style="font-size: 14px; color: #6b7280;">You can view your updated balance in the Leave Management system.</p>
             </div>
           `,
         };
@@ -193,7 +213,13 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="margin: 5px 0;"><strong>New Year:</strong> ${requestData.year}</p>
               </div>
               
-              <p>You can view your updated balance in the Leave Management system.</p>
+              <div style="text-align: center; margin: 25px 0;">
+                <a href="${APP_BASE_URL}/timesheet/leave-application" style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                  View Leave Balance
+                </a>
+              </div>
+              
+              <p style="font-size: 14px; color: #6b7280;">You can view your updated balance in the Leave Management system.</p>
             </div>
           `,
         };
