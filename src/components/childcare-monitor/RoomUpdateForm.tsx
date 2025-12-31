@@ -197,6 +197,7 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
             min="0"
             value={over3Count}
             onChange={(e) => setOver3Count(parseInt(e.target.value) || 0)}
+            onFocus={(e) => e.target.select()}
             className="w-full p-3 bg-care-green text-white rounded-md border border-care-accentGreen focus:border-care-brightGreen focus:outline-none focus:ring-1 focus:ring-care-brightGreen"
           />
         </div>
@@ -209,6 +210,7 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
             min="0"
             value={under3Count}
             onChange={(e) => setUnder3Count(parseInt(e.target.value) || 0)}
+            onFocus={(e) => e.target.select()}
             className="w-full p-3 bg-care-green text-white rounded-md border border-care-accentGreen focus:border-care-brightGreen focus:outline-none focus:ring-1 focus:ring-care-brightGreen"
           />
         </div>
