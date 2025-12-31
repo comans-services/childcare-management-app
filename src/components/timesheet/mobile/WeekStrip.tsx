@@ -60,7 +60,13 @@ export function WeekStrip({
   return (
     <div className="bg-white border-b">
       <div className="flex overflow-x-auto gap-2 p-3 scrollbar-hide">
-        {weekDates.map((date) => {
+        {weekDates
+          .filter((date) => {
+            // Only show Monday-Friday (weekdays), hide Saturday-Sunday
+            const dayIndex = getDay(date); // 0=Sunday, 1=Monday, ..., 6=Saturday
+            return dayIndex >= 1 && dayIndex <= 5; // Monday(1) to Friday(5)
+          })
+          .map((date) => {
           const isSelected = isSameDay(date, selectedDate);
           const isCurrentDay = isToday(date);
           const dayKey = format(date, 'yyyy-MM-dd');
