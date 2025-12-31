@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { deviceService } from "@/lib/childcare-monitor/device-service";
 
 const DEVICE_TOKEN_KEY = "childcare_device_token";
+const DEVICE_SESSION_KEY = "childcare_device_session";
 
 export interface DeviceAuthInfo {
   isDevice: boolean;
@@ -38,7 +39,14 @@ export const useDeviceAuth = () => {
           return;
         }
 
-        const result = await deviceService.validateDeviceToken(token);
+        // Get or create session ID for this device
+        let sessionId = localStorage.getItem(DEVICE_SESSION_KEY);
+        if (!sessionId) {
+          sessionId = crypto.randomUUID();
+          localStorage.setItem(DEVICE_SESSION_KEY, sessionId);
+        }
+
+        const result = await deviceService.validateDeviceToken(token, sessionId);
 
         if (result.valid) {
           setAuthInfo({
@@ -53,8 +61,9 @@ export const useDeviceAuth = () => {
             error: null,
           });
         } else {
-          // Invalid token - clear it
+          // Invalid token or session mismatch - clear it
           localStorage.removeItem(DEVICE_TOKEN_KEY);
+          localStorage.removeItem(DEVICE_SESSION_KEY);
           setAuthInfo({
             isDevice: false,
             isValidating: false,
@@ -65,6 +74,7 @@ export const useDeviceAuth = () => {
       } catch (error) {
         console.error("Device validation error:", error);
         localStorage.removeItem(DEVICE_TOKEN_KEY);
+        localStorage.removeItem(DEVICE_SESSION_KEY);
         setAuthInfo({
           isDevice: false,
           isValidating: false,
@@ -82,8 +92,16 @@ export const useDeviceAuth = () => {
 
 export const setDeviceToken = (token: string) => {
   localStorage.setItem(DEVICE_TOKEN_KEY, token);
+  // Generate and store a new session ID when setting a new token
+  const sessionId = crypto.randomUUID();
+  localStorage.setItem(DEVICE_SESSION_KEY, sessionId);
 };
 
 export const clearDeviceToken = () => {
   localStorage.removeItem(DEVICE_TOKEN_KEY);
+  localStorage.removeItem(DEVICE_SESSION_KEY);
+};
+
+export const getDeviceSessionId = () => {
+  return localStorage.getItem(DEVICE_SESSION_KEY);
 };

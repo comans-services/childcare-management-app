@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { deviceService } from "@/lib/childcare-monitor/device-service";
-import { setDeviceToken } from "@/hooks/useDeviceAuth";
+import { setDeviceToken, getDeviceSessionId } from "@/hooks/useDeviceAuth";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import logo from "@/assets/childcare-monitor-logo.svg";
 
@@ -23,12 +23,16 @@ const DeviceSetup: React.FC = () => {
       }
 
       try {
-        const result = await deviceService.validateDeviceToken(token);
+        // Store token first (this also generates a session ID)
+        setDeviceToken(token);
+        
+        // Get the session ID that was just created
+        const sessionId = getDeviceSessionId();
+        
+        // Validate with session binding
+        const result = await deviceService.validateDeviceToken(token, sessionId || undefined);
 
         if (result.valid) {
-          // Store token in localStorage
-          setDeviceToken(token);
-
           setStatus("success");
           setMessage(`Device registered successfully for ${result.room_name} room`);
           setDeviceInfo({
