@@ -4,13 +4,23 @@ import { Plus } from "lucide-react";
 import { WeekStrip } from "./WeekStrip";
 import { QuickStats } from "./QuickStats";
 import { MobileEntryCard, TimesheetEntry } from "./MobileEntryCard";
-import { FloatingActionButton } from "@/components/mobile/FloatingActionButton";
+
+export interface ScheduledDailyHours {
+  monday: number;
+  tuesday: number;
+  wednesday: number;
+  thursday: number;
+  friday: number;
+  saturday: number;
+  sunday: number;
+}
 
 export interface MobileTimesheetViewProps {
   weekDates: Date[];
   entries: TimesheetEntry[];
   expectedHours: number;
   expectedDays: number;
+  scheduledDailyHours: ScheduledDailyHours;
   onCreateEntry: (date: Date) => void;
   onEditEntry: (entry: TimesheetEntry) => void;
   onDeleteEntry: (entry: TimesheetEntry) => void;
@@ -21,6 +31,7 @@ export function MobileTimesheetView({
   entries,
   expectedHours,
   expectedDays,
+  scheduledDailyHours,
   onCreateEntry,
   onEditEntry,
   onDeleteEntry,
@@ -59,10 +70,6 @@ export function MobileTimesheetView({
     return entries.filter(entry => entry.entry_date === dateKey);
   }, [entries, selectedDate]);
 
-  const handleCreateEntry = () => {
-    onCreateEntry(selectedDate);
-  };
-
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Week strip */}
@@ -71,6 +78,8 @@ export function MobileTimesheetView({
         selectedDate={selectedDate}
         onDateSelect={setSelectedDate}
         dailyTotals={dailyTotals}
+        scheduledDailyHours={scheduledDailyHours}
+        onAddEntry={onCreateEntry}
       />
 
       {/* Quick stats */}
@@ -112,19 +121,11 @@ export function MobileTimesheetView({
             </div>
             <p className="text-gray-600 font-medium mb-1">No entries yet</p>
             <p className="text-sm text-gray-500">
-              Tap the + button to add your first entry
+              Use the + button in the week strip to add your first entry
             </p>
           </div>
         )}
       </div>
-
-      {/* FAB for quick entry */}
-      <FloatingActionButton
-        icon={Plus}
-        onClick={handleCreateEntry}
-        label="Add Entry"
-        position="bottom-right"
-      />
     </div>
   );
 }

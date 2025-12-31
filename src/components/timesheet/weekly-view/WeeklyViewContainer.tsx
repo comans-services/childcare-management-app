@@ -16,7 +16,7 @@ import ErrorState from "./ErrorState";
 import WeeklyViewContent from "./WeeklyViewContent";
 import { MobileTimesheetView } from "../mobile/MobileTimesheetView";
 import { isAdmin } from "@/utils/roles";
-import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 import { getWeekStart } from "@/lib/date-utils";
 import {
   Dialog,
@@ -75,8 +75,9 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
   const weekStartDate = getWeekStart(currentDate);
   const {
     effectiveDays,
-    effectiveHours
-  } = useSimpleWeeklySchedule(targetUserId, weekStartDate);
+    effectiveHours,
+    effectiveDailyHours
+  } = useWeeklyWorkSchedule(targetUserId, weekStartDate);
 
   // Check admin status
   useEffect(() => {
@@ -211,6 +212,7 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
           entries={entries}
           expectedHours={effectiveHours}
           expectedDays={effectiveDays}
+          scheduledDailyHours={effectiveDailyHours}
           onCreateEntry={handleMobileCreateEntry}
           onEditEntry={handleMobileEditEntry}
           onDeleteEntry={handleMobileDeleteEntry}

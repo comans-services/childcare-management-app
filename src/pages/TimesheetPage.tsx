@@ -4,33 +4,15 @@ import { useMediaQuery } from "@/hooks/use-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import WeeklyView from "@/components/timesheet/WeeklyView";
 import TimerComponent from "@/components/timesheet/TimerComponent";
-import UserSelector from "@/components/timesheet/UserSelector";
-import HolidayLegend from "@/components/timesheet/HolidayLegend";
-import { Button } from "@/components/ui/button";
-import { TrashIcon } from "lucide-react";
-import { deleteAllTimesheetEntries } from "@/lib/timesheet-service";
-import { toast } from "@/hooks/use-toast";
-import { isAdmin } from "@/utils/roles";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
 import { getWeekStart } from "@/lib/date-utils";
 import { fetchUsers, User as UserType } from "@/lib/user-service";
 import { useQuery } from "@tanstack/react-query";
+import { isAdmin } from "@/utils/roles";
 
 const TimesheetPage = () => {
   const { user, userRole } = useAuth();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
@@ -87,30 +69,6 @@ const TimesheetPage = () => {
     );
   }
 
-  const handleDeleteAllEntries = async () => {
-    setIsDeleting(true);
-    try {
-      // RLS will ensure only appropriate entries are deleted
-      const deletedCount = await deleteAllTimesheetEntries();
-      toast({
-        title: "Entries deleted",
-        description: `Successfully deleted ${deletedCount} timesheet entries.`,
-      });
-      // Force refresh of the WeeklyView component
-      setRefreshKey(prev => prev + 1);
-    } catch (error) {
-      console.error("Error deleting entries:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete timesheet entries.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteDialogOpen(false);
-    }
-  };
-
   const handleUserChange = (userId: string | null) => {
     setSelectedUserId(userId);
     setRefreshKey(prev => prev + 1); // Force refresh when switching users
@@ -130,28 +88,7 @@ const TimesheetPage = () => {
           </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
-          {/* User Selector for Admins */}
-          {isAdminUser && (
-            <UserSelector
-              selectedUserId={selectedUserId}
-              onSelectUser={handleUserChange}
-              className="sm:w-auto"
-            />
-          )}
-          
-          <Button 
-            variant="destructive" 
-            size={isMobile ? "default" : "sm"}
-            onClick={() => setIsDeleteDialogOpen(true)}
-            disabled={isDeleting}
-            className="hover:scale-105 transition-transform duration-200 shadow-sm hover:shadow-md flex-shrink-0"
-          >
-            <TrashIcon className="h-4 w-4 mr-2" />
-            <span className="sm:hidden">Reset All Entries</span>
-            <span className="hidden sm:inline">Reset All</span>
-          </Button>
-        </div>
+        {/* Removed: User Selector and Reset All Entries button */}
       </div>
 
       {/* Mobile timer with proper spacing - only show for current user */}
@@ -161,8 +98,7 @@ const TimesheetPage = () => {
         </div>
       )}
 
-      {/* Holiday Legend */}
-      <HolidayLegend />
+      {/* Removed: Holiday Legend */}
 
       {/* Weekly overview card with expanded width for larger screens */}
       <Card className="mb-6 lg:mb-8 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl overflow-hidden border-t-4 border-t-primary w-full">
@@ -188,35 +124,7 @@ const TimesheetPage = () => {
         </div>
       )}
 
-      {/* Delete confirmation dialog with responsive sizing */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="rounded-xl border-red-200 shadow-lg w-[90vw] max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg lg:text-xl">
-              Delete All Entries
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm lg:text-base leading-relaxed">
-              This action will permanently delete all {selectedUserId ? `${displayUserName.toLowerCase()}'s` : "your"} timesheet entries. 
-              This cannot be undone. Are you sure you want to continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-3">
-            <AlertDialogCancel 
-              disabled={isDeleting} 
-              className="hover:scale-105 transition-transform duration-200 w-full sm:w-auto"
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteAllEntries}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md w-full sm:w-auto"
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete All Entries"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Removed: Delete confirmation dialog */}
     </div>
   );
 };
