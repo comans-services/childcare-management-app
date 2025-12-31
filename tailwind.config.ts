@@ -91,6 +91,13 @@ export default {
 				'fluid-md': 'clamp(1rem, 2vw, 2rem)',
 				'fluid-lg': 'clamp(1.5rem, 3vw, 3rem)',
 				'fluid-xl': 'clamp(2rem, 4vw, 4rem)',
+				'touch': '44px', // iOS minimum touch target size
+			},
+			minHeight: {
+				'touch': '44px', // iOS minimum touch target size
+			},
+			minWidth: {
+				'touch': '44px', // iOS minimum touch target size
 			},
 			fontSize: {
 				'fluid-xs': 'clamp(0.75rem, 1.5vw, 0.875rem)',

@@ -4,12 +4,15 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Clock, Home } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileHeader } from "./MobileHeader";
 
 const Header = () => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [displayName, setDisplayName] = useState<string>("");
+  const isMobile = useIsMobile();
 
   // Check if we're in a sub-app (not on the main hub)
   const isInSubApp = location.pathname !== "/" && !location.pathname.startsWith("/auth");
@@ -30,6 +33,12 @@ const Header = () => {
     }
   }, [user]);
 
+  // Use mobile header on mobile devices
+  if (isMobile) {
+    return <MobileHeader />;
+  }
+
+  // Desktop header
   return (
     <header className="bg-white border-b shadow-sm">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">

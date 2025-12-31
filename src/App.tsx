@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import { DeviceProvider } from "@/contexts/DeviceContext";
+import { NavigationProvider } from "@/contexts/NavigationContext";
 
 import MainLayout from "@/components/layout/MainLayout";
 import HubLayout from "@/components/layout/HubLayout";
@@ -27,16 +29,42 @@ import DeviceSetup from "@/pages/childcare-monitor/DeviceSetup";
 import DeviceManagement from "@/pages/childcare-monitor/DeviceManagement";
 import NotFound from "@/pages/NotFound";
 
-const queryClient = new QueryClient();
+// Optimized QueryClient configuration for mobile performance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Cache data for 5 minutes before considering it stale
+      staleTime: 5 * 60 * 1000,
+      // Keep unused data in cache for 10 minutes
+      cacheTime: 10 * 60 * 1000,
+      // Don't refetch on window focus (saves mobile data)
+      refetchOnWindowFocus: false,
+      // Do refetch when network reconnects
+      refetchOnReconnect: true,
+      // Retry failed requests once
+      retry: 1,
+      // Use offline-first strategy on slow connections
+      networkMode: 'offlineFirst',
+    },
+    mutations: {
+      // Retry mutations twice
+      retry: 2,
+      // Mutations require network connection
+      networkMode: 'online',
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
+      <DeviceProvider>
+        <NavigationProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
             <Route path="/auth" element={<AuthPage />} />
 
             {/* Management Hub - Landing page for all apps */}
@@ -82,6 +110,8 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+        </NavigationProvider>
+      </DeviceProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

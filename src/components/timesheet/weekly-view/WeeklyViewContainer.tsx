@@ -1,7 +1,7 @@
 
 import React, { useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { TimesheetEntry } from "@/lib/timesheet-service";
+import { TimesheetEntry, deleteTimesheetEntry } from "@/lib/timesheet-service";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResponsiveContainer } from "@/components/common/ResponsiveContainer";
 import { useSmoothTransitions } from "@/hooks/useSmoothTransitions";
@@ -14,13 +14,17 @@ import MobileWeekNavigation from "./MobileWeekNavigation";
 import LoadingState from "./LoadingState";
 import ErrorState from "./ErrorState";
 import WeeklyViewContent from "./WeeklyViewContent";
+import { MobileTimesheetView } from "../mobile/MobileTimesheetView";
 import { isAdmin } from "@/utils/roles";
+import { useSimpleWeeklySchedule } from "@/hooks/useSimpleWeeklySchedule";
+import { getWeekStart } from "@/lib/date-utils";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 import EntryForm from "../EntryForm";
 
 interface WeeklyViewContainerProps {
@@ -65,6 +69,14 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
   const { handleDragEnd } = useEntryOperations(weekDates, entries, () => fetchData(), user?.id);
 
   const [editingEntry, setEditingEntry] = React.useState<TimesheetEntry | undefined>(undefined);
+
+  // Get schedule data for mobile view
+  const targetUserId = viewAsUserId || user?.id || "";
+  const weekStartDate = getWeekStart(currentDate);
+  const {
+    effectiveDays,
+    effectiveHours
+  } = useSimpleWeeklySchedule(targetUserId, weekStartDate);
 
   // Check admin status
   useEffect(() => {
@@ -116,13 +128,41 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
   // Enhanced handler for saving an entry with real-time refresh
   const handleSaveEntry = useCallback(async (savedEntry?: TimesheetEntry) => {
     console.log("=== REFRESHING DATA AFTER ENTRY SAVE ===");
-    
+
     await fetchData();
     clearDialogState();
     setEditingEntry(undefined);
-    
+
     console.log("Data refresh completed after entry save");
   }, [fetchData, clearDialogState]);
+
+  // Mobile handlers
+  const handleMobileCreateEntry = useCallback((date: Date) => {
+    handleOpenEntryDialog(date);
+  }, [handleOpenEntryDialog]);
+
+  const handleMobileEditEntry = useCallback((entry: TimesheetEntry) => {
+    const entryDate = new Date(entry.entry_date);
+    handleOpenEntryDialog(entryDate, entry);
+  }, [handleOpenEntryDialog]);
+
+  const handleMobileDeleteEntry = useCallback(async (entry: TimesheetEntry) => {
+    try {
+      await deleteTimesheetEntry(entry.id);
+      toast({
+        title: "Entry deleted",
+        description: "The timesheet entry has been deleted successfully.",
+      });
+      await fetchData();
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the entry.",
+        variant: "destructive",
+      });
+    }
+  }, [fetchData]);
 
   // Security validation
   if (!user?.id || !session) {
@@ -145,21 +185,9 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
         console.log(`WeeklyView container resized to: ${width}px`);
       }}
     >
-      {/* Navigation */}
-      {isMobile ? (
-        <MobileWeekNavigation 
-          weekDates={weekDates}
-          currentDate={currentDate}
-          navigateToPrevious={navigateToPrevious}
-          navigateToNext={navigateToNext}
-          navigateToCurrentWeek={navigateToCurrentWeek}
-          error={error}
-          fetchData={fetchData}
-          viewMode={viewMode}
-          toggleViewMode={toggleViewMode}
-        />
-      ) : (
-        <WeekNavigation 
+      {/* Navigation - Only show for desktop, mobile has integrated navigation */}
+      {!isMobile && (
+        <WeekNavigation
           weekDates={weekDates}
           currentDate={currentDate}
           navigateToPrevious={navigateToPrevious}
@@ -177,6 +205,16 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
         <LoadingState />
       ) : error ? (
         <ErrorState error={error} onRetry={fetchData} />
+      ) : isMobile ? (
+        <MobileTimesheetView
+          weekDates={weekDates}
+          entries={entries}
+          expectedHours={effectiveHours}
+          expectedDays={effectiveDays}
+          onCreateEntry={handleMobileCreateEntry}
+          onEditEntry={handleMobileEditEntry}
+          onDeleteEntry={handleMobileDeleteEntry}
+        />
       ) : (
         <WeeklyViewContent
           weekDates={weekDates}
