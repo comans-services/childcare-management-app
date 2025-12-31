@@ -13,10 +13,11 @@ export interface DeviceInfo {
 }
 
 export const deviceService = {
-  // Validate device token from localStorage
-  async validateDeviceToken(token: string) {
+  // Validate device token from localStorage with optional session binding
+  async validateDeviceToken(token: string, sessionId?: string) {
     const { data, error } = await supabase.rpc("validate_device_token", {
       p_token: token,
+      p_session_id: sessionId || null,
     });
 
     if (error) throw error;
@@ -27,6 +28,7 @@ export const deviceService = {
       device_name?: string;
       room_id?: string;
       room_name?: string;
+      session_bound?: boolean;
     };
   },
 
@@ -93,5 +95,31 @@ export const deviceService = {
       .eq("id", deviceId);
 
     if (error) throw error;
+  },
+
+  // Regenerate device token (clears session binding)
+  async regenerateDeviceToken(deviceId: string) {
+    // Generate new token
+    const newToken = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    // Update device with new token and clear session binding
+    const { error } = await supabase
+      .from("room_devices")
+      .update({ 
+        device_token: newToken, 
+        bound_session_id: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", deviceId);
+
+    if (error) throw error;
+    
+    return {
+      success: true,
+      token: newToken,
+      device_id: deviceId,
+    };
   },
 };

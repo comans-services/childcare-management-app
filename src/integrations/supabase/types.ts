@@ -785,6 +785,7 @@ export type Database = {
       }
       room_devices: {
         Row: {
+          bound_session_id: string | null
           created_at: string
           created_by: string | null
           device_model: string | null
@@ -799,6 +800,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bound_session_id?: string | null
           created_at?: string
           created_by?: string | null
           device_model?: string | null
@@ -813,6 +815,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bound_session_id?: string | null
           created_at?: string
           created_by?: string | null
           device_model?: string | null

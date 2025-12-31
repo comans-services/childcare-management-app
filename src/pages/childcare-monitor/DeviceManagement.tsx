@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Copy, Power, PowerOff, ArrowLeft, Trash2 } from "lucide-react";
+import { Loader2, Plus, Copy, Power, PowerOff, ArrowLeft, Trash2, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 const DeviceManagement: React.FC = () => {
   const {
@@ -23,6 +23,8 @@ const DeviceManagement: React.FC = () => {
   const [revokeDeviceId, setRevokeDeviceId] = useState<string | null>(null);
   const [reactivateDeviceId, setReactivateDeviceId] = useState<string | null>(null);
   const [deleteDeviceId, setDeleteDeviceId] = useState<string | null>(null);
+  const [regenerateDeviceId, setRegenerateDeviceId] = useState<string | null>(null);
+  const [regeneratedUrl, setRegeneratedUrl] = useState<string | null>(null);
   const {
     data: devices,
     isLoading: devicesLoading
@@ -125,6 +127,28 @@ const DeviceManagement: React.FC = () => {
       });
     }
   });
+
+  const regenerateTokenMutation = useMutation({
+    mutationFn: (deviceId: string) => deviceService.regenerateDeviceToken(deviceId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: ["room-devices"]
+      });
+      const setupUrl = `${window.location.origin}/childcare-monitor/setup?token=${data.token}`;
+      setRegeneratedUrl(setupUrl);
+      toast({
+        title: "Token regenerated",
+        description: "Copy the new setup URL to configure a new iPad"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to regenerate token",
+        variant: "destructive"
+      });
+    }
+  });
   const handleRegisterDevice = () => {
     if (!newDeviceName.trim() || !selectedRoomId) {
       toast({
@@ -139,9 +163,10 @@ const DeviceManagement: React.FC = () => {
       deviceName: newDeviceName.trim()
     });
   };
-  const copySetupUrl = () => {
-    if (generatedToken) {
-      navigator.clipboard.writeText(generatedToken);
+  const copySetupUrl = (url?: string) => {
+    const urlToCopy = url || generatedToken;
+    if (urlToCopy) {
+      navigator.clipboard.writeText(urlToCopy);
       toast({
         title: "Copied!",
         description: "Setup URL copied to clipboard"
@@ -195,6 +220,9 @@ const DeviceManagement: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
+                    <Button onClick={() => setRegenerateDeviceId(device.id)} size="sm" className="bg-blue-600 text-white" title="Regenerate Setup URL">
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
                     {device.is_active ? <Button onClick={() => setRevokeDeviceId(device.id)} size="sm" className="bg-red-600 text-white">
                         <PowerOff className="h-4 w-4 mr-2" />
                         Revoke
@@ -246,7 +274,7 @@ const DeviceManagement: React.FC = () => {
                 <Label>Setup URL</Label>
                 <div className="flex gap-2">
                   <Input value={generatedToken} readOnly className="bg-care-lightGreen border-care-accentGreen text-white" />
-                  <Button onClick={copySetupUrl} className="h-10 w-10 border border-care-accentGreen bg-transparent text-white p-0">
+                  <Button onClick={() => copySetupUrl()} className="h-10 w-10 border border-care-accentGreen bg-transparent text-white p-0">
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
@@ -323,6 +351,55 @@ const DeviceManagement: React.FC = () => {
             <AlertDialogAction onClick={() => deleteDeviceId && deleteDeviceMutation.mutate(deleteDeviceId)} className="bg-red-600 text-white">
               Delete Permanently
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Regenerate Token Dialog */}
+      <AlertDialog open={regenerateDeviceId !== null} onOpenChange={(open) => {
+        if (!open) {
+          setRegenerateDeviceId(null);
+          setRegeneratedUrl(null);
+        }
+      }}>
+        <AlertDialogContent className="bg-care-darkGreen text-white border-care-lightGreen">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{regeneratedUrl ? "New Setup URL Generated" : "Regenerate Setup URL?"}</AlertDialogTitle>
+            <AlertDialogDescription className="text-care-lightText">
+              {regeneratedUrl ? (
+                <div className="space-y-4">
+                  <p>Copy this URL and open it on the new iPad:</p>
+                  <div className="flex gap-2">
+                    <Input value={regeneratedUrl} readOnly className="bg-care-lightGreen border-care-accentGreen text-white" />
+                    <Button onClick={() => copySetupUrl(regeneratedUrl)} className="h-10 w-10 border border-care-accentGreen bg-transparent text-white p-0">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs">The previous iPad will no longer have access.</p>
+                </div>
+              ) : (
+                "This will generate a new setup URL and allow a different iPad to access this device. The current iPad will be disconnected."
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-care-accentGreen text-white bg-transparent">
+              {regeneratedUrl ? "Done" : "Cancel"}
+            </AlertDialogCancel>
+            {!regeneratedUrl && (
+              <AlertDialogAction 
+                onClick={() => regenerateDeviceId && regenerateTokenMutation.mutate(regenerateDeviceId)} 
+                className="bg-blue-600 text-white"
+                disabled={regenerateTokenMutation.isPending}
+              >
+                {regenerateTokenMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : "Regenerate"}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
