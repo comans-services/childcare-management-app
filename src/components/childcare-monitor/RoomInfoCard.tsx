@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { RoomData } from '@/types/childcare-monitor';
 import { format } from 'date-fns';
 
@@ -7,7 +7,27 @@ interface RoomInfoCardProps {
   roomData: RoomData | undefined;
 }
 
+const getMelbourneTime = () => {
+  const now = new Date();
+  // Use toLocaleString with Melbourne timezone for accurate time (handles DST)
+  return format(
+    new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Melbourne' })),
+    'dd MMM yyyy, h:mm a'
+  );
+};
+
 const RoomInfoCard: React.FC<RoomInfoCardProps> = ({ roomData }) => {
+  const [melbourneTimeString, setMelbourneTimeString] = useState(getMelbourneTime());
+
+  // Update Melbourne time every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMelbourneTimeString(getMelbourneTime());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
   if (!roomData) {
     return (
       <div className="bg-care-darkGreen rounded-lg p-6 mb-6">
@@ -16,12 +36,6 @@ const RoomInfoCard: React.FC<RoomInfoCardProps> = ({ roomData }) => {
       </div>
     );
   }
-
-  // Format Melbourne time
-  const melbourneTime = new Date();
-  // UTC+10 for Melbourne (not accounting for daylight saving)
-  melbourneTime.setHours(melbourneTime.getHours() + 10);
-  const melbourneTimeString = format(melbourneTime, 'dd MMM yyyy, h:mm a');
 
   return (
     <div className="bg-care-darkGreen rounded-lg p-6 mb-6">

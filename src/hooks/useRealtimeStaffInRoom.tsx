@@ -10,6 +10,7 @@ export const useRealtimeStaffInRoom = (roomId: string | undefined) => {
     queryKey: ['staff-in-room', roomId],
     queryFn: () => roomService.getStaffInRoom(roomId!),
     enabled: !!roomId,
+    refetchInterval: 300000, // Refresh every 5 minutes
   });
 
   useEffect(() => {
