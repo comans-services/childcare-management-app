@@ -3,7 +3,8 @@ import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { WeekStrip } from "./WeekStrip";
 import { QuickStats } from "./QuickStats";
-import { MobileEntryCard, TimesheetEntry } from "./MobileEntryCard";
+import { MobileEntryCard } from "./MobileEntryCard";
+import { TimesheetEntry } from "@/lib/timesheet/types";
 
 export interface ScheduledDailyHours {
   monday: number;
@@ -64,10 +65,12 @@ export function MobileTimesheetView({
     };
   }, [entries]);
 
-  // Filter entries for selected date
+  // Filter entries for selected date - only show entries with valid id
   const selectedDateEntries = useMemo(() => {
     const dateKey = format(selectedDate, 'yyyy-MM-dd');
-    return entries.filter(entry => entry.entry_date === dateKey);
+    return entries
+      .filter(entry => entry.entry_date === dateKey && entry.id)
+      .map(entry => ({ ...entry, id: entry.id as string }));
   }, [entries, selectedDate]);
 
   return (

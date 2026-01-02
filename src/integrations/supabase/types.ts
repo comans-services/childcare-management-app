@@ -1739,7 +1739,9 @@ export type Database = {
             }
             Returns: Json
           }
-      validate_device_token: { Args: { p_token: string }; Returns: Json }
+      validate_device_token:
+        | { Args: { p_token: string }; Returns: Json }
+        | { Args: { p_session_id?: string; p_token: string }; Returns: Json }
       verify_mac_address_access: {
         Args: { p_mac_address: string }
         Returns: Json
