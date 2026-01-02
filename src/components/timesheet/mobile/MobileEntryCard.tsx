@@ -1,23 +1,13 @@
 import React, { useState } from "react";
 import { useDrag } from "@use-gesture/react";
 import { useSpring, animated } from "@react-spring/web";
-import { format } from "date-fns";
 import { Edit2, Trash2, Clock, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
-
-export interface TimesheetEntry {
-  id: string;
-  entry_date: string;
-  start_time: string;
-  end_time: string;
-  hours_logged: number;
-  notes?: string;
-  project?: string;
-}
+import { TimesheetEntry } from "@/lib/timesheet/types";
 
 export interface MobileEntryCardProps {
-  entry: TimesheetEntry;
+  entry: TimesheetEntry & { id: string };
   onEdit: (entry: TimesheetEntry) => void;
   onDelete: (entry: TimesheetEntry) => void;
 }
@@ -94,19 +84,21 @@ export function MobileEntryCard({ entry, onEdit, onDelete }: MobileEntryCardProp
               </span>
             </div>
 
-            {/* Project */}
-            {entry.project && (
+            {/* Leave type (replacing project/notes) */}
+            {entry.leave_type && (
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm text-gray-600">{entry.project}</span>
+                <span className="text-sm text-gray-600 capitalize">
+                  {entry.leave_type.replace(/_/g, " ")}
+                </span>
               </div>
             )}
 
-            {/* Notes */}
-            {entry.notes && (
+            {/* Break info */}
+            {(entry.break_minutes > 0 || entry.tea_break_minutes > 0) && (
               <div className="flex items-start gap-2 mt-2">
                 <FileText className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-600 line-clamp-2">
-                  {entry.notes}
+                <span className="text-sm text-gray-600">
+                  {entry.break_minutes + entry.tea_break_minutes}m break
                 </span>
               </div>
             )}

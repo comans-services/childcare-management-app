@@ -36,7 +36,7 @@ const queryClient = new QueryClient({
       // Cache data for 5 minutes before considering it stale
       staleTime: 5 * 60 * 1000,
       // Keep unused data in cache for 10 minutes
-      cacheTime: 10 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       // Don't refetch on window focus (saves mobile data)
       refetchOnWindowFocus: false,
       // Do refetch when network reconnects

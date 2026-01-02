@@ -35,9 +35,11 @@ export function SwipeableView({
     enableHaptics,
   });
 
+  const bindProps = bind();
+
   return (
     <div
-      {...bind()}
+      {...bindProps}
       className={cn("touch-pan-y", className)}
       style={{ touchAction: 'pan-y' }}
     >
