@@ -133,9 +133,10 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("is_active", true)
         .eq("email_consent", true);
 
-      // Apply audience filter
+      // Apply audience filter - use filter with 'cs' (contains) for JSONB arrays
       if (campaign.audience_filter === "tags" && campaign.target_tag) {
-        query = query.contains("tags", [campaign.target_tag]);
+        console.log(`Filtering contacts by tag: ${campaign.target_tag}`);
+        query = query.filter('tags', 'cs', JSON.stringify([campaign.target_tag]));
       }
 
       const { data: contacts, error: contactsError } = await query;
