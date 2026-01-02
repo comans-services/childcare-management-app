@@ -10,6 +10,7 @@ export const useRealtimeRoomStatus = (roomId: string | undefined) => {
     queryKey: ['room-status', roomId],
     queryFn: () => roomService.getRoomStatus(roomId!),
     enabled: !!roomId,
+    refetchInterval: 300000, // Refresh every 5 minutes
   });
 
   useEffect(() => {
