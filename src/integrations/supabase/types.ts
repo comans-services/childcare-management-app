@@ -132,6 +132,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          attachments: Json | null
           audience_filter: string | null
           created_at: string
           created_by: string | null
@@ -155,6 +156,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attachments?: Json | null
           audience_filter?: string | null
           created_at?: string
           created_by?: string | null
@@ -178,6 +180,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attachments?: Json | null
           audience_filter?: string | null
           created_at?: string
           created_by?: string | null
