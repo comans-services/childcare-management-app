@@ -102,12 +102,11 @@ export const processRow = async (
         console.log('Auth user created successfully:', authData.user.id);
         
         try {
-          // Step 2: Create profile record
+          // Step 2: Create profile record (without role - stored in user_roles table)
           const profileData = {
             id: authData.user.id,
             full_name: processedData.full_name,
             email: processedData.email,
-            role: processedData.role,
             organization: processedData.organization,
             time_zone: processedData.time_zone,
             employment_type: processedData.employment_type,
