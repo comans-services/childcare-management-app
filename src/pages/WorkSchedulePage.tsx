@@ -44,13 +44,21 @@ const WorkSchedulePage = () => {
   const fetchUsers = async () => {
     try {
       const {
-        data,
-        error
-      } = await supabase.from("profiles").select("id, email, full_name, role").order("email");
-      if (error) {
-        throw error;
+        data: profiles,
+        error: profilesError
+      } = await supabase.from("profiles").select("id, email, full_name").order("email");
+      if (profilesError) {
+        throw profilesError;
       }
-      setUsers(data || []);
+
+      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
+
+      const usersWithRoles = (profiles || []).map(p => ({
+        ...p,
+        role: roles?.find(r => r.user_id === p.id)?.role
+      }));
+
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast({

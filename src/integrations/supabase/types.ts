@@ -591,7 +591,6 @@ export type Database = {
           id: string
           is_active: boolean
           organization: string | null
-          role: Database["public"]["Enums"]["user_role"]
           time_zone: string
           updated_at: string
         }
@@ -607,7 +606,6 @@ export type Database = {
           id: string
           is_active?: boolean
           organization?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
           time_zone?: string
           updated_at?: string
         }
@@ -623,7 +621,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           organization?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
           time_zone?: string
           updated_at?: string
         }
@@ -1634,10 +1631,6 @@ export type Database = {
           status: string
         }[]
       }
-      get_current_user_role: {
-        Args: never
-        Returns: Database["public"]["Enums"]["user_role"]
-      }
       get_next_pay_period: {
         Args: { current_period_id: string }
         Returns: string
@@ -1754,7 +1747,6 @@ export type Database = {
       app_role: "admin" | "manager" | "employee"
       employment_status: "full-time" | "part-time" | "casual"
       leave_status: "pending" | "approved" | "rejected" | "cancelled"
-      user_role: "employee" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1885,7 +1877,6 @@ export const Constants = {
       app_role: ["admin", "manager", "employee"],
       employment_status: ["full-time", "part-time", "casual"],
       leave_status: ["pending", "approved", "rejected", "cancelled"],
-      user_role: ["employee", "admin"],
     },
   },
 } as const
