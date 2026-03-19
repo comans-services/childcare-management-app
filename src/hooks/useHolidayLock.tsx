@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { isHoliday } from "@/lib/timesheet/validation/holiday-validation-service";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDate } from "@/lib/date-utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface HolidayValidationResult {
   isValid: boolean;
@@ -11,6 +11,8 @@ interface HolidayValidationResult {
 }
 
 export const useHolidayLock = (userId?: string) => {
+  const { userRole } = useAuth();
+  
   // Fetch user's holiday permissions
   const { data: workSchedule } = useQuery({
     queryKey: ["work-schedule-holiday", userId],
@@ -33,37 +35,12 @@ export const useHolidayLock = (userId?: string) => {
     enabled: !!userId,
   });
 
-  // Fetch user's role for admin override
-  const { data: userProfile } = useQuery({
-    queryKey: ["user-profile-role", userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching user role:", error);
-        return null;
-      }
-      
-      return data;
-    },
-    enabled: !!userId,
-  });
+  const isAdminUser = userRole === 'admin';
 
   const canCreateHolidayEntries = useMemo(() => {
-    // Admin can always create holiday entries
-    if (userProfile?.role === 'admin') {
-      return true;
-    }
-    
-    // Otherwise check explicit permission
+    if (isAdminUser) return true;
     return workSchedule?.allow_holiday_entries || false;
-  }, [workSchedule?.allow_holiday_entries, userProfile?.role]);
+  }, [workSchedule?.allow_holiday_entries, isAdminUser]);
 
   const validateHolidayEntry = useMemo(() => {
     return async (date: Date): Promise<HolidayValidationResult> => {
