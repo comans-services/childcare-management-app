@@ -53,7 +53,7 @@ export const useHolidayLock = (userId?: string) => {
         }
 
         // Admin override
-        if (userProfile?.role === 'admin') {
+        if (isAdminUser) {
           return { 
             isValid: true, 
             holidayName,
