@@ -28,15 +28,51 @@ interface SupabaseAuthUser {
   aud: string;
 }
 
-interface AuthUsersResponse {
-  users: SupabaseAuthUser[];
-}
+// Helper to fetch roles from user_roles table and map to user IDs
+const fetchUserRoles = async (userIds: string[]): Promise<Record<string, string>> => {
+  if (userIds.length === 0) return {};
+  
+  const { data: rolesData, error } = await supabase
+    .from('user_roles' as any)
+    .select('user_id, role')
+    .in('user_id', userIds);
+
+  if (error) {
+    console.error("Error fetching user roles:", error);
+    return {};
+  }
+
+  const roleMap: Record<string, string> = {};
+  if (rolesData) {
+    for (const r of rolesData as any[]) {
+      // If user has multiple roles, prefer admin > employee
+      if (!roleMap[r.user_id] || r.role === 'admin') {
+        roleMap[r.user_id] = r.role;
+      }
+    }
+  }
+  return roleMap;
+};
+
+const fetchSingleUserRole = async (userId: string): Promise<string> => {
+  const { data, error } = await supabase
+    .from('user_roles' as any)
+    .select('role')
+    .eq('user_id', userId);
+
+  if (error || !data || (data as any[]).length === 0) {
+    return 'employee';
+  }
+
+  const roles = (data as any[]).map(r => r.role);
+  if (roles.includes('admin')) return 'admin';
+  return 'employee';
+};
 
 export const fetchUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching users...");
     
-    // First, get the authenticated user
     const { data: authData, error: authError } = await supabase.auth.getUser();
     
     if (authError) {
@@ -44,12 +80,10 @@ export const fetchUsers = async (): Promise<User[]> => {
       throw authError;
     }
     
-    console.log("Current authenticated user:", authData?.user?.email);
-    
-    // Get all profiles from the profiles table including new employee_id field
+    // Get all profiles (without role column)
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone, email, employment_type, employee_card_id, employee_id");
+      .select("id, full_name, organization, time_zone, email, employment_type, employee_card_id, employee_id");
     
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -58,15 +92,13 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     console.log(`Fetched ${profilesData?.length || 0} profiles`);
     
-    // If no profiles are found, create one for the current user
+    // If no profiles found, create one for the current user
     if ((!profilesData || profilesData.length === 0) && authData.user) {
       console.log("No profiles found, creating one for current user");
       
-      // Create a profile for the current user
       const newProfileData = {
         id: authData.user.id,
         full_name: authData.user.user_metadata?.full_name || "",
-        role: 'employee' as const,
         organization: "",
         time_zone: "Australia/Melbourne",
         email: authData.user.email || "",
@@ -83,74 +115,51 @@ export const fetchUsers = async (): Promise<User[]> => {
       if (createError) {
         console.error("Error creating profile:", createError);
       } else if (createdProfile && createdProfile.length > 0) {
-        console.log("Created profile for current user:", createdProfile);
-        return createdProfile as User[];
+        // Also create default role
+        await supabase.from('user_roles' as any).insert({ user_id: authData.user.id, role: 'employee' } as any);
+        return createdProfile.map(p => ({ ...p, role: 'employee' as const })) as User[];
       }
     }
     
-    // If profiles exist but some are missing emails, fetch the emails from auth
     if (profilesData && profilesData.length > 0) {
-      // Find profiles with missing emails
-      const profilesWithoutEmails = profilesData.filter(profile => !profile.email);
+      // Fetch roles for all users
+      const userIds = profilesData.map(p => p.id);
+      const roleMap = await fetchUserRoles(userIds);
       
+      // Handle profiles without emails
+      const profilesWithoutEmails = profilesData.filter(profile => !profile.email);
       if (profilesWithoutEmails.length > 0) {
-        console.log(`Found ${profilesWithoutEmails.length} profiles without emails, attempting to fetch and update`);
-        
         try {
-          // Fetch all auth users (requires admin privileges)
           const { data: authUsersData } = await supabase.auth.admin.listUsers();
-          
-          // Fix the type issue here - properly type the authUsersData to avoid the "never" type error
           if (authUsersData && 'users' in authUsersData && Array.isArray(authUsersData.users)) {
-            console.log(`Fetched ${authUsersData.users.length} auth users`);
-            
-            // Update each profile with missing email
             for (const profile of profilesWithoutEmails) {
-              // Ensure users array is properly typed
               const users = authUsersData.users as SupabaseAuthUser[];
               const matchingAuthUser = users.find(user => user.id === profile.id);
-              
               if (matchingAuthUser && matchingAuthUser.email) {
-                console.log(`Updating profile ${profile.id} with email ${matchingAuthUser.email}`);
-                
-                // Update profile in database
-                const { error: updateError } = await supabase
-                  .from("profiles")
-                  .update({ email: matchingAuthUser.email })
-                  .eq("id", profile.id);
-                
-                if (updateError) {
-                  console.error(`Error updating email for profile ${profile.id}:`, updateError);
-                } else {
-                  // Update email in our local data
-                  profile.email = matchingAuthUser.email;
-                }
+                await supabase.from("profiles").update({ email: matchingAuthUser.email }).eq("id", profile.id);
+                profile.email = matchingAuthUser.email;
               }
             }
           }
         } catch (authError) {
-          console.error("Error fetching auth users:", authError);
-          
-          // Alternative approach for non-admin users: try to match the current user
           if (authData.user) {
             const currentUserProfile = profilesWithoutEmails.find(p => p.id === authData.user?.id);
             if (currentUserProfile && authData.user.email) {
-              console.log(`Updating current user profile with email ${authData.user.email}`);
-              
-              // Update the current user's profile with their email
-              await supabase
-                .from("profiles")
-                .update({ email: authData.user.email })
-                .eq("id", authData.user.id);
-              
+              await supabase.from("profiles").update({ email: authData.user.email }).eq("id", authData.user.id);
               currentUserProfile.email = authData.user.email;
             }
           }
         }
       }
       
-      console.log("Final profiles data with employment and employee_id fields:", profilesData);
-      return profilesData as User[];
+      // Merge roles into profiles
+      const usersWithRoles = profilesData.map(p => ({
+        ...p,
+        role: (roleMap[p.id] || 'employee') as 'admin' | 'employee',
+      }));
+      
+      console.log("Final profiles data with roles from user_roles table:", usersWithRoles);
+      return usersWithRoles as User[];
     }
     
     return [];
@@ -166,7 +175,7 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
     
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, role, organization, time_zone, employment_type, employee_card_id, employee_id, default_start_time, default_end_time")
+      .select("id, full_name, organization, time_zone, employment_type, employee_card_id, employee_id, default_start_time, default_end_time")
       .eq("id", userId)
       .maybeSingle();
     
@@ -187,7 +196,6 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
       const newProfileData = {
         id: userId,
         full_name: authData.user.user_metadata?.full_name || "",
-        role: "employee" as const,
         organization: "",
         time_zone: "UTC",
         email: authData.user.email || "",
@@ -207,18 +215,25 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
         return null;
       }
       
-      return createdProfile;
+      // Create default role
+      await supabase.from('user_roles' as any).insert({ user_id: userId, role: 'employee' } as any);
+      
+      return { ...createdProfile, role: 'employee' as const };
     }
+    
+    // Fetch role from user_roles
+    const role = await fetchSingleUserRole(userId);
     
     const { data: authData } = await supabase.auth.getUser();
     if (authData.user && authData.user.id === userId) {
       return {
         ...data,
+        role: role as 'admin' | 'employee',
         email: authData.user.email
       };
     }
     
-    return data;
+    return { ...data, role: role as 'admin' | 'employee' };
   } catch (error) {
     console.error("Error in fetchUserById:", error);
     return null;
@@ -229,11 +244,11 @@ export const updateUser = async (user: User): Promise<User> => {
   try {
     console.log("Updating user:", user);
     
+    // Update profile (without role)
     const { data, error } = await supabase
       .from("profiles")
       .update({
         full_name: user.full_name,
-        role: user.role,
         organization: user.organization,
         time_zone: user.time_zone,
         email: user.email,
@@ -252,8 +267,21 @@ export const updateUser = async (user: User): Promise<User> => {
       throw error;
     }
     
+    // Update role in user_roles table if provided
+    if (user.role) {
+      // Delete existing roles and insert new one
+      await supabase.from('user_roles' as any).delete().eq('user_id', user.id);
+      const { error: roleError } = await supabase
+        .from('user_roles' as any)
+        .insert({ user_id: user.id, role: user.role } as any);
+      
+      if (roleError) {
+        console.error("Error updating user role:", roleError);
+      }
+    }
+    
     console.log("User updated successfully:", data?.[0]);
-    return data?.[0] as User;
+    return { ...data?.[0], role: user.role } as User;
   } catch (error) {
     console.error("Error in updateUser:", error);
     throw error;
@@ -262,9 +290,8 @@ export const updateUser = async (user: User): Promise<User> => {
 
 export const createUser = async (userData: NewUser): Promise<User> => {
   try {
-    console.log("Creating new user (matching CSV import method)...");
+    console.log("Creating new user...");
     
-    // Use the same approach as CSV import - signUp instead of admin API
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
@@ -284,12 +311,11 @@ export const createUser = async (userData: NewUser): Promise<User> => {
     console.log("Auth user created successfully:", authData.user.id);
     
     try {
-      // Step 2: Create profile record (exactly like CSV import)
+      // Create profile (without role)
       const profileData = {
         id: authData.user.id,
         full_name: userData.full_name,
         email: userData.email,
-        role: userData.role || "employee",
         organization: userData.organization,
         time_zone: userData.time_zone,
         employment_type: userData.employment_type || "full-time",
@@ -297,8 +323,6 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         employee_id: userData.employee_id?.trim() || null,
         updated_at: new Date().toISOString(),
       };
-      
-      console.log("Creating profile record:", profileData);
       
       const { data: profileResult, error: profileError } = await supabase
         .from("profiles")
@@ -311,7 +335,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         throw new Error(`Failed to create profile: ${profileError.message}`);
       }
       
-      // Also insert into user_roles table
+      // Insert role into user_roles table
       const userRoleValue = userData.role || "employee";
       const { error: roleError } = await supabase
         .from("user_roles" as any)
@@ -322,11 +346,10 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       
       if (roleError) {
         console.error("Error inserting user role:", roleError);
-        // Non-fatal: profile was created, role insert failed
       }
       
       console.log("User created successfully:", profileResult);
-      return profileResult as User;
+      return { ...profileResult, role: userRoleValue } as User;
       
     } catch (profileCreationError) {
       console.error("Profile creation failed:", profileCreationError);
@@ -342,7 +365,10 @@ export const deleteUser = async (userId: string): Promise<void> => {
   try {
     console.log("Deleting user:", userId);
     
-    // Delete user profile and related data manually since delete_user_cascade doesn't exist
+    // Delete user roles first
+    await supabase.from('user_roles' as any).delete().eq('user_id', userId);
+    
+    // Delete user profile
     const { error: profileError } = await supabase
       .from('profiles')
       .delete()
@@ -351,14 +377,6 @@ export const deleteUser = async (userId: string): Promise<void> => {
     if (profileError) {
       console.error("Error deleting profile:", profileError);
       throw profileError;
-    }
-    
-    // Note: This doesn't delete auth user - admin needs to do that from Supabase dashboard
-    const { error } = { error: null }; // Stub since function doesn't exist
-    
-    if (error) {
-      console.error("Error deleting user:", error);
-      throw error;
     }
     
     console.log("User deleted successfully");
