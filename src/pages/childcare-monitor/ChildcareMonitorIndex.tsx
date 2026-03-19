@@ -140,7 +140,7 @@ const ChildcareMonitorIndex: React.FC = () => {
             <h3 className="font-bold mb-2">Educator-to-Child Ratios</h3>
             <ul className="list-disc list-inside space-y-2 text-sm">
               <li>Children under 3 years: 1 educator for every 4 children (1:4)</li>
-              <li>Children 3 years and older: 1 educator for every 15 children (1:15)</li>
+              <li>Children 3 years and older: 1 educator for every 11 children (1:11)</li>
             </ul>
           </div>
         </div>
