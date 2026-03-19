@@ -7,7 +7,7 @@ export const useDateRangePicker = (value: DateRange, onChange: (range: DateRange
   const [tempRange, setTempRange] = useState<DateRange>(value);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
-  const closeTimeoutRef = useRef<NodeJS.Timeout>();
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Update temp range when value changes externally
   useEffect(() => {
