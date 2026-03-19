@@ -20,20 +20,21 @@ export const validateWeekendEntry = async (entryDate: string): Promise<{ isValid
       return { isValid: false, message: "Authentication required" };
     }
 
-    // Check if user is admin - admins can ALWAYS log weekend entries
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
+    // Check if user is admin via user_roles table
+    const { data: roleData, error: roleError } = await supabase
+      .from("user_roles" as any)
       .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle() as any;
 
-    if (profileError) {
-      console.error("Error fetching user profile:", profileError);
+    if (roleError) {
+      console.error("Error fetching user role:", roleError);
       return { isValid: false, message: "Error validating permissions" };
     }
 
     // Admin override: admins can always log weekend entries regardless of settings
-    if (profile?.role === 'admin') {
+    if (roleData?.role === 'admin') {
       console.log("Admin override: allowing weekend entry");
       return { isValid: true };
     }

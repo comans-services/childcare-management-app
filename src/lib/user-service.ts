@@ -311,6 +311,20 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         throw new Error(`Failed to create profile: ${profileError.message}`);
       }
       
+      // Also insert into user_roles table
+      const userRoleValue = userData.role || "employee";
+      const { error: roleError } = await supabase
+        .from("user_roles" as any)
+        .insert({
+          user_id: authData.user.id,
+          role: userRoleValue,
+        } as any);
+      
+      if (roleError) {
+        console.error("Error inserting user role:", roleError);
+        // Non-fatal: profile was created, role insert failed
+      }
+      
       console.log("User created successfully:", profileResult);
       return profileResult as User;
       

@@ -1,39 +1,15 @@
-import { useState, useEffect } from "react";
 import { PayrollSettings } from "@/components/admin/PayrollSettings";
 import { useAuth } from "@/context/AuthContext";
 import { Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
 const PayrollSettingsPage = () => {
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      setIsAdmin(data?.role === "admin");
-      setLoading(false);
-    };
-
-    checkAdminStatus();
-  }, [user]);
+  const { user, userRole, loading } = useAuth();
 
   if (loading) {
     return <div className="container mx-auto py-8 px-4">Loading...</div>;
   }
 
-  if (!user || !isAdmin) {
+  if (!user || userRole !== "admin") {
     return <Navigate to="/timesheet" replace />;
   }
 
