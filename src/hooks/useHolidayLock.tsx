@@ -83,7 +83,7 @@ export const useHolidayLock = (userId?: string) => {
         };
       }
     };
-  }, [canCreateHolidayEntries, userProfile?.role]);
+  }, [canCreateHolidayEntries, isAdminUser]);
 
   // Helper to check if a date is a holiday (for UI indicators)
   const checkIfHoliday = useMemo(() => {
