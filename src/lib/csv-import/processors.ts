@@ -138,6 +138,19 @@ export const processRow = async (
             throw new Error(`Failed to create profile: ${profileError.message}`);
           }
           
+        // Also insert into user_roles table
+          const userRoleValue = processedData.role || 'employee';
+          const { error: roleInsertError } = await supabase
+            .from('user_roles' as any)
+            .insert({
+              user_id: authData.user.id,
+              role: userRoleValue,
+            } as any);
+          
+          if (roleInsertError) {
+            console.error('Error inserting user role:', roleInsertError);
+          }
+          
           savedData = profileResult;
           console.log('Team member created successfully:', savedData);
           

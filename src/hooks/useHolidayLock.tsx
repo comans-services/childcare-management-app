@@ -96,6 +96,6 @@ export const useHolidayLock = (userId?: string) => {
     canCreateHolidayEntries,
     validateHolidayEntry,
     checkIfHoliday,
-    isAdmin: userProfile?.role === 'admin'
+    isAdmin: isAdminUser
   };
 };
