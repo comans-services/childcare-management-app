@@ -180,8 +180,20 @@ export const PayrollReportsSection = () => {
                       <TableCell className="text-right">{row.scheduled_hours.toFixed(2)}</TableCell>
                       <TableCell className="text-right">{row.actual_hours.toFixed(2)}</TableCell>
                       <TableCell className="text-right">{row.leave_hours_pre_cutoff.toFixed(2)}</TableCell>
-                      <TableCell className="text-right text-amber-600">{row.leave_hours_post_cutoff.toFixed(2)}</TableCell>
-                      <TableCell className="text-right text-red-600">-{row.prior_period_adjustments.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        {row.leave_hours_post_cutoff > 0 ? (
+                          <span className="text-amber-600 font-medium">{row.leave_hours_post_cutoff.toFixed(2)} ⚠️</span>
+                        ) : (
+                          row.leave_hours_post_cutoff.toFixed(2)
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {row.prior_period_adjustments > 0 ? (
+                          <span className="text-destructive font-medium">-{row.prior_period_adjustments.toFixed(2)}</span>
+                        ) : (
+                          row.prior_period_adjustments.toFixed(2)
+                        )}
+                      </TableCell>
                       <TableCell className="text-right font-semibold">{row.net_hours.toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
