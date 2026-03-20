@@ -25,6 +25,16 @@ interface DayData {
   leaveType?: string | null;
 }
 
+export interface LeaveAdjustmentData {
+  user_id: string;
+  full_name: string;
+  leave_date: string;
+  hours_to_deduct: number;
+  reason: string | null;
+  original_period_start: string;
+  original_period_end: string;
+}
+
 interface MatrixData {
   title: string;
   period: string;
@@ -34,6 +44,7 @@ interface MatrixData {
   employeeTotals: Record<string, number>;
   dateTotals: Record<string, number>;
   grandTotal: number;
+  leaveAdjustments?: LeaveAdjustmentData[];
 }
 
 // Fetch all required data for the matrix
@@ -152,6 +163,58 @@ export const fetchMatrixData = async (
     title = 'Casual Staff Timesheet';
   }
 
+  // Fetch prior period leave adjustments
+  let leaveAdjustments: LeaveAdjustmentData[] = [];
+  
+  // Find the pay period matching the filter dates
+  const { data: matchingPeriod } = await supabase
+    .from('pay_periods')
+    .select('id')
+    .eq('period_start', startDateStr)
+    .eq('period_end', endDateStr)
+    .maybeSingle();
+
+  if (matchingPeriod) {
+    const { data: adjustments } = await supabase
+      .from('leave_adjustments')
+      .select('user_id, leave_date, hours_to_deduct, reason, original_pay_period_id, target_pay_period_id')
+      .eq('target_pay_period_id', matchingPeriod.id)
+      .eq('status', 'pending');
+
+    if (adjustments && adjustments.length > 0) {
+      // Get original period info
+      const origPeriodIds = [...new Set(adjustments.map(a => a.original_pay_period_id))];
+      const { data: origPeriods } = await supabase
+        .from('pay_periods')
+        .select('id, period_start, period_end')
+        .in('id', origPeriodIds);
+
+      const periodMap = new Map((origPeriods || []).map(p => [p.id, p]));
+
+      // Get user names
+      const userIds = [...new Set(adjustments.map(a => a.user_id))];
+      const { data: users } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      const userMap = new Map((users || []).map(u => [u.id, u.full_name]));
+
+      leaveAdjustments = adjustments.map(a => {
+        const origPeriod = periodMap.get(a.original_pay_period_id);
+        return {
+          user_id: a.user_id,
+          full_name: userMap.get(a.user_id) || 'Unknown',
+          leave_date: a.leave_date,
+          hours_to_deduct: Number(a.hours_to_deduct),
+          reason: a.reason,
+          original_period_start: origPeriod ? format(new Date(origPeriod.period_start + 'T00:00:00'), 'dd/MM/yyyy') : '',
+          original_period_end: origPeriod ? format(new Date(origPeriod.period_end + 'T00:00:00'), 'dd/MM/yyyy') : '',
+        };
+      });
+    }
+  }
+
   return {
     title,
     period: `${format(filters.startDate, 'dd/MM/yyyy')} - ${format(filters.endDate, 'dd/MM/yyyy')}`,
@@ -161,6 +224,7 @@ export const fetchMatrixData = async (
     employeeTotals,
     dateTotals,
     grandTotal,
+    leaveAdjustments,
   };
 };
 
@@ -239,6 +303,24 @@ export const generateMatrixCSV = (data: MatrixData): string => {
   // Empty line and legend
   lines.push('');
   lines.push(`"Legend: PH = Public Holiday, AL = Annual Leave, LL = Leave Loading, SL = Sick Leave, CL = Carer's Leave, ADO = Accrued Day Off, LWP = Leave Without Pay, HD = Higher Duty, PPL = Paid Parental Leave, T1.5 = Time and a Half, T2.5 = Double Time and a Half, LSL = Long Service Leave"`);
+  
+  // Prior Period Leave Adjustments section
+  if (data.leaveAdjustments && data.leaveAdjustments.length > 0) {
+    lines.push('');
+    lines.push('"Prior Period Leave Adjustments"');
+    lines.push('"Employee","Leave Date","Hours to Deduct","Original Period","Reason"');
+    
+    let totalDeduction = 0;
+    data.leaveAdjustments.forEach(adj => {
+      const leaveDate = format(new Date(adj.leave_date + 'T00:00:00'), 'EEE dd/MM/yyyy');
+      const origPeriod = `${adj.original_period_start} - ${adj.original_period_end}`;
+      const reason = adj.reason || '';
+      totalDeduction += adj.hours_to_deduct;
+      lines.push(`"${adj.full_name}","${leaveDate}","${adj.hours_to_deduct.toFixed(1)}","${origPeriod}","${reason}"`);
+    });
+    
+    lines.push(`"Total Hours to Deduct","","${totalDeduction.toFixed(1)}","",""`);
+  }
   
   return lines.join('\n');
 };
@@ -367,6 +449,45 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
   doc.setFont('helvetica', 'italic');
   doc.text('Legend: PH = Public Holiday, AL = Annual Leave, LL = Leave Loading, SL = Sick Leave, CL = Carer\'s Leave, ADO = Accrued Day Off', 14, finalY + 6);
   doc.text('LWP = Leave Without Pay, HD = Higher Duty, PPL = Paid Parental Leave, T1.5 = Time and a Half, T2.5 = Double Time and a Half, LSL = Long Service Leave', 14, finalY + 10);
+  
+  // Prior Period Leave Adjustments table
+  if (data.leaveAdjustments && data.leaveAdjustments.length > 0) {
+    const adjStartY = finalY + 18;
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Prior Period Leave Adjustments', 14, adjStartY);
+    
+    const adjHeaders = ['Employee', 'Leave Date', 'Hours to Deduct', 'Original Period', 'Reason'];
+    const adjBody: any[][] = [];
+    
+    let totalDeduction = 0;
+    data.leaveAdjustments.forEach(adj => {
+      const leaveDate = format(new Date(adj.leave_date + 'T00:00:00'), 'EEE dd/MM/yyyy');
+      const origPeriod = `${adj.original_period_start} - ${adj.original_period_end}`;
+      totalDeduction += adj.hours_to_deduct;
+      adjBody.push([adj.full_name, leaveDate, adj.hours_to_deduct.toFixed(1), origPeriod, adj.reason || '']);
+    });
+    
+    // Total row
+    adjBody.push([
+      { content: 'Total Hours to Deduct', styles: { fontStyle: 'bold' } },
+      '',
+      { content: totalDeduction.toFixed(1), styles: { fontStyle: 'bold' } },
+      '',
+      ''
+    ]);
+    
+    autoTable(doc, {
+      head: [adjHeaders],
+      body: adjBody,
+      startY: adjStartY + 3,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [180, 60, 60], textColor: 255, fontStyle: 'bold' },
+      columnStyles: { 0: { halign: 'left' }, 2: { halign: 'center' } },
+    });
+  }
   
   return doc;
 };
