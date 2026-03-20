@@ -480,6 +480,88 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_adjustments: {
+        Row: {
+          created_at: string | null
+          hours_to_deduct: number
+          id: string
+          leave_date: string
+          original_pay_period_id: string
+          reason: string | null
+          status: string
+          target_pay_period_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          hours_to_deduct?: number
+          id?: string
+          leave_date: string
+          original_pay_period_id: string
+          reason?: string | null
+          status?: string
+          target_pay_period_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          hours_to_deduct?: number
+          id?: string
+          leave_date?: string
+          original_pay_period_id?: string
+          reason?: string | null
+          status?: string
+          target_pay_period_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_adjustments_original_pay_period_id_fkey"
+            columns: ["original_pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_target_pay_period_id_fkey"
+            columns: ["target_pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
       pay_periods: {
         Row: {
           created_at: string | null
