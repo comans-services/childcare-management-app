@@ -31,7 +31,7 @@ export const PayrollSettings = () => {
 
     setLoading(true);
     try {
-      await updatePayrollSettings({ reference_pay_date: settings.reference_pay_date });
+      await updatePayrollSettings({ id: settings.id, reference_pay_date: settings.reference_pay_date });
       toast.success("Reference pay date saved successfully");
     } catch (error) {
       toast.error("Failed to save payroll settings");
@@ -58,7 +58,7 @@ export const PayrollSettings = () => {
     const fortnightNumber = Math.floor(daysDiff / 14);
     const fortnightStart = addDays(refMonday, fortnightNumber * 14);
     const fortnightEnd = addDays(fortnightStart, 13);
-    const payDay = addDays(fortnightStart, 1); // Tuesday
+    const payDay = addDays(fortnightStart, 8); // Second Tuesday
     
     return {
       start: fortnightStart,

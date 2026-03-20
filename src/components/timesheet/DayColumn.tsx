@@ -8,6 +8,7 @@ import { useDailyEntryValidation } from "@/hooks/useDailyEntryValidation";
 import { useWeekendLock } from "@/hooks/useWeekendLock";
 import { useWeeklyWorkSchedule } from "@/hooks/useWeeklyWorkSchedule";
 import { isWeekend } from "@/lib/date-utils";
+import { useAuth } from "@/context/AuthContext";
 import { sortEntriesByTime } from "@/lib/time-sorting-utils";
 import DayHeader from "./day-column/DayHeader";
 import EntryList from "./day-column/EntryList";
@@ -40,7 +41,10 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<TimesheetEntry | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
+  const { userRole } = useAuth();
+  const isAdmin = userRole === "admin";
+
   // Get weekly schedule to determine scheduled hours
   const { effectiveDailyHours } = useWeeklyWorkSchedule(userId, getWeekStart(date));
   
@@ -85,9 +89,10 @@ const DayColumn: React.FC<DayColumnProps> = ({
   };
 
   // Check if this day can accept new entries (schedule + 1 per day + weekend validation)
-  const canAddToThisDay = validation.canAddToDate(date);
+  // Admins bypass the schedule restriction and can add on any day
+  const canAddToThisDay = isAdmin ? !validation.hasEntryOnDate(date) : validation.canAddToDate(date);
   const hasEntries = dayEntries.length > 0;
-  const isDayScheduled = validation.isDayScheduled(date);
+  const isDayScheduled = isAdmin ? true : validation.isDayScheduled(date);
   
   // Weekend-specific validation
   const isWeekendDay = isWeekend(date);

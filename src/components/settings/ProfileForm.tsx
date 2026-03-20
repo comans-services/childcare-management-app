@@ -69,7 +69,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
 
       const updatedUser = await updateUser({
         ...profileData,
-        full_name: formState.full_name,
         organization: formState.organization,
         time_zone: formState.time_zone,
         default_start_time: formState.default_start_time,
@@ -120,9 +119,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
                 id="full_name"
                 name="full_name"
                 value={formState.full_name}
-                onChange={handleInputChange}
-                placeholder="Your full name"
+                disabled
               />
+              <p className="text-sm text-muted-foreground">
+                Full name can only be changed by an administrator.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -139,20 +140,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
               </p>
             </div>
           </div>
-
-          {userRole === 'admin' && (
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Input
-                id="role"
-                value={userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Employee"}
-                disabled
-              />
-              <p className="text-sm text-muted-foreground">
-                Roles are managed by administrators.
-              </p>
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="organization">Organization</Label>

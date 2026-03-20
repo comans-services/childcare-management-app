@@ -29,7 +29,6 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
   setIsLoading,
 }) => {
   const [users, setUsers] = useState<any[]>([]);
-  const [rooms, setRooms] = useState<any[]>([]);
 
   const { generateReport, isGeneratingReport } = useReportGeneration({
     filters,
@@ -50,17 +49,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
       if (data) setUsers(data);
     };
 
-    const fetchRooms = async () => {
-      const { data } = await supabase
-        .from("childcare_rooms")
-        .select("id, name, room_number")
-        .eq("is_active", true)
-        .order("room_number");
-      if (data) setRooms(data);
-    };
-
     fetchUsers();
-    fetchRooms();
   }, []);
 
   return (
@@ -76,32 +65,30 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
           </div>
 
           {/* User Filter */}
-          {filters.reportType !== "rooms" && (
-            <div className="space-y-2">
-              <Label>Employee</Label>
-              <Select
-                value={filters.userIds?.[0] || "all"}
-                onValueChange={(value) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    userIds: value === "all" ? [] : [value],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All employees" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Employees</SelectItem>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label>Employee</Label>
+            <Select
+              value={filters.userIds?.[0] || "all"}
+              onValueChange={(value) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  userIds: value === "all" ? [] : [value],
+                }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All employees" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Employees</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Employment Type Filter */}
           {filters.reportType === "timesheet" && (
@@ -123,34 +110,6 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="permanent">Permanent</SelectItem>
                   <SelectItem value="casual">Casual</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Room Filter */}
-          {filters.reportType === "rooms" && (
-            <div className="space-y-2">
-              <Label>Room</Label>
-              <Select
-                value={filters.roomIds?.[0] || "all"}
-                onValueChange={(value) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    roomIds: value === "all" ? [] : [value],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All rooms" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Rooms</SelectItem>
-                  {rooms.map((room) => (
-                    <SelectItem key={room.id} value={room.id}>
-                      Room {room.room_number} - {room.name}
-                    </SelectItem>
-                  ))}
                 </SelectContent>
               </Select>
             </div>

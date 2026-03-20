@@ -3,8 +3,6 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchReportData } from "@/lib/timesheet-service";
 import { fetchAuditLogs, logAuditEvent } from "@/lib/audit/audit-service";
-import { fetchScheduleReportData } from "@/lib/reports/schedule-report-service";
-import { fetchRoomActivityReportData } from "@/lib/reports/room-activity-report-service";
 import { toast } from "@/hooks/use-toast";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 
@@ -107,62 +105,6 @@ export const useReportGeneration = ({
         toast({
           title: "Audit logs loaded",
           description: `Found ${auditLogs.length} audit log entries`,
-          variant: "default"
-        });
-      } else if (filters.reportType === 'schedules') {
-        const scheduleData = await fetchScheduleReportData({
-          startDate: filters.startDate,
-          endDate: filters.endDate,
-          userIds: filters.userIds?.filter(id => id),
-        });
-        setScheduleData?.(scheduleData);
-        setReportData([]);
-        setAuditData([]);
-        setRoomData?.({});
-        
-        await logAuditEvent({
-          action: "schedule_report_generated",
-          details: {
-            report_type: "schedules",
-            start_date: filters.startDate.toISOString(),
-            end_date: filters.endDate.toISOString(),
-            user_ids: filters.userIds,
-            result_count: scheduleData.weeklySchedules.length
-          }
-        });
-        
-        toast({
-          title: "Schedule report generated",
-          description: `Found ${scheduleData.weeklySchedules.length} weekly schedules`,
-          variant: "default"
-        });
-      } else if (filters.reportType === 'rooms') {
-        const roomData = await fetchRoomActivityReportData({
-          startDate: filters.startDate,
-          endDate: filters.endDate,
-          roomIds: filters.roomIds?.filter(id => id),
-          staffIds: filters.userIds?.filter(id => id),
-        });
-        setRoomData?.(roomData);
-        setReportData([]);
-        setAuditData([]);
-        setScheduleData?.({});
-        
-        await logAuditEvent({
-          action: "room_activity_report_generated",
-          details: {
-            report_type: "room_activity",
-            start_date: filters.startDate.toISOString(),
-            end_date: filters.endDate.toISOString(),
-            room_ids: filters.roomIds,
-            staff_ids: filters.userIds,
-            result_count: roomData.staffEntries.length
-          }
-        });
-        
-        toast({
-          title: "Room activity report generated",
-          description: `Found ${roomData.staffEntries.length} room entries`,
           variant: "default"
         });
       }

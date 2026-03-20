@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Save, RotateCcw, Loader2 } from "lucide-react";
@@ -16,58 +16,59 @@ interface WeeklyScheduleEditorProps {
   onReset: () => Promise<void>;
 }
 
+const DEFAULT_DAY_HOURS = 8;
+
 const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
   weekStartDate,
   weeklySchedule,
-  defaultHours = 8,
   onSave,
   onReset,
 }) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
-  
-  const [hours, setHours] = useState({
-    monday_hours: 0,
-    tuesday_hours: 0,
-    wednesday_hours: 0,
-    thursday_hours: 0,
-    friday_hours: 0,
-    saturday_hours: 0,
-    sunday_hours: 0,
+
+  const [workingDays, setWorkingDays] = useState<Record<string, boolean>>({
+    monday_hours: false,
+    tuesday_hours: false,
+    wednesday_hours: false,
+    thursday_hours: false,
+    friday_hours: false,
+    saturday_hours: false,
+    sunday_hours: false,
   });
 
   useEffect(() => {
     if (weeklySchedule) {
-      setHours({
-        monday_hours: Number(weeklySchedule.monday_hours || 0),
-        tuesday_hours: Number(weeklySchedule.tuesday_hours || 0),
-        wednesday_hours: Number(weeklySchedule.wednesday_hours || 0),
-        thursday_hours: Number(weeklySchedule.thursday_hours || 0),
-        friday_hours: Number(weeklySchedule.friday_hours || 0),
-        saturday_hours: Number(weeklySchedule.saturday_hours || 0),
-        sunday_hours: Number(weeklySchedule.sunday_hours || 0),
+      setWorkingDays({
+        monday_hours: Number(weeklySchedule.monday_hours || 0) > 0,
+        tuesday_hours: Number(weeklySchedule.tuesday_hours || 0) > 0,
+        wednesday_hours: Number(weeklySchedule.wednesday_hours || 0) > 0,
+        thursday_hours: Number(weeklySchedule.thursday_hours || 0) > 0,
+        friday_hours: Number(weeklySchedule.friday_hours || 0) > 0,
+        saturday_hours: Number(weeklySchedule.saturday_hours || 0) > 0,
+        sunday_hours: Number(weeklySchedule.sunday_hours || 0) > 0,
       });
     }
   }, [weeklySchedule]);
 
-  const handleHourChange = (day: keyof typeof hours, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    if (numValue < 0 || numValue > 24) {
-      toast({
-        title: "Invalid Hours",
-        description: "Hours must be between 0 and 24",
-        variant: "destructive",
-      });
-      return;
-    }
-    setHours(prev => ({ ...prev, [day]: numValue }));
+  const handleDayToggle = (key: string, checked: boolean) => {
+    setWorkingDays(prev => ({ ...prev, [key]: checked }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave(hours);
+      const scheduleData = {
+        monday_hours: workingDays.monday_hours ? DEFAULT_DAY_HOURS : 0,
+        tuesday_hours: workingDays.tuesday_hours ? DEFAULT_DAY_HOURS : 0,
+        wednesday_hours: workingDays.wednesday_hours ? DEFAULT_DAY_HOURS : 0,
+        thursday_hours: workingDays.thursday_hours ? DEFAULT_DAY_HOURS : 0,
+        friday_hours: workingDays.friday_hours ? DEFAULT_DAY_HOURS : 0,
+        saturday_hours: workingDays.saturday_hours ? DEFAULT_DAY_HOURS : 0,
+        sunday_hours: workingDays.sunday_hours ? DEFAULT_DAY_HOURS : 0,
+      };
+      await onSave(scheduleData);
       toast({
         title: "Schedule Saved",
         description: "Weekly schedule updated successfully",
@@ -88,14 +89,14 @@ const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
     setResetting(true);
     try {
       await onReset();
-      setHours({
-        monday_hours: 0,
-        tuesday_hours: 0,
-        wednesday_hours: 0,
-        thursday_hours: 0,
-        friday_hours: 0,
-        saturday_hours: 0,
-        sunday_hours: 0,
+      setWorkingDays({
+        monday_hours: false,
+        tuesday_hours: false,
+        wednesday_hours: false,
+        thursday_hours: false,
+        friday_hours: false,
+        saturday_hours: false,
+        sunday_hours: false,
       });
       toast({
         title: "Schedule Reset",
@@ -113,10 +114,6 @@ const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
     }
   };
 
-  const totalHours = Object.values(hours).reduce((sum, h) => sum + h, 0);
-  const weekEnd = new Date(weekStartDate);
-  weekEnd.setDate(weekEnd.getDate() + 6);
-
   const dayLabels = [
     { key: 'monday_hours' as const, label: 'Monday' },
     { key: 'tuesday_hours' as const, label: 'Tuesday' },
@@ -127,30 +124,34 @@ const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
     { key: 'sunday_hours' as const, label: 'Sunday' },
   ];
 
+  const activeDays = Object.values(workingDays).filter(Boolean).length;
+  const weekEnd = new Date(weekStartDate);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          Week of {weekStartDate.toLocaleDateString()} - {weekEnd.toLocaleDateString()}
+          Week of {weekStartDate.toLocaleDateString()} – {weekEnd.toLocaleDateString()}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-3">
           {dayLabels.map(({ key, label }) => (
             <div key={key} className="flex items-center gap-3">
-              <Label className="w-24 text-sm">{label}</Label>
-              <Input
-                type="number"
-                min="0"
-                max="24"
-                step="0.5"
-                value={hours[key]}
-                onChange={(e) => handleHourChange(key, e.target.value)}
-                className="w-24"
+              <Checkbox
+                id={`weekly-${key}`}
+                checked={workingDays[key] ?? false}
+                onCheckedChange={(checked) => handleDayToggle(key, !!checked)}
               />
-              <span className="text-sm text-muted-foreground">hours</span>
-              {hours[key] > 0 && (
+              <Label
+                htmlFor={`weekly-${key}`}
+                className="w-24 text-sm cursor-pointer select-none"
+              >
+                {label}
+              </Label>
+              {workingDays[key] && (
                 <div className="h-2 w-2 bg-primary rounded-full" />
               )}
             </div>
@@ -159,8 +160,8 @@ const WeeklyScheduleEditor: React.FC<WeeklyScheduleEditorProps> = ({
 
         <div className="pt-2 border-t">
           <div className="flex items-center justify-between">
-            <span className="font-medium">Total Hours:</span>
-            <span className="text-lg font-bold text-primary">{totalHours.toFixed(1)} hours</span>
+            <span className="font-medium text-sm">Working days this week:</span>
+            <span className="font-bold text-primary">{activeDays} day{activeDays !== 1 ? "s" : ""}</span>
           </div>
         </div>
 

@@ -111,8 +111,8 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
       await reloadGlobalSchedule();
       await reloadWeeklySchedule();
       toast({
-        title: "Template Saved",
-        description: "Default schedule template has been updated successfully.",
+        title: "Default Schedule Saved",
+        description: "Default schedule has been updated successfully.",
       });
     } catch (error) {
       console.error("Error saving template:", error);
@@ -138,8 +138,8 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
       await reloadGlobalSchedule();
       await reloadWeeklySchedule();
       toast({
-        title: "Template Cleared",
-        description: "Default schedule template has been cleared.",
+        title: "Default Schedule Cleared",
+        description: "Default schedule has been cleared.",
       });
     } catch (error) {
       console.error("Error clearing template:", error);
@@ -231,8 +231,8 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
       <Tabs defaultValue="schedule" className="w-full">
         <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-2'}`}>
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
-          {isAdmin && <TabsTrigger value="template">Default Template</TabsTrigger>}
-          {isAdmin && <TabsTrigger value="weekly">Weekly Hours</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="template">Default Schedule</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="weekly">Weekly Schedule</TabsTrigger>}
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
         </TabsList>
 
@@ -248,7 +248,7 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
             {scheduleSource === 'template' && (
               <Badge variant="secondary" className="text-xs">
                 <FileText className="h-3 w-3 mr-1" />
-                Using Template
+                Using Default Schedule
               </Badge>
             )}
             {scheduleSource === 'default' && (
@@ -310,7 +310,7 @@ const UnifiedUserScheduleCard: React.FC<UnifiedUserScheduleCardProps> = ({
           <TabsContent value="weekly" className="space-y-4 mt-4">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Set specific hours for each day of this week. This will override the template and global settings.
+                Tick which days this employee works this week. This overrides the default schedule for this week only.
               </p>
               <WeeklyScheduleEditor
                 userId={user.id}

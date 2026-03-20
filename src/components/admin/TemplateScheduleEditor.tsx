@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,8 @@ interface TemplateScheduleEditorProps {
   onClear: () => Promise<void>;
 }
 
+const DEFAULT_DAY_HOURS = 8;
+
 const dayLabels = [
   { key: "monday", label: "Monday" },
   { key: "tuesday", label: "Tuesday" },
@@ -39,53 +41,48 @@ const TemplateScheduleEditor: React.FC<TemplateScheduleEditorProps> = ({
   onSave,
   onClear,
 }) => {
-  const [hours, setHours] = useState({
-    monday: 0,
-    tuesday: 0,
-    wednesday: 0,
-    thursday: 0,
-    friday: 0,
-    saturday: 0,
-    sunday: 0,
+  // Store which days are working days (true = working)
+  const [workingDays, setWorkingDays] = useState<Record<string, boolean>>({
+    monday: false,
+    tuesday: false,
+    wednesday: false,
+    thursday: false,
+    friday: false,
+    saturday: false,
+    sunday: false,
   });
   const [saving, setSaving] = useState(false);
   const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     if (currentTemplate) {
-      setHours({
-        monday: currentTemplate.monday_hours || 0,
-        tuesday: currentTemplate.tuesday_hours || 0,
-        wednesday: currentTemplate.wednesday_hours || 0,
-        thursday: currentTemplate.thursday_hours || 0,
-        friday: currentTemplate.friday_hours || 0,
-        saturday: currentTemplate.saturday_hours || 0,
-        sunday: currentTemplate.sunday_hours || 0,
+      setWorkingDays({
+        monday: (currentTemplate.monday_hours || 0) > 0,
+        tuesday: (currentTemplate.tuesday_hours || 0) > 0,
+        wednesday: (currentTemplate.wednesday_hours || 0) > 0,
+        thursday: (currentTemplate.thursday_hours || 0) > 0,
+        friday: (currentTemplate.friday_hours || 0) > 0,
+        saturday: (currentTemplate.saturday_hours || 0) > 0,
+        sunday: (currentTemplate.sunday_hours || 0) > 0,
       });
     }
   }, [currentTemplate]);
 
-  const handleHourChange = (day: string, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    if (numValue >= 0 && numValue <= 24) {
-      setHours(prev => ({
-        ...prev,
-        [day]: numValue,
-      }));
-    }
+  const handleDayToggle = (day: string, checked: boolean) => {
+    setWorkingDays(prev => ({ ...prev, [day]: checked }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await onSave({
-        monday_hours: hours.monday,
-        tuesday_hours: hours.tuesday,
-        wednesday_hours: hours.wednesday,
-        thursday_hours: hours.thursday,
-        friday_hours: hours.friday,
-        saturday_hours: hours.saturday,
-        sunday_hours: hours.sunday,
+        monday_hours: workingDays.monday ? DEFAULT_DAY_HOURS : 0,
+        tuesday_hours: workingDays.tuesday ? DEFAULT_DAY_HOURS : 0,
+        wednesday_hours: workingDays.wednesday ? DEFAULT_DAY_HOURS : 0,
+        thursday_hours: workingDays.thursday ? DEFAULT_DAY_HOURS : 0,
+        friday_hours: workingDays.friday ? DEFAULT_DAY_HOURS : 0,
+        saturday_hours: workingDays.saturday ? DEFAULT_DAY_HOURS : 0,
+        sunday_hours: workingDays.sunday ? DEFAULT_DAY_HOURS : 0,
       });
     } finally {
       setSaving(false);
@@ -96,23 +93,22 @@ const TemplateScheduleEditor: React.FC<TemplateScheduleEditorProps> = ({
     setClearing(true);
     try {
       await onClear();
-      setHours({
-        monday: 0,
-        tuesday: 0,
-        wednesday: 0,
-        thursday: 0,
-        friday: 0,
-        saturday: 0,
-        sunday: 0,
+      setWorkingDays({
+        monday: false,
+        tuesday: false,
+        wednesday: false,
+        thursday: false,
+        friday: false,
+        saturday: false,
+        sunday: false,
       });
     } finally {
       setClearing(false);
     }
   };
 
-  const totalHours = Object.values(hours).reduce((sum, h) => sum + h, 0);
-  const workingDays = Object.values(hours).filter(h => h > 0).length;
-  const hasTemplate = totalHours > 0;
+  const activeDays = Object.values(workingDays).filter(Boolean).length;
+  const hasSchedule = activeDays > 0;
 
   return (
     <Card>
@@ -121,16 +117,16 @@ const TemplateScheduleEditor: React.FC<TemplateScheduleEditorProps> = ({
           <div className="space-y-1">
             <CardTitle className="text-base flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Default Template Schedule
+              Default Schedule
             </CardTitle>
             <CardDescription className="text-sm">
-              Set recurring weekly hours that apply to all weeks unless overridden
+              Tick the days this employee is scheduled to work each week
             </CardDescription>
           </div>
-          {hasTemplate && (
+          {hasSchedule && (
             <Badge variant="secondary" className="text-xs">
               <Clock className="h-3 w-3 mr-1" />
-              {workingDays} days • {totalHours}h/week
+              {activeDays} day{activeDays !== 1 ? "s" : ""}/week
             </Badge>
           )}
         </div>
@@ -140,64 +136,56 @@ const TemplateScheduleEditor: React.FC<TemplateScheduleEditorProps> = ({
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            This template will automatically apply to all weeks. You can still override specific weeks using the "Weekly Hours" tab.
+            This default schedule applies to all weeks unless overridden using the Weekly Schedule tab.
           </AlertDescription>
         </Alert>
 
         <div className="grid gap-3">
           {dayLabels.map(({ key, label }) => (
             <div key={key} className="flex items-center gap-3">
-              <Label htmlFor={`template-${key}`} className="w-28 text-sm">
+              <Checkbox
+                id={`template-${key}`}
+                checked={workingDays[key] ?? false}
+                onCheckedChange={(checked) => handleDayToggle(key, !!checked)}
+              />
+              <Label
+                htmlFor={`template-${key}`}
+                className="w-28 text-sm cursor-pointer select-none"
+              >
                 {label}
               </Label>
-              <div className="flex items-center gap-2 flex-1">
-                <Input
-                  id={`template-${key}`}
-                  type="number"
-                  min="0"
-                  max="24"
-                  step="0.5"
-                  value={hours[key as keyof typeof hours]}
-                  onChange={(e) => handleHourChange(key, e.target.value)}
-                  className="w-24"
-                />
-                <span className="text-sm text-muted-foreground">hours</span>
-                {hours[key as keyof typeof hours] > 0 && (
-                  <Badge variant="outline" className="text-xs">
-                    Working day
-                  </Badge>
-                )}
-              </div>
+              {workingDays[key] && (
+                <Badge variant="outline" className="text-xs">
+                  Working day
+                </Badge>
+              )}
             </div>
           ))}
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t">
-          <div className="text-sm">
-            <span className="font-medium">Total:</span>{" "}
-            <span className="text-muted-foreground">
-              {workingDays} working days • {totalHours} hours/week
-            </span>
+          <div className="text-sm text-muted-foreground">
+            <span className="font-medium">{activeDays}</span> working day{activeDays !== 1 ? "s" : ""} selected
           </div>
         </div>
 
         <div className="flex gap-2">
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={saving || clearing}
             className="flex-1"
           >
             <Save className="h-4 w-4 mr-2" />
-            {saving ? "Saving..." : "Save Template"}
+            {saving ? "Saving..." : "Save Schedule"}
           </Button>
-          <Button 
-            onClick={handleClear} 
+          <Button
+            onClick={handleClear}
             variant="outline"
-            disabled={saving || clearing || !hasTemplate}
+            disabled={saving || clearing || !hasSchedule}
             className="flex-1"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
-            {clearing ? "Clearing..." : "Clear Template"}
+            {clearing ? "Clearing..." : "Clear Schedule"}
           </Button>
         </div>
       </CardContent>

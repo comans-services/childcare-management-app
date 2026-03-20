@@ -27,6 +27,7 @@ export const EmailSettingsDialog = ({
   onSuccess,
 }: EmailSettingsDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [settingsId, setSettingsId] = useState<string | null>(null);
   const [senderName, setSenderName] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
   const [replyToEmail, setReplyToEmail] = useState("");
@@ -48,6 +49,7 @@ export const EmailSettingsDialog = ({
       if (error) throw error;
 
       if (data) {
+        setSettingsId(data.id);
         setSenderName(data.sender_name || "");
         setSenderEmail(data.sender_email || "");
         setReplyToEmail(data.reply_to_email || "");
@@ -96,7 +98,7 @@ export const EmailSettingsDialog = ({
           organization_name: organizationName.trim() || null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', (await supabase.from('email_settings').select('id').single()).data?.id);
+        .eq('id', settingsId);
 
       if (error) throw error;
 

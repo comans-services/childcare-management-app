@@ -22,6 +22,10 @@ export const duplicateTimesheetEntry = async (entryId: string): Promise<Timeshee
     hours_logged: originalEntry.hours_logged,
     start_time: originalEntry.start_time,
     end_time: originalEntry.end_time,
+    break_minutes: originalEntry.break_minutes ?? 30,
+    tea_break_minutes: 0,
+    lunch_break_taken: originalEntry.lunch_break_taken ?? false,
+    leave_type: originalEntry.leave_type || null,
     user_id: (userIsAdmin && originalEntry.user_id !== user.id) ? originalEntry.user_id : user.id
   };
   

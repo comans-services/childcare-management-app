@@ -1,34 +1,53 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { deviceService } from "@/lib/childcare-monitor/device-service";
 import { setDeviceToken, getDeviceSessionId } from "@/hooks/useDeviceAuth";
-import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import logo from "@/assets/childcare-monitor-logo.svg";
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
 
 const DeviceSetup: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"validating" | "success" | "error">("validating");
   const [message, setMessage] = useState("Validating device token...");
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<{ roomId: string; roomName: string } | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
 
-  useEffect(() => {
-    const setupDevice = async () => {
-      const token = searchParams.get("token");
+  const setupDevice = useCallback(async () => {
+    const token = searchParams.get("token");
 
-      if (!token) {
-        setStatus("error");
-        setMessage("No device token provided in setup URL");
-        return;
-      }
+    if (!token) {
+      setStatus("error");
+      setMessage("No device token provided in setup URL.");
+      setErrorDetail("Please ask your administrator for a valid setup link with a token parameter.");
+      return;
+    }
 
+    setStatus("validating");
+    setMessage("Validating device token...");
+    setErrorDetail(null);
+
+    let lastError: any = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
+        if (attempt > 1) {
+          setMessage(`Retrying... (attempt ${attempt} of ${MAX_RETRIES})`);
+          await new Promise(res => setTimeout(res, RETRY_DELAY_MS));
+        }
+
         // Store token first (this also generates a session ID)
         setDeviceToken(token);
-        
+
         // Get the session ID that was just created
         const sessionId = getDeviceSessionId();
-        
+
         // Validate with session binding
         const result = await deviceService.validateDeviceToken(token, sessionId || undefined);
 
@@ -44,19 +63,41 @@ const DeviceSetup: React.FC = () => {
           setTimeout(() => {
             navigate(`/childcare-monitor/room/${result.room_id}`);
           }, 2000);
+          return;
         } else {
+          // Non-retryable error — token is invalid or expired
           setStatus("error");
-          setMessage(result.message || "Invalid device token");
+          setMessage("Device token is invalid or has expired.");
+          setErrorDetail(result.message || "Please ask your administrator to generate a new setup link.");
+          return;
         }
-      } catch (error) {
-        console.error("Device setup error:", error);
-        setStatus("error");
-        setMessage("Failed to setup device. Please contact an administrator.");
-      }
-    };
+      } catch (error: any) {
+        console.error(`Device setup attempt ${attempt} failed:`, error);
+        lastError = error;
 
-    setupDevice();
+        if (attempt < MAX_RETRIES) {
+          continue;
+        }
+      }
+    }
+
+    // All retries exhausted
+    setStatus("error");
+    setMessage("Failed to register device after multiple attempts.");
+    const detail = lastError?.message || "Network or server error.";
+    setErrorDetail(`${detail} — Please check your network connection and try again, or contact your administrator.`);
   }, [searchParams, navigate]);
+
+  useEffect(() => {
+    setupDevice();
+  }, [setupDevice]);
+
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    setRetryCount(prev => prev + 1);
+    await setupDevice();
+    setIsRetrying(false);
+  };
 
   return (
     <div className="min-h-screen bg-care-green text-white flex items-center justify-center p-6">
@@ -89,10 +130,28 @@ const DeviceSetup: React.FC = () => {
         {status === "error" && (
           <>
             <XCircle className="h-12 w-12 mx-auto mb-4 text-red-400" />
-            <p className="text-lg mb-4">{message}</p>
-            <p className="text-sm text-care-lightText">
-              Please contact your administrator for a valid setup link.
-            </p>
+            <p className="text-lg mb-2">{message}</p>
+            {errorDetail && (
+              <p className="text-sm text-care-lightText mb-4">{errorDetail}</p>
+            )}
+            <Button
+              onClick={handleRetry}
+              disabled={isRetrying}
+              variant="outline"
+              className="text-white border-white hover:bg-white hover:text-care-darkGreen mt-2"
+            >
+              {isRetrying ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {isRetrying ? "Retrying..." : "Try Again"}
+            </Button>
+            {retryCount > 0 && (
+              <p className="text-xs text-care-lightText mt-3">
+                Tried {retryCount + 1} time{retryCount + 1 !== 1 ? "s" : ""}. Contact your administrator if this continues.
+              </p>
+            )}
           </>
         )}
       </div>

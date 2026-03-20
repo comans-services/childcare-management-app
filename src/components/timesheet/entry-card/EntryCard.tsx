@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Clock, FileText, GripVertical, Copy, User, Pencil, Trash2 } from "lucide-react";
+import { Clock, FileText, GripVertical, Copy, User, Pencil, Trash2, UtensilsCrossed } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
 import { LEAVE_TYPE_ABBREVIATIONS } from "@/components/timesheet/time-entry/schema";
@@ -212,16 +212,22 @@ const EntryCard: React.FC<EntryCardProps> = ({
             </div>
           )}
 
-          {entry.leave_type && (
-            <div className="mt-2">
-              <Badge 
-                variant="outline" 
+          <div className="flex flex-wrap gap-1 mt-2">
+            {entry.leave_type && (
+              <Badge
+                variant="outline"
                 className={cn("text-[10px] md:text-xs", getLeaveTypeBadgeColor(entry.leave_type))}
               >
                 {LEAVE_TYPE_ABBREVIATIONS[entry.leave_type] || entry.leave_type}
               </Badge>
-            </div>
-          )}
+            )}
+            {entry.lunch_break_taken && (
+              <Badge variant="outline" className="text-[10px] md:text-xs bg-orange-50 text-orange-700 border-orange-200">
+                <UtensilsCrossed className="h-2.5 w-2.5 mr-1" />
+                Lunch
+              </Badge>
+            )}
+          </div>
           
           <div className="flex justify-end mt-3 space-x-1 pt-1 border-t border-t-background/20">
             <TooltipProvider>

@@ -17,8 +17,9 @@ export const updateTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     end_time: entry.end_time,
     user_id: entry.user_id,
     leave_type: entry.leave_type || null,
-    break_minutes: entry.break_minutes ?? 30,
+    break_minutes: 0,
     tea_break_minutes: entry.tea_break_minutes ?? 0,
+    lunch_break_taken: entry.lunch_break_taken ?? false,
   };
 
   console.log("Update data:", updateData);

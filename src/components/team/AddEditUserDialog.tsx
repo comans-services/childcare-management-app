@@ -38,9 +38,7 @@ const userSchema = z.object({
   full_name: z.string().min(1, "Full name is required"),
   role: z.enum(["employee", "admin"]),
   organization: z.string().optional().nullable(),
-  time_zone: z.string().optional().nullable(),
-  employment_type: z.enum(["full-time", "part-time"]),
-  employee_card_id: z.string().optional().nullable(),
+  employment_type: z.enum(["full-time", "part-time", "casual"]),
   employee_id: z.string().optional().nullable(),
 });
 
@@ -51,9 +49,7 @@ const newUserSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.enum(["employee", "admin"]),
   organization: z.string().optional().nullable(),
-  time_zone: z.string().optional().nullable(),
-  employment_type: z.enum(["full-time", "part-time"]),
-  employee_card_id: z.string().optional().nullable(),
+  employment_type: z.enum(["full-time", "part-time", "casual"]),
   employee_id: z.string().optional().nullable(),
 });
 
@@ -65,7 +61,7 @@ const AddEditUserDialog = ({
   isNewUser = false,
 }: AddEditUserDialogProps) => {
   const schema = isNewUser ? newUserSchema : userSchema;
-  
+
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: isNewUser ? {
@@ -74,18 +70,14 @@ const AddEditUserDialog = ({
       password: "",
       role: "employee" as const,
       organization: "",
-      time_zone: "",
       employment_type: "full-time" as const,
-      employee_card_id: "",
       employee_id: "",
     } : {
       id: user?.id || "",
       full_name: user?.full_name || "",
       role: (user?.role as "employee" | "admin") || "employee",
       organization: user?.organization || "",
-      time_zone: user?.time_zone || "",
-      employment_type: (user?.employment_type as "full-time" | "part-time") || "full-time",
-      employee_card_id: user?.employee_card_id || "",
+      employment_type: (user?.employment_type as "full-time" | "part-time" | "casual") || "full-time",
       employee_id: user?.employee_id || "",
     }
   });
@@ -98,9 +90,7 @@ const AddEditUserDialog = ({
         password: "",
         role: "employee",
         organization: "",
-        time_zone: "",
         employment_type: "full-time",
-        employee_card_id: "",
         employee_id: "",
       });
     } else if (user) {
@@ -109,21 +99,23 @@ const AddEditUserDialog = ({
         full_name: user.full_name || "",
         role: (user.role as "employee" | "admin") || "employee",
         organization: user.organization || "",
-        time_zone: user.time_zone || "",
-        employment_type: (user.employment_type as "full-time" | "part-time") || "full-time",
-        employee_card_id: user.employee_card_id || "",
+        employment_type: (user.employment_type as "full-time" | "part-time" | "casual") || "full-time",
         employee_id: user.employee_id || "",
       });
     }
   }, [user, isNewUser, form]);
 
   const onSubmit = (values: any) => {
+    // Default timezone to Melbourne for new users
+    if (isNewUser) {
+      values.time_zone = "Australia/Melbourne";
+    }
     onSave(values);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isNewUser ? "Add Team Member" : "Edit Team Member"}
@@ -233,6 +225,7 @@ const AddEditUserDialog = ({
                       <SelectContent>
                         <SelectItem value="full-time">Full-time</SelectItem>
                         <SelectItem value="part-time">Part-time</SelectItem>
+                        <SelectItem value="casual">Casual</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -242,24 +235,6 @@ const AddEditUserDialog = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="employee_card_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Employee Card ID</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value || ""}
-                        placeholder="EMP001"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="employee_id"
@@ -273,40 +248,6 @@ const AddEditUserDialog = ({
                         placeholder="EMP001"
                       />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="time_zone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Time Zone</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ""}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select time zone" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="UTC">UTC</SelectItem>
-                        <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                        <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                        <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                        <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                        <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                        <SelectItem value="Europe/Paris">Central European Time</SelectItem>
-                        <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                        <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
