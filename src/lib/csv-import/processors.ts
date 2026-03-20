@@ -102,12 +102,11 @@ export const processRow = async (
         console.log('Auth user created successfully:', authData.user.id);
         
         try {
-          // Step 2: Create profile record
+          // Step 2: Create profile record (without role - stored in user_roles table)
           const profileData = {
             id: authData.user.id,
             full_name: processedData.full_name,
             email: processedData.email,
-            role: processedData.role,
             organization: processedData.organization,
             time_zone: processedData.time_zone,
             employment_type: processedData.employment_type,
@@ -136,6 +135,19 @@ export const processRow = async (
             }
             
             throw new Error(`Failed to create profile: ${profileError.message}`);
+          }
+          
+        // Also insert into user_roles table
+          const userRoleValue = processedData.role || 'employee';
+          const { error: roleInsertError } = await supabase
+            .from('user_roles' as any)
+            .insert({
+              user_id: authData.user.id,
+              role: userRoleValue,
+            } as any);
+          
+          if (roleInsertError) {
+            console.error('Error inserting user role:', roleInsertError);
           }
           
           savedData = profileResult;

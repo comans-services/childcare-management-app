@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,15 @@ import { formatDateDisplay, isAfterTuesdayCutoff } from "@/lib/date-utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 import { LEAVE_TYPE_ABBREVIATIONS } from "@/components/timesheet/time-entry/schema";
 import { AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+
+interface PayPeriodInfo {
+  period_start: string;
+  period_end: string;
+  payroll_cutoff_date: string;
+  payroll_date: string;
+}
 
 interface ReportDataTableProps {
   reportData: TimesheetEntry[];
@@ -20,6 +29,47 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
   filters, 
   isLoading 
 }) => {
+  const [currentPayPeriod, setCurrentPayPeriod] = useState<PayPeriodInfo | null>(null);
+  const [nextPayPeriod, setNextPayPeriod] = useState<PayPeriodInfo | null>(null);
+
+  useEffect(() => {
+    const fetchPayPeriods = async () => {
+      if (!filters.startDate || !filters.endDate) return;
+
+      try {
+        // Find pay period matching the report date range
+        const { data: current } = await supabase
+          .from("pay_periods")
+          .select("period_start, period_end, payroll_cutoff_date, payroll_date")
+          .lte("period_start", filters.startDate)
+          .gte("period_end", filters.endDate)
+          .limit(1)
+          .single();
+
+        if (current) {
+          setCurrentPayPeriod(current);
+
+          // Fetch the next pay period
+          const { data: next } = await supabase
+            .from("pay_periods")
+            .select("period_start, period_end, payroll_cutoff_date, payroll_date")
+            .gt("period_start", current.period_end)
+            .order("period_start", { ascending: true })
+            .limit(1)
+            .single();
+
+          if (next) {
+            setNextPayPeriod(next);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching pay periods:", error);
+      }
+    };
+
+    fetchPayPeriods();
+  }, [filters.startDate, filters.endDate]);
+
   if (isLoading) {
     return (
       <Card>
@@ -48,12 +98,25 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
 
   const totalHours = reportData.reduce((sum, entry) => sum + entry.hours_logged, 0);
 
-  // Find leave entries after Tuesday cutoff
-  const postCutoffLeaveEntries = reportData.filter((entry: any) => {
+  // Determine if an entry is after the payroll cutoff
+  const isEntryAfterCutoff = (entry: any): boolean => {
     if (!entry.leave_type) return false;
     const entryDate = new Date(entry.entry_date);
+    
+    if (currentPayPeriod) {
+      // Use actual cutoff date from pay period
+      const cutoffDate = new Date(currentPayPeriod.payroll_cutoff_date);
+      return entryDate > cutoffDate;
+    }
+    
+    // Fallback to day-of-week check
     return isAfterTuesdayCutoff(entryDate);
-  });
+  };
+
+  const postCutoffLeaveEntries = reportData.filter(isEntryAfterCutoff);
+
+  const formatPeriodDate = (dateStr: string) => format(new Date(dateStr), "EEE, MMM d");
+  const formatShortDate = (dateStr: string) => format(new Date(dateStr), "MMM d");
 
   return (
     <div className="space-y-4">
@@ -61,10 +124,22 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
         <Alert variant="destructive" className="bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
           <AlertTriangle className="h-5 w-5 text-amber-600" />
           <AlertTitle className="text-amber-800 dark:text-amber-200">
-            {postCutoffLeaveEntries.length} leave {postCutoffLeaveEntries.length === 1 ? 'entry' : 'entries'} after Tuesday cutoff
+            {postCutoffLeaveEntries.length} leave {postCutoffLeaveEntries.length === 1 ? 'entry' : 'entries'} after cutoff
+            {currentPayPeriod && ` (${formatPeriodDate(currentPayPeriod.payroll_cutoff_date)})`}
           </AlertTitle>
           <AlertDescription className="text-amber-700 dark:text-amber-300">
-            These entries (marked with ⚠️) were recorded on Wed-Fri and will be processed in the next pay period.
+            {currentPayPeriod ? (
+              <>
+                This pay run covers {formatShortDate(currentPayPeriod.period_start)} – {formatShortDate(currentPayPeriod.period_end)}, paid on {formatPeriodDate(currentPayPeriod.payroll_date)}.
+                {' '}These entries (marked with ⚠️) fall after the cutoff and will be deducted in the next pay run
+                {nextPayPeriod 
+                  ? ` (${formatShortDate(nextPayPeriod.period_start)} – ${formatShortDate(nextPayPeriod.period_end)}).`
+                  : '.'
+                }
+              </>
+            ) : (
+              <>These entries (marked with ⚠️) were recorded after Tuesday and will be processed in the next pay period.</>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -90,7 +165,7 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
               <TableBody>
                 {reportData.map((entry: any) => {
                   const entryDate = new Date(entry.entry_date);
-                  const isPostCutoff = entry.leave_type && isAfterTuesdayCutoff(entryDate);
+                  const isPostCutoff = isEntryAfterCutoff(entry);
                   
                   return (
                     <TableRow key={entry.id} className={isPostCutoff ? "bg-amber-50/50 dark:bg-amber-950/10" : ""}>

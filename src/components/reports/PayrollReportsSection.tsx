@@ -29,7 +29,21 @@ export const PayrollReportsSection = () => {
       const periods = await fetchPayPeriods(24);
       setPayPeriods(periods);
       if (periods.length > 0) {
-        setSelectedPeriod(periods[0].id);
+        const today = new Date().toISOString().split('T')[0];
+        
+        // 1. Period where today is within the date range
+        const currentPeriod = periods.find(
+          p => p.period_start <= today && p.period_end >= today
+        );
+        
+        // 2. Period with the closest past or current payroll_date
+        const closestByPayDate = periods
+          .filter(p => p.payroll_date <= today)
+          .sort((a, b) => b.payroll_date.localeCompare(a.payroll_date))[0];
+        
+        setSelectedPeriod(
+          currentPeriod?.id || closestByPayDate?.id || periods[0].id
+        );
       }
     } catch (error) {
       toast.error("Failed to load pay periods");
@@ -180,8 +194,20 @@ export const PayrollReportsSection = () => {
                       <TableCell className="text-right">{row.scheduled_hours.toFixed(2)}</TableCell>
                       <TableCell className="text-right">{row.actual_hours.toFixed(2)}</TableCell>
                       <TableCell className="text-right">{row.leave_hours_pre_cutoff.toFixed(2)}</TableCell>
-                      <TableCell className="text-right text-amber-600">{row.leave_hours_post_cutoff.toFixed(2)}</TableCell>
-                      <TableCell className="text-right text-red-600">-{row.prior_period_adjustments.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        {row.leave_hours_post_cutoff > 0 ? (
+                          <span className="text-amber-600 font-medium">{row.leave_hours_post_cutoff.toFixed(2)} ⚠️</span>
+                        ) : (
+                          row.leave_hours_post_cutoff.toFixed(2)
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {row.prior_period_adjustments > 0 ? (
+                          <span className="text-destructive font-medium">-{row.prior_period_adjustments.toFixed(2)}</span>
+                        ) : (
+                          row.prior_period_adjustments.toFixed(2)
+                        )}
+                      </TableCell>
                       <TableCell className="text-right font-semibold">{row.net_hours.toFixed(2)}</TableCell>
                     </TableRow>
                   ))}

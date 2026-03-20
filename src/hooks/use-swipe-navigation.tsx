@@ -1,4 +1,4 @@
-import { useGesture } from "@use-gesture/react";
+import { useDrag } from "@use-gesture/react";
 import { haptics } from "@/lib/haptics";
 
 export interface UseSwipeNavigationOptions {
@@ -19,47 +19,49 @@ export function useSwipeNavigation({
   threshold = 50,
   velocityThreshold = 0.5,
   enableHaptics = true,
-}: UseSwipeNavigationOptions) {
-  const bind = useGesture({
-    onSwipe: ({ direction: [dx, dy], velocity: [vx, vy], event }) => {
-      // Prevent default behavior if applicable
-      event?.preventDefault();
+}: UseSwipeNavigationOptions): (...args: unknown[]) => Record<string, unknown> {
+  const bind = useDrag(
+    ({ 
+      movement: [mx, my], 
+      velocity: [vx, vy], 
+      direction: [dx, dy], 
+      last 
+    }) => {
+      // Only process on drag end
+      if (!last) return;
 
-      // Check horizontal swipes
-      if (Math.abs(vx) > velocityThreshold || Math.abs(dx) > threshold) {
+      // Check horizontal swipes (movement-based with velocity boost)
+      const horizontalSwipe = Math.abs(mx) > threshold || 
+                              (Math.abs(mx) > threshold / 2 && Math.abs(vx) > velocityThreshold);
+      
+      if (horizontalSwipe) {
         if (dx > 0 && onSwipeRight) {
-          // Swiped right
-          if (enableHaptics) {
-            haptics.selection();
-          }
+          if (enableHaptics) haptics.selection();
           onSwipeRight();
+          return;
         } else if (dx < 0 && onSwipeLeft) {
-          // Swiped left
-          if (enableHaptics) {
-            haptics.selection();
-          }
+          if (enableHaptics) haptics.selection();
           onSwipeLeft();
+          return;
         }
       }
 
       // Check vertical swipes
-      if (Math.abs(vy) > velocityThreshold || Math.abs(dy) > threshold) {
+      const verticalSwipe = Math.abs(my) > threshold || 
+                            (Math.abs(my) > threshold / 2 && Math.abs(vy) > velocityThreshold);
+      
+      if (verticalSwipe) {
         if (dy > 0 && onSwipeDown) {
-          // Swiped down
-          if (enableHaptics) {
-            haptics.selection();
-          }
+          if (enableHaptics) haptics.selection();
           onSwipeDown();
         } else if (dy < 0 && onSwipeUp) {
-          // Swiped up
-          if (enableHaptics) {
-            haptics.selection();
-          }
+          if (enableHaptics) haptics.selection();
           onSwipeUp();
         }
       }
-    },
-  });
+    }
+  );
 
-  return bind;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return bind as any;
 }

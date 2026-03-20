@@ -132,6 +132,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          attachments: Json | null
           audience_filter: string | null
           created_at: string
           created_by: string | null
@@ -155,6 +156,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attachments?: Json | null
           audience_filter?: string | null
           created_at?: string
           created_by?: string | null
@@ -178,6 +180,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attachments?: Json | null
           audience_filter?: string | null
           created_at?: string
           created_by?: string | null
@@ -477,6 +480,88 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_adjustments: {
+        Row: {
+          created_at: string | null
+          hours_to_deduct: number
+          id: string
+          leave_date: string
+          original_pay_period_id: string
+          reason: string | null
+          status: string
+          target_pay_period_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          hours_to_deduct?: number
+          id?: string
+          leave_date: string
+          original_pay_period_id: string
+          reason?: string | null
+          status?: string
+          target_pay_period_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          hours_to_deduct?: number
+          id?: string
+          leave_date?: string
+          original_pay_period_id?: string
+          reason?: string | null
+          status?: string
+          target_pay_period_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_adjustments_original_pay_period_id_fkey"
+            columns: ["original_pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_target_pay_period_id_fkey"
+            columns: ["target_pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "available_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_daily_hours"
+            referencedColumns: ["staff_id"]
+          },
+          {
+            foreignKeyName: "leave_adjustments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_in_room"
+            referencedColumns: ["staff_id"]
+          },
+        ]
+      }
       pay_periods: {
         Row: {
           created_at: string | null
@@ -588,7 +673,6 @@ export type Database = {
           id: string
           is_active: boolean
           organization: string | null
-          role: Database["public"]["Enums"]["user_role"]
           time_zone: string
           updated_at: string
         }
@@ -604,7 +688,6 @@ export type Database = {
           id: string
           is_active?: boolean
           organization?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
           time_zone?: string
           updated_at?: string
         }
@@ -620,7 +703,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           organization?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
           time_zone?: string
           updated_at?: string
         }
@@ -1631,10 +1713,6 @@ export type Database = {
           status: string
         }[]
       }
-      get_current_user_role: {
-        Args: never
-        Returns: Database["public"]["Enums"]["user_role"]
-      }
       get_next_pay_period: {
         Args: { current_period_id: string }
         Returns: string
@@ -1739,7 +1817,9 @@ export type Database = {
             }
             Returns: Json
           }
-      validate_device_token: { Args: { p_token: string }; Returns: Json }
+      validate_device_token:
+        | { Args: { p_token: string }; Returns: Json }
+        | { Args: { p_session_id?: string; p_token: string }; Returns: Json }
       verify_mac_address_access: {
         Args: { p_mac_address: string }
         Returns: Json
@@ -1749,7 +1829,6 @@ export type Database = {
       app_role: "admin" | "manager" | "employee"
       employment_status: "full-time" | "part-time" | "casual"
       leave_status: "pending" | "approved" | "rejected" | "cancelled"
-      user_role: "employee" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1880,7 +1959,6 @@ export const Constants = {
       app_role: ["admin", "manager", "employee"],
       employment_status: ["full-time", "part-time", "casual"],
       leave_status: ["pending", "approved", "rejected", "cancelled"],
-      user_role: ["employee", "admin"],
     },
   },
 } as const

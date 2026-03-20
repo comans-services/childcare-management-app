@@ -2,7 +2,7 @@
 /**
  * Validates the educator-to-child ratio based on age groups
  * Children from birth to 36 months: 1 educator for every 4 children (1:4)
- * Children aged 36 months to preschool age: 1 educator for every 15 children (1:15)
+ * Children aged 36 months to preschool age: 1 educator for every 11 children (1:11)
  */
 export const validateEducatorChildRatio = (
   numEducators: number,
@@ -11,7 +11,7 @@ export const validateEducatorChildRatio = (
 ): { isValid: boolean; message: string } => {
   // Calculate required educators for each age group
   const educatorsForUnder3 = Math.ceil(childrenUnder3 / 4);
-  const educatorsForOver3 = Math.ceil(childrenOver3 / 15);
+  const educatorsForOver3 = Math.ceil(childrenOver3 / 11);
   const totalEducatorsRequired = educatorsForUnder3 + educatorsForOver3;
 
   if (numEducators >= totalEducatorsRequired) {

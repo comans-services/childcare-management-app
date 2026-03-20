@@ -17,7 +17,7 @@ export const useSmoothTransitions = (config: TransitionConfig = {}) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
     const handleResize = () => {
       setIsTransitioning(true);

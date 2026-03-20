@@ -19,7 +19,7 @@ export const usePerformanceOptimization = (config: PerformanceConfig = {}) => {
   const [isVisible, setIsVisible] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const elementRef = useRef<HTMLElement>(null);
-  const resizeTimeoutRef = useRef<NodeJS.Timeout>();
+  const resizeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Intersection Observer for lazy loading
   useEffect(() => {
