@@ -1,50 +1,89 @@
 
 
-## Fix Pay Period Default Selection to Use Pay Date
+## Fix Pay Period Structure: Pay Day on Second Tuesday
 
 ### Problem
-The dropdown defaults to `periods[0]` (the most recent/future period). The user wants it to default to the period whose **payroll_date** matches today or is closest. For example, if today is near March 10 (a pay date), it should select the period March 2–14 because that period's `payroll_date` is March 10.
+The current `generate_pay_periods` function sets the cutoff/pay date to the **first** Tuesday of the fortnight. The user confirms employees get paid on the **second** Tuesday.
 
-### Solution
-Update `loadPayPeriods` in `PayrollReportsSection.tsx` to find the period where today falls between `period_start` and `period_end`, OR where the `payroll_date` is closest to today. The logic:
+Example for a period Mon Mar 2 – Sun Mar 15:
+- Current (wrong): pay date = Mar 3 (first Tuesday)
+- Correct: pay date = Mar 10 (second Tuesday)
 
-1. First, try to find a period where `payroll_date` matches today
-2. If not, find a period where today falls within `period_start` to `period_end`
-3. If neither, find the period with the closest `payroll_date` to today (past preferred)
-4. Fallback to `periods[0]`
+This means the cutoff should also be the second Tuesday. Leave taken after pay day (Mar 11–15) gets flagged and deferred to the next period.
 
-### Change
+### Also: Duplicate periods still exist
+Two generation runs created overlapping periods (Dec 1 batch and Dec 2 batch). These need cleaning up.
 
-**`src/components/reports/PayrollReportsSection.tsx`** — update `loadPayPeriods`:
+### SQL Commands to Run Manually
 
-```typescript
-const loadPayPeriods = async () => {
-  try {
-    const periods = await fetchPayPeriods(24);
-    setPayPeriods(periods);
-    if (periods.length > 0) {
-      const today = new Date().toISOString().split('T')[0];
-      
-      // 1. Period where today is within the date range
-      const currentPeriod = periods.find(
-        p => p.period_start <= today && p.period_end >= today
-      );
-      
-      // 2. Period with the closest past or current payroll_date
-      const closestByPayDate = periods
-        .filter(p => p.payroll_date <= today)
-        .sort((a, b) => b.payroll_date.localeCompare(a.payroll_date))[0];
-      
-      setSelectedPeriod(
-        currentPeriod?.id || closestByPayDate?.id || periods[0].id
-      );
-    }
-  } catch (error) {
-    toast.error("Failed to load pay periods");
-    console.error(error);
-  }
-};
+**Step 1: Delete all existing pay periods**
+```sql
+DELETE FROM pay_periods;
 ```
 
-This ensures the dropdown defaults to the period containing today's date, and if today is between periods, it picks the most recent one by pay date.
+**Step 2: Replace `generate_pay_periods` function**
+Change the cutoff/pay date calculation from first Tuesday to **second Tuesday** (first Tuesday + 7 days):
+
+```sql
+CREATE OR REPLACE FUNCTION public.generate_pay_periods(
+  p_start_date date, 
+  p_num_periods integer DEFAULT 12
+)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_current_start date;
+  v_current_end date;
+  v_cutoff_date date;
+  v_payroll_date date;
+  v_periods_created integer := 0;
+BEGIN
+  -- Ensure start date is a Monday
+  v_current_start := p_start_date - ((EXTRACT(DOW FROM p_start_date)::int + 6) % 7);
+  
+  FOR i IN 1..p_num_periods LOOP
+    v_current_end := v_current_start + 13; -- 14 days: Mon to Sun (2 weeks)
+    
+    -- Second Tuesday = first Monday + 8 days
+    v_cutoff_date := v_current_start + 8;
+    v_payroll_date := v_cutoff_date;
+    
+    INSERT INTO public.pay_periods (
+      period_start, period_end, payroll_cutoff_date, payroll_date, status
+    ) VALUES (
+      v_current_start, v_current_end, v_cutoff_date, v_payroll_date, 'open'
+    )
+    ON CONFLICT (period_start, period_end) DO NOTHING;
+    
+    IF FOUND THEN
+      v_periods_created := v_periods_created + 1;
+    END IF;
+    
+    v_current_start := v_current_end + 1;
+  END LOOP;
+  
+  RETURN v_periods_created;
+END;
+$$;
+```
+
+**Step 3: Generate fresh periods**
+```sql
+SELECT generate_pay_periods('2025-12-01'::date, 24);
+```
+
+### Result
+| Field | Example |
+|-------|---------|
+| period_start | Mon, Mar 2, 2026 |
+| period_end | Sun, Mar 15, 2026 |
+| payroll_cutoff_date | Tue, Mar 10, 2026 (second Tuesday) |
+| payroll_date | Tue, Mar 10, 2026 |
+
+Leave taken Mar 11–15 (after pay day) → amber warning, deferred to next period as "Prior Adj."
+
+### No code changes needed
+The UI and `get_payroll_report` function already use `payroll_cutoff_date` correctly. Once the periods have the right dates, everything works.
 
