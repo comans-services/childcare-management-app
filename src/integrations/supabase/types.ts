@@ -1133,6 +1133,7 @@ export type Database = {
           hours_logged: number
           id: string
           leave_type: string | null
+          lunch_break_taken: boolean
           start_time: string
           tea_break_minutes: number
           updated_at: string
@@ -1147,6 +1148,7 @@ export type Database = {
           hours_logged: number
           id?: string
           leave_type?: string | null
+          lunch_break_taken?: boolean
           start_time: string
           tea_break_minutes?: number
           updated_at?: string
@@ -1161,6 +1163,7 @@ export type Database = {
           hours_logged?: number
           id?: string
           leave_type?: string | null
+          lunch_break_taken?: boolean
           start_time?: string
           tea_break_minutes?: number
           updated_at?: string
