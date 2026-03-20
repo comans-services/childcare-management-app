@@ -304,6 +304,24 @@ export const generateMatrixCSV = (data: MatrixData): string => {
   lines.push('');
   lines.push(`"Legend: PH = Public Holiday, AL = Annual Leave, LL = Leave Loading, SL = Sick Leave, CL = Carer's Leave, ADO = Accrued Day Off, LWP = Leave Without Pay, HD = Higher Duty, PPL = Paid Parental Leave, T1.5 = Time and a Half, T2.5 = Double Time and a Half, LSL = Long Service Leave"`);
   
+  // Prior Period Leave Adjustments section
+  if (data.leaveAdjustments && data.leaveAdjustments.length > 0) {
+    lines.push('');
+    lines.push('"Prior Period Leave Adjustments"');
+    lines.push('"Employee","Leave Date","Hours to Deduct","Original Period","Reason"');
+    
+    let totalDeduction = 0;
+    data.leaveAdjustments.forEach(adj => {
+      const leaveDate = format(new Date(adj.leave_date + 'T00:00:00'), 'EEE dd/MM/yyyy');
+      const origPeriod = `${adj.original_period_start} - ${adj.original_period_end}`;
+      const reason = adj.reason || '';
+      totalDeduction += adj.hours_to_deduct;
+      lines.push(`"${adj.full_name}","${leaveDate}","${adj.hours_to_deduct.toFixed(1)}","${origPeriod}","${reason}"`);
+    });
+    
+    lines.push(`"Total Hours to Deduct","","${totalDeduction.toFixed(1)}","",""`);
+  }
+  
   return lines.join('\n');
 };
 
