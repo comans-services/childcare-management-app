@@ -25,6 +25,16 @@ interface DayData {
   leaveType?: string | null;
 }
 
+export interface LeaveAdjustmentData {
+  user_id: string;
+  full_name: string;
+  leave_date: string;
+  hours_to_deduct: number;
+  reason: string | null;
+  original_period_start: string;
+  original_period_end: string;
+}
+
 interface MatrixData {
   title: string;
   period: string;
@@ -34,6 +44,7 @@ interface MatrixData {
   employeeTotals: Record<string, number>;
   dateTotals: Record<string, number>;
   grandTotal: number;
+  leaveAdjustments?: LeaveAdjustmentData[];
 }
 
 // Fetch all required data for the matrix
