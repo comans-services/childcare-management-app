@@ -163,36 +163,30 @@ export const fetchMatrixData = async (
     title = 'Casual Staff Timesheet';
   }
 
-  // Fetch prior period leave adjustments
+  // Fetch prior period leave adjustments by looking at post-cutoff leave entries
   let leaveAdjustments: LeaveAdjustmentData[] = [];
   
-  // Find the pay period matching the filter dates
-  const { data: matchingPeriod } = await supabase
+  // Find the previous pay period (the one ending just before current period starts)
+  const { data: previousPeriod } = await supabase
     .from('pay_periods')
-    .select('id')
-    .eq('period_start', startDateStr)
-    .eq('period_end', endDateStr)
+    .select('id, period_start, period_end, payroll_cutoff_date')
+    .lt('period_end', startDateStr)
+    .order('period_end', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
-  if (matchingPeriod) {
-    const { data: adjustments } = await supabase
-      .from('leave_adjustments')
-      .select('user_id, leave_date, hours_to_deduct, reason, original_pay_period_id, target_pay_period_id')
-      .eq('target_pay_period_id', matchingPeriod.id)
-      .eq('status', 'pending');
+  if (previousPeriod) {
+    // Query timesheet entries with leave_type after the previous period's cutoff date
+    const { data: postCutoffLeave } = await supabase
+      .from('timesheet_entries')
+      .select('user_id, entry_date, hours_logged, leave_type, user_full_name')
+      .gt('entry_date', previousPeriod.payroll_cutoff_date)
+      .lte('entry_date', previousPeriod.period_end)
+      .not('leave_type', 'is', null);
 
-    if (adjustments && adjustments.length > 0) {
-      // Get original period info
-      const origPeriodIds = [...new Set(adjustments.map(a => a.original_pay_period_id))];
-      const { data: origPeriods } = await supabase
-        .from('pay_periods')
-        .select('id, period_start, period_end')
-        .in('id', origPeriodIds);
-
-      const periodMap = new Map((origPeriods || []).map(p => [p.id, p]));
-
-      // Get user names
-      const userIds = [...new Set(adjustments.map(a => a.user_id))];
+    if (postCutoffLeave && postCutoffLeave.length > 0) {
+      // Get user names for any users not already known
+      const userIds = [...new Set(postCutoffLeave.map(e => e.user_id))];
       const { data: users } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -200,18 +194,18 @@ export const fetchMatrixData = async (
 
       const userMap = new Map((users || []).map(u => [u.id, u.full_name]));
 
-      leaveAdjustments = adjustments.map(a => {
-        const origPeriod = periodMap.get(a.original_pay_period_id);
-        return {
-          user_id: a.user_id,
-          full_name: userMap.get(a.user_id) || 'Unknown',
-          leave_date: a.leave_date,
-          hours_to_deduct: Number(a.hours_to_deduct),
-          reason: a.reason,
-          original_period_start: origPeriod ? format(new Date(origPeriod.period_start + 'T00:00:00'), 'dd/MM/yyyy') : '',
-          original_period_end: origPeriod ? format(new Date(origPeriod.period_end + 'T00:00:00'), 'dd/MM/yyyy') : '',
-        };
-      });
+      const origStart = format(new Date(previousPeriod.period_start + 'T00:00:00'), 'dd/MM/yyyy');
+      const origEnd = format(new Date(previousPeriod.period_end + 'T00:00:00'), 'dd/MM/yyyy');
+
+      leaveAdjustments = postCutoffLeave.map(entry => ({
+        user_id: entry.user_id,
+        full_name: entry.user_full_name || userMap.get(entry.user_id) || 'Unknown',
+        leave_date: entry.entry_date,
+        hours_to_deduct: Number(entry.hours_logged),
+        reason: `${entry.leave_type} after payroll cutoff`,
+        original_period_start: origStart,
+        original_period_end: origEnd,
+      }));
     }
   }
 
