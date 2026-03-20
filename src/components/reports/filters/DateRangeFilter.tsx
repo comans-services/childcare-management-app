@@ -72,8 +72,7 @@ export const DateRangeFilter = ({ filters, setFilters }: DateRangeFilterProps) =
   const formatPeriodLabel = (period: PayPeriod) => {
     const start = parseISO(period.period_start);
     const end = parseISO(period.period_end);
-    const payDate = parseISO(period.payroll_date);
-    return `${format(start, "MMM d")} – ${format(end, "MMM d")} (Pay: ${format(payDate, "MMM d")})`;
+    return `${format(start, "MMM d")} – ${format(end, "MMM d, yyyy")}`;
   };
 
   return (
