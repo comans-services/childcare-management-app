@@ -1,44 +1,29 @@
 
 
-## Fix: Device Registration Fails on Duplicate MAC Address
+## Fix: Prior Period Leave Adjustments Not Appearing in Export
 
 ### Problem
-The `generate_device_token` database function inserts every new device with `mac_address = 'token-auth'`. The `room_devices` table has a unique constraint on `mac_address`, so only the first device ever succeeds. All subsequent registrations fail with: `duplicate key value violates unique constraint "room_devices_mac_address_key"`.
+The export's "Prior Period Leave Adjustments" section relies solely on the `leave_adjustments` table, which is empty. Leave is entered directly as timesheet entries with a `leave_type` field, bypassing the `leave_applications` → `create_leave_adjustments_for_application` workflow. So the export never finds any adjustments.
+
+**Real data**: Chinh Phan has 3 days of Leave Without Pay (Mar 11, 12, 13) — all after the previous period's cutoff date of Mar 10. These should appear as deductions in the Mar 16-29 export, but don't.
 
 ### Solution
-Update the `generate_device_token` function to generate a unique `mac_address` value per device instead of a hardcoded constant.
+Change `fetchMatrixData` to detect post-cutoff leave directly from `timesheet_entries` in the **previous** pay period, instead of relying on the `leave_adjustments` table.
 
-### Database Migration
+### Changes to `src/lib/reports/timesheet-matrix-export-service.ts`
 
-Alter the function to use a unique placeholder like `'token-auth-' || v_device_id` or simply use the generated UUID:
+Replace the "Fetch prior period leave adjustments" block (~lines 166-210) with logic that:
 
-```sql
-CREATE OR REPLACE FUNCTION public.generate_device_token(p_room_id uuid, p_device_name text)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_token TEXT;
-    v_device_id UUID;
-    v_mac TEXT;
-BEGIN
-    v_token := encode(gen_random_bytes(32), 'hex');
-    v_mac := 'token-' || replace(gen_random_uuid()::text, '-', '');
+1. Find the pay period matching the filter dates (existing)
+2. Find the **previous** pay period (the one ending just before the current period starts)
+3. Query `timesheet_entries` where:
+   - `entry_date > previous_period.payroll_cutoff_date`
+   - `entry_date <= previous_period.period_end`
+   - `leave_type IS NOT NULL`
+4. Build the `leaveAdjustments` array from those entries, using the previous period's dates as `original_period_start/end`
 
-    INSERT INTO room_devices (room_id, device_name, device_token, mac_address, created_by)
-    VALUES (p_room_id, p_device_name, v_token, v_mac, auth.uid())
-    RETURNING id INTO v_device_id;
+This means the export will always show post-cutoff leave from the prior period regardless of whether `leave_adjustments` records exist.
 
-    RETURN json_build_object(
-        'success', true,
-        'device_id', v_device_id,
-        'token', v_token
-    );
-END;
-$$;
-```
-
-### No Frontend Changes Needed
-The device management UI already handles the flow correctly. Only the database function needs fixing.
+### No other files change
+The CSV and PDF rendering code already handles the `leaveAdjustments` array correctly.
 
