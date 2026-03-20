@@ -450,6 +450,45 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
   doc.text('Legend: PH = Public Holiday, AL = Annual Leave, LL = Leave Loading, SL = Sick Leave, CL = Carer\'s Leave, ADO = Accrued Day Off', 14, finalY + 6);
   doc.text('LWP = Leave Without Pay, HD = Higher Duty, PPL = Paid Parental Leave, T1.5 = Time and a Half, T2.5 = Double Time and a Half, LSL = Long Service Leave', 14, finalY + 10);
   
+  // Prior Period Leave Adjustments table
+  if (data.leaveAdjustments && data.leaveAdjustments.length > 0) {
+    const adjStartY = finalY + 18;
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Prior Period Leave Adjustments', 14, adjStartY);
+    
+    const adjHeaders = ['Employee', 'Leave Date', 'Hours to Deduct', 'Original Period', 'Reason'];
+    const adjBody: any[][] = [];
+    
+    let totalDeduction = 0;
+    data.leaveAdjustments.forEach(adj => {
+      const leaveDate = format(new Date(adj.leave_date + 'T00:00:00'), 'EEE dd/MM/yyyy');
+      const origPeriod = `${adj.original_period_start} - ${adj.original_period_end}`;
+      totalDeduction += adj.hours_to_deduct;
+      adjBody.push([adj.full_name, leaveDate, adj.hours_to_deduct.toFixed(1), origPeriod, adj.reason || '']);
+    });
+    
+    // Total row
+    adjBody.push([
+      { content: 'Total Hours to Deduct', styles: { fontStyle: 'bold' } },
+      '',
+      { content: totalDeduction.toFixed(1), styles: { fontStyle: 'bold' } },
+      '',
+      ''
+    ]);
+    
+    autoTable(doc, {
+      head: [adjHeaders],
+      body: adjBody,
+      startY: adjStartY + 3,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [180, 60, 60], textColor: 255, fontStyle: 'bold' },
+      columnStyles: { 0: { halign: 'left' }, 2: { halign: 'center' } },
+    });
+  }
+  
   return doc;
 };
 
