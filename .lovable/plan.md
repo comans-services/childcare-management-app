@@ -1,43 +1,44 @@
 
 
-## Include Prior Period Leave Adjustments in Timesheet Export
+## Fix: Device Registration Fails on Duplicate MAC Address
 
-### What
-When exporting the timesheet report (CSV/PDF), include a "Prior Period Adjustments" summary section showing any leave taken after the previous period's cutoff that needs to be deducted from the current period. This gives employers the information they need to process salary deductions for post-cutoff leave.
+### Problem
+The `generate_device_token` database function inserts every new device with `mac_address = 'token-auth'`. The `room_devices` table has a unique constraint on `mac_address`, so only the first device ever succeeds. All subsequent registrations fail with: `duplicate key value violates unique constraint "room_devices_mac_address_key"`.
 
-### How It Works
-The report date range is matched to a pay period. Any `leave_adjustments` records where `target_pay_period_id` matches that period are fetched and appended as a summary section after the daily hours matrix.
+### Solution
+Update the `generate_device_token` function to generate a unique `mac_address` value per device instead of a hardcoded constant.
 
-### Changes
+### Database Migration
 
-**`src/lib/reports/timesheet-matrix-export-service.ts`**:
+Alter the function to use a unique placeholder like `'token-auth-' || v_device_id` or simply use the generated UUID:
 
-1. Add a new interface `LeaveAdjustmentData` with fields: `user_id`, `full_name`, `leave_date`, `hours_to_deduct`, `reason`, `original_period_start`, `original_period_end`
-2. Extend `MatrixData` with an optional `leaveAdjustments: LeaveAdjustmentData[]` field
-3. In `fetchMatrixData`:
-   - Query `pay_periods` to find the period matching the filter's start/end dates
-   - If a matching period is found, query `leave_adjustments` joined with `profiles` and `pay_periods` (for original period info) where `target_pay_period_id` = matched period and `status = 'pending'`
-   - Attach results to the returned `MatrixData`
-4. In `generateMatrixCSV`:
-   - After the legend, add a "Prior Period Leave Adjustments" section if any exist
-   - Format: `Employee Name, Leave Date, Hours to Deduct, Original Period, Reason`
-   - Add a total deduction row
-5. In `generateMatrixPDF`:
-   - After the legend, add a second small table for adjustments if any exist
-   - Same columns as CSV
+```sql
+CREATE OR REPLACE FUNCTION public.generate_device_token(p_room_id uuid, p_device_name text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_token TEXT;
+    v_device_id UUID;
+    v_mac TEXT;
+BEGIN
+    v_token := encode(gen_random_bytes(32), 'hex');
+    v_mac := 'token-' || replace(gen_random_uuid()::text, '-', '');
 
-### Export Layout (CSV example)
-```text
-[... existing matrix ...]
+    INSERT INTO room_devices (room_id, device_name, device_token, mac_address, created_by)
+    VALUES (p_room_id, p_device_name, v_token, v_mac, auth.uid())
+    RETURNING id INTO v_device_id;
 
-"Legend: PH = Public Holiday, ..."
-
-"Prior Period Leave Adjustments"
-"Employee","Leave Date","Hours","Original Period","Reason"
-"Jane Smith","Wed 26/03/2025","7.6","Mar 16 – Mar 29","Auto: post-cutoff leave"
-"Total Hours to Deduct","","7.6","",""
+    RETURN json_build_object(
+        'success', true,
+        'device_id', v_device_id,
+        'token', v_token
+    );
+END;
+$$;
 ```
 
-### No database changes needed
-All data already exists in `leave_adjustments` and `pay_periods` tables.
+### No Frontend Changes Needed
+The device management UI already handles the flow correctly. Only the database function needs fixing.
 
