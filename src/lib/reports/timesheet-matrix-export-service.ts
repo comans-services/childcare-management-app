@@ -163,6 +163,58 @@ export const fetchMatrixData = async (
     title = 'Casual Staff Timesheet';
   }
 
+  // Fetch prior period leave adjustments
+  let leaveAdjustments: LeaveAdjustmentData[] = [];
+  
+  // Find the pay period matching the filter dates
+  const { data: matchingPeriod } = await supabase
+    .from('pay_periods')
+    .select('id')
+    .eq('period_start', startDateStr)
+    .eq('period_end', endDateStr)
+    .maybeSingle();
+
+  if (matchingPeriod) {
+    const { data: adjustments } = await supabase
+      .from('leave_adjustments')
+      .select('user_id, leave_date, hours_to_deduct, reason, original_pay_period_id, target_pay_period_id')
+      .eq('target_pay_period_id', matchingPeriod.id)
+      .eq('status', 'pending');
+
+    if (adjustments && adjustments.length > 0) {
+      // Get original period info
+      const origPeriodIds = [...new Set(adjustments.map(a => a.original_pay_period_id))];
+      const { data: origPeriods } = await supabase
+        .from('pay_periods')
+        .select('id, period_start, period_end')
+        .in('id', origPeriodIds);
+
+      const periodMap = new Map((origPeriods || []).map(p => [p.id, p]));
+
+      // Get user names
+      const userIds = [...new Set(adjustments.map(a => a.user_id))];
+      const { data: users } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      const userMap = new Map((users || []).map(u => [u.id, u.full_name]));
+
+      leaveAdjustments = adjustments.map(a => {
+        const origPeriod = periodMap.get(a.original_pay_period_id);
+        return {
+          user_id: a.user_id,
+          full_name: userMap.get(a.user_id) || 'Unknown',
+          leave_date: a.leave_date,
+          hours_to_deduct: Number(a.hours_to_deduct),
+          reason: a.reason,
+          original_period_start: origPeriod ? format(new Date(origPeriod.period_start + 'T00:00:00'), 'dd/MM/yyyy') : '',
+          original_period_end: origPeriod ? format(new Date(origPeriod.period_end + 'T00:00:00'), 'dd/MM/yyyy') : '',
+        };
+      });
+    }
+  }
+
   return {
     title,
     period: `${format(filters.startDate, 'dd/MM/yyyy')} - ${format(filters.endDate, 'dd/MM/yyyy')}`,
@@ -172,6 +224,7 @@ export const fetchMatrixData = async (
     employeeTotals,
     dateTotals,
     grandTotal,
+    leaveAdjustments,
   };
 };
 
