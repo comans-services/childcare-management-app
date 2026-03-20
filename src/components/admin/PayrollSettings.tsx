@@ -48,8 +48,8 @@ export const PayrollSettings = () => {
     const refDate = new Date(settings.reference_pay_date);
     const today = new Date();
     
-    // Reference date is a Tuesday (pay day), fortnight starts on previous Monday
-    const refMonday = addDays(refDate, -1); // Monday before reference Tuesday
+    // Reference date is the second Tuesday of the fortnight, so period starts 8 days before it
+    const refMonday = addDays(refDate, -8); // Monday that starts the fortnight
     
     // Calculate days since reference Monday
     const daysDiff = Math.floor((today.getTime() - refMonday.getTime()) / (1000 * 60 * 60 * 24));
