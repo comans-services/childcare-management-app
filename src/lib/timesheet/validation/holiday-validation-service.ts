@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "@/lib/date-utils";
 
-export const validateHolidayEntry = async (entryDate: string): Promise<{ isValid: boolean; message?: string; holidayName?: string }> => {
+export const validateHolidayEntry = async (entryDate: string, userId?: string): Promise<{ isValid: boolean; message?: string; holidayName?: string }> => {
   try {
     const date = new Date(entryDate);
     
@@ -26,10 +26,38 @@ export const validateHolidayEntry = async (entryDate: string): Promise<{ isValid
       .eq('state', 'VIC')
       .maybeSingle();
 
+    const holidayName = holidays?.name;
+
+    // If we have a userId, check per-user permissions
+    if (userId) {
+      // Check if user is admin
+      const { data: adminRole } = await supabase
+        .from('user_roles' as any)
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle() as any;
+
+      if (adminRole?.role === 'admin') {
+        return { isValid: true, holidayName, message: 'Admin override: holiday entry allowed' };
+      }
+
+      // Check user's allow_holiday_entries permission
+      const { data: workSchedule } = await supabase
+        .from('work_schedules')
+        .select('allow_holiday_entries')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (workSchedule?.allow_holiday_entries) {
+        return { isValid: true, holidayName, message: 'Holiday entry allowed by permission' };
+      }
+    }
+
     return {
       isValid: false,
-      message: `This is a public holiday${holidays?.name ? ': ' + holidays.name : ''}`,
-      holidayName: holidays?.name
+      message: `This is a public holiday${holidayName ? ': ' + holidayName : ''}. Holiday entries are not allowed.`,
+      holidayName
     };
   } catch (error) {
     console.error("Error in holiday validation:", error);

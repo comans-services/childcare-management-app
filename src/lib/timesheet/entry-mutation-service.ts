@@ -41,7 +41,7 @@ export const saveTimesheetEntry = async (entry: TimesheetEntry): Promise<Timeshe
     }
 
     // Step 3: Enhanced server-side holiday validation
-    const holidayValidation = await validateHolidayEntry(entry.entry_date);
+    const holidayValidation = await validateHolidayEntry(entry.entry_date, entry.user_id);
     if (!holidayValidation.isValid) {
       console.error("Holiday validation failed:", holidayValidation.message);
       throw new Error(holidayValidation.message || "Holiday entry not allowed");
