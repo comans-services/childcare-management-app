@@ -1,38 +1,34 @@
 
 
-## Enforce Ratio Compliance on Staff Exit
+## Insert 2026-2027 Public Holidays and Fix Permission Logic
 
-### Current State
-- **Staff in 2 rooms**: Already enforced. `staff_enter_room` checks if staff is in another room and blocks entry.
-- **Ratio on exit**: NOT enforced. `staff_exit_room` allows any exit regardless of whether removing that staff member breaks the educator-to-child ratio. The frontend shows a yellow warning but still allows submission.
+### 1. Insert Holiday Data
+Insert all 28 public holidays (13 for 2026, 15 for 2027) into the `public_holidays` table using the Supabase insert tool.
 
-### Changes
+### 2. Fix Server-Side Holiday Validation
 
-**1. Database: Update `staff_exit_room` function**
+**Problem found**: The server-side `validateHolidayEntry` in `holiday-validation-service.ts` blocks ALL holidays for ALL users unconditionally. It never checks the per-user `allow_holiday_entries` permission from `work_schedules`. This means:
+- Even users with `allow_holiday_entries: true` get blocked
+- Admins get blocked too (server-side)
 
-Add a ratio check before allowing exit. If removing the staff member would leave fewer educators than required (`calculate_required_educators`), return `success: false` with a warning message and block the exit.
+The client-side `useHolidayLock` hook correctly checks permissions, but the mutation service's server-side check overrides it.
 
-```sql
--- Before updating staff_room_entries, check:
--- current_staff_count - 1 >= calculate_required_educators(children_under_3, children_over_3)
--- If not, return error with message like:
--- "Cannot exit: removing [name] would leave [N-1] staff for [X] children (minimum [required] required)"
-```
+**Fix in `src/lib/timesheet/entry-mutation-service.ts`**:
+- Pass `entry.user_id` to the holiday validation
+- Update `validateHolidayEntry` in `holiday-validation-service.ts` to accept a `userId` parameter
+- Check the user's `allow_holiday_entries` permission from `work_schedules`
+- Check if user has admin role via `user_roles` table
+- Only block if the user has no permission AND is not admin
 
-**2. Frontend: Block submit when exit violates ratio**
+**Fix in `src/lib/timesheet/validation/holiday-validation-service.ts`**:
+- Add `userId` parameter to `validateHolidayEntry`
+- After confirming it's a holiday, query `work_schedules.allow_holiday_entries` for that user
+- Query `user_roles` to check if user is admin
+- Return `isValid: true` if admin or has permission, `isValid: false` otherwise
 
-In `RoomUpdateForm.tsx`:
-- When status is "Exit", disable the submit button if `!isValid` (ratio would be violated after exit)
-- Change the warning color from yellow to red for exit violations
-- Update button text to "Cannot Exit - Ratio Violation" when blocked
+### Current State (all 5 users)
+All users have `allow_holiday_entries: false` — so holidays will be blocked for everyone as requested. Admins can still override. If specific users need access later, the admin can toggle it per-user in the Holiday Management page.
 
-**3. Frontend: Handle server-side rejection**
-
-In `RoomMonitor.tsx` `handleFormSubmit`:
-- Check the response from `staffExitRoom` for `success: false` and display the error message via `toast.error()`
-
-### Summary
-- Database enforces ratio as the source of truth (server-side block)
-- Frontend prevents submission and shows clear warning (client-side UX)
-- Staff already cannot be in 2 rooms (existing logic)
+### No Database Schema Changes
+Only data inserts (holidays) and code fixes (validation logic).
 
