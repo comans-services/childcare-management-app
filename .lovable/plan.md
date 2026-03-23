@@ -1,34 +1,33 @@
 
 
-## Insert 2026-2027 Public Holidays and Fix Permission Logic
+## Make Audit Logs Show Plain English Descriptions
 
-### 1. Insert Holiday Data
-Insert all 28 public holidays (13 for 2026, 15 for 2027) into the `public_holidays` table using the Supabase insert tool.
+### Problem
+The audit logs table shows raw technical action strings like `public_holiday_created`, `user_login_success`, and the details column just shows "Click to expand" with raw JSON underneath. Not human-readable.
 
-### 2. Fix Server-Side Holiday Validation
+### Solution
+Update `AuditLogsTable.tsx` to:
 
-**Problem found**: The server-side `validateHolidayEntry` in `holiday-validation-service.ts` blocks ALL holidays for ALL users unconditionally. It never checks the per-user `allow_holiday_entries` permission from `work_schedules`. This means:
-- Even users with `allow_holiday_entries: true` get blocked
-- Admins get blocked too (server-side)
+1. **Add a `formatActionDescription` function** that converts the raw `action` + `details` into a plain English sentence. Examples:
+   - `public_holiday_created` + details → "Added public holiday: New Year's Day (01/01/2026)"
+   - `user_login_success` + details → "Logged in successfully (chinh@...)"
+   - `user_login_failed` + details → "Failed login attempt for chinh@..."
+   - `user_logout` → "Logged out"
+   - `password_changed` → "Changed their password"
+   - `timesheet_locked` + details → "Locked timesheet for [user] until [date]"
+   - `timesheet_unlocked` + details → "Unlocked timesheet for [user]"
+   - `timesheet_report_generated` → "Generated timesheet report ([count] entries)"
+   - `audit_report_generated` → "Generated audit report ([count] entries)"
+   - DB trigger events with `details.operation = INSERT/UPDATE/DELETE` and `details.table` → "Created/Updated/Deleted [table item] - [relevant field values]"
 
-The client-side `useHolidayLock` hook correctly checks permissions, but the mutation service's server-side check overrides it.
+2. **Show the plain English description** directly in the "Details" column instead of "Click to expand"
 
-**Fix in `src/lib/timesheet/entry-mutation-service.ts`**:
-- Pass `entry.user_id` to the holiday validation
-- Update `validateHolidayEntry` in `holiday-validation-service.ts` to accept a `userId` parameter
-- Check the user's `allow_holiday_entries` permission from `work_schedules`
-- Check if user has admin role via `user_roles` table
-- Only block if the user has no permission AND is not admin
+3. **Keep the expandable raw JSON** for technical users who want full details, but the main view is human-readable
 
-**Fix in `src/lib/timesheet/validation/holiday-validation-service.ts`**:
-- Add `userId` parameter to `validateHolidayEntry`
-- After confirming it's a holiday, query `work_schedules.allow_holiday_entries` for that user
-- Query `user_roles` to check if user is admin
-- Return `isValid: true` if admin or has permission, `isValid: false` otherwise
+4. **Improve the Action badge** to show cleaner category labels like "Holiday", "Login", "Report", "Timesheet" instead of just "Created"/"Updated"
 
-### Current State (all 5 users)
-All users have `allow_holiday_entries: false` — so holidays will be blocked for everyone as requested. Admins can still override. If specific users need access later, the admin can toggle it per-user in the Holiday Management page.
+### File Changes
+- `src/components/reports/AuditLogsTable.tsx` — add `formatActionDescription()` helper, update `getActionBadge()` for better categories, show description in Details column
 
-### No Database Schema Changes
-Only data inserts (holidays) and code fixes (validation logic).
+### No database or other file changes needed
 
