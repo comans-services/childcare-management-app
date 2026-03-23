@@ -217,18 +217,22 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
 
         {/* Validation message */}
         {!isValid && (
-          <div className="p-3 bg-yellow-800 text-yellow-100 rounded-md">
-            ⚠️ {validationMessage}
+          <div className={`p-3 rounded-md ${status === StatusType.EXIT ? 'bg-red-800 text-red-100' : 'bg-yellow-800 text-yellow-100'}`}>
+            {status === StatusType.EXIT ? '🚫' : '⚠️'} {validationMessage}
           </div>
         )}
 
         {/* Submit button */}
         <button
           type="submit"
-          className="w-full p-3 bg-care-brightGreen text-white rounded-md"
-          disabled={availableEmployees.length === 0}
+          className={`w-full p-3 rounded-md ${
+            (availableEmployees.length === 0 || (status === StatusType.EXIT && !isValid))
+              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              : 'bg-care-brightGreen text-white'
+          }`}
+          disabled={availableEmployees.length === 0 || (status === StatusType.EXIT && !isValid)}
         >
-          Update Room
+          {status === StatusType.EXIT && !isValid ? 'Cannot Exit - Ratio Violation' : 'Update Room'}
         </button>
       </form>
     </div>
