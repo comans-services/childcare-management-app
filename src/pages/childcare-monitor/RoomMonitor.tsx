@@ -104,10 +104,20 @@ const RoomMonitor: React.FC = () => {
       
       // Handle staff entry/exit
       if (formData.status === 'enter') {
-        await roomService.staffEnterRoom(formData.employeeId, formData.roomId, 'manual', deviceId);
+        const result = await roomService.staffEnterRoom(formData.employeeId, formData.roomId, 'manual', deviceId);
+        const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+        if (parsed?.success === false) {
+          toast.error(parsed.message || 'Failed to enter room');
+          return;
+        }
         toast.success('Staff member entered the room');
       } else {
-        await roomService.staffExitRoom(formData.employeeId, formData.roomId, 'manual', deviceId);
+        const result = await roomService.staffExitRoom(formData.employeeId, formData.roomId, 'manual', deviceId);
+        const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+        if (parsed?.success === false) {
+          toast.error(parsed.message || 'Failed to exit room');
+          return;
+        }
         toast.success('Staff member exited the room');
       }
 
