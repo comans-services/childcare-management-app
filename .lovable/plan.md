@@ -1,29 +1,38 @@
 
 
-## Fix: Prior Period Leave Adjustments Not Appearing in Export
+## Enforce Ratio Compliance on Staff Exit
 
-### Problem
-The export's "Prior Period Leave Adjustments" section relies solely on the `leave_adjustments` table, which is empty. Leave is entered directly as timesheet entries with a `leave_type` field, bypassing the `leave_applications` → `create_leave_adjustments_for_application` workflow. So the export never finds any adjustments.
+### Current State
+- **Staff in 2 rooms**: Already enforced. `staff_enter_room` checks if staff is in another room and blocks entry.
+- **Ratio on exit**: NOT enforced. `staff_exit_room` allows any exit regardless of whether removing that staff member breaks the educator-to-child ratio. The frontend shows a yellow warning but still allows submission.
 
-**Real data**: Chinh Phan has 3 days of Leave Without Pay (Mar 11, 12, 13) — all after the previous period's cutoff date of Mar 10. These should appear as deductions in the Mar 16-29 export, but don't.
+### Changes
 
-### Solution
-Change `fetchMatrixData` to detect post-cutoff leave directly from `timesheet_entries` in the **previous** pay period, instead of relying on the `leave_adjustments` table.
+**1. Database: Update `staff_exit_room` function**
 
-### Changes to `src/lib/reports/timesheet-matrix-export-service.ts`
+Add a ratio check before allowing exit. If removing the staff member would leave fewer educators than required (`calculate_required_educators`), return `success: false` with a warning message and block the exit.
 
-Replace the "Fetch prior period leave adjustments" block (~lines 166-210) with logic that:
+```sql
+-- Before updating staff_room_entries, check:
+-- current_staff_count - 1 >= calculate_required_educators(children_under_3, children_over_3)
+-- If not, return error with message like:
+-- "Cannot exit: removing [name] would leave [N-1] staff for [X] children (minimum [required] required)"
+```
 
-1. Find the pay period matching the filter dates (existing)
-2. Find the **previous** pay period (the one ending just before the current period starts)
-3. Query `timesheet_entries` where:
-   - `entry_date > previous_period.payroll_cutoff_date`
-   - `entry_date <= previous_period.period_end`
-   - `leave_type IS NOT NULL`
-4. Build the `leaveAdjustments` array from those entries, using the previous period's dates as `original_period_start/end`
+**2. Frontend: Block submit when exit violates ratio**
 
-This means the export will always show post-cutoff leave from the prior period regardless of whether `leave_adjustments` records exist.
+In `RoomUpdateForm.tsx`:
+- When status is "Exit", disable the submit button if `!isValid` (ratio would be violated after exit)
+- Change the warning color from yellow to red for exit violations
+- Update button text to "Cannot Exit - Ratio Violation" when blocked
 
-### No other files change
-The CSV and PDF rendering code already handles the `leaveAdjustments` array correctly.
+**3. Frontend: Handle server-side rejection**
+
+In `RoomMonitor.tsx` `handleFormSubmit`:
+- Check the response from `staffExitRoom` for `success: false` and display the error message via `toast.error()`
+
+### Summary
+- Database enforces ratio as the source of truth (server-side block)
+- Frontend prevents submission and shows clear warning (client-side UX)
+- Staff already cannot be in 2 rooms (existing logic)
 
