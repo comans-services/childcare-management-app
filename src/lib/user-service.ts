@@ -12,6 +12,7 @@ export interface User {
   employee_id?: string;
   default_start_time?: string;
   default_end_time?: string;
+  is_active?: boolean;
 }
 
 export interface NewUser extends Omit<User, "id"> {
@@ -80,10 +81,10 @@ export const fetchUsers = async (): Promise<User[]> => {
       throw authError;
     }
     
-    // Get all profiles (without role column)
+    // Get all profiles (without role column) — include inactive so admin can reactivate
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, organization, time_zone, email, employment_type, employee_card_id, employee_id");
+      .select("id, full_name, organization, time_zone, email, employment_type, employee_card_id, employee_id, is_active");
     
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -378,24 +379,47 @@ export const createUser = async (userData: NewUser): Promise<User> => {
 export const deleteUser = async (userId: string): Promise<void> => {
   try {
     console.log("Deleting user:", userId);
-    
+
     // Delete user roles first
     await supabase.from('user_roles' as any).delete().eq('user_id', userId);
-    
+
     // Delete user profile
     const { error: profileError } = await supabase
       .from('profiles')
       .delete()
       .eq('id', userId);
-    
+
     if (profileError) {
       console.error("Error deleting profile:", profileError);
       throw profileError;
     }
-    
+
     console.log("User deleted successfully");
   } catch (error) {
     console.error("Error in deleteUser:", error);
     throw error;
   }
+};
+
+export const deactivateUser = async (userId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_active: false, updated_at: new Date().toISOString() } as any)
+    .eq('id', userId);
+  if (error) throw error;
+};
+
+export const reactivateUser = async (userId: string, userEmail: string): Promise<void> => {
+  // Re-enable the profile
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ is_active: true, updated_at: new Date().toISOString() } as any)
+    .eq('id', userId);
+  if (profileError) throw profileError;
+
+  // Send reactivation email via edge function (generates password-reset link server-side)
+  const { error: emailError } = await supabase.functions.invoke('send-reactivation-email', {
+    body: { userId, email: userEmail },
+  });
+  if (emailError) console.warn("Reactivation email failed to send:", emailError);
 };

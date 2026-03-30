@@ -136,9 +136,11 @@ const DeviceManagement: React.FC = () => {
       });
       const setupUrl = `${window.location.origin}/childcare-monitor/setup?token=${data.token}`;
       setRegeneratedUrl(setupUrl);
+      // Auto-copy to clipboard immediately
+      navigator.clipboard.writeText(setupUrl).catch(() => {/* ignore if blocked */});
       toast({
         title: "Token regenerated",
-        description: "Copy the new setup URL to configure a new iPad"
+        description: "New setup URL generated and copied to clipboard"
       });
     },
     onError: () => {
@@ -218,6 +220,17 @@ const DeviceManagement: React.FC = () => {
                       Last seen:{" "}
                       {device.last_seen ? new Date(device.last_seen).toLocaleString() : "Never"}
                     </p>
+                    {device.last_seen && device.is_active &&
+                      (Date.now() - new Date(device.last_seen).getTime()) > 30 * 24 * 60 * 60 * 1000 && (
+                      <p className="text-xs text-yellow-300 mt-1">
+                        ⚠️ Not seen in 30+ days — browser data may have been cleared. Re-register may be required.
+                      </p>
+                    )}
+                    {!device.last_seen && device.is_active && (
+                      <p className="text-xs text-yellow-300 mt-1">
+                        ⚠️ Never connected — share the setup URL with the iPad.
+                      </p>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button onClick={() => setRegenerateDeviceId(device.id)} size="sm" className="bg-blue-600 text-white" title="Regenerate Setup URL">

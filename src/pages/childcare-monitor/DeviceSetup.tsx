@@ -120,10 +120,20 @@ const DeviceSetup: React.FC = () => {
             <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-400" />
             <p className="text-lg mb-2">{message}</p>
             {deviceInfo && (
-              <p className="text-care-paleGreen text-sm">
-                Redirecting to {deviceInfo.roomName} room...
+              <p className="text-care-paleGreen text-sm mb-4">
+                Redirecting to {deviceInfo.roomName} room…
               </p>
             )}
+            {/* Browser session persistence warning */}
+            <div className="mt-4 bg-yellow-800/60 border border-yellow-600 rounded-lg p-4 text-left text-sm">
+              <p className="font-semibold text-yellow-200 mb-1">⚠️ Keep this iPad registered</p>
+              <ul className="text-yellow-100 space-y-1 list-disc list-inside">
+                <li>Always use <strong>Safari</strong> (not Chrome or Firefox)</li>
+                <li>Do <strong>not</strong> use Private / Incognito mode</li>
+                <li>Do <strong>not</strong> clear Safari browser data</li>
+                <li>If the device loses its registration, ask an admin to regenerate the setup URL</li>
+              </ul>
+            </div>
           </>
         )}
 

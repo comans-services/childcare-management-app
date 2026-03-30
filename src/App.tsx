@@ -14,6 +14,8 @@ import ChildcareMonitorLayout from "@/components/layout/ChildcareMonitorLayout";
 import MassMailerLayout from "@/components/layout/MassMailerLayout";
 import AdminRoute from "@/routes/AdminRoute";
 import AuthPage from "@/pages/AuthPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import ManagementHubPage from "@/pages/ManagementHubPage";
 import TimesheetPage from "@/pages/TimesheetPage";
 import ReportsPage from "@/pages/ReportsPage";
@@ -66,6 +68,8 @@ const App = () => (
             <BrowserRouter>
               <Routes>
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             {/* Management Hub - Landing page for all apps */}
             <Route path="/" element={<HubLayout />}>

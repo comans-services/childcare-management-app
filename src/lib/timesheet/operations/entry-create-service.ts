@@ -52,7 +52,8 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     lunch_break_taken: entry.lunch_break_taken ?? false,
     user_id: entry.user_id,
     leave_type: entry.leave_type || null,
-  };
+    notes: entry.notes || null,
+  } as any;
 
   const { data, error } = await supabase
     .from("timesheet_entries")

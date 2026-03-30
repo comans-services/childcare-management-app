@@ -11,6 +11,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,6 +26,7 @@ import { TimesheetEntry, saveTimesheetEntry } from "@/lib/timesheet-service";
 import { formatDateDisplay, formatDate, getHoursDifference } from "@/lib/date-utils";
 import { timeEntryFormSchema, TimeEntryFormValues, LEAVE_TYPES } from "./time-entry/schema";
 import { fetchUserById } from "@/lib/user-service";
+import { useAuth } from "@/context/AuthContext";
 
 interface EntryFormProps {
   userId: string;
@@ -34,6 +36,8 @@ interface EntryFormProps {
   onCancel: () => void;
 }
 
+const FULL_TIME_HOURS = 7.6;
+
 const EntryForm: React.FC<EntryFormProps> = ({
   userId,
   date,
@@ -42,15 +46,18 @@ const EntryForm: React.FC<EntryFormProps> = ({
   onCancel,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { employmentType } = useAuth();
+  const isFullTime = employmentType === "full-time";
 
   const form = useForm<TimeEntryFormValues>({
     resolver: zodResolver(timeEntryFormSchema),
     defaultValues: {
-      hours_logged: existingEntry?.hours_logged || 8,
+      hours_logged: existingEntry?.hours_logged ?? (isFullTime ? FULL_TIME_HOURS : 8),
       start_time: existingEntry?.start_time || "09:00",
       end_time: existingEntry?.end_time || "17:00",
       lunch_break_taken: (existingEntry as any)?.lunch_break_taken ?? false,
       leave_type: existingEntry?.leave_type || null,
+      notes: (existingEntry as any)?.notes ?? null,
     },
   });
 
@@ -71,11 +78,12 @@ const EntryForm: React.FC<EntryFormProps> = ({
         const defaultEnd = userProfile?.default_end_time?.slice(0, 5) || "17:00";
 
         form.reset({
-          hours_logged: 8,
+          hours_logged: isFullTime ? FULL_TIME_HOURS : 8,
           start_time: defaultStart,
           end_time: defaultEnd,
           lunch_break_taken: false,
           leave_type: null,
+          notes: null,
         });
       }
     };
@@ -119,6 +127,16 @@ const EntryForm: React.FC<EntryFormProps> = ({
   }, [form]);
 
   const onSubmit = async (values: TimeEntryFormValues) => {
+    // Full-time validation: regular shifts require a lunch break
+    if (isFullTime && !values.leave_type && !values.lunch_break_taken) {
+      toast({
+        title: "Lunch break required",
+        description: "Full-time shifts must include a lunch break. Please tick 'Lunch break taken'.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -133,6 +151,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
         tea_break_minutes: 0,
         lunch_break_taken: values.lunch_break_taken ?? false,
         leave_type: values.leave_type || null,
+        notes: values.notes || null,
       };
 
       console.log("Submitting entry:", entry);
@@ -239,12 +258,48 @@ const EntryForm: React.FC<EntryFormProps> = ({
                   </FormControl>
                   <Label htmlFor="lunch-break" className="text-sm font-medium cursor-pointer">
                     Lunch break taken
+                    {isFullTime && !form.watch("leave_type") && (
+                      <span className="ml-1 text-red-500">*</span>
+                    )}
                   </Label>
                 </div>
+                {isFullTime && !form.watch("leave_type") && !field.value && (
+                  <p className="text-xs text-red-500 mt-1">Required for full-time regular shifts.</p>
+                )}
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          {/* Optional notes */}
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Add any comments about this shift…"
+                    className="resize-none"
+                    rows={2}
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Advisory: warn if hours differ from 7.6 for full-time regular shifts */}
+          {isFullTime && !form.watch("leave_type") &&
+            Math.abs(form.watch("hours_logged") - FULL_TIME_HOURS) > 0.01 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-sm text-amber-800">
+              Full-time standard shift is <strong>7.6 hours</strong>. Current entry is{" "}
+              <strong>{form.watch("hours_logged")} hours</strong>.
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button

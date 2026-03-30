@@ -7,7 +7,7 @@ import { TimesheetEntry } from "@/lib/timesheet-service";
 import { formatDateDisplay, isAfterTuesdayCutoff } from "@/lib/date-utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";
 import { LEAVE_TYPE_ABBREVIATIONS } from "@/components/timesheet/time-entry/schema";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -18,19 +18,29 @@ interface PayPeriodInfo {
   payroll_date: string;
 }
 
+interface AdjustedLeaveRow {
+  id: string;
+  user_id: string;
+  leave_date: string;
+  hours_to_deduct: number;
+  reason: string | null;
+  user_full_name?: string;
+}
+
 interface ReportDataTableProps {
   reportData: TimesheetEntry[];
   filters: ReportFiltersType;
   isLoading?: boolean;
 }
 
-export const ReportDataTable: React.FC<ReportDataTableProps> = ({ 
-  reportData = [], 
-  filters, 
-  isLoading 
+export const ReportDataTable: React.FC<ReportDataTableProps> = ({
+  reportData = [],
+  filters,
+  isLoading
 }) => {
   const [currentPayPeriod, setCurrentPayPeriod] = useState<PayPeriodInfo | null>(null);
   const [nextPayPeriod, setNextPayPeriod] = useState<PayPeriodInfo | null>(null);
+  const [adjustedLeave, setAdjustedLeave] = useState<AdjustedLeaveRow[]>([]);
 
   useEffect(() => {
     const fetchPayPeriods = async () => {
@@ -67,7 +77,34 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
       }
     };
 
+    const fetchAdjustedLeave = async () => {
+      if (!filters.startDate || !filters.endDate) return;
+      try {
+        const { data } = await supabase
+          .from("leave_adjustments")
+          .select(`
+            id, user_id, leave_date, hours_to_deduct, reason,
+            profiles:user_id (full_name)
+          `)
+          .gte("leave_date", format(filters.startDate, "yyyy-MM-dd"))
+          .lte("leave_date", format(filters.endDate, "yyyy-MM-dd"))
+          .order("leave_date", { ascending: true });
+
+        if (data) {
+          setAdjustedLeave(
+            data.map((r: any) => ({
+              ...r,
+              user_full_name: r.profiles?.full_name || "Unknown",
+            }))
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching adjusted leave:", error);
+      }
+    };
+
     fetchPayPeriods();
+    fetchAdjustedLeave();
   }, [filters.startDate, filters.endDate]);
 
   if (isLoading) {
@@ -159,6 +196,8 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
                   <TableHead>Leave Type</TableHead>
                   <TableHead>Start Time</TableHead>
                   <TableHead>End Time</TableHead>
+                  <TableHead className="text-center">Lunch</TableHead>
+                  <TableHead>Notes</TableHead>
                   <TableHead className="text-right">Hours</TableHead>
                 </TableRow>
               </TableHeader>
@@ -187,12 +226,44 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
                       </TableCell>
                       <TableCell>{entry.start_time}</TableCell>
                       <TableCell>{entry.end_time}</TableCell>
+                      <TableCell className="text-center">
+                        {entry.leave_type ? (
+                          <span className="text-gray-400 text-xs">N/A</span>
+                        ) : entry.lunch_break_taken ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-amber-500 mx-auto" title="No lunch break recorded" />
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[180px] truncate" title={entry.notes || ""}>
+                        {entry.notes || ""}
+                      </TableCell>
                       <TableCell className="text-right">{entry.hours_logged.toFixed(2)}</TableCell>
                     </TableRow>
                   );
                 })}
+                {adjustedLeave.map((adj) => (
+                  <TableRow key={`adj-${adj.id}`} className="bg-purple-50/60 dark:bg-purple-950/10">
+                    <TableCell>{adj.leave_date}</TableCell>
+                    <TableCell>{adj.user_full_name}</TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs border-purple-400 text-purple-700 dark:text-purple-300">
+                        Adj. Leave
+                      </Badge>
+                    </TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell className="text-center"><span className="text-gray-400 text-xs">N/A</span></TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{adj.reason || ""}</TableCell>
+                    <TableCell className="text-right text-red-600 font-medium">
+                      -{adj.hours_to_deduct.toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+
                 <TableRow className="font-bold bg-muted/50">
-                  <TableCell colSpan={6} className="text-right">Total Hours:</TableCell>
+                  <TableCell colSpan={8} className="text-right">Total Hours:</TableCell>
                   <TableCell className="text-right">{totalHours.toFixed(2)}</TableCell>
                 </TableRow>
               </TableBody>

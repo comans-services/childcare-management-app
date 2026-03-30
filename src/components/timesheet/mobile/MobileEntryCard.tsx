@@ -104,12 +104,30 @@ export function MobileEntryCard({ entry, onEdit, onDelete }: MobileEntryCardProp
             )}
           </div>
 
-          {/* Hours badge */}
-          <div className="flex-shrink-0">
+          {/* Hours badge + action buttons */}
+          <div className="flex-shrink-0 flex flex-col items-end gap-2">
             <div className="bg-primary/10 text-primary px-3 py-1.5 rounded-full">
               <span className="text-sm font-semibold">
                 {entry.hours_logged.toFixed(1)}h
               </span>
+            </div>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); haptics.light(); onEdit(entry); }}
+                className="p-1.5 rounded-md text-blue-500 hover:bg-blue-50 active:bg-blue-100"
+                aria-label="Edit entry"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); haptics.medium(); onDelete(entry); }}
+                className="p-1.5 rounded-md text-red-500 hover:bg-red-50 active:bg-red-100"
+                aria-label="Delete entry"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>

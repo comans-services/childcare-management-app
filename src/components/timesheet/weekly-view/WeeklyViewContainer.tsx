@@ -209,6 +209,7 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
       ) : isMobile ? (
         <MobileTimesheetView
           weekDates={weekDates}
+          currentDate={currentDate}
           entries={entries}
           expectedHours={effectiveHours}
           expectedDays={effectiveDays}
@@ -216,6 +217,13 @@ const WeeklyViewContainer: React.FC<WeeklyViewContainerProps> = ({ viewAsUserId 
           onCreateEntry={handleMobileCreateEntry}
           onEditEntry={handleMobileEditEntry}
           onDeleteEntry={handleMobileDeleteEntry}
+          navigateToPrevious={navigateToPrevious}
+          navigateToNext={navigateToNext}
+          navigateToCurrentWeek={navigateToCurrentWeek}
+          viewMode={viewMode}
+          toggleViewMode={toggleViewMode}
+          error={error}
+          fetchData={fetchData}
         />
       ) : (
         <WeeklyViewContent

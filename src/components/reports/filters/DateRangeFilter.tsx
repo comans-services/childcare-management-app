@@ -24,11 +24,18 @@ export const DateRangeFilter = ({ filters, setFilters }: DateRangeFilterProps) =
       try {
         const periods = await fetchPayPeriods(24);
         setPayPeriods(periods);
+        // Auto-select the period that matches the current filter dates
+        if (filters.startDate && filters.endDate) {
+          const startStr = format(filters.startDate, 'yyyy-MM-dd');
+          const matched = periods.find((p) => p.period_start === startStr);
+          if (matched) setSelectedPeriodId(matched.id);
+        }
       } catch (error) {
         console.error("Failed to load pay periods:", error);
       }
     };
     loadPeriods();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handlePeriodSelect = (periodId: string) => {

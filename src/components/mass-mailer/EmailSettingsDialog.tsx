@@ -131,17 +131,22 @@ export const EmailSettingsDialog = ({
           {/* Domain Verification Warning */}
           <Alert>
             <AlertCircle className="h-5 w-5" />
-            <AlertDescription className="text-base">
-              <strong>Important:</strong> Your domain must be verified in Resend before
-              emails will work.{" "}
-              <a
-                href="https://resend.com/domains"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline font-semibold"
-              >
-                Verify domain at resend.com/domains
-              </a>
+            <AlertDescription className="text-base space-y-1">
+              <p>
+                <strong>Important:</strong> Your domain must be verified in Resend before
+                emails will work.{" "}
+                <a
+                  href="https://resend.com/domains"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline font-semibold"
+                >
+                  Verify domain at resend.com/domains
+                </a>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                If recipients don't see your emails, ask them to <strong>check their spam or junk folder</strong>.
+              </p>
             </AlertDescription>
           </Alert>
 

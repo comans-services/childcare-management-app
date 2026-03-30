@@ -31,6 +31,7 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
   const [staffError, setStaffError] = useState<string>('');
   const [staffInRoomMap, setStaffInRoomMap] = useState<Map<string, string>>(new Map());
   const [currentStaffCount, setCurrentStaffCount] = useState<number>(0);
+  const [staffSearch, setStaffSearch] = useState<string>('');
 
   // Load staff room status
   useEffect(() => {
@@ -56,15 +57,15 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
     loadStaffStatus();
   }, [allStaff, initialRoomId]);
 
-  // Filter employees based on status
+  // Filter employees based on status and search query
   const availableEmployees = (allStaff || []).filter((employee) => {
     const employeeCurrentRoom = staffInRoomMap.get(employee.id);
-
-    if (status === StatusType.ENTER) {
-      return !employeeCurrentRoom;
-    } else {
-      return employeeCurrentRoom === initialRoomId;
-    }
+    const matchesStatus = status === StatusType.ENTER
+      ? !employeeCurrentRoom
+      : employeeCurrentRoom === initialRoomId;
+    const matchesSearch = staffSearch.trim() === '' ||
+      employee.full_name.toLowerCase().includes(staffSearch.toLowerCase());
+    return matchesStatus && matchesSearch;
   });
 
   // Set default values
@@ -157,18 +158,28 @@ const RoomUpdateFormComponent: React.FC<RoomUpdateFormProps> = ({
               {staffError}
             </div>
           ) : (
-            <select
-              value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
-              className="w-full p-3 bg-care-green text-white rounded-md border border-care-accentGreen focus:border-care-brightGreen focus:outline-none focus:ring-1 focus:ring-care-brightGreen"
-              disabled={availableEmployees.length === 0}
-            >
-              {availableEmployees.map((employee) => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.full_name}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-2">
+              <input
+                type="text"
+                placeholder="Search staff…"
+                value={staffSearch}
+                onChange={(e) => { setStaffSearch(e.target.value); setEmployeeId(''); }}
+                className="w-full p-2 bg-care-green text-white rounded-md border border-care-accentGreen placeholder-care-lightText focus:border-care-brightGreen focus:outline-none focus:ring-1 focus:ring-care-brightGreen text-sm"
+              />
+              <select
+                value={employeeId}
+                onChange={(e) => setEmployeeId(e.target.value)}
+                className="w-full p-3 bg-care-green text-white rounded-md border border-care-accentGreen focus:border-care-brightGreen focus:outline-none focus:ring-1 focus:ring-care-brightGreen"
+                disabled={availableEmployees.length === 0}
+                size={Math.min(availableEmployees.length, 6) || 1}
+              >
+                {availableEmployees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
 

@@ -18,6 +18,8 @@ import { AuditLogEntry } from "@/lib/audit/audit-service";
 import { toast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/date-utils";
 import { fetchMatrixData, downloadMatrixCSV, downloadMatrixPDF } from "@/lib/reports/timesheet-matrix-export-service";
+import { fetchPayPeriods } from "@/lib/payroll/payroll-service";
+import { parseISO } from "date-fns";
 
 export type ReportFiltersType = {
   startDate: Date;
@@ -55,6 +57,7 @@ const ReportsPage = () => {
   const [auditData, setAuditData] = useState<AuditLogEntry[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
+  // Default dates: first of current month (overridden below once pay periods load)
   const [filters, setFilters] = useState<ReportFiltersType>({
     startDate: new Date(new Date().setDate(1)),
     endDate: new Date(),
@@ -67,6 +70,24 @@ const ReportsPage = () => {
     reportType: 'timesheet',
     actionType: undefined
   });
+
+  // Override default dates to the current pay period on first load
+  useEffect(() => {
+    fetchPayPeriods(24).then((periods) => {
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0, 10);
+      const current = periods.find(
+        (p) => p.period_start <= todayStr && p.period_end >= todayStr
+      );
+      if (current) {
+        setFilters((prev) => ({
+          ...prev,
+          startDate: parseISO(current.period_start),
+          endDate: parseISO(current.period_end),
+        }));
+      }
+    }).catch(() => {/* silently fall back to month default */});
+  }, []);
 
   const isExportDisabled = () => {
     if (filters.reportType === 'timesheet') {

@@ -5,6 +5,7 @@ import { WeekStrip } from "./WeekStrip";
 import { QuickStats } from "./QuickStats";
 import { MobileEntryCard } from "./MobileEntryCard";
 import { TimesheetEntry } from "@/lib/timesheet/types";
+import MobileWeekNavigation from "../weekly-view/MobileWeekNavigation";
 
 export interface ScheduledDailyHours {
   monday: number;
@@ -18,6 +19,7 @@ export interface ScheduledDailyHours {
 
 export interface MobileTimesheetViewProps {
   weekDates: Date[];
+  currentDate: Date;
   entries: TimesheetEntry[];
   expectedHours: number;
   expectedDays: number;
@@ -25,10 +27,18 @@ export interface MobileTimesheetViewProps {
   onCreateEntry: (date: Date) => void;
   onEditEntry: (entry: TimesheetEntry) => void;
   onDeleteEntry: (entry: TimesheetEntry) => void;
+  navigateToPrevious: () => void;
+  navigateToNext: () => void;
+  navigateToCurrentWeek: () => void;
+  viewMode: "today" | "week";
+  toggleViewMode: () => void;
+  error: string | null;
+  fetchData: () => void;
 }
 
 export function MobileTimesheetView({
   weekDates,
+  currentDate,
   entries,
   expectedHours,
   expectedDays,
@@ -36,6 +46,13 @@ export function MobileTimesheetView({
   onCreateEntry,
   onEditEntry,
   onDeleteEntry,
+  navigateToPrevious,
+  navigateToNext,
+  navigateToCurrentWeek,
+  viewMode,
+  toggleViewMode,
+  error,
+  fetchData,
 }: MobileTimesheetViewProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(weekDates[0] || new Date());
 
@@ -75,7 +92,20 @@ export function MobileTimesheetView({
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      {/* Week strip */}
+      {/* Week navigation — prev/next week */}
+      <MobileWeekNavigation
+        weekDates={weekDates}
+        currentDate={currentDate}
+        navigateToPrevious={navigateToPrevious}
+        navigateToNext={navigateToNext}
+        navigateToCurrentWeek={navigateToCurrentWeek}
+        viewMode={viewMode}
+        toggleViewMode={toggleViewMode}
+        error={error}
+        fetchData={fetchData}
+      />
+
+      {/* Day strip within the current week */}
       <WeekStrip
         weekDates={weekDates}
         selectedDate={selectedDate}

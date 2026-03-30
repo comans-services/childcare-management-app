@@ -36,6 +36,7 @@ export const timeEntryFormSchema = z.object({
   end_time: z.string().min(1, { message: "End time is required" }),
   lunch_break_taken: z.boolean().optional().default(false),
   leave_type: z.string().nullable().optional(),
+  notes: z.string().optional().nullable(),
 });
 
 export type TimeEntryFormValues = z.infer<typeof timeEntryFormSchema>;
