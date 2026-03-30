@@ -349,8 +349,22 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       }
       
       console.log("User created successfully:", profileResult);
+
+      // Send welcome email (fire-and-forget — don't block user creation on email failure)
+      supabase.functions.invoke('send-welcome-email', {
+        body: {
+          userId: authData.user.id,
+          email: userData.email,
+          fullName: userData.full_name || userData.email,
+          temporaryPassword: userData.password,
+        },
+      }).then(({ error: emailError }) => {
+        if (emailError) console.warn("Welcome email failed to send:", emailError);
+        else console.log("Welcome email sent successfully");
+      });
+
       return { ...profileResult, role: userRoleValue } as User;
-      
+
     } catch (profileCreationError) {
       console.error("Profile creation failed:", profileCreationError);
       throw profileCreationError;
