@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const APP_BASE_URL = Deno.env.get("APP_BASE_URL") || "https://example.com";
+const APP_BASE_URL = (Deno.env.get("APP_BASE_URL") || "https://example.com").replace(/\/$/, "");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
