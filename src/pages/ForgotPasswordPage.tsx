@@ -21,7 +21,7 @@ const ForgotPasswordPage = () => {
     try {
       // Route through Resend via edge function (bypasses Supabase rate limits)
       const { error: fnError } = await supabase.functions.invoke("send-password-reset-email", {
-        body: { email },
+        body: { email, redirectTo: window.location.origin + "/reset-password" },
       });
       if (fnError) throw fnError;
       setSent(true);

@@ -417,9 +417,10 @@ export const reactivateUser = async (userId: string, userEmail: string): Promise
     .eq('id', userId);
   if (profileError) throw profileError;
 
-  // Send reactivation email via edge function (generates password-reset link server-side)
-  const { error: emailError } = await supabase.functions.invoke('send-reactivation-email', {
+  // Fire-and-forget: send reactivation email without blocking
+  supabase.functions.invoke('send-reactivation-email', {
     body: { userId, email: userEmail },
+  }).then(({ error: emailError }) => {
+    if (emailError) console.warn("Reactivation email failed to send:", emailError);
   });
-  if (emailError) console.warn("Reactivation email failed to send:", emailError);
 };

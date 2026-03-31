@@ -16,7 +16,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email } = await req.json();
+    const { email, redirectTo } = await req.json();
 
     if (!email) {
       return new Response(
@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
       type: "recovery",
       email,
       options: {
-        redirectTo: `${APP_BASE_URL}/reset-password`,
+        redirectTo: redirectTo || `${APP_BASE_URL}/reset-password`,
       },
     });
 
