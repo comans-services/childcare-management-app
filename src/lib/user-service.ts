@@ -293,28 +293,22 @@ export const createUser = async (userData: NewUser): Promise<User> => {
   try {
     console.log("Creating new user...");
     
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-      options: {
-        data: {
-          full_name: userData.full_name,
-        },
-        emailRedirectTo: `${window.location.origin}/auth`
-      }
+    const { data: adminData, error: adminError } = await supabase.functions.invoke('admin-manage-user', {
+      body: { action: 'create', email: userData.email, password: userData.password },
     });
-    
-    if (authError || !authData.user) {
-      console.error("Error creating auth user:", authError);
-      throw authError || new Error("Failed to create user");
+
+    if (adminError || !adminData?.user) {
+      console.error("Error creating auth user:", adminError);
+      throw adminError || new Error("Failed to create user");
     }
-    
-    console.log("Auth user created successfully:", authData.user.id);
+
+    const authUserId = adminData.user.id;
+    console.log("Auth user created successfully:", authUserId);
     
     try {
       // Create profile (without role)
       const profileData = {
-        id: authData.user.id,
+        id: authUserId,
         full_name: userData.full_name,
         email: userData.email,
         organization: userData.organization,
@@ -324,24 +318,24 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         employee_id: userData.employee_id?.trim() || null,
         updated_at: new Date().toISOString(),
       };
-      
+
       const { data: profileResult, error: profileError } = await supabase
         .from("profiles")
         .insert(profileData)
         .select()
         .single();
-      
+
       if (profileError) {
         console.error("Error creating profile:", profileError);
         throw new Error(`Failed to create profile: ${profileError.message}`);
       }
-      
+
       // Insert role into user_roles table
       const userRoleValue = userData.role || "employee";
       const { error: roleError } = await supabase
         .from("user_roles" as any)
         .insert({
-          user_id: authData.user.id,
+          user_id: authUserId,
           role: userRoleValue,
         } as any);
       
@@ -354,7 +348,7 @@ export const createUser = async (userData: NewUser): Promise<User> => {
       // Send welcome email (fire-and-forget — don't block user creation on email failure)
       supabase.functions.invoke('send-welcome-email', {
         body: {
-          userId: authData.user.id,
+          userId: authUserId,
           email: userData.email,
           fullName: userData.full_name || userData.email,
           temporaryPassword: userData.password,
@@ -380,18 +374,14 @@ export const deleteUser = async (userId: string): Promise<void> => {
   try {
     console.log("Deleting user:", userId);
 
-    // Delete user roles first
-    await supabase.from('user_roles' as any).delete().eq('user_id', userId);
+    // Delete via admin API — cascades to profiles and all related records
+    const { error } = await supabase.functions.invoke('admin-manage-user', {
+      body: { action: 'delete', userId },
+    });
 
-    // Delete user profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
-
-    if (profileError) {
-      console.error("Error deleting profile:", profileError);
-      throw profileError;
+    if (error) {
+      console.error("Error deleting user:", error);
+      throw error;
     }
 
     console.log("User deleted successfully");
