@@ -156,7 +156,7 @@ const MobileDayColumn: React.FC<MobileDayColumnProps> = ({
               />
             </div>
             <p className="text-xs text-gray-500 mt-1 text-center">
-              {totalHours.toFixed(1)}h / {dailyTarget}h
+              {parseFloat(totalHours.toFixed(2))}h / {dailyTarget}h
             </p>
           </div>
         )}

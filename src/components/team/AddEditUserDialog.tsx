@@ -1,8 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,6 @@ interface AddEditUserDialogProps {
   isNewUser?: boolean;
 }
 
-// Define schema for existing users (no email/password required)
 const userSchema = z.object({
   id: z.string().optional(),
   full_name: z.string().min(1, "Full name is required"),
@@ -42,15 +42,18 @@ const userSchema = z.object({
   employee_id: z.string().optional().nullable(),
 });
 
-// Extended schema for new users (with email/password)
 const newUserSchema = z.object({
   full_name: z.string().min(1, "Full name is required"),
   email: z.string().email("Invalid email format"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  confirm_password: z.string().min(6, "Please confirm password"),
   role: z.enum(["employee", "admin"]),
   organization: z.string().optional().nullable(),
   employment_type: z.enum(["full-time", "part-time", "casual"]),
   employee_id: z.string().optional().nullable(),
+}).refine((data) => data.password === data.confirm_password, {
+  message: "Passwords do not match",
+  path: ["confirm_password"],
 });
 
 const AddEditUserDialog = ({
@@ -60,6 +63,9 @@ const AddEditUserDialog = ({
   onSave,
   isNewUser = false,
 }: AddEditUserDialogProps) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const schema = isNewUser ? newUserSchema : userSchema;
 
   const form = useForm({
@@ -68,6 +74,7 @@ const AddEditUserDialog = ({
       full_name: "",
       email: "",
       password: "",
+      confirm_password: "",
       role: "employee" as const,
       organization: "",
       employment_type: "full-time" as const,
@@ -88,6 +95,7 @@ const AddEditUserDialog = ({
         full_name: "",
         email: "",
         password: "",
+        confirm_password: "",
         role: "employee",
         organization: "",
         employment_type: "full-time",
@@ -106,11 +114,13 @@ const AddEditUserDialog = ({
   }, [user, isNewUser, form]);
 
   const onSubmit = (values: any) => {
-    // Default timezone to Melbourne for new users
     if (isNewUser) {
       values.time_zone = "Australia/Melbourne";
+      const { confirm_password, ...rest } = values;
+      onSave(rest);
+    } else {
+      onSave(values);
     }
-    onSave(values);
   };
 
   return (
@@ -161,23 +171,66 @@ const AddEditUserDialog = ({
             </div>
 
             {isNewUser && (
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        placeholder="Min. 6 characters"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            {...field}
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Min. 6 characters"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                            tabIndex={-1}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="confirm_password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            {...field}
+                            type={showConfirm ? "text" : "password"}
+                            placeholder="Re-enter password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirm((v) => !v)}
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                            tabIndex={-1}
+                            aria-label={showConfirm ? "Hide password" : "Show password"}
+                          >
+                            {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -187,11 +240,7 @@ const AddEditUserDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Role</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select role" />
@@ -213,10 +262,7 @@ const AddEditUserDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Employment Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select employment type" />
@@ -242,11 +288,7 @@ const AddEditUserDialog = ({
                   <FormItem>
                     <FormLabel>Employee ID</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value || ""}
-                        placeholder="EMP001"
-                      />
+                      <Input {...field} value={field.value || ""} placeholder="EMP001" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -260,11 +302,7 @@ const AddEditUserDialog = ({
                   <FormItem>
                     <FormLabel>Organization</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value || ""}
-                        placeholder="Organization name"
-                      />
+                      <Input {...field} value={field.value || ""} placeholder="Organization name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

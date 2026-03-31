@@ -114,7 +114,11 @@ const EntryForm: React.FC<EntryFormProps> = ({
             }
 
             const rawHours = getHoursDifference(start, end);
-            const netHours = Math.max(0, Math.round(rawHours * 4) / 4);
+            let netHours = Math.max(0, Math.round(rawHours * 4) / 4);
+            // Auto-cap full-time regular shifts: if duration > 8h, set to standard 7.6h
+            if (isFullTime && !form.getValues('leave_type') && netHours > 8) {
+              netHours = FULL_TIME_HOURS;
+            }
             form.setValue('hours_logged', netHours);
           } catch (error) {
             console.error("Error calculating hours:", error);
@@ -136,6 +140,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
       });
       return;
     }
+
 
     try {
       setIsSubmitting(true);
@@ -292,14 +297,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
             )}
           />
 
-          {/* Advisory: warn if hours differ from 7.6 for full-time regular shifts */}
-          {isFullTime && !form.watch("leave_type") &&
-            Math.abs(form.watch("hours_logged") - FULL_TIME_HOURS) > 0.01 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-sm text-amber-800">
-              Full-time standard shift is <strong>7.6 hours</strong>. Current entry is{" "}
-              <strong>{form.watch("hours_logged")} hours</strong>.
-            </div>
-          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button

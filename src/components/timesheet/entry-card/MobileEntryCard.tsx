@@ -98,7 +98,7 @@ const MobileEntryCard: React.FC<MobileEntryCardProps> = ({
           <div className="text-right flex-shrink-0 ml-3">
             <div className="font-bold text-lg rounded-lg bg-background/70 px-3 py-1 flex items-center">
               <Clock className="h-4 w-4 mr-1" />
-              {entry.hours_logged}h
+              {parseFloat((entry.hours_logged).toFixed(2))}h
             </div>
           </div>
         </div>

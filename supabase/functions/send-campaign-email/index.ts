@@ -71,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Use email settings or fallback to defaults
     const FROM_NAME = emailSettings?.sender_name || 'DACCC';
-    const FROM_EMAIL = emailSettings?.sender_email || 'onboarding@resend.dev';
+    const FROM_EMAIL = emailSettings?.sender_email || 'notifications@daccc.org.au';
     const REPLY_TO_EMAIL = emailSettings?.reply_to_email || FROM_EMAIL;
     
     console.log(`Email settings: From: ${FROM_NAME} <${FROM_EMAIL}>, Reply-To: ${REPLY_TO_EMAIL}`);

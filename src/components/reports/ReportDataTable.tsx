@@ -80,24 +80,52 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
     const fetchAdjustedLeave = async () => {
       if (!filters.startDate || !filters.endDate) return;
       try {
-        const { data } = await supabase
+        const startStr = format(filters.startDate, "yyyy-MM-dd");
+        const endStr = format(filters.endDate, "yyyy-MM-dd");
+
+        // Fetch adjustments where leave_date is within the range (current-period leave)
+        const { data: inRange } = await supabase
           .from("leave_adjustments")
-          .select(`
-            id, user_id, leave_date, hours_to_deduct, reason,
-            profiles:user_id (full_name)
-          `)
-          .gte("leave_date", format(filters.startDate, "yyyy-MM-dd"))
-          .lte("leave_date", format(filters.endDate, "yyyy-MM-dd"))
+          .select(`id, user_id, leave_date, hours_to_deduct, reason, target_pay_period_id, profiles:user_id (full_name)`)
+          .gte("leave_date", startStr)
+          .lte("leave_date", endStr)
           .order("leave_date", { ascending: true });
 
-        if (data) {
-          setAdjustedLeave(
-            data.map((r: any) => ({
-              ...r,
-              user_full_name: r.profiles?.full_name || "Unknown",
-            }))
-          );
+        // Also fetch prior adjustments targeted to this pay period (leave taken in a previous period)
+        const { data: matchingPeriod } = await supabase
+          .from("pay_periods")
+          .select("id")
+          .lte("period_start", startStr)
+          .gte("period_end", endStr)
+          .limit(1)
+          .maybeSingle();
+
+        let priorAdjustments: any[] = [];
+        if (matchingPeriod?.id) {
+          const { data: prior } = await supabase
+            .from("leave_adjustments")
+            .select(`id, user_id, leave_date, hours_to_deduct, reason, target_pay_period_id, profiles:user_id (full_name)`)
+            .eq("target_pay_period_id", matchingPeriod.id)
+            .lt("leave_date", startStr) // leave_date is before the current range = prior period
+            .order("leave_date", { ascending: true });
+          priorAdjustments = prior || [];
         }
+
+        // Merge, deduplicate by id
+        const seen = new Set<string>();
+        const merged = [...(inRange || []), ...priorAdjustments].filter((r) => {
+          if (seen.has(r.id)) return false;
+          seen.add(r.id);
+          return true;
+        });
+
+        setAdjustedLeave(
+          merged.map((r: any) => ({
+            ...r,
+            user_full_name: r.profiles?.full_name || "Unknown",
+            is_prior_adjustment: r.leave_date < startStr,
+          }))
+        );
       } catch (error) {
         console.error("Error fetching adjusted leave:", error);
       }

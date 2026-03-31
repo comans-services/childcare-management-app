@@ -23,14 +23,23 @@ export const createTimesheetEntry = async (entry: TimesheetEntry): Promise<Times
     if (weeklySchedule) {
       scheduledHours = weeklySchedule[`${dayName}_hours`] || 0;
     } else {
-      // No weekly override, fetch employment type for default
+      // No weekly override — fall back to template schedule (work_schedules) or employment type default
       const { data: profile } = await supabase
         .from("profiles")
         .select("employment_type")
         .eq("id", entry.user_id)
         .single();
-      
-      const defaultSchedule = getDefaultWeeklySchedule(profile?.employment_type || 'full-time');
+
+      const { data: templateSchedule } = await supabase
+        .from("work_schedules")
+        .select("*")
+        .eq("user_id", entry.user_id)
+        .maybeSingle();
+
+      const defaultSchedule = getDefaultWeeklySchedule(
+        profile?.employment_type || 'full-time',
+        templateSchedule || undefined
+      );
       scheduledHours = defaultSchedule[`${dayName}_hours`];
     }
     

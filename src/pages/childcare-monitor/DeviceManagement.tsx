@@ -379,22 +379,27 @@ const DeviceManagement: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>{regeneratedUrl ? "New Setup URL Generated" : "Regenerate Setup URL?"}</AlertDialogTitle>
             <AlertDialogDescription className="text-care-lightText">
-              {regeneratedUrl ? (
-                <div className="space-y-4">
-                  <p>Copy this URL and open it on the new iPad:</p>
-                  <div className="flex gap-2">
-                    <Input value={regeneratedUrl} readOnly className="bg-care-lightGreen border-care-accentGreen text-white" />
-                    <Button onClick={() => copySetupUrl(regeneratedUrl)} className="h-10 w-10 border border-care-accentGreen bg-transparent text-white p-0">
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <p className="text-xs">The previous iPad will no longer have access.</p>
-                </div>
-              ) : (
-                "This will generate a new setup URL and allow a different iPad to access this device. The current iPad will be disconnected."
-              )}
+              {regeneratedUrl
+                ? "Copy the URL below and open it on the new iPad to complete setup."
+                : "This will generate a new setup URL and allow a different iPad to access this device. The current iPad will be disconnected."}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {regeneratedUrl && (
+            <div className="space-y-3 px-1">
+              <div className="bg-care-lightGreen border border-care-accentGreen rounded-md p-3 break-all text-sm font-mono text-white select-all">
+                {regeneratedUrl}
+              </div>
+              <Button
+                onClick={() => copySetupUrl(regeneratedUrl)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+              >
+                <Copy className="h-4 w-4" />
+                Copy Setup URL
+              </Button>
+              <p className="text-xs text-care-lightText">The previous iPad will no longer have access.</p>
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel className="border-care-accentGreen text-white bg-transparent">
               {regeneratedUrl ? "Done" : "Cancel"}

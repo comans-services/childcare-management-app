@@ -21,7 +21,7 @@ const MobileWeeklyHoursSummary: React.FC<MobileWeeklyHoursSummaryProps> = ({
   const { user } = useAuth();
   
   const formatHours = (hours: number) => {
-    return hours.toFixed(1);
+    return parseFloat(hours.toFixed(2)).toString();
   };
 
   const getHoursColor = () => {

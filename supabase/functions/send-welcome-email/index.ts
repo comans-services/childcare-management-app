@@ -97,7 +97,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const emailResponse = await resend.emails.send({
-      from: "Timesheet System <onboarding@resend.dev>",
+      from: "DACCC Timesheet <notifications@daccc.org.au>",
       to: [requestData.email],
       subject: `Welcome to the Team, ${requestData.fullName}!`,
       html: emailHtml,

@@ -107,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const emailResponse = await resend.emails.send({
-      from: "HR System <onboarding@resend.dev>",
+      from: "DACCC HR <notifications@daccc.org.au>",
       to: recipients,
       subject: subject,
       html: emailContent,
@@ -140,7 +140,7 @@ async function handleHRIssue(data: HRIssueRequest): Promise<Response> {
   const adminEmails = admins?.map(admin => admin.email).filter(Boolean) || ['belinda.comeau@comansservices.com.au'];
 
   const emailResponse = await resend.emails.send({
-    from: "Timesheet System <onboarding@resend.dev>",
+    from: "DACCC Timesheet <notifications@daccc.org.au>",
     to: adminEmails,
     subject: "Timesheet System - HR Issue Report",
     html: `

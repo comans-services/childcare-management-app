@@ -146,8 +146,8 @@ export const upsertWorkScheduleTemplate = async (
       throw new Error("No authenticated user");
     }
 
-    // Calculate working days from template
-    const workingDays = Object.values(templateHours).filter(h => h > 0).length;
+    // Calculate working days from template (minimum 1 to satisfy DB constraint)
+    const workingDays = Math.max(1, Object.values(templateHours).filter(h => h > 0).length);
 
     const { data, error } = await supabase
       .from("work_schedules")

@@ -193,7 +193,7 @@ const EntryCard: React.FC<EntryCardProps> = ({
           <div className="flex justify-between items-center mb-2">
             <div className="text-xs md:text-sm font-bold rounded-full bg-background/50 px-2 py-0.5 flex items-center flex-shrink-0">
               <Clock className="h-3 w-3 mr-1 inline flex-shrink-0" aria-hidden="true" />
-              {entry.hours_logged} hr{entry.hours_logged !== 1 ? "s" : ""}
+              {(() => { const h = parseFloat((entry.hours_logged).toFixed(2)); return `${h} hr${h !== 1 ? "s" : ""}`; })()}
             </div>
             
           </div>

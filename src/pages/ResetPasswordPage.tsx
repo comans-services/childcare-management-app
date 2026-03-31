@@ -12,6 +12,7 @@ const ResetPasswordPage = () => {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
@@ -115,15 +116,27 @@ const ResetPasswordPage = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="confirm">Confirm New Password</Label>
-                    <Input
-                      id="confirm"
-                      type="password"
-                      placeholder="Re-enter new password"
-                      value={confirm}
-                      onChange={(e) => setConfirm(e.target.value)}
-                      disabled={isSubmitting}
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="confirm"
+                        type={showConfirm ? "text" : "password"}
+                        placeholder="Re-enter new password"
+                        value={confirm}
+                        onChange={(e) => setConfirm(e.target.value)}
+                        disabled={isSubmitting}
+                        required
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirm((v) => !v)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                        tabIndex={-1}
+                        aria-label={showConfirm ? "Hide password" : "Show password"}
+                      >
+                        {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isSubmitting}>

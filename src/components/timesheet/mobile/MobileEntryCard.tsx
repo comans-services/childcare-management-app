@@ -108,7 +108,7 @@ export function MobileEntryCard({ entry, onEdit, onDelete }: MobileEntryCardProp
           <div className="flex-shrink-0 flex flex-col items-end gap-2">
             <div className="bg-primary/10 text-primary px-3 py-1.5 rounded-full">
               <span className="text-sm font-semibold">
-                {entry.hours_logged.toFixed(1)}h
+                {parseFloat((entry.hours_logged).toFixed(2))}h
               </span>
             </div>
             <div className="flex gap-1">

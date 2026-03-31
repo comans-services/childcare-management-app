@@ -1,5 +1,10 @@
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay } from "date-fns";
 
+/** Format hours with up to 2 decimal places, stripping trailing zeros. e.g. 7.6 → "7.6", 0.25 → "0.25", 8 → "8" */
+export const formatHours = (hours: number): string => {
+  return parseFloat(hours.toFixed(2)).toString();
+};
+
 export const formatDate = (date: Date): string => {
   // Ensure consistent date format YYYY-MM-DD without timezone effects
   return format(date, "yyyy-MM-dd");
