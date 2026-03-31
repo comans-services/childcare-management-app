@@ -90,7 +90,7 @@ export const processRow = async (
             data: {
               full_name: processedData.full_name,
             },
-            emailRedirectTo: `${window.location.origin}/auth`
+            emailRedirectTo: `${window.location.origin.replace(/\/$/, "")}/auth`
           }
         });
         
