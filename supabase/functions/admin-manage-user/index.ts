@@ -34,6 +34,19 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       if (error) {
+        // If email already exists, look up and return the existing user
+        if (error.message?.toLowerCase().includes("already") || error.message?.toLowerCase().includes("exists")) {
+          const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+          const existing = listData?.users?.find((u: any) => u.email === email);
+          if (existing) {
+            // Update password for the existing user
+            await supabaseAdmin.auth.admin.updateUserById(existing.id, { password });
+            return new Response(
+              JSON.stringify({ user: existing }),
+              { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+        }
         return new Response(
           JSON.stringify({ error: error.message }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
