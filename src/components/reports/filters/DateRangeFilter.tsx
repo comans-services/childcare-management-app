@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfDay } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReportFiltersType } from "@/pages/ReportsPage";
@@ -41,8 +41,8 @@ export const DateRangeFilter = ({ filters, setFilters }: DateRangeFilterProps) =
     if (period) {
       setFilters((prev) => ({
         ...prev,
-        startDate: parseISO(period.period_start),
-        endDate: parseISO(period.period_end),
+        startDate: startOfDay(parseISO(period.period_start)),
+        endDate: startOfDay(parseISO(period.period_end)),
       }));
     }
   };
@@ -72,8 +72,8 @@ export const DateRangeFilter = ({ filters, setFilters }: DateRangeFilterProps) =
   };
 
   const formatPeriodLabel = (period: PayPeriod) => {
-    const start = parseISO(period.period_start);
-    const end = parseISO(period.period_end);
+    const start = startOfDay(parseISO(period.period_start));
+    const end = startOfDay(parseISO(period.period_end));
     return `${format(start, "MMM d")} – ${format(end, "MMM d, yyyy")}`;
   };
 

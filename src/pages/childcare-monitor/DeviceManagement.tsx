@@ -131,16 +131,11 @@ const DeviceManagement: React.FC = () => {
   const regenerateTokenMutation = useMutation({
     mutationFn: (deviceId: string) => deviceService.regenerateDeviceToken(deviceId),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({
-        queryKey: ["room-devices"]
-      });
       const setupUrl = `${window.location.origin}/childcare-monitor/setup?token=${data.token}`;
       setRegeneratedUrl(setupUrl);
-      // Auto-copy to clipboard immediately
-      navigator.clipboard.writeText(setupUrl).catch(() => {/* ignore if blocked */});
       toast({
         title: "Token regenerated",
-        description: "New setup URL generated and copied to clipboard"
+        description: "Copy the setup URL below to configure the new iPad"
       });
     },
     onError: () => {
@@ -371,6 +366,9 @@ const DeviceManagement: React.FC = () => {
       {/* Regenerate Token Dialog */}
       <AlertDialog open={regenerateDeviceId !== null} onOpenChange={(open) => {
         if (!open) {
+          if (regeneratedUrl) {
+            queryClient.invalidateQueries({ queryKey: ["room-devices"] });
+          }
           setRegenerateDeviceId(null);
           setRegeneratedUrl(null);
         }
@@ -405,8 +403,8 @@ const DeviceManagement: React.FC = () => {
               {regeneratedUrl ? "Done" : "Cancel"}
             </AlertDialogCancel>
             {!regeneratedUrl && (
-              <AlertDialogAction 
-                onClick={() => regenerateDeviceId && regenerateTokenMutation.mutate(regenerateDeviceId)} 
+              <Button
+                onClick={() => regenerateDeviceId && regenerateTokenMutation.mutate(regenerateDeviceId)}
                 className="bg-blue-600 text-white"
                 disabled={regenerateTokenMutation.isPending}
               >
@@ -416,7 +414,7 @@ const DeviceManagement: React.FC = () => {
                     Generating...
                   </>
                 ) : "Regenerate"}
-              </AlertDialogAction>
+              </Button>
             )}
           </AlertDialogFooter>
         </AlertDialogContent>

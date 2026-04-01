@@ -83,6 +83,12 @@ const handler = async (req: Request): Promise<Response> => {
               </a>
             </div>
             
+            <div style="background-color: #fef3c7; padding: 12px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+              <p style="margin: 0; font-size: 14px; color: #92400e;">
+                📧 Can't find this email? Check your <strong>spam or junk folder</strong> — it may have been filtered.
+              </p>
+            </div>
+
             <p style="font-size: 14px; color: #6b7280; margin-top: 20px;">
               If you have any questions, please contact your manager or HR department.
             </p>

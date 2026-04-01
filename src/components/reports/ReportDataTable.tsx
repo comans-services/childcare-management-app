@@ -48,11 +48,13 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
 
       try {
         // Find pay period matching the report date range
+        const startStr = format(filters.startDate, "yyyy-MM-dd");
+        const endStr = format(filters.endDate, "yyyy-MM-dd");
         const { data: current } = await supabase
           .from("pay_periods")
           .select("period_start, period_end, payroll_cutoff_date, payroll_date")
-          .lte("period_start", filters.startDate)
-          .gte("period_end", filters.endDate)
+          .lte("period_start", startStr)
+          .gte("period_end", endStr)
           .limit(1)
           .single();
 
