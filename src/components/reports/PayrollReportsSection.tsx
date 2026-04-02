@@ -75,6 +75,7 @@ export const PayrollReportsSection = () => {
     const selectedPeriodData = payPeriods.find(p => p.id === selectedPeriod);
     const headers = [
       "Employee Name",
+      "Employment Type",
       "Scheduled Hours",
       "Actual Hours",
       "Leave (Pre-Cutoff)",
@@ -85,11 +86,12 @@ export const PayrollReportsSection = () => {
 
     const rows = reportData.map(row => [
       row.full_name,
+      row.employment_type,
       row.scheduled_hours.toFixed(2),
       row.actual_hours.toFixed(2),
       row.leave_hours_pre_cutoff.toFixed(2),
       row.leave_hours_post_cutoff.toFixed(2),
-      row.prior_period_adjustments.toFixed(2),
+      row.employment_type === 'casual' ? 'N/A' : row.prior_period_adjustments.toFixed(2),
       row.net_hours.toFixed(2)
     ]);
 
@@ -179,6 +181,7 @@ export const PayrollReportsSection = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Employee</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead className="text-right">Scheduled</TableHead>
                     <TableHead className="text-right">Actual</TableHead>
                     <TableHead className="text-right">Leave (Pre)</TableHead>
@@ -191,6 +194,7 @@ export const PayrollReportsSection = () => {
                   {reportData.map((row) => (
                     <TableRow key={row.user_id}>
                       <TableCell className="font-medium">{row.full_name}</TableCell>
+                      <TableCell className="capitalize text-muted-foreground text-sm">{row.employment_type}</TableCell>
                       <TableCell className="text-right">{row.scheduled_hours.toFixed(2)}</TableCell>
                       <TableCell className="text-right">{row.actual_hours.toFixed(2)}</TableCell>
                       <TableCell className="text-right">{row.leave_hours_pre_cutoff.toFixed(2)}</TableCell>
@@ -202,7 +206,9 @@ export const PayrollReportsSection = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {row.prior_period_adjustments > 0 ? (
+                        {row.employment_type === 'casual' ? (
+                          <span className="text-muted-foreground text-sm">N/A</span>
+                        ) : row.prior_period_adjustments > 0 ? (
                           <span className="text-destructive font-medium">-{row.prior_period_adjustments.toFixed(2)}</span>
                         ) : (
                           row.prior_period_adjustments.toFixed(2)

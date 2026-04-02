@@ -27,6 +27,7 @@ export interface PayrollReportData {
   user_id: string;
   employee_id: string;
   full_name: string;
+  employment_type: string;
   scheduled_hours: number;
   actual_hours: number;
   leave_hours_pre_cutoff: number;
