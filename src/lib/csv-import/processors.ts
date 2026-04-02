@@ -11,8 +11,6 @@ export const processUsers = (data: any[]): any[] => {
         full_name: row.full_name?.toString().trim(),
         email: row.email?.toString().trim(),
         password: row.password?.toString().trim(),
-        organization: row.organization?.toString().trim() || '',
-        time_zone: row.time_zone?.toString().trim() || 'UTC',
         employee_id: row.employee_id?.toString().trim() || null,
         employee_card_id: row.employee_card_id?.toString().trim() || null,
         role: row.role?.toString().trim() || 'employee',
@@ -37,7 +35,7 @@ export const processUsers = (data: any[]): any[] => {
       }
 
       // Validate employment type
-      const validEmploymentTypes = ['full-time', 'part-time'];
+      const validEmploymentTypes = ['full-time', 'part-time', 'casual'];
       if (!validEmploymentTypes.includes(user.employment_type)) {
         user.employment_type = 'full-time'; // Default to full-time if invalid
       }
@@ -107,8 +105,6 @@ export const processRow = async (
             id: authData.user.id,
             full_name: processedData.full_name,
             email: processedData.email,
-            organization: processedData.organization,
-            time_zone: processedData.time_zone,
             employment_type: processedData.employment_type,
             employee_id: processedData.employee_id || null,
             employee_card_id: processedData.employee_card_id || null,

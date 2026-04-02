@@ -37,7 +37,6 @@ const userSchema = z.object({
   id: z.string().optional(),
   full_name: z.string().min(1, "Full name is required"),
   role: z.enum(["employee", "admin"]),
-  organization: z.string().optional().nullable(),
   employment_type: z.enum(["full-time", "part-time", "casual"]),
   employee_id: z.string().optional().nullable(),
 });
@@ -48,7 +47,6 @@ const newUserSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirm_password: z.string().min(6, "Please confirm password"),
   role: z.enum(["employee", "admin"]),
-  organization: z.string().optional().nullable(),
   employment_type: z.enum(["full-time", "part-time", "casual"]),
   employee_id: z.string().optional().nullable(),
 }).refine((data) => data.password === data.confirm_password, {
@@ -76,14 +74,12 @@ const AddEditUserDialog = ({
       password: "",
       confirm_password: "",
       role: "employee" as const,
-      organization: "",
       employment_type: "full-time" as const,
       employee_id: "",
     } : {
       id: user?.id || "",
       full_name: user?.full_name || "",
       role: (user?.role as "employee" | "admin") || "employee",
-      organization: user?.organization || "",
       employment_type: (user?.employment_type as "full-time" | "part-time" | "casual") || "full-time",
       employee_id: user?.employee_id || "",
     }
@@ -97,7 +93,6 @@ const AddEditUserDialog = ({
         password: "",
         confirm_password: "",
         role: "employee",
-        organization: "",
         employment_type: "full-time",
         employee_id: "",
       });
@@ -106,7 +101,6 @@ const AddEditUserDialog = ({
         id: user.id,
         full_name: user.full_name || "",
         role: (user.role as "employee" | "admin") || "employee",
-        organization: user.organization || "",
         employment_type: (user.employment_type as "full-time" | "part-time" | "casual") || "full-time",
         employee_id: user.employee_id || "",
       });
@@ -115,7 +109,6 @@ const AddEditUserDialog = ({
 
   const onSubmit = (values: any) => {
     if (isNewUser) {
-      values.time_zone = "Australia/Melbourne";
       const { confirm_password, ...rest } = values;
       onSave(rest);
     } else {
@@ -280,35 +273,19 @@ const AddEditUserDialog = ({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="employee_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Employee ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ""} placeholder="EMP001" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="organization"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Organization</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ""} placeholder="Organization name" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="employee_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Employee ID</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ""} placeholder="EMP001" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>

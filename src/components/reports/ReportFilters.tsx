@@ -43,7 +43,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
     const fetchUsers = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id, full_name, employment_type, organization")
+        .select("id, full_name, employment_type")
         .eq("is_active", true)
         .order("full_name");
       if (data) setUsers(data);

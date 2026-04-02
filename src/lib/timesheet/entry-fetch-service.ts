@@ -42,7 +42,7 @@ export const fetchTimesheetEntries = async (
     const userIds = [...new Set(data.map(e => e.user_id))];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, full_name, email, organization, time_zone")
+      .select("id, full_name, email")
       .in("id", userIds);
 
     const profileMap = (profiles ?? []).reduce((acc, p) => {
@@ -80,9 +80,7 @@ export const fetchReportData = async (
           email,
           employee_card_id,
           employee_id,
-          employment_type,
-          organization,
-          time_zone
+          employment_type
         )
       `)
       .gte("entry_date", formatDate(filters.startDate))

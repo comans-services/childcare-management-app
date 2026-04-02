@@ -120,8 +120,8 @@ export const validateTeamMemberRow = (row: Record<string, string>, rowIndex: num
     errors.push({ row: rowIndex, field: 'password', message: 'Password must be at least 6 characters' });
   }
   
-  if (row.employment_type?.trim() && !['full-time', 'part-time'].includes(row.employment_type)) {
-    errors.push({ row: rowIndex, field: 'employment_type', message: 'Employment type must be: full-time or part-time' });
+  if (row.employment_type?.trim() && !['full-time', 'part-time', 'casual'].includes(row.employment_type)) {
+    errors.push({ row: rowIndex, field: 'employment_type', message: 'Employment type must be: full-time, part-time, or casual' });
   }
   
   if (row.role?.trim() && !['admin', 'employee'].includes(row.role)) {

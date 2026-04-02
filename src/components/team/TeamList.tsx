@@ -10,10 +10,8 @@ import {
   Trash2,
   Clock,
   Mail,
-  Building2,
   CreditCard,
   User as UserIcon,
-  Globe,
   UserX,
   UserCheck,
   EyeOff,
@@ -216,12 +214,6 @@ const TeamList: React.FC = () => {
                   <span className="truncate">{user.email}</span>
                 </div>
               )}
-              {user.organization && (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Building2 className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{user.organization}</span>
-                </div>
-              )}
               {user.employee_id && (
                 <div className="flex items-center text-sm text-muted-foreground">
                   <UserIcon className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -234,13 +226,6 @@ const TeamList: React.FC = () => {
                   <span>Card: {user.employee_card_id}</span>
                 </div>
               )}
-              {user.time_zone && (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Globe className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <span>{user.time_zone}</span>
-                </div>
-              )}
-
               <div className="flex gap-2 pt-2 flex-wrap">
                 {user.is_active !== false ? (
                   <>

@@ -6,13 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 
 export interface ProfileFormData {
   full_name: string;
-  organization: string;
-  time_zone: string;
   preferred_name: string;
   default_start_time: string;
   default_end_time: string;
@@ -28,8 +25,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
   const [isSaving, setIsSaving] = useState(false);
   const [formState, setFormState] = useState<ProfileFormData>({
     full_name: profile?.full_name || "",
-    organization: profile?.organization || "",
-    time_zone: profile?.time_zone || "",
     preferred_name: localStorage.getItem(`preferred-name-${user?.id}`) || "",
     default_start_time: profile?.default_start_time?.slice(0, 5) || "09:00",
     default_end_time: profile?.default_end_time?.slice(0, 5) || "17:00",
@@ -69,8 +64,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
 
       const updatedUser = await updateUser({
         ...profileData,
-        organization: formState.organization,
-        time_zone: formState.time_zone,
         default_start_time: formState.default_start_time,
         default_end_time: formState.default_end_time,
       });
@@ -139,40 +132,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onProfileUpdate }) =
                 This will be used in the app interface greeting.
               </p>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="organization">Organization</Label>
-            <Input
-              id="organization"
-              name="organization"
-              value={formState.organization}
-              onChange={handleInputChange}
-              placeholder="Your organization"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="time_zone">Time Zone</Label>
-            <Select 
-              value={formState.time_zone} 
-              onValueChange={(value) => handleSelectChange("time_zone", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select time zone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="UTC">UTC</SelectItem>
-                <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                <SelectItem value="Europe/Paris">Central European Time</SelectItem>
-                <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-4 pt-4 border-t">

@@ -4,8 +4,6 @@ export interface User {
   id: string;
   full_name?: string;
   role?: 'admin' | 'employee';
-  organization?: string;
-  time_zone?: string;
   email?: string;
   employment_type?: 'full-time' | 'part-time' | 'casual';
   employee_card_id?: string;
@@ -84,7 +82,7 @@ export const fetchUsers = async (): Promise<User[]> => {
     // Get all profiles (without role column) — include inactive so admin can reactivate
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, organization, time_zone, email, employment_type, employee_card_id, employee_id, is_active");
+      .select("id, full_name, email, employment_type, employee_card_id, employee_id, is_active");
     
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);
@@ -100,8 +98,6 @@ export const fetchUsers = async (): Promise<User[]> => {
       const newProfileData = {
         id: authData.user.id,
         full_name: authData.user.user_metadata?.full_name || "",
-        organization: "",
-        time_zone: "Australia/Melbourne",
         email: authData.user.email || "",
         employment_type: 'full-time' as const,
         employee_card_id: null,
@@ -176,7 +172,7 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
     
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, organization, time_zone, employment_type, employee_card_id, employee_id, default_start_time, default_end_time")
+      .select("id, full_name, employment_type, employee_card_id, employee_id, default_start_time, default_end_time")
       .eq("id", userId)
       .maybeSingle();
     
@@ -197,8 +193,6 @@ export const fetchUserById = async (userId: string): Promise<User | null> => {
       const newProfileData = {
         id: userId,
         full_name: authData.user.user_metadata?.full_name || "",
-        organization: "",
-        time_zone: "UTC",
         email: authData.user.email || "",
         employment_type: "full-time" as const,
         employee_card_id: null,
@@ -250,8 +244,6 @@ export const updateUser = async (user: User): Promise<User> => {
       .from("profiles")
       .update({
         full_name: user.full_name,
-        organization: user.organization,
-        time_zone: user.time_zone,
         email: user.email,
         employment_type: user.employment_type,
         employee_card_id: user.employee_card_id?.trim() || null,
@@ -311,8 +303,6 @@ export const createUser = async (userData: NewUser): Promise<User> => {
         id: authUserId,
         full_name: userData.full_name,
         email: userData.email,
-        organization: userData.organization,
-        time_zone: userData.time_zone,
         employment_type: userData.employment_type || "full-time",
         employee_card_id: userData.employee_card_id?.trim() || null,
         employee_id: userData.employee_id?.trim() || null,
