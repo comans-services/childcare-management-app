@@ -23,6 +23,13 @@ interface DayData {
   isHoliday?: boolean;
   isWeekend?: boolean;
   leaveType?: string | null;
+  notes?: string | null;
+}
+
+interface NoteEntry {
+  full_name: string;
+  entry_date: string;
+  notes: string;
 }
 
 export interface LeaveAdjustmentData {
@@ -45,6 +52,7 @@ interface MatrixData {
   dateTotals: Record<string, number>;
   grandTotal: number;
   leaveAdjustments?: LeaveAdjustmentData[];
+  noteEntries?: NoteEntry[];
 }
 
 // Fetch all required data for the matrix
@@ -81,7 +89,7 @@ export const fetchMatrixData = async (
   // 2. Fetch timesheet entries
   const { data: timesheetData, error: tsError } = await supabase
     .from('timesheet_entries')
-    .select('user_id, entry_date, hours_logged, leave_type')
+    .select('user_id, entry_date, hours_logged, leave_type, notes')
     .gte('entry_date', startDateStr)
     .lte('entry_date', endDateStr)
     .in('user_id', employees.map(e => e.id));
@@ -124,11 +132,18 @@ export const fetchMatrixData = async (
         matrix[dateKey][entry.user_id] = {};
       }
       const hours = Number(entry.hours_logged) || 0;
-      matrix[dateKey][entry.user_id].hours = 
+      matrix[dateKey][entry.user_id].hours =
         (matrix[dateKey][entry.user_id].hours || 0) + hours;
       // Store leave type (use first one if multiple entries on same day)
       if (entry.leave_type && !matrix[dateKey][entry.user_id].leaveType) {
         matrix[dateKey][entry.user_id].leaveType = entry.leave_type;
+      }
+      // Accumulate notes from multiple entries on same day
+      if (entry.notes && entry.notes.trim()) {
+        const existing = matrix[dateKey][entry.user_id].notes;
+        matrix[dateKey][entry.user_id].notes = existing
+          ? `${existing}; ${entry.notes.trim()}`
+          : entry.notes.trim();
       }
       employeeTotals[entry.user_id] = (employeeTotals[entry.user_id] || 0) + hours;
       dateTotals[dateKey] = (dateTotals[dateKey] || 0) + hours;
@@ -162,6 +177,23 @@ export const fetchMatrixData = async (
   } else if (filters.employmentType === 'casual') {
     title = 'Casual Staff Timesheet';
   }
+
+  // Collect all note entries for display in the report
+  const employeeMap = new Map(employees.map(e => [e.id, e.full_name]));
+  const noteEntries: NoteEntry[] = [];
+  dates.forEach(date => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    employees.forEach(emp => {
+      const cellData = matrix[dateKey]?.[emp.id];
+      if (cellData?.notes) {
+        noteEntries.push({
+          full_name: emp.full_name,
+          entry_date: dateKey,
+          notes: cellData.notes,
+        });
+      }
+    });
+  });
 
   // Fetch prior period leave adjustments by looking at post-cutoff leave entries
   let leaveAdjustments: LeaveAdjustmentData[] = [];
@@ -219,6 +251,7 @@ export const fetchMatrixData = async (
     dateTotals,
     grandTotal,
     leaveAdjustments,
+    noteEntries,
   };
 };
 
@@ -298,6 +331,17 @@ export const generateMatrixCSV = (data: MatrixData): string => {
   lines.push('');
   lines.push(`"Legend: PH = Public Holiday, AL = Annual Leave, LL = Leave Loading, SL = Sick Leave, CL = Carer's Leave, ADO = Accrued Day Off, LWP = Leave Without Pay, HD = Higher Duty, PPL = Paid Parental Leave, T1.5 = Time and a Half, T2.5 = Double Time and a Half, LSL = Long Service Leave"`);
   
+  // Notes section
+  if (data.noteEntries && data.noteEntries.length > 0) {
+    lines.push('');
+    lines.push('"Notes"');
+    lines.push('"Employee","Date","Note"');
+    data.noteEntries.forEach(n => {
+      const noteDate = format(new Date(n.entry_date + 'T00:00:00'), 'EEE dd/MM/yyyy');
+      lines.push(`"${n.full_name}","${noteDate}","${n.notes.replace(/"/g, '""')}"`);
+    });
+  }
+
   // Prior Period Leave Adjustments section
   if (data.leaveAdjustments && data.leaveAdjustments.length > 0) {
     lines.push('');
@@ -444,9 +488,37 @@ export const generateMatrixPDF = (data: MatrixData): jsPDF => {
   doc.text('Legend: PH = Public Holiday, AL = Annual Leave, LL = Leave Loading, SL = Sick Leave, CL = Carer\'s Leave, ADO = Accrued Day Off', 14, finalY + 6);
   doc.text('LWP = Leave Without Pay, HD = Higher Duty, PPL = Paid Parental Leave, T1.5 = Time and a Half, T2.5 = Double Time and a Half, LSL = Long Service Leave', 14, finalY + 10);
   
+  // Notes table
+  let notesEndY = finalY + 10;
+  if (data.noteEntries && data.noteEntries.length > 0) {
+    const notesStartY = finalY + 18;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Notes', 14, notesStartY);
+
+    const notesHeaders = ['Employee', 'Date', 'Note'];
+    const notesBody = data.noteEntries.map(n => {
+      const noteDate = format(new Date(n.entry_date + 'T00:00:00'), 'EEE dd/MM/yyyy');
+      return [n.full_name, noteDate, n.notes];
+    });
+
+    autoTable(doc, {
+      head: [notesHeaders],
+      body: notesBody,
+      startY: notesStartY + 3,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+      columnStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 30 }, 2: { halign: 'left' } },
+    });
+
+    notesEndY = (doc as any).lastAutoTable?.finalY + 8 || notesStartY + 30;
+  }
+
   // Prior Period Leave Adjustments table
   if (data.leaveAdjustments && data.leaveAdjustments.length > 0) {
-    const adjStartY = finalY + 18;
+    const adjStartY = notesEndY;
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
