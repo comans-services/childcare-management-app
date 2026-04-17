@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchUsers, User, deleteUser, updateUser, deactivateUser, reactivateUser } from "@/lib/user-service";
+import { fetchUsers, User, deleteUser, updateUser, deactivateUser, reactivateUser, resendWelcomeEmail } from "@/lib/user-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
   UserCheck,
   EyeOff,
   Eye,
+  Send,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -41,6 +42,7 @@ const TeamList: React.FC = () => {
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
+  const [resendingEmailFor, setResendingEmailFor] = useState<string | null>(null);
 
   const { data: users = [], isLoading, refetch } = useQuery({
     queryKey: ["users"],
@@ -102,6 +104,18 @@ const TeamList: React.FC = () => {
   const handleManageTimesheet = useCallback((userId: string) => {
     navigate(`/timesheet?userId=${userId}`);
   }, [navigate]);
+
+  const handleResendWelcomeEmail = useCallback(async (user: User) => {
+    setResendingEmailFor(user.id);
+    try {
+      await resendWelcomeEmail(user.id, user.email || "", user.full_name || user.email || "");
+      toast({ title: "Welcome email sent", description: `Welcome email resent to ${user.email}.` });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to resend welcome email.", variant: "destructive" });
+    } finally {
+      setResendingEmailFor(null);
+    }
+  }, []);
 
   const handleUserSaved = useCallback(async (userData: User) => {
     if (!editingUser) return;
@@ -236,6 +250,16 @@ const TeamList: React.FC = () => {
                     <Button variant="outline" size="sm" onClick={() => handleManageTimesheet(user.id)} className="flex-1">
                       <Clock className="h-4 w-4 mr-1" />
                       Timesheet
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleResendWelcomeEmail(user)}
+                      disabled={resendingEmailFor === user.id}
+                      className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-400"
+                      title="Resend welcome email"
+                    >
+                      <Send className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"

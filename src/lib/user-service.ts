@@ -404,3 +404,10 @@ export const reactivateUser = async (userId: string, userEmail: string): Promise
     if (emailError) console.warn("Reactivation email failed to send:", emailError);
   });
 };
+
+export const resendWelcomeEmail = async (userId: string, email: string, fullName: string): Promise<void> => {
+  const { error } = await supabase.functions.invoke('send-welcome-email', {
+    body: { userId, email, fullName },
+  });
+  if (error) throw error;
+};

@@ -79,24 +79,16 @@ export const processRow = async (
       case 'team-members':
         console.log('Creating team member in Supabase Auth:', processedData);
         
-        // For team members, we need to use a different approach since admin API requires service role
-        // Let's create the user with signUp instead and handle email confirmation differently
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: processedData.email,
-          password: processedData.password,
-          options: {
-            data: {
-              full_name: processedData.full_name,
-            },
-            emailRedirectTo: `${window.location.origin.replace(/\/$/, "")}/auth`
-          }
+        const { data: adminData, error: authError } = await supabase.functions.invoke('admin-manage-user', {
+          body: { action: 'create', email: processedData.email, password: processedData.password },
         });
-        
-        if (authError || !authData.user) {
+
+        if (authError || !adminData?.user) {
           console.error('Error creating auth user:', authError);
           throw new Error(`Failed to create auth user: ${authError?.message || 'Unknown error'}`);
         }
-        
+
+        const authData = { user: adminData.user };
         console.log('Auth user created successfully:', authData.user.id);
         
         try {
@@ -124,7 +116,9 @@ export const processRow = async (
             
             // Clean up auth user if profile creation fails
             try {
-              await supabase.auth.admin.deleteUser(authData.user.id);
+              await supabase.functions.invoke('admin-manage-user', {
+                body: { action: 'delete', userId: authData.user.id },
+              });
               console.log('Cleaned up auth user after profile creation failure');
             } catch (cleanupError) {
               console.error('Failed to cleanup auth user:', cleanupError);
@@ -148,11 +142,26 @@ export const processRow = async (
           
           savedData = profileResult;
           console.log('Team member created successfully:', savedData);
+
+          // Send welcome email via Resend (fire-and-forget)
+          supabase.functions.invoke('send-welcome-email', {
+            body: {
+              userId: authData.user.id,
+              email: processedData.email,
+              fullName: processedData.full_name,
+              temporaryPassword: processedData.password,
+            },
+          }).then(({ error: emailError }) => {
+            if (emailError) console.warn('Welcome email failed to send:', emailError);
+            else console.log('Welcome email sent for:', processedData.email);
+          });
           
         } catch (profileCreationError) {
           // If profile creation fails, clean up the auth user
           try {
-            await supabase.auth.admin.deleteUser(authData.user.id);
+            await supabase.functions.invoke('admin-manage-user', {
+              body: { action: 'delete', userId: authData.user.id },
+            });
             console.log('Cleaned up auth user after error');
           } catch (cleanupError) {
             console.error('Failed to cleanup auth user:', cleanupError);
