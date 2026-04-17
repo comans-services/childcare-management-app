@@ -432,7 +432,15 @@ function generateEmailTemplate(
             <td style="background-color: #f9fafb; padding: 30px 40px; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
                 Best regards,<br>
-                <strong>DACCC</strong>
+                <strong>Sally Young</strong><br>
+                Director
+              </p>
+
+              <p style="margin: 15px 0 0 0; font-size: 13px; color: #228B22; line-height: 1.6; font-style: italic;">
+                DACCC acknowledges the traditional custodians of the land on which we work and live.
+                We recognise their continuing connection to water, land and community. We pay our respect
+                to elders past, present and emerging.<br><br>
+                We are committed to child safety and the participation and empowerment of all children.
               </p>
               
               ${unsubscribeLink ? `
