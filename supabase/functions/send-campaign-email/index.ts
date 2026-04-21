@@ -202,115 +202,100 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Prepared ${resendAttachments.length} attachments for Resend`);
 
-    // Send emails in batches
-    const BATCH_SIZE = 50;
-    const BATCH_DELAY_MS = 1000; // 1 second between batches
+    // Send emails using Resend batch API (100 per call instead of 1 per call)
+    const BATCH_SIZE = 100;
 
     let sentCount = 0;
     let failedCount = 0;
     let bouncedCount = 0;
     const errors: Array<{ email: string; error: string }> = [];
 
-    console.log(`Starting to send ${recipients.length} emails in batches of ${BATCH_SIZE}`);
+    console.log(`Starting to send ${recipients.length} emails using Resend batch API (batches of ${BATCH_SIZE})`);
 
     for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
       const batch = recipients.slice(i, i + BATCH_SIZE);
-      console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} emails`);
+      const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+      console.log(`Processing batch ${batchNum}: ${batch.length} emails`);
 
-      const batchPromises = batch.map(async (contact) => {
-        try {
-          // Generate unsubscribe token
-          const unsubToken = btoa(`${campaign.id}:${contact.email}:${Date.now()}`);
-          const unsubLink = `${SUPABASE_URL}/functions/v1/unsubscribe?token=${unsubToken}`;
+      // Build all email payloads for this batch
+      const batchPayloads = batch.map((contact) => {
+        const unsubToken = btoa(`${campaign.id}:${contact.email}:${Date.now()}`);
+        const unsubLink = `${SUPABASE_URL}/functions/v1/unsubscribe?token=${unsubToken}`;
 
-          // Determine recipient name
-          const recipientName = contact.full_name || 
-            (contact.first_name && contact.last_name 
-              ? `${contact.first_name} ${contact.last_name}` 
-              : contact.first_name || contact.last_name || "Valued Contact");
+        const recipientName = contact.full_name ||
+          (contact.first_name && contact.last_name
+            ? `${contact.first_name} ${contact.last_name}`
+            : contact.first_name || contact.last_name || "Valued Contact");
 
-          // Generate email HTML
-          const emailHtml = generateEmailTemplate(
-            campaign.subject,
-            campaign.message_body,
-            recipientName,
-            campaign.footer_included,
-            campaign.unsubscribe_link_included ? unsubLink : null,
-            attachments.length > 0
-          );
+        const emailHtml = generateEmailTemplate(
+          campaign.subject,
+          campaign.message_body,
+          recipientName,
+          campaign.footer_included,
+          campaign.unsubscribe_link_included ? unsubLink : null,
+          attachments.length > 0
+        );
 
-          // Prepare email options
-          const emailOptions: any = {
-            from: `${FROM_NAME} <${FROM_EMAIL}>`,
-            to: contact.email,
-            replyTo: REPLY_TO_EMAIL,
-            subject: campaign.subject,
-            html: emailHtml,
-          };
+        const payload: any = {
+          from: `${FROM_NAME} <${FROM_EMAIL}>`,
+          to: contact.email,
+          replyTo: REPLY_TO_EMAIL,
+          subject: campaign.subject,
+          html: emailHtml,
+        };
 
-          // Add attachments if present
-          if (resendAttachments.length > 0) {
-            emailOptions.attachments = resendAttachments;
-          }
+        if (resendAttachments.length > 0) {
+          payload.attachments = resendAttachments;
+        }
 
-          // Send email via Resend
-          const { data, error } = await resend.emails.send(emailOptions);
+        return payload;
+      });
 
-          if (error) {
-            throw error;
-          }
+      // Single Resend batch API call for entire batch
+      const { data: batchResults, error: batchError } = await resend.batch.send(batchPayloads);
 
-          console.log(`✓ Sent to ${contact.email} - ID: ${data?.id}`);
+      // Process results and build bulk event inserts
+      const eventTimestamp = new Date().toISOString();
+      const eventInserts: any[] = [];
 
-          // Log success event
-          await supabase.from("campaign_events").insert({
+      for (let j = 0; j < batch.length; j++) {
+        const contact = batch[j];
+        const result = batchResults?.[j];
+        const failed = batchError || !result?.id;
+
+        if (failed) {
+          const errMsg = batchError?.message || "No message ID returned";
+          console.error(`✗ Failed to send to ${contact.email}: ${errMsg}`);
+          failedCount++;
+          errors.push({ email: contact.email, error: errMsg });
+
+          eventInserts.push({
+            campaign_id: campaign.id,
+            contact_id: contact.id !== "test-contact" ? contact.id : null,
+            contact_email: contact.email,
+            event_type: "failed",
+            event_timestamp: eventTimestamp,
+            bounce_reason: errMsg,
+            provider_response: { error: errMsg },
+          });
+        } else {
+          console.log(`✓ Queued ${contact.email} - ID: ${result.id}`);
+          sentCount++;
+
+          eventInserts.push({
             campaign_id: campaign.id,
             contact_id: contact.id !== "test-contact" ? contact.id : null,
             contact_email: contact.email,
             event_type: testMode ? "test_sent" : "sent",
-            event_timestamp: new Date().toISOString(),
-            provider_response: { id: data?.id, attachments_count: attachments.length },
+            event_timestamp: eventTimestamp,
+            provider_response: { id: result.id, attachments_count: attachments.length },
           });
-
-          sentCount++;
-          return { success: true, email: contact.email };
-        } catch (error: any) {
-          console.error(`✗ Failed to send to ${contact.email}:`, error.message);
-
-          // Determine if it's a bounce or general failure
-          const isBounce = error.message?.includes("bounce") || error.statusCode === 550;
-          
-          if (isBounce) {
-            bouncedCount++;
-          } else {
-            failedCount++;
-          }
-
-          errors.push({ email: contact.email, error: error.message });
-
-          // Log failure event
-          await supabase.from("campaign_events").insert({
-            campaign_id: campaign.id,
-            contact_id: contact.id !== "test-contact" ? contact.id : null,
-            contact_email: contact.email,
-            event_type: isBounce ? "bounced" : "failed",
-            event_timestamp: new Date().toISOString(),
-            bounce_type: isBounce ? "hard" : null,
-            bounce_reason: error.message,
-            provider_response: { error: error.message, statusCode: error.statusCode },
-          });
-
-          return { success: false, email: contact.email, error: error.message };
         }
-      });
+      }
 
-      // Wait for batch to complete
-      await Promise.all(batchPromises);
-
-      // Delay between batches (except for last batch)
-      if (i + BATCH_SIZE < recipients.length) {
-        console.log(`Waiting ${BATCH_DELAY_MS}ms before next batch...`);
-        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+      // Bulk insert all events for this batch in one DB call
+      if (eventInserts.length > 0) {
+        await supabase.from("campaign_events").insert(eventInserts);
       }
     }
 
